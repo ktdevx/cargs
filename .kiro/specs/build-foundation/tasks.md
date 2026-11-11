@@ -27,7 +27,7 @@
   - _Requirements: 5.3, 5.4_
 
 - [ ] 2. ライブラリのビルド
-- [ ] 2.1 トップレベルのプロジェクト定義とオプションを作る
+- [x] 2.1 トップレベルのプロジェクト定義とオプションを作る
   - CMake 3.21 以上を最初に要求し、古い CMake では必要なバージョンを示して失敗するようにする
   - プロジェクト名を `CLArgs` とし、バージョンは公開ヘッダから読んだ値を使う。言語は C だけを有効にする
   - テストのビルド、インストール規則、警告のエラー化の 3 つのオプションを `CLARGS_` で始まる名前で用意し、既定をトップレベルなら ON、ほかのプロジェクトに組み込まれたときは OFF にする
@@ -193,3 +193,4 @@
 - 1.2: `include/clargs/export.h` には `#define CLARGS_API __declspec(dllexport)` のような行がある。公開ヘッダから印の付いた宣言を抜き出す処理（5.1）は、プリプロセッサ行を除いてから名前を拾う。
 - 1.2: `CLARGS_VERSION_NUMBER` は `(unsigned long)` のキャストを含むので `#if` では使えない。`#if` では `CLARGS_VERSION_MAJOR` などを個別に使う（6.1 の文書に書く）。
 - 1.3: `clargs_read_version(<header-path> <out-var>)` は設計より厳しく失敗する。コメントを除いてから読み、同じマクロの二重定義と先頭ゼロ（`010` など）も失敗にする。`version.h` の 3 つのマクロは 1 行ずつ、10 進の 0〜255 で書く。
+- 2.1: トップレベルの `CMakeLists.txt` は `CMAKE_MODULE_PATH` を変えず、`include("${CMAKE_CURRENT_LIST_DIR}/cmake/<Module>.cmake")` の形でモジュールを取り込む。後続のタスクも同じ形で足す。バージョンは `PROJECT_VERSION` / `CLArgs_VERSION` を参照する。
