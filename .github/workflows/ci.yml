@@ -39,3 +39,87 @@ jobs:
       - run: cmake -S . -B build
       - run: cmake --build build
       - run: ctest --test-dir build
+
+  # Every supported environment, with a static and with a shared library:
+  # 4 x 2 = 8 jobs. Each job does the same for Debug and for Release:
+  # configure, build, ctest, and the consumer check (tests/consumer/run.cmake).
+  #
+  # - Warnings are errors: CLARGS_WARNINGS_AS_ERRORS is left at its default.
+  # - With a shared library, ctest also runs clargs.exports, the check of the
+  #   exported symbols.
+  # - The configuration is given at every step (CMAKE_BUILD_TYPE, --config,
+  #   -C), so that the same commands work with a single-config generator
+  #   (Linux, macOS) and with a multi-config one (Visual Studio). Each
+  #   configuration has a build directory of its own, as a single-config
+  #   generator needs, and as the consumer check needs: it does not take a
+  #   build directory with an empty CMAKE_BUILD_TYPE.
+  # - A job that fails does not stop the others, and fails the workflow. Its
+  #   name tells the environment and the shape.
+  build:
+    name: build (${{ matrix.environment }}, ${{ matrix.shape }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        environment:
+          - linux-gcc
+          - linux-clang
+          - macos-clang
+          - windows-msvc
+        shape:
+          - static
+          - shared
+        # No entry below adds a job. Each one adds values to the jobs above
+        # that have the same environment, or the same shape.
+        include:
+          - environment: linux-gcc
+            os: ubuntu-latest
+            cc: gcc
+          - environment: linux-clang
+            os: ubuntu-latest
+            cc: clang
+          - environment: macos-clang
+            os: macos-latest
+            cc: clang
+          # No cc: the Visual Studio generator chooses MSVC itself.
+          - environment: windows-msvc
+            os: windows-latest
+          - shape: static
+            shared: "OFF"
+          - shape: shared
+            shared: "ON"
+    # One shell for all the environments (the default on Windows is pwsh), so
+    # that every step is one command line, the same everywhere.
+    defaults:
+      run:
+        shell: bash
+    env:
+      # The C compiler that CMake takes. Empty on Windows, which is the same
+      # as not set.
+      CC: ${{ matrix.cc }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # The consumer check uses pkg-config on Linux and on macOS. The Linux
+      # runner has it. On macOS it is installed only if it is missing.
+      - name: pkg-config (macOS)
+        if: runner.os == 'macOS'
+        run: command -v pkg-config || brew install pkgconf
+
+      - name: Configure (Debug)
+        run: cmake -S . -B build/Debug -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=${{ matrix.shared }}
+      - name: Build (Debug)
+        run: cmake --build build/Debug --config Debug
+      - name: Test (Debug)
+        run: ctest --test-dir build/Debug -C Debug --output-on-failure --no-tests=error
+      - name: Consumer check (Debug)
+        run: cmake -D CLARGS_BUILD_DIR=build/Debug -D CLARGS_CONFIG=Debug -D CLARGS_SHARED=${{ matrix.shared }} -P tests/consumer/run.cmake
+
+      - name: Configure (Release)
+        run: cmake -S . -B build/Release -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=${{ matrix.shared }}
+      - name: Build (Release)
+        run: cmake --build build/Release --config Release
+      - name: Test (Release)
+        run: ctest --test-dir build/Release -C Release --output-on-failure --no-tests=error
+      - name: Consumer check (Release)
+        run: cmake -D CLARGS_BUILD_DIR=build/Release -D CLARGS_CONFIG=Release -D CLARGS_SHARED=${{ matrix.shared }} -P tests/consumer/run.cmake
