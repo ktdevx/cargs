@@ -23,5 +23,8 @@ option(CLARGS_WARNINGS_AS_ERRORS
     "Treat compiler warnings as errors in the CLArgs targets"
     ${PROJECT_IS_TOP_LEVEL})
 
+# The compile settings shared by the CLArgs targets: clargs_target_defaults().
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/ClargsTargetDefaults.cmake")
+
 # The library.
 add_subdirectory(src)

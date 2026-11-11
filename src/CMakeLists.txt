@@ -36,6 +36,10 @@ set_target_properties(clargs PROPERTIES
     SOVERSION "${clargs_soversion}"
 )
 
+# C99 without extensions, hidden visibility and the warnings for library code.
+# All of it stays on this target.
+clargs_target_defaults(clargs STRICT)
+
 # CLARGS_BUILDING: the library itself is being compiled. Never passed on.
 # CLARGS_SHARED: the library is a shared library. Passed on to consumers, so
 # that they need no definition of their own.

@@ -47,7 +47,7 @@
   - 完了の目安: 指定なしの構成で静的ライブラリ、`BUILD_SHARED_LIBS=ON` の構成で動的ライブラリが、ソースを変えずにビルドできる。Debug の成果物名に `d` が付き、Linux の動的ライブラリに `0.1` の SONAME が付く
   - _Requirements: 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 3.4, 4.1, 5.2, 5.3, 5.5, 6.1, 6.2_
 
-- [ ] 2.3 共通のコンパイル設定を作り、ライブラリに適用する
+- [x] 2.3 共通のコンパイル設定を作り、ライブラリに適用する
   - 指定したターゲットに、C99・標準必須・拡張なしを設定する
   - シンボルの可視性の既定を非公開にし、Windows で全シンボルを export する設定を無効にする。親のプロジェクトが全シンボルの export を有効にしていても、印を付けた関数だけが export されるようにする
   - GCC、Clang、MSVC のそれぞれで警告を有効にする。ライブラリ向けの厳しい警告は指定したときだけ足し、警告のエラー化はオプションが ON のときだけ足す
@@ -196,3 +196,4 @@
 - 2.1: トップレベルの `CMakeLists.txt` は `CMAKE_MODULE_PATH` を変えず、`include("${CMAKE_CURRENT_LIST_DIR}/cmake/<Module>.cmake")` の形でモジュールを取り込む。後続のタスクも同じ形で足す。バージョンは `PROJECT_VERSION` / `CLArgs_VERSION` を参照する。
 - 2.2: `src/CMakeLists.txt` の取り込みパスは `BUILD_INTERFACE` だけを持つ。インストール後の取り込みパスは 3.1 が `install(TARGETS ... INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})` で足す。
 - 2.2: ライブラリは C 標準ライブラリの関数を呼ばないので、動的ライブラリの `readelf -d` に NEEDED の行が 1 つも出ないことがある（8.1 の依存の確認では、libc 以外がないことを見る）。
+- 2.3: `clargs_target_defaults(<target> [STRICT])` は、ソースを持たないターゲット（INTERFACE、IMPORTED、ALIAS）、存在しないターゲット、未知の引数を `FATAL_ERROR` にする。`CLARGS_WARNINGS_AS_ERRORS` は呼び出した時点の値を読む。MSVC の分岐（`/W4`、`/WX`）は手元で実行できず、CI（4.5、7、8.2）で確かめる。
