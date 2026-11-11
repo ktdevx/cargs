@@ -28,3 +28,8 @@ include("${CMAKE_CURRENT_LIST_DIR}/cmake/ClargsTargetDefaults.cmake")
 
 # The library.
 add_subdirectory(src)
+
+# The install rules and the package files.
+if(CLARGS_INSTALL)
+    include("${CMAKE_CURRENT_LIST_DIR}/cmake/ClargsInstall.cmake")
+endif()

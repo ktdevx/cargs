@@ -1,0 +1,15 @@
+# CLArgsConfig.cmake - the package file of CLArgs for find_package(CLArgs).
+#
+# Provides the target CLArgs::clargs. Link to it and nothing else is needed:
+#
+#   find_package(CLArgs CONFIG REQUIRED)
+#   target_link_libraries(<your-target> PRIVATE CLArgs::clargs)
+#
+# The same for a static and a shared CLArgs.
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/CLArgsTargets.cmake")
+
+# CLArgs has no components: asking for one is an error.
+check_required_components(CLArgs)

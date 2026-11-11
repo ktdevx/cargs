@@ -57,7 +57,7 @@
   - _Requirements: 1.4, 1.6, 3.1, 3.2, 6.6_
 
 - [ ] 3. 配布: インストールとパッケージ情報
-- [ ] 3.1 インストール規則と `find_package` 用のパッケージ情報を作る
+- [x] 3.1 インストール規則と `find_package` 用のパッケージ情報を作る
   - インストールのオプションが ON のときだけ有効にし、トップレベルの定義から組み込む
   - ライブラリ、公開ヘッダの全体、パッケージ情報を、標準のインストール先の規則に従って配置する。DLL は実行ファイル用の場所へ置く
   - ターゲットを `CLArgs::` の名前空間で書き出し、利用者が `CLArgs::clargs` にリンクするだけで使えるようにする。動的のときだけ「動的ライブラリとして使う」定義が利用者へ伝わるようにする
@@ -197,3 +197,6 @@
 - 2.2: `src/CMakeLists.txt` の取り込みパスは `BUILD_INTERFACE` だけを持つ。インストール後の取り込みパスは 3.1 が `install(TARGETS ... INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})` で足す。
 - 2.2: ライブラリは C 標準ライブラリの関数を呼ばないので、動的ライブラリの `readelf -d` に NEEDED の行が 1 つも出ないことがある（8.1 の依存の確認では、libc 以外がないことを見る）。
 - 2.3: `clargs_target_defaults(<target> [STRICT])` は、ソースを持たないターゲット（INTERFACE、IMPORTED、ALIAS）、存在しないターゲット、未知の引数を `FATAL_ERROR` にする。`CLARGS_WARNINGS_AS_ERRORS` は呼び出した時点の値を読む。MSVC の分岐（`/W4`、`/WX`）は手元で実行できず、CI（4.5、7、8.2）で確かめる。
+- 3.1: 互換判定は `SameMinorVersion`（メジャー 0 の間）なので、`find_package(CLArgs 0)` や範囲指定は見つからない。メジャーが 0 の間はマイナーまで指定する（6.1、6.2 の文書に書く）。
+- 3.1: `CMAKE_INSTALL_LIBDIR=lib64` へ入れた場合、Debian 系の CMake は `CMAKE_PREFIX_PATH` から `lib64/cmake` を探さない。確認には `-DCLArgs_DIR=<prefix>/lib64/cmake/CLArgs` を使う。
+- 3.1: 公開ヘッダのインストールは `include/clargs` の `*.h` に絞っている。組み込みで `CLARGS_INSTALL=ON` を明示すると、`GNUInstallDirs` のキャッシュ変数が親からも見える。

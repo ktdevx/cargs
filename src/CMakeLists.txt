@@ -12,8 +12,8 @@ add_library(clargs ${CLARGS_SOURCES})
 add_library(CLArgs::clargs ALIAS clargs)
 
 # Consumers get the public headers only. The internal headers in this
-# directory stay private. The install rules add the include directory of the
-# installed package.
+# directory stay private. The include directory of the installed package is
+# added by the install rules (cmake/ClargsInstall.cmake).
 target_include_directories(clargs
     PUBLIC
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
