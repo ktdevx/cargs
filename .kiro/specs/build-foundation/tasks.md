@@ -74,7 +74,7 @@
   - _Requirements: 2.5, 5.3, 7.1, 7.4, 7.5, 7.7_
 
 - [ ] 4. テスト基盤
-- [ ] 4.1 内部関数のテスト用ターゲットを作る
+- [x] 4.1 内部関数のテスト用ターゲットを作る
   - テストのオプションが ON のときだけ作る。ライブラリのターゲットと同じ場所で定義する
   - 動的のときは、同じソース一覧から作る静的ライブラリとし、「動的ライブラリとして使う」定義を付けない。静的のときは、本体にリンクするだけのものとする
   - どちらの場合も、公開ヘッダと内部ヘッダの取り込みパスをリンクした側へ伝え、インストールしない。厳しい警告つきの共通設定は、動的のとき（静的ライブラリとして作る場合）だけ適用する。静的のときはコンパイルするソースを持たないので適用しない
@@ -203,3 +203,4 @@
 - 3.2: pkg-config が返すフラグは `-I<prefix>/lib/pkgconfig/../../include` の形になる（pkgconf はパスを正規化しない）。5.2、5.3 でフラグを比べるときは、正規化してから比べる。
 - 3.2: 設計にない追加として、`clargs.pc` を置く前にインストール済みの `clargs.pc` を消す `install(CODE "file(REMOVE ...)")` がある。マルチコンフィグで Debug と Release を同じ場所へ入れると、同じ時刻のファイルが「Up-to-date」と扱われて古い `-lclargsd` が残るためである。同じ場所へ複数の構成を入れた場合、`clargs.pc` は最後にインストールした構成のものになる。
 - 3.2: `CMAKE_INSTALL_LIBDIR` が絶対パスのとき、`clargs.pc` の `prefix` は構成時の `CMAKE_INSTALL_PREFIX` になる。`cmake --install --prefix <別の場所>` で入れると `includedir` がずれ、再配置できない。
+- 4.1: `clargs_internal` は、動的のとき `libclargs_internal.a`（`OUTPUT_NAME` と Debug の `d` なし）、静的のとき INTERFACE ライブラリになる。INTERFACE ライブラリは `cmake --build --target help` に現れないので、存在は `if(TARGET clargs_internal)` で確かめる。
