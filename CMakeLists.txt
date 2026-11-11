@@ -41,3 +41,14 @@ if(CLARGS_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+# The configuration ctest uses when none is given. With a multi-config
+# generator, "cmake --build" with no --config builds Debug, and ctest with no
+# -C selects nothing: ctest reads this file first, which makes Debug its
+# default. Only for the top-level project: a project that embeds CLArgs keeps
+# its own test settings.
+get_property(clargs_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(PROJECT_IS_TOP_LEVEL AND clargs_is_multi_config)
+    set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" APPEND PROPERTY TEST_INCLUDE_FILES
+        "${CMAKE_CURRENT_LIST_DIR}/cmake/ClargsCTestDefaults.cmake")
+endif()

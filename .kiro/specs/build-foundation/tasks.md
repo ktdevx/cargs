@@ -99,7 +99,7 @@
   - 完了の目安: 静的と動的の両方の構成で、`ctest` が公開 API のテストと内部関数のテストを実行し、すべて通る
   - _Requirements: 5.1, 5.2, 8.4, 8.5, 8.7_
 
-- [ ] 4.4 `ctest` に構成が指定されないときの既定を与える
+- [x] 4.4 `ctest` に構成が指定されないときの既定を与える
   - `ctest` に構成が指定されなかったとき、既定を Debug にする小さなスクリプトを置く。構成が指定された場合はその指定を優先する
   - トップレベルかつマルチコンフィグのジェネレータのときだけ、トップのディレクトリのテスト設定に登録する
   - この方法は実機で確かめていない。Windows での確認は直後の 4.5 で行う
@@ -209,3 +209,6 @@
 - 4.2: アサーションを 1 つも実行しないテストは、Naos が `no assertion ran` で失敗にする。テストを ON にすると、Naos の `include(GNUInstallDirs)` により `CLARGS_INSTALL=OFF` でも `CMAKE_INSTALL_*` のキャッシュ変数が現れる（インストール規則は増えない）。
 - 4.2: ほかのビルドディレクトリでは `-DFETCHCONTENT_SOURCE_DIR_NAOS=<取得済みの _deps/naos-src>` を渡すと、ネットワークなしで構成できる。Windows の DLL コピーの分岐は手元で実行できず、CI（4.5、8.2）で確かめる。
 - 4.3: テストは公開 5 件（`version.version.*`）と内部 6 件（`version_internal.pack.*`）の計 11 件。設計にない追加として、公開側に `number_has_no_other_bits`、内部側にリテラル（`0x010203UL` など）との比較がある。バージョンが 0.1.0 の間、公開側の `major_` と `patch_` は 0 どうしの比較になる。
+- 4.4: `cmake/ClargsCTestDefaults.cmake` は変数 `CTEST_CONFIGURATION_TYPE` が空のときだけ `Debug` を入れる。Naos の生成ファイルも `add_test(NAME ...)` の生成コードもこの変数で分岐するので、`add_test(NAME ... COMMAND ... $<TARGET_FILE:clargs>)` の形のテスト（5.1）も `-C` なしで正しい構成で走る。Ninja Multi-Config で確かめた。Visual Studio ジェネレータは 4.5 で確かめる。
+- 4.4: 既定は Debug 固定。`CMAKE_CONFIGURATION_TYPES` に Debug がない場合や `CMAKE_DEFAULT_BUILD_TYPE=Release` の場合、`-C` なしの `ctest` は `NOT_BUILT` で失敗する（`-C <構成>` を付ければ通る）。CI のマトリクス（7）では構成を明示する。
+- 4.4: テストが OFF のまま `-DFETCHCONTENT_SOURCE_DIR_NAOS=...` を渡すと、CMake が未使用変数の警告を出す（害はない）。
