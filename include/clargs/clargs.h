@@ -1,0 +1,16 @@
+/*
+ * CLArgs - command line argument parser for C99.
+ *
+ * This is the only header consumers include:
+ *
+ *     #include <clargs/clargs.h>
+ *
+ * It only includes the other public headers.
+ */
+#ifndef CLARGS_CLARGS_H
+#define CLARGS_CLARGS_H
+
+#include <clargs/export.h>
+#include <clargs/version.h>
+
+#endif /* CLARGS_CLARGS_H */
