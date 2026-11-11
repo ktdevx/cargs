@@ -120,8 +120,8 @@ target_link_libraries(app PRIVATE CLArgs::clargs)
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCLARGS_BUILD_TESTS=OFF
-cmake --build build
-cmake --install build --prefix <インストール先>
+cmake --build build --config Release
+cmake --install build --config Release --prefix <インストール先>
 ```
 
 利用側は、次のように書く。
