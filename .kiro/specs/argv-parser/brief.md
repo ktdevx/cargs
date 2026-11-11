@@ -92,4 +92,4 @@ command-schema が、コマンド、オプション、位置引数、値型の�
   - 単独の `-` の扱い
 - ワイド文字の入口を Windows 以外でも提供するかは設計で決める。
 - メッセージは英語のみ。
-- 公開名は `roadmap.md` の Open Decisions に従う。
+- 公開名は `roadmap.md` の Naming に従う（ライブラリ名 `clargs`、ヘッダ `<clargs/clargs.h>`、接頭辞 `clargs_` / `CLARGS_`）。

@@ -54,16 +54,22 @@ C99 で書かれたコマンドライン引数パーサーライブラリを新�
 - **依存**: 実行時の依存は C 標準ライブラリのみ。
 - **文書の言語**: スペック文書は日本語で書く。
 
-## Open Decisions
+## Naming (decided)
 
-- **公開名（未決定）**: リポジトリ名は `cargs` だが、既存の C ライブラリ [likle/cargs](https://github.com/likle/cargs)（`libcargs`、`cargs.h`、AUR などで配布）と衝突するため、公開名は別名にする。次の 5 つをまとめて決める必要がある。
-  - ライブラリ名（`lib<name>`）
-  - ヘッダのディレクトリ（`<name>/<name>.h`）
-  - 関数と型の接頭辞（`<name>_`）
-  - マクロの接頭辞（`<NAME>_`）
-  - CMake のパッケージ名とターゲット名（`<Name>::<name>`）
+プロジェクト名は **CLArgs**、ライブラリ名は **clargs** とする。リポジトリ名は `cargs` のままだが、既存の C ライブラリ [likle/cargs](https://github.com/likle/cargs)（`libcargs`、`cargs.h`）と衝突するため、公開名には使わない。
 
-  決まるまで、スペック文書では上の `<name>` / `<NAME>` の表記を使う。build-foundation の要件フェーズまでに確定し、この節を「決定済み」に書き換える。
+| 対象 | 名前 |
+|---|---|
+| プロジェクト名（文書、CMake の `project()`） | `CLArgs` |
+| ライブラリ名 | `clargs`（`libclargs.a`、`libclargs.so`、`clargs.dll` など） |
+| 公開ヘッダ | `<clargs/clargs.h>` |
+| 関数と型の接頭辞 | `clargs_` |
+| マクロの接頭辞 | `CLARGS_` |
+| CMake のパッケージとターゲット | `find_package(CLArgs)`、`CLArgs::clargs` |
+| pkg-config | `clargs.pc` |
+
+- 同名の小規模なプロジェクトがある（NuGet の C++ ライブラリ `libclargs`、接頭辞 `clargs_` を使う `santerijps/clargs` など）。主要なパッケージ管理での広い配布は確認していないが、同じ環境に入れると名前がぶつかりうる。
+- ヘッダは必ず `clargs/` の下に置き、公開する識別子にはすべて接頭辞を付ける。
 
 ## Boundary Strategy
 
@@ -74,7 +80,7 @@ C99 で書かれたコマンドライン引数パーサーライブラリを新�
   - argv-parser: 「いつ・どう当てはめるか」。スキーマを読むだけで、書き換えない。文面の整形はしない。
   - help-formatter: スキーマから文面を作る。解析はしない。
 - **Shared seams to watch**:
-  - **公開名と命名規約**: build-foundation が決め、全スペックが従う。公開ヘッダの置き方、export マクロの付け方も同じ。
+  - **公開名と命名規約**: 公開名は上の Naming のとおり。細かな命名規約は build-foundation が決め、全スペックが従う。公開ヘッダの置き方、export マクロの付け方も同じ。
   - **所有権と寿命**: 誰が確保し誰が解放するか。特に、スキーマが文字列をコピーするか借りるか、結果が argv の文字列を借りるかコピーするか、結果がスキーマより長生きしてよいか。core-runtime が規約を決め、command-schema と argv-parser が従う。
   - **スキーマの読み取りインターフェース**: argv-parser と help-formatter は、command-schema が用意する読み取り用のインターフェースだけを使う。互いの内部構造に触れない。スキーマは解析に使う前に検証を済ませる。
   - **値型のインターフェース**: 値型の定義と変換関数は command-schema が持ち、argv-parser はそのインターフェースを通して変換を呼ぶだけにする。組み込みの型と利用者定義の型を同じ経路で扱う。
