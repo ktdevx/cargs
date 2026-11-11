@@ -1,0 +1,41 @@
+# CI of CLArgs.
+#
+# Runs on every push to a branch and on every pull request that is opened or
+# updated. A newer run on the same branch cancels the older one.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read access to the repository, nothing else. No job uses a secret.
+permissions:
+  contents: read
+
+jobs:
+  # The three commands of the README, alone and with no other argument: no
+  # generator, no build type, no -C for ctest. Keep these steps as they are.
+  # On Windows the generator is multi-config, so this job is what proves that
+  # ctest with no -C runs the tests (cmake/ClargsCTestDefaults.cmake).
+  quickstart:
+    name: quickstart (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: cmake -S . -B build
+      - run: cmake --build build
+      - run: ctest --test-dir build
