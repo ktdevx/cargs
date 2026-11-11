@@ -7,3 +7,4 @@
 #     clargs_add_test(<name> SOURCES internal/<file> INTERNAL)
 
 clargs_add_test(version SOURCES public/version_test.c)
+clargs_add_test(version_internal SOURCES internal/version_internal_test.c INTERNAL)
