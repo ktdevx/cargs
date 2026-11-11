@@ -152,7 +152,7 @@ include/
 src/                               # 実装と内部ヘッダ。インストールされない
 ├── CMakeLists.txt                 # ソース一覧 CLARGS_SOURCES、ターゲット clargs と clargs_internal
 ├── version.c                      # clargs_version() の実装
-└── version_internal.h             # 内部関数 clargs__version_pack() の宣言
+└── version_internal.h             # 内部関数 clargs_version_pack() の宣言
 tests/
 ├── CMakeLists.txt                 # clargs_add_test() の呼び出しと、export 確認の登録
 ├── public/                        # 公開 API のテスト。CLArgs::clargs にリンクする
@@ -389,16 +389,16 @@ CLARGS_API unsigned long clargs_version(void);
 CLARGS_API unsigned long clargs_version(void);
 
 /* src/version_internal.h（内部。export しない） */
-unsigned long clargs__version_pack(unsigned int major, unsigned int minor, unsigned int patch);
+unsigned long clargs_version_pack(unsigned int major, unsigned int minor, unsigned int patch);
 ```
 
 - `clargs_version()` の Postconditions: ライブラリをビルドしたときの `CLARGS_VERSION_NUMBER` と同じ値を返す。失敗しない。引数も状態も持たない。
-- `clargs__version_pack()` の Preconditions: 各引数が 0〜255。Postconditions: `CLARGS_MAKE_VERSION` と同じ値を返す。
+- `clargs_version_pack()` の Preconditions: 各引数が 0〜255。Postconditions: `CLARGS_MAKE_VERSION` と同じ値を返す。
 - 利用者は `clargs_version() == CLARGS_VERSION_NUMBER` で、ヘッダとライブラリが合っているかを確かめる。
 
 **Implementation Notes**
 
-- `clargs__version_pack()` は、内部関数のテストと export の確認が対象を持てるように置く最小の内部関数である。`clargs_version()` はこれを通して値を作る。
+- `clargs_version_pack()` は、内部関数のテストと export の確認が対象を持てるように置く最小の内部関数である。`clargs_version()` はこれを通して値を作る。
 - このスペックでは、ほかの公開関数を足さない（5.5）。
 
 ### ビルド
@@ -564,7 +564,7 @@ clargs_add_test(<name>
 - 公開 API のテスト（`tests/public/`）は、構成で選ばれた形のライブラリに対して実行される（8.4）。内部関数のテスト（`tests/internal/`）は、どちらの構成でも静的にリンクされる（8.5）。
 - このスペックが置くテスト（8.7）:
   - `tests/public/version_test.c`: `clargs_version()` が `CLARGS_VERSION_NUMBER` と等しいこと。各要素を取り出すと `CLARGS_VERSION_MAJOR` などと等しいこと。
-  - `tests/internal/version_internal_test.c`: `clargs__version_pack()` が `CLARGS_MAKE_VERSION` と同じ値を返すこと。境界値（0 と 255）を含める。
+  - `tests/internal/version_internal_test.c`: `clargs_version_pack()` が `CLARGS_MAKE_VERSION` と同じ値を返すこと。境界値（0 と 255）を含める。
 
 **Implementation Notes**
 
@@ -592,14 +592,16 @@ clargs_add_test(<name>
 - `cmake -P` で動くスクリプト。動的ライブラリをビルドし、テストが有効なとき、CTest に `clargs.exports` という名前で登録する。開発者の手元でも CI でも同じものが走る。
 - シンボルの一覧は、Linux と macOS では `nm`、MSVC では `dumpbin` で得る。道具が見つからない場合、テストは失敗する。
 - 判定の規則:
-  - export された関数名がすべて `clargs_` で始まり、その次の文字が `_` でないこと。`clargs__` で始まる内部関数が 1 つでもあれば失敗（3.2、4.3）。
-  - `clargs_version` が含まれること。export が空であれば失敗（3.1）。
-  - 規則に合わないシンボルがあれば、その名前を示して失敗。
-- 期待するシンボルの一覧表は持たない。後続のスペックが公開関数を足しても、このチェックを変える必要はない。
+  - 期待する一覧は、公開ヘッダ（`include/clargs/` の全体）から `CLARGS_API` の付いた関数宣言の名前を抜き出して作る。
+  - export された関数の集合が、期待する一覧と完全に一致すること。公開ヘッダにない関数が export されていれば失敗（3.2）。`CLARGS_API` を付けたのに export されていない関数があっても失敗（3.1）。
+  - 期待する一覧の名前がすべて `clargs_` で始まること（4.3）。
+  - 食い違いがあれば、その名前を示して失敗。
+- 公開関数と内部関数は名前では区別しない（どちらも `clargs_` で始まる）。区別は `CLARGS_API` の有無だけなので、このチェックも `CLARGS_API` を基準にする。
+- 期待する一覧を手で保守しない。後続のスペックが公開関数を足しても、このチェックを変える必要はない。
 
 **Implementation Notes**
 
-- Validation: macOS では、シンボル名の先頭に `_` が付く。比較の前に取り除く。
+- Validation: macOS では、シンボル名の先頭に `_` が付く。比較の前に取り除く。公開ヘッダの読み取りは、コメントを除いたうえで、`CLARGS_API` から最初の `(` までの間の最後の識別子を関数名とする。
 - このスペックの時点で export されるのは `clargs_version` だけなので、5.5 もこのチェックで確かめる。後続のスペックが関数を足した時点で、5.5 の確認は役目を終える。
 
 #### ConsumerCheck
@@ -680,14 +682,15 @@ clargs_add_test(<name>
 |---|---|---|
 | 公開する関数と型 | `clargs_` + 小文字のスネークケース | `clargs_version` |
 | 公開するマクロと列挙定数 | `CLARGS_` + 大文字のスネークケース | `CLARGS_VERSION_MAJOR` |
-| 内部の関数と型（ファイルをまたぐもの） | `clargs__`（下線 2 つ）+ 小文字のスネークケース | `clargs__version_pack` |
-| 内部のマクロ | `CLARGS__` + 大文字のスネークケース | — |
+| 内部の関数と型（ファイルをまたぐもの） | 公開と同じ `clargs_` + 小文字のスネークケース。`CLARGS_API` を付けず、`src/` の内部ヘッダで宣言する | `clargs_version_pack` |
+| 内部のマクロ | 公開と同じ `CLARGS_` + 大文字のスネークケース。`src/` の内部ヘッダで定義する | — |
 | ファイル内だけの関数 | `static` を付ける。接頭辞は不要 | — |
 | 公開ヘッダ | `include/clargs/<名前>.h` | `include/clargs/version.h` |
 | ソースと内部ヘッダ | `src/<名前>.c`、`src/<名前>_internal.h` | `src/version.c` |
 | テスト | `tests/public/<名前>_test.c`、`tests/internal/<名前>_test.c` | `tests/public/version_test.c` |
 | CMake のオプション、関数、モジュール | `CLARGS_<名前>`、`clargs_<名前>()`、`cmake/Clargs<名前>.cmake` | `CLARGS_BUILD_TESTS` |
 
+- 公開と内部は接頭辞で区別しない。公開かどうかは、`include/clargs/` のヘッダで `CLARGS_API` を付けて宣言されているかで決まる。
 - どの公開名にも `cargs` を使わない。
 - 公開する変数を持たない。公開するのは関数、型、マクロだけである。
 
@@ -695,7 +698,7 @@ clargs_add_test(<name>
 
 | したいこと | 手順 |
 |---|---|
-| 公開関数を足す | 公開ヘッダの宣言の先頭に `CLARGS_API` を付ける。`extern "C"` のガードの中に書く |
+| 公開関数を足す | 公開ヘッダの宣言の先頭に `CLARGS_API` を付ける。`CLARGS_API`、戻り値の型、関数名、`(` をこの順に書く（export の確認が宣言を読み取るため）。`extern "C"` のガードの中に書く |
 | 公開ヘッダを足す | `include/clargs/` に置き、`clargs.h` に取り込みを 1 行足す |
 | ソースを足す | `src/` に置き、`src/CMakeLists.txt` の `CLARGS_SOURCES` に 1 行足す |
 | 公開 API のテストを足す | `tests/public/` に置き、`tests/CMakeLists.txt` に `clargs_add_test(<name> SOURCES public/<file>)` を足す |
@@ -739,11 +742,11 @@ README の取り込み例は、`FetchContent`、`add_subdirectory`、`find_packa
 ### Unit Tests
 
 - `tests/public/version_test.c`: `clargs_version()` が `CLARGS_VERSION_NUMBER` と等しい（5.2）。戻り値から取り出したメジャー、マイナー、パッチが、ヘッダのマクロと等しい（5.1）。
-- `tests/internal/version_internal_test.c`: `clargs__version_pack()` が `CLARGS_MAKE_VERSION` と同じ値を返す。0 と 255 の境界を含む（8.5）。
+- `tests/internal/version_internal_test.c`: `clargs_version_pack()` が `CLARGS_MAKE_VERSION` と同じ値を返す。0 と 255 の境界を含む（8.5）。
 
 ### Integration Tests
 
-- `clargs.exports`（動的のとき）: export が `clargs_version` だけで、`clargs__version_pack` が含まれない（3.1、3.2、5.5、9.5）。
+- `clargs.exports`（動的のとき）: export が `clargs_version` だけで、`clargs_version_pack` が含まれない（3.1、3.2、5.5、9.5）。
 - 公開 API のテストが、静的と動的の両方の構成で通る（2.1、2.2、8.4）。動的の構成は、`CLARGS_API` による export と、Windows での DLL のコピーを確かめる（3.3、8.6）。
 - 内部関数のテストが、動的の構成でもビルドでき、通る（8.5）。
 - Debug の構成で、成果物の名前に `d` が付く（2.5）。ConsumerCheck が Debug のインストール物で通ることで確かめる。
