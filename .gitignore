@@ -1,0 +1,22 @@
+# Build directories
+/build/
+/build-*/
+/out/
+/cmake-build-*/
+
+# Local CMake settings
+/CMakeUserPresets.json
+/compile_commands.json
+
+# Editors
+.vscode/
+.vs/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
