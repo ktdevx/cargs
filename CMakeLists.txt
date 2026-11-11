@@ -22,3 +22,6 @@ option(CLARGS_INSTALL
 option(CLARGS_WARNINGS_AS_ERRORS
     "Treat compiler warnings as errors in the CLArgs targets"
     ${PROJECT_IS_TOP_LEVEL})
+
+# The library.
+add_subdirectory(src)
