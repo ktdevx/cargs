@@ -106,7 +106,7 @@
   - 完了の目安: マルチコンフィグのジェネレータ（手元では Ninja Multi-Config など）で、構成を指定しない `cmake --build` の後、構成を指定しない `ctest` がテストを実行して通る。シングルコンフィグの構成では登録されない
   - _Requirements: 1.1_
 
-- [ ] 4.5 追加の引数なしの 3 コマンドを確かめる CI のワークフローを作り、3 つの OS で確かめる
+- [x] 4.5 追加の引数なしの 3 コマンドを確かめる CI のワークフローを作り、3 つの OS で確かめる
   - ワークフローを新しく作る。すべてのブランチへのプッシュと、プルリクエストの作成・更新で実行する。同じブランチの古い実行は取り消す。権限はリポジトリの読み取りだけにする
   - Linux、macOS、Windows のそれぞれで、構成、ビルド、テストの 3 つのコマンドだけを、追加の引数なしで実行するジョブを置く
   - ブランチをプッシュして実行する。Windows で構成を指定しない `ctest` が動かない場合は、実装で回避せず設計へ戻す（設計が未確認とした点を、ここで早めに確かめる）
@@ -212,3 +212,5 @@
 - 4.4: `cmake/ClargsCTestDefaults.cmake` は変数 `CTEST_CONFIGURATION_TYPE` が空のときだけ `Debug` を入れる。Naos の生成ファイルも `add_test(NAME ...)` の生成コードもこの変数で分岐するので、`add_test(NAME ... COMMAND ... $<TARGET_FILE:clargs>)` の形のテスト（5.1）も `-C` なしで正しい構成で走る。Ninja Multi-Config で確かめた。Visual Studio ジェネレータは 4.5 で確かめる。
 - 4.4: 既定は Debug 固定。`CMAKE_CONFIGURATION_TYPES` に Debug がない場合や `CMAKE_DEFAULT_BUILD_TYPE=Release` の場合、`-C` なしの `ctest` は `NOT_BUILT` で失敗する（`-C <構成>` を付ければ通る）。CI のマトリクス（7）では構成を明示する。
 - 4.4: テストが OFF のまま `-DFETCHCONTENT_SOURCE_DIR_NAOS=...` を渡すと、CMake が未使用変数の警告を出す（害はない）。
+- 4.5: CI の `quickstart` ジョブ（run 43049613386、コミット `a750715`）が Linux、macOS、Windows で成功した。Windows（Visual Studio ジェネレータ、MSVC の `/W4 /WX`）で、構成を指定しない `ctest` が 11 件を実行して通ることを確かめた。`ClargsCTestDefaults.cmake` の方法は実機で確認済み。
+- 4.5: ワークフローのアクションはメジャータグで固定している（`actions/checkout@v7`）。設計に固定の方針はない。構成コマンドは要件 1.1 の文字どおり `cmake -S . -B build`。
