@@ -135,7 +135,7 @@
   - _Depends: 3.1, 3.2_
   - _Requirements: 6.1, 6.2, 6.3, 7.2, 7.3, 7.4, 7.7_
 
-- [ ] 5.3 取り込みの確認を通しで実行する駆動スクリプトを作る
+- [x] 5.3 取り込みの確認を通しで実行する駆動スクリプトを作る
   - ビルド済みのビルドディレクトリ、構成、ライブラリの形を受け取り、単独のコマンドで実行できるようにする
   - 一時的な場所へインストールし、インストール先のディレクトリ名を変えてから、移動後の場所を使う
   - 利用側のプロジェクトを作業用のディレクトリへコピーし、4 つのモードを順に構成、ビルド、実行する。作業用のディレクトリは毎回作り直す
@@ -220,3 +220,6 @@
 - 5.2: 利用側プロジェクト `tests/consumer/` の入力は、`CLARGS_CONSUME_MODE`（`find_package` / `pkg_config` / `add_subdirectory` / `fetch_content`）、インストール済みを使うモードの `CMAKE_PREFIX_PATH`（pkg-config は `PKG_CONFIG_PATH` でもよい）、組み込みのモードの `CLARGS_CONSUME_SOURCE_DIR`（チェックアウトのパス。設計に名前の定めはない）。実行ファイルと CTest のテストの名前は `clargs_consumer`。組み込みのモードでライブラリの形を選ぶには `-DBUILD_SHARED_LIBS=` を渡す。
 - 5.2: 組み込みのモードの確認は設計より厳しい。CLArgs のディレクトリに `clargs` 以外のターゲットがないこと、`clargs` に `-Werror` / `/WX` が付いていないことも見る。後続のスペックが組み込み時にも作るターゲットを足したら、この許可リストを直す。インストール規則はグローバルプロパティ `COMPONENTS`、テストは `TESTS` と `TEST_INCLUDE_FILES`（Naos の列挙はこちらを使う）で検出する。
 - 5.2: Windows の DLL コピーと macOS の pkg-config のモードは手元で実行できず、CI（7、8.2）で確かめる。
+- 5.3: 駆動スクリプトは `cmake -D CLARGS_BUILD_DIR=<dir> -D CLARGS_CONFIG=<構成> -D CLARGS_SHARED=<ON|OFF> -P tests/consumer/run.cmake`。作業物は `<CLARGS_BUILD_DIR>/consumer-check/` に置き、毎回作り直す。1 つのモードが失敗しても残りを実行し、最後に失敗したモードと段階（configure / build / run）を示して 0 以外で終わる。
+- 5.3: `CMAKE_BUILD_TYPE` が空のビルドディレクトリ（README の 3 コマンドそのまま）は受け付けない。`-DCMAKE_BUILD_TYPE=<構成>` を付けて構成する。`CLARGS_CONFIG` は設計の `<Debug|Release>` より広く、ビルドディレクトリが持つ構成なら受け付ける。`CLARGS_SHARED` がビルドの形と合わなければエラーにする。
+- 5.3: Windows の判定は「ホストが Windows」（設計は「Windows の MSVC」）。Windows の分岐は `-DCMAKE_HOST_WIN32=1` の模擬でしか確かめておらず、Visual Studio ジェネレータと macOS は CI（7、8.2）で確かめる。同じビルドディレクトリへの並行実行はできない。
