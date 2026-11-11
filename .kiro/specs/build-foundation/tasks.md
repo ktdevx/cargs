@@ -114,7 +114,7 @@
   - _Requirements: 1.1, 9.1_
 
 - [ ] 5. 確認の仕組み
-- [ ] 5.1 動的ライブラリの export を確かめるチェックを作る
+- [x] 5.1 動的ライブラリの export を確かめるチェックを作る
   - 単独で動くスクリプトとして作り、動的ライブラリをビルドしていてテストが有効なとき、CTest に `clargs.exports` の名前で登録する
   - export されたシンボルの一覧を、Linux と macOS では `nm`、MSVC では `dumpbin` で得る。道具が見つからなければ失敗させる。macOS では先頭の `_` を取り除いてから比べる
   - 期待する一覧は、公開ヘッダの全体から、コメントを除いたうえで、印の付いた関数宣言の名前を抜き出して作る。手で保守する一覧を持たない
@@ -214,3 +214,6 @@
 - 4.4: テストが OFF のまま `-DFETCHCONTENT_SOURCE_DIR_NAOS=...` を渡すと、CMake が未使用変数の警告を出す（害はない）。
 - 4.5: CI の `quickstart` ジョブ（run 43049613386、コミット `a750715`）が Linux、macOS、Windows で成功した。Windows（Visual Studio ジェネレータ、MSVC の `/W4 /WX`）で、構成を指定しない `ctest` が 11 件を実行して通ることを確かめた。`ClargsCTestDefaults.cmake` の方法は実機で確認済み。
 - 4.5: ワークフローのアクションはメジャータグで固定している（`actions/checkout@v7`）。設計に固定の方針はない。構成コマンドは要件 1.1 の文字どおり `cmake -S . -B build`。
+- 5.1（設計へ戻す点、人の判断が要る）: `clargs.exports` は `CLARGS_API` を基準にするので、公開関数から印を外した場合は検出できない（その関数は export からも期待する一覧からも消える）。完了の目安の「印を外すと、その名前を示して失敗する」は、設計の規則では満たせない。現状では、印を外すと公開 API のテストが動的の構成でリンクに失敗し（`undefined reference to 'clargs_version'`）、ライブラリだけをビルドした場合は `clargs.exports` が「公開ヘッダに `CLARGS_API` の付いた関数宣言が 1 つもない」で失敗する（名前は出ない。設計にない追加の規則）。公開関数が 2 つ以上になると、印を外した関数は `clargs.exports` を通り、その関数を呼ぶ公開 API のテストのリンク失敗だけが検出の手段になる。公開ヘッダの印のない関数宣言を違反にする規則を足すかどうかは、設計の変更として判断する。
+- 5.1: 設計にない追加として、export された変数も違反にし（要件 3.2）、ELF のリンカ由来の名前（`_init`、`_fini`、`__bss_start`、`_edata`、`_end`）を無視し、関数宣言でないものに付いた `CLARGS_API` を失敗にする。`clargs.exports` に CTest のラベルはない（`ctest -L public` などには含まれない）。
+- 5.1: 単独実行は `cmake -DCLARGS_LIBRARY=<動的ライブラリ> -P cmake/ClargsCheckExports.cmake`。関数ポインタを直接返す宣言は名前を誤読するので、`typedef` を使う（6.1 の文書に書く）。`dumpbin` と macOS の `nm -gU` の分岐は偽の出力でしか確かめておらず、CI（7、8.2）で確かめる。
