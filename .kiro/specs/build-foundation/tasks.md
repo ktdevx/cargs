@@ -82,7 +82,7 @@
   - _Boundary: Library_
   - _Requirements: 7.6, 8.5_
 
-- [ ] 4.2 Naos の取り込みと、テストを 1 行で登録する仕組みを作る
+- [x] 4.2 Naos の取り込みと、テストを 1 行で登録する仕組みを作る
   - テストのオプションが ON のときだけ、Naos をリリースタグ v0.4.0 に固定して自動で取得する。タグの指定は 1 か所だけに書く。OFF のときはこの仕組みを読み込まず、Naos を取得しない
   - トップレベルの定義で、テストが ON のときにテストを有効にしてからテストのディレクトリを追加する
   - 名前とソースを渡すとテストの実行ファイルを作り、共通のコンパイル設定（厳しい警告なし）を適用し、Naos と、公開 API のテストなら構成で選ばれた形のライブラリ、内部関数のテストなら 4.1 のターゲットにリンクする登録関数を用意する
@@ -204,3 +204,7 @@
 - 3.2: 設計にない追加として、`clargs.pc` を置く前にインストール済みの `clargs.pc` を消す `install(CODE "file(REMOVE ...)")` がある。マルチコンフィグで Debug と Release を同じ場所へ入れると、同じ時刻のファイルが「Up-to-date」と扱われて古い `-lclargsd` が残るためである。同じ場所へ複数の構成を入れた場合、`clargs.pc` は最後にインストールした構成のものになる。
 - 3.2: `CMAKE_INSTALL_LIBDIR` が絶対パスのとき、`clargs.pc` の `prefix` は構成時の `CMAKE_INSTALL_PREFIX` になる。`cmake --install --prefix <別の場所>` で入れると `includedir` がずれ、再配置できない。
 - 4.1: `clargs_internal` は、動的のとき `libclargs_internal.a`（`OUTPUT_NAME` と Debug の `d` なし）、静的のとき INTERFACE ライブラリになる。INTERFACE ライブラリは `cmake --build --target help` に現れないので、存在は `if(TARGET clargs_internal)` で確かめる。
+- 4.2: 登録関数は `clargs_add_test(<name> SOURCES <source>... [INTERNAL])`。`PUBLIC` というキーワードはない（`INTERNAL` がなければ公開 API のテスト）。名前は英数字と下線だけで、全体で一意にする。
+- 4.2: Naos v0.4.0 の実物は research.md と 3 点違う。`naos_discover_tests()` に `DISCOVERY_TIMEOUT` と `ALLOW_NO_ASSERTIONS` がある。テストを 1 つも持たない `NAOS_SUITE` はコンパイルエラーになる。実行ファイルをビルドする前の `ctest` には、失敗する `<name>.NOT_BUILT` が 1 つ載る（マルチコンフィグで未ビルドの構成を選んだときも同じ）。
+- 4.2: アサーションを 1 つも実行しないテストは、Naos が `no assertion ran` で失敗にする。テストを ON にすると、Naos の `include(GNUInstallDirs)` により `CLARGS_INSTALL=OFF` でも `CMAKE_INSTALL_*` のキャッシュ変数が現れる（インストール規則は増えない）。
+- 4.2: ほかのビルドディレクトリでは `-DFETCHCONTENT_SOURCE_DIR_NAOS=<取得済みの _deps/naos-src>` を渡すと、ネットワークなしで構成できる。Windows の DLL コピーの分岐は手元で実行できず、CI（4.5、8.2）で確かめる。

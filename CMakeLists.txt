@@ -33,3 +33,11 @@ add_subdirectory(src)
 if(CLARGS_INSTALL)
     include("${CMAKE_CURRENT_LIST_DIR}/cmake/ClargsInstall.cmake")
 endif()
+
+# The tests. The testing module fetches Naos when it is included, so it is
+# included only when the tests are built.
+if(CLARGS_BUILD_TESTS)
+    include("${CMAKE_CURRENT_LIST_DIR}/cmake/ClargsTesting.cmake")
+    enable_testing()
+    add_subdirectory(tests)
+endif()
