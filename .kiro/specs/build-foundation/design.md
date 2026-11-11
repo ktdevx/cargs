@@ -710,7 +710,7 @@ clargs_add_test(<name>
 
 | ファイル | 内容 | Requirements |
 |---|---|---|
-| `LICENSE` | ライセンスの全文。MIT を使う（下の Open Questions を参照） | 10.1 |
+| `LICENSE` | ライセンスの全文。MIT を使う | 10.1 |
 | `README.md` | 概要、3 コマンドでのビルドとテスト、オプションの表、4 つの取り込み方法の例、`docs/conventions.md` への案内 | 10.2 |
 | `.gitignore` | `build/` などのビルドディレクトリ、エディタと OS の生成物 | 10.3 |
 | `.editorconfig` | UTF-8、LF、末尾の改行、行末の空白の削除。C と CMake は空白 4 つ、YAML は空白 2 つ | 10.4 |
@@ -771,5 +771,7 @@ README の取り込み例は、`FetchContent`、`add_subdirectory`、`find_packa
 
 ## Open Questions
 
-- **ライセンス**: 要件はライセンスの種類を決めていない。この設計は MIT を仮に置く。Naos と同じで、C のライブラリで広く使われているためである。別のライセンスにする場合、変わるのは `LICENSE` と README の 1 行だけで、ほかの設計には影響しない。実装の前に確定する。
-- **Windows での pkg-config**: ConsumerCheck は、Windows では `clargs.pc` が配置されることだけを確かめる。要件 9.4 は OS を限定していないので、この範囲でよいかを確認する。
+未決の点はない。次の 2 点は確定した。
+
+- **ライセンス（確定）**: MIT を使う。Naos と同じで、C のライブラリで広く使われているためである。
+- **Windows での pkg-config（確定）**: ConsumerCheck は、Windows では `clargs.pc` が配置されることだけを確かめる。要件 9.4 の pkg-config による取り込みの確認は、Linux と macOS で行う。
