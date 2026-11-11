@@ -66,7 +66,7 @@
   - 完了の目安: 一時的な場所へインストールすると、ライブラリ、`clargs/` の公開ヘッダ、Config・バージョン・ターゲットのファイルが設計の表の場所に置かれ、内部ヘッダが含まれない。静的と動的のどちらでも同じファイル名になる
   - _Requirements: 2.5, 3.3, 3.4, 4.4, 5.3, 7.1, 7.2, 7.3, 7.5, 7.6, 7.7_
 
-- [ ] 3.2 pkg-config 用の情報を生成してインストールする
+- [x] 3.2 pkg-config 用の情報を生成してインストールする
   - 名前を `clargs`、バージョンを公開ヘッダの値とし、取り込みパスとリンクのフラグを返すようにする。動的のときだけ「動的ライブラリとして使う」定義をコンパイルのフラグに足す
   - リンクするライブラリ名は、インストールする構成の実際の成果物名にする（Debug では末尾に `d` が付く）。そのため構成ごとに生成する
   - インストール先の場所は、情報ファイル自身の場所からの相対パスで書く。ライブラリのインストール先が絶対パスで指定された場合は絶対パスを書く
@@ -200,3 +200,6 @@
 - 3.1: 互換判定は `SameMinorVersion`（メジャー 0 の間）なので、`find_package(CLArgs 0)` や範囲指定は見つからない。メジャーが 0 の間はマイナーまで指定する（6.1、6.2 の文書に書く）。
 - 3.1: `CMAKE_INSTALL_LIBDIR=lib64` へ入れた場合、Debian 系の CMake は `CMAKE_PREFIX_PATH` から `lib64/cmake` を探さない。確認には `-DCLArgs_DIR=<prefix>/lib64/cmake/CLArgs` を使う。
 - 3.1: 公開ヘッダのインストールは `include/clargs` の `*.h` に絞っている。組み込みで `CLARGS_INSTALL=ON` を明示すると、`GNUInstallDirs` のキャッシュ変数が親からも見える。
+- 3.2: pkg-config が返すフラグは `-I<prefix>/lib/pkgconfig/../../include` の形になる（pkgconf はパスを正規化しない）。5.2、5.3 でフラグを比べるときは、正規化してから比べる。
+- 3.2: 設計にない追加として、`clargs.pc` を置く前にインストール済みの `clargs.pc` を消す `install(CODE "file(REMOVE ...)")` がある。マルチコンフィグで Debug と Release を同じ場所へ入れると、同じ時刻のファイルが「Up-to-date」と扱われて古い `-lclargsd` が残るためである。同じ場所へ複数の構成を入れた場合、`clargs.pc` は最後にインストールした構成のものになる。
+- 3.2: `CMAKE_INSTALL_LIBDIR` が絶対パスのとき、`clargs.pc` の `prefix` は構成時の `CMAKE_INSTALL_PREFIX` になる。`cmake --install --prefix <別の場所>` で入れると `includedir` がずれ、再配置できない。
