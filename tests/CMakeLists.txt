@@ -6,8 +6,24 @@
 # To add a test of the internal functions, put the file in internal/ and add
 #     clargs_add_test(<name> SOURCES internal/<file> INTERNAL)
 
+clargs_add_test(alloc SOURCES public/alloc_test.c)
+clargs_add_test(alloc_internal SOURCES internal/alloc_internal_test.c support/test_allocator.c INTERNAL)
+clargs_add_test(error SOURCES public/error_test.c)
+clargs_add_test(str SOURCES internal/str_test.c support/test_allocator.c INTERNAL)
+clargs_add_test(test_allocator SOURCES public/test_allocator_test.c support/test_allocator.c)
+clargs_add_test(vec SOURCES internal/vec_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(version SOURCES public/version_test.c)
 clargs_add_test(version_internal SOURCES internal/version_internal_test.c INTERNAL)
+
+# The check of the allocations; see cmake/ClargsCheckAllocations.cmake. The
+# library sources must not use the allocation functions of the C standard
+# library directly. The test reads the sources and needs no build, so it is
+# registered for a static and for a shared library alike.
+add_test(NAME clargs.allocations
+    COMMAND "${CMAKE_COMMAND}"
+        "-DCLARGS_SOURCE_DIR=${PROJECT_SOURCE_DIR}/src"
+        -P "${PROJECT_SOURCE_DIR}/cmake/ClargsCheckAllocations.cmake"
+)
 
 # The check of the exported symbols; see cmake/ClargsCheckExports.cmake. Only
 # a shared library has exports to check. The test runs the script on the

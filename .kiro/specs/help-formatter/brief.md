@@ -59,7 +59,7 @@ command-schema が、コマンド、オプション、位置引数の定義と�
 
 ## Upstream / Downstream
 
-- **Upstream**: command-schema（読み取りインターフェース、表示用の属性）、core-runtime（アロケータ、状態コード）
+- **Upstream**: command-schema（読み取りインターフェース、表示用の属性）、core-runtime（アロケータ、エラーコード）
 - **Downstream**: ライブラリの利用者。将来、ほかの形式（man ページ、補完スクリプト）を足すなら、同じ読み取りインターフェースの上の別スペックとする。
 
 ## Existing Spec Touchpoints
@@ -73,7 +73,7 @@ command-schema が、コマンド、オプション、位置引数の定義と�
 
 - C99。公開構造体を ABI にしない。
 - メモリを確保するなら core-runtime のアロケータを通す。
-- 変更可能なグローバル状態を持たない。
+- core-runtime が持つアロケータの設定のほかに、変更可能なグローバル状態を持たない。
 - 文面は英語のみ。見出しなどの固定の語句もここに含まれる。
 - 折り返しの幅は、まずバイト数または ASCII の文字数で数える。ASCII 以外の文字の表示幅の扱いは要件で確定する。
 - 改行は `\n` で出力する。Windows での変換は出力先に任せる。

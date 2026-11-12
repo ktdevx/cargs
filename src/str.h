@@ -1,0 +1,24 @@
+/*
+ * CLArgs - internal declarations for the string functions.
+ */
+#ifndef CLARGS_STR_H
+#define CLARGS_STR_H
+
+/*
+ * Returns a new copy of the string str, with its terminator, in memory of
+ * the allocator that is set (clargs_set_allocator(), <clargs/alloc.h>). The
+ * name and the parameter match the common strdup. The copy of an empty
+ * string is a string of one byte.
+ *
+ * The caller owns the copy and frees it with clargs_free()
+ * ("alloc_internal.h").
+ *
+ * Returns NULL when the allocation fails; nothing is left allocated then,
+ * and the caller reports it as CLARGS_ERROR_OUT_OF_MEMORY. Does not write
+ * errno, print anything or end the process.
+ *
+ * Precondition: str is not NULL. It is checked with assert.
+ */
+char *clargs_strdup(const char *str);
+
+#endif /* CLARGS_STR_H */

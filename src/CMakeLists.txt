@@ -1,5 +1,9 @@
 # The library sources. To add a source file, add one line to this list.
 set(CLARGS_SOURCES
+    alloc.c
+    error.c
+    str.c
+    vec.c
     version.c
 )
 
