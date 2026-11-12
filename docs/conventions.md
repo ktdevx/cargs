@@ -51,6 +51,8 @@ include/
     ├── alloc.h       アロケータの型と clargs_set_allocator() の宣言
     ├── error.h       エラーコードの一覧 CLARGS_ERROR_LIST、clargs_error_t、clargs_error_message() の宣言
     ├── export.h      CLARGS_API
+    ├── schema.h      スキーマ: コマンド、オプション、位置引数の定義、属性、検証、読み取りの宣言
+    ├── type.h        値型: clargs_type_t、組み込みの値型、生成、破棄、読み取り、変換の宣言
     └── version.h     バージョンのマクロと clargs_version() の宣言
 src/                  ソースと内部ヘッダ。インストールされない
 ├── CMakeLists.txt    ソース一覧 CLARGS_SOURCES、ターゲット clargs と clargs_internal
@@ -64,7 +66,8 @@ tests/
 └── consumer/         利用側からの取り込みの確認。本体のビルドには含めない
 docs/                 文書
 ├── conventions.md    この文書
-└── ownership.md      所有権と寿命の規約
+├── ownership.md      所有権と寿命の規約
+└── schema.md         スキーマの使い方（利用者向け）: 定義から検証、破棄までの例、値型の契約、破棄の順序
 ```
 
 - 利用者は `#include <clargs/clargs.h>` だけを書く。公開ヘッダどうしも `<clargs/<名前>.h>` の形で取り込む。
@@ -292,6 +295,9 @@ clargs_add_test(example SOURCES internal/example_test.c INTERNAL)
 - **名前**は `CLARGS_ERROR_<内容>` とする。成功は `CLARGS_ERROR_NONE` だけである。
 - **説明文**は、英語の小文字で始まる短い句にする（`"out of memory"`）。ほかのコードの説明文と同じにしない。
 - **エラーコードにするのは、実行時の失敗だけである。** 足す前に、それが正しいプログラムでも起こりうる失敗かどうかを確かめる。呼び出し側のプログラムの誤り（必須の引数の `NULL` など）は、エラーコードにせず、前提条件にする（[前提条件の検査](#前提条件の検査)）。
+  - スキーマの定義の誤りのうち、文字列の内容に由来するもの（規則に合わない名前、値型が変換できない既定値など）と、定義どうしの関係に由来するもの（名前の衝突、併用できない定義の組み合わせなど）は、実行時の失敗として扱い、エラーコードにする（`CLARGS_ERROR_INVALID_NAME`、`CLARGS_ERROR_NAME_CONFLICT`、`CLARGS_ERROR_INVALID_DEFINITION`、`CLARGS_ERROR_INVALID_DEFAULT`、`CLARGS_ERROR_INVALID_VALUE`）。文字列は実行時に決まるデータから組み立てられることがあり、規則や既存の定義との突き合わせはライブラリにしか確かめられず、`assert` は Release 構成で検査しないためである。
+  - 空のポインタ、範囲外の添字、列挙にない値は、定義の関数でも前提条件のままにする。呼び出し側のコードだけで決まり、呼び出しの場所で確かめられるためである。
+  - 分け方と理由の詳しい説明は、[所有権と寿命の規約](ownership.md#実行時の失敗とプログラムの誤り)にある。
 - エラーコードは失敗の種類だけを表す。位置や対象を持たせない。
 
 ### テスト用アロケータを使う
@@ -624,6 +630,8 @@ cmake -P cmake/ClargsCheckAllocations.cmake
     ```
 
 - **初期化子のない `const` オブジェクトを書かない。** MSVC の `/W4` で C4132 になる。`= { 0 }` を付ける。
+- **`NAOS_FAIL` と `NAOS_SKIP` の後に、`break;` 以外の文を書かない。** どちらも戻らない。後に `return` などを書くと、MSVC の `/W4` で C4702（到達しないコード）になる。値を返す関数の `switch` の `default:` でも、`NAOS_FAIL(...)` だけを書く。
+- **ASCII の範囲外のバイトは、文字定数で書く。** `(char)0x80` は、MSVC の `/W4` で C4310（定数の切り捨て）になる。`'\x80'` と書く。
 - **標準の確保関数へ、巨大な大きさを実際に渡さない。** ASan と valgrind が異常終了する。大きな要求の扱いを確かめるときは、引数を記録して `NULL` を返すだけのアロケータを `clargs_set_allocator()` で設定する。
 - **桁あふれの検査は、両側を確かめる。** あふれる側（アロケータが呼ばれずに失敗する）だけでなく、ちょうど収まる側（アロケータまで届く）も確かめる。ちょうど収まる側は、テスト用アロケータで 1 回目の要求を失敗させ（`clargs_test_allocator_fail_at(1)`）、要求の回数が 1 であることで「アロケータまで届いた」ことを確かめる。こうすれば、巨大な大きさを標準の確保関数へ渡さずに済む。
 - **アロケータを設定したテストは、終わる前に既定へ戻す。** 設定は 1 つの実行ファイルのすべてのテストが共有する。`clargs_set_allocator(NULL)` か、テスト用アロケータなら `clargs_test_allocator_uninstall()` を呼ぶ（[テスト用アロケータを使う](#テスト用アロケータを使う)）。

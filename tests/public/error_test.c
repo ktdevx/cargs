@@ -114,6 +114,29 @@ NAOS_TEST(first_messages_are_fixed)
     NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_OUT_OF_MEMORY), "out of memory");
 }
 
+/* The codes of the definition mistakes follow the first two, in this order. */
+NAOS_TEST(definition_values_are_fixed)
+{
+    NAOS_CHECK_INT_EQ(CLARGS_ERROR_INVALID_NAME, 2);
+    NAOS_CHECK_INT_EQ(CLARGS_ERROR_NAME_CONFLICT, 3);
+    NAOS_CHECK_INT_EQ(CLARGS_ERROR_INVALID_DEFINITION, 4);
+    NAOS_CHECK_INT_EQ(CLARGS_ERROR_INVALID_DEFAULT, 5);
+    NAOS_CHECK_INT_EQ(CLARGS_ERROR_INVALID_VALUE, 6);
+}
+
+/* The codes of the definition mistakes have the messages they were published
+ * with. */
+NAOS_TEST(definition_messages_are_fixed)
+{
+    NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_INVALID_NAME), "invalid name");
+    NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_NAME_CONFLICT), "name already in use");
+    NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_INVALID_DEFINITION),
+                      "inconsistent definition");
+    NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_INVALID_DEFAULT),
+                      "default value rejected by its value type");
+    NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_INVALID_VALUE), "invalid value");
+}
+
 /* A value that is not in the list gets the unknown message, never NULL. */
 NAOS_TEST(unknown_value_has_the_unknown_message)
 {
@@ -151,6 +174,8 @@ NAOS_SUITE(error,
     NAOS_ADD_TEST(values_follow_the_order_of_the_list),
     NAOS_ADD_TEST(first_values_are_fixed),
     NAOS_ADD_TEST(first_messages_are_fixed),
+    NAOS_ADD_TEST(definition_values_are_fixed),
+    NAOS_ADD_TEST(definition_messages_are_fixed),
     NAOS_ADD_TEST(unknown_value_has_the_unknown_message),
     NAOS_ADD_TEST(message_is_the_same_on_every_call)
 )

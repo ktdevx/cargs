@@ -13,6 +13,8 @@
 #include <clargs/alloc.h>
 #include <clargs/error.h>
 #include <clargs/export.h>
+#include <clargs/schema.h>
+#include <clargs/type.h>
 #include <clargs/version.h>
 
 #endif /* CLARGS_CLARGS_H */
