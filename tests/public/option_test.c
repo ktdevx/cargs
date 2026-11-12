@@ -1,8 +1,8 @@
 /*
  * Tests of the public option API: the option part of <clargs/schema.h>.
  *
- * Options of the four kinds are added to commands, read and looked up the
- * way a consumer does it. These are also the tests of the enumeration and
+ * Options of the four kinds are added to commands, given attributes, read
+ * and looked up the way a consumer does it. These are also the tests of the enumeration and
  * of the lookups of a command that has options: clargs_command_option_at(),
  * clargs_command_find_short() and clargs_command_find_long().
  *
@@ -155,6 +155,73 @@ static void check_option(const clargs_option_t *option, const clargs_command_t *
     }
 
     NAOS_CHECK_TRUE(clargs_option_type(option) == type);
+}
+
+/* The attributes that are strings, for the tests that do the same with each
+ * of them. */
+typedef enum text_attribute {
+    TEXT_DESCRIPTION,
+    TEXT_VALUE_NAME,
+    TEXT_DEFAULT
+} text_attribute_t;
+
+#define TEXT_ATTRIBUTE_COUNT 3
+
+/* Sets the attribute of option with the function of that attribute. */
+static clargs_error_t set_text(text_attribute_t attribute, clargs_option_t *option, const char *text)
+{
+    switch (attribute) {
+    case TEXT_DESCRIPTION:
+        return clargs_option_set_description(option, text);
+    case TEXT_VALUE_NAME:
+        return clargs_option_set_value_name(option, text);
+    case TEXT_DEFAULT:
+        return clargs_option_set_default(option, text);
+    default:
+        NAOS_FAIL("a test asked for an unknown attribute");
+        return CLARGS_ERROR_NONE;
+    }
+}
+
+/* Reads the attribute of option with the function of that attribute. */
+static const char *get_text(text_attribute_t attribute, const clargs_option_t *option)
+{
+    switch (attribute) {
+    case TEXT_DESCRIPTION:
+        return clargs_option_description(option);
+    case TEXT_VALUE_NAME:
+        return clargs_option_value_name(option);
+    case TEXT_DEFAULT:
+        return clargs_option_default(option);
+    default:
+        NAOS_FAIL("a test asked for an unknown attribute");
+        return NULL;
+    }
+}
+
+/* Checks a string that was read: NULL when expected is NULL, and else a
+ * string with the same contents. */
+static void check_text(const char *actual, const char *expected)
+{
+    if (expected == NULL) {
+        NAOS_CHECK_TRUE(actual == NULL);
+    } else {
+        NAOS_REQUIRE_TRUE(actual != NULL);
+        NAOS_CHECK_STR_EQ(actual, expected);
+    }
+}
+
+/* Checks what the readers of the attributes return for an option. A string
+ * is NULL when the attribute must not be set. */
+static void check_attributes(const clargs_option_t *option, const char *description, const char *value_name,
+                             const char *default_value, bool required, bool initial)
+{
+    NAOS_REQUIRE_TRUE(option != NULL);
+    check_text(clargs_option_description(option), description);
+    check_text(clargs_option_value_name(option), value_name);
+    check_text(clargs_option_default(option), default_value);
+    NAOS_CHECK_TRUE(clargs_option_is_required(option) == required);
+    NAOS_CHECK_TRUE(clargs_option_initial(option) == initial);
 }
 
 /* Looks name up as a long name, the whole string. */
@@ -805,23 +872,380 @@ NAOS_TEST(find_long_compares_exactly_length_bytes)
     destroy_root(root);
 }
 
+/* ---- Attributes -------------------------------------------------------- */
+
+/* Until an attribute is set, a string is read as NULL, an option is not
+ * required, and the initial state is off. */
+NAOS_TEST(a_new_option_has_no_attribute)
+{
+    clargs_command_t *root = create_root();
+
+    check_attributes(add(CLARGS_OPTION_FLAG, root, 'v', "verbose"), NULL, NULL, NULL, false, false);
+    check_attributes(add(CLARGS_OPTION_NEGATABLE, root, 'c', "color"), NULL, NULL, NULL, false, false);
+    check_attributes(add(CLARGS_OPTION_COUNT, root, 'd', "debug"), NULL, NULL, NULL, false, false);
+    check_attributes(add(CLARGS_OPTION_VALUE, root, 'o', "output"), NULL, NULL, NULL, false, false);
+
+    destroy_root(root);
+}
+
+/* Every kind of option has a description. */
+NAOS_TEST(a_description_is_set_on_every_kind)
+{
+    static const clargs_option_kind_t kinds[] = { CLARGS_OPTION_FLAG, CLARGS_OPTION_NEGATABLE,
+                                                  CLARGS_OPTION_COUNT, CLARGS_OPTION_VALUE };
+    static const char *const names[] = { "flag", "negatable", "count", "value" };
+    clargs_command_t *root = create_root();
+    size_t index;
+
+    for (index = 0; index < sizeof(kinds) / sizeof(kinds[0]); ++index) {
+        clargs_option_t *option = add(kinds[index], root, '\0', names[index]);
+
+        NAOS_CHECK_INT_EQ(clargs_option_set_description(option, "Says what it does."), CLARGS_ERROR_NONE);
+        check_attributes(option, "Says what it does.", NULL, NULL, false, false);
+
+        /* Set again, it replaces what was set. */
+        NAOS_CHECK_INT_EQ(clargs_option_set_description(option, "Another, longer description."),
+                          CLARGS_ERROR_NONE);
+        check_attributes(option, "Another, longer description.", NULL, NULL, false, false);
+
+        /* The empty string is a description; it is not the same as none. */
+        NAOS_CHECK_INT_EQ(clargs_option_set_description(option, ""), CLARGS_ERROR_NONE);
+        check_attributes(option, "", NULL, NULL, false, false);
+
+        NAOS_CHECK_INT_EQ(clargs_option_set_description(option, "x"), CLARGS_ERROR_NONE);
+        check_attributes(option, "x", NULL, NULL, false, false);
+    }
+
+    /* The description of one option is not the description of another. */
+    NAOS_CHECK_INT_EQ(
+        clargs_option_set_description(add(CLARGS_OPTION_FLAG, root, 'a', NULL), "Only this one."),
+        CLARGS_ERROR_NONE);
+    check_attributes(clargs_command_option_at(root, 0), "x", NULL, NULL, false, false);
+    check_attributes(clargs_command_find_short(root, 'a'), "Only this one.", NULL, NULL, false, false);
+
+    destroy_root(root);
+}
+
+/* An option with a value has a display name of the value, can be required
+ * and has a default value. Each attribute is set alone and leaves the
+ * others, and the rest of the option, as they were. */
+NAOS_TEST(the_attributes_of_an_option_with_a_value_are_set_and_read)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *jobs = NULL;
+    clargs_option_t *output = add(CLARGS_OPTION_VALUE, root, 'o', "output");
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_value(root, 'j', "jobs", clargs_type_int(), &jobs) ==
+                      CLARGS_ERROR_NONE);
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(jobs, "N"), CLARGS_ERROR_NONE);
+    check_attributes(jobs, NULL, "N", NULL, false, false);
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(jobs, "4"), CLARGS_ERROR_NONE);
+    check_attributes(jobs, NULL, "N", "4", false, false);
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(jobs, "Number of jobs."), CLARGS_ERROR_NONE);
+    check_attributes(jobs, "Number of jobs.", "N", "4", false, false);
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(output, true), CLARGS_ERROR_NONE);
+    check_attributes(output, NULL, NULL, NULL, true, false);
+
+    /* The other option, the names, the kind and the value type are as they
+     * were. */
+    check_attributes(jobs, "Number of jobs.", "N", "4", false, false);
+    check_option(jobs, root, CLARGS_OPTION_VALUE, 'j', "jobs", NULL, clargs_type_int());
+    check_option(output, root, CLARGS_OPTION_VALUE, 'o', "output", NULL, clargs_type_string());
+    NAOS_CHECK_UINT_EQ(clargs_command_option_count(root), 2);
+    NAOS_CHECK_TRUE(clargs_command_find_short(root, 'j') == jobs);
+    NAOS_CHECK_TRUE(find_long(root, "output", NULL) == output);
+
+    /* A default value is a string as it is written on a command line. It
+     * is kept as it is: whether the value type takes it is found by the
+     * validation, not here. The empty string is a value. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(jobs, "not a number"), CLARGS_ERROR_NONE);
+    check_attributes(jobs, "Number of jobs.", "N", "not a number", false, false);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(output, ""), CLARGS_ERROR_NONE);
+    check_attributes(output, NULL, NULL, "", true, false);
+
+    destroy_root(root);
+}
+
+/* An attribute that is set again has the later value. */
+NAOS_TEST(an_attribute_that_is_set_again_is_replaced)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *value = add(CLARGS_OPTION_VALUE, root, 'o', "output");
+    clargs_option_t *negatable = add(CLARGS_OPTION_NEGATABLE, root, 'c', "color");
+    size_t live;
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(value, "FILE"), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(value, "a.out"), CLARGS_ERROR_NONE);
+    check_attributes(value, NULL, "FILE", "a.out", false, false);
+    live = clargs_test_allocator_live();
+
+    /* A longer and a shorter string. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(value, "PATH-OF-THE-OUTPUT"), CLARGS_ERROR_NONE);
+    check_attributes(value, NULL, "PATH-OF-THE-OUTPUT", "a.out", false, false);
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(value, "P"), CLARGS_ERROR_NONE);
+    check_attributes(value, NULL, "P", "a.out", false, false);
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(value, "build/output/program.bin"), CLARGS_ERROR_NONE);
+    check_attributes(value, NULL, "P", "build/output/program.bin", false, false);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(value, "-"), CLARGS_ERROR_NONE);
+    check_attributes(value, NULL, "P", "-", false, false);
+
+    /* The same value again. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(value, "-"), CLARGS_ERROR_NONE);
+    check_attributes(value, NULL, "P", "-", false, false);
+
+    /* The string that was replaced is freed: no block more than before. */
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+
+    /* Required, and not required again. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(value, true), CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(clargs_option_is_required(value));
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(value, true), CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(clargs_option_is_required(value));
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(value, false), CLARGS_ERROR_NONE);
+    NAOS_CHECK_FALSE(clargs_option_is_required(value));
+    check_attributes(value, NULL, "P", "-", false, false);
+
+    /* On, and off again. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(negatable, true), CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(clargs_option_initial(negatable));
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(negatable, true), CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(clargs_option_initial(negatable));
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(negatable, false), CLARGS_ERROR_NONE);
+    NAOS_CHECK_FALSE(clargs_option_initial(negatable));
+    check_attributes(negatable, NULL, NULL, NULL, false, false);
+
+    destroy_root(root);
+}
+
+/* A negatable flag has an initial state: the state when it is not given. */
+NAOS_TEST(the_initial_state_of_a_negatable_flag_is_set_and_read)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *color = add(CLARGS_OPTION_NEGATABLE, root, 'c', "color");
+    clargs_option_t *pager = add(CLARGS_OPTION_NEGATABLE, root, '\0', "pager");
+    size_t requests = clargs_test_allocator_requests();
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(color, true), CLARGS_ERROR_NONE);
+    check_attributes(color, NULL, NULL, NULL, false, true);
+    check_attributes(pager, NULL, NULL, NULL, false, false);
+
+    /* Off can be set where nothing was set. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(pager, false), CLARGS_ERROR_NONE);
+    check_attributes(pager, NULL, NULL, NULL, false, false);
+
+    /* Nothing is allocated for a state. */
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+
+    /* The names are as they were, and it has a description like every
+     * kind. */
+    check_option(color, root, CLARGS_OPTION_NEGATABLE, 'c', "color", "no-color", NULL);
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(color, "Use colors."), CLARGS_ERROR_NONE);
+    check_attributes(color, "Use colors.", NULL, NULL, false, true);
+
+    destroy_root(root);
+}
+
+/* Checks that the attributes of an option with a value cannot be set on
+ * option, whatever the value is, and that nothing is allocated for it. */
+static void check_takes_no_attribute_of_a_value(clargs_option_t *option)
+{
+    const size_t requests = clargs_test_allocator_requests();
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(option, "NAME"), CLARGS_ERROR_INVALID_DEFINITION);
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(option, ""), CLARGS_ERROR_INVALID_DEFINITION);
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(option, true), CLARGS_ERROR_INVALID_DEFINITION);
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(option, false), CLARGS_ERROR_INVALID_DEFINITION);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(option, "value"), CLARGS_ERROR_INVALID_DEFINITION);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(option, ""), CLARGS_ERROR_INVALID_DEFINITION);
+
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+}
+
+/* Checks that the initial state cannot be set on option, on or off. */
+static void check_takes_no_initial_state(clargs_option_t *option)
+{
+    const size_t requests = clargs_test_allocator_requests();
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(option, true), CLARGS_ERROR_INVALID_DEFINITION);
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(option, false), CLARGS_ERROR_INVALID_DEFINITION);
+
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+}
+
+/* The display name of the value, required and the default value are for an
+ * option with a value only, and the initial state is for a negatable flag
+ * only. On another kind the set is an inconsistent definition and changes
+ * nothing. */
+NAOS_TEST(an_attribute_of_another_kind_is_an_inconsistent_definition)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *flag = add(CLARGS_OPTION_FLAG, root, 'v', "verbose");
+    clargs_option_t *negatable = add(CLARGS_OPTION_NEGATABLE, root, 'c', "color");
+    clargs_option_t *count = add(CLARGS_OPTION_COUNT, root, 'd', "debug");
+    clargs_option_t *value = add(CLARGS_OPTION_VALUE, root, 'o', "output");
+    size_t live;
+
+    /* Options without an attribute. */
+    check_takes_no_attribute_of_a_value(flag);
+    check_takes_no_initial_state(flag);
+    check_takes_no_attribute_of_a_value(negatable);
+    check_takes_no_attribute_of_a_value(count);
+    check_takes_no_initial_state(count);
+    check_takes_no_initial_state(value);
+
+    check_attributes(flag, NULL, NULL, NULL, false, false);
+    check_attributes(negatable, NULL, NULL, NULL, false, false);
+    check_attributes(count, NULL, NULL, NULL, false, false);
+    check_attributes(value, NULL, NULL, NULL, false, false);
+
+    /* Options with every attribute that they can have. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(flag, "Flag."), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(negatable, "Negatable."), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(negatable, true), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(count, "Count."), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(value, "Value."), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(value, "FILE"), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(value, "a.out"), CLARGS_ERROR_NONE);
+    live = clargs_test_allocator_live();
+
+    check_takes_no_attribute_of_a_value(flag);
+    check_takes_no_initial_state(flag);
+    check_takes_no_attribute_of_a_value(negatable);
+    check_takes_no_attribute_of_a_value(count);
+    check_takes_no_initial_state(count);
+    check_takes_no_initial_state(value);
+
+    /* Every value is as it was, and so is the rest of the tree. */
+    check_attributes(flag, "Flag.", NULL, NULL, false, false);
+    check_attributes(negatable, "Negatable.", NULL, NULL, false, true);
+    check_attributes(count, "Count.", NULL, NULL, false, false);
+    check_attributes(value, "Value.", "FILE", "a.out", false, false);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(clargs_command_option_count(root), 4);
+    check_option(flag, root, CLARGS_OPTION_FLAG, 'v', "verbose", NULL, NULL);
+    check_option(negatable, root, CLARGS_OPTION_NEGATABLE, 'c', "color", "no-color", NULL);
+    check_option(count, root, CLARGS_OPTION_COUNT, 'd', "debug", NULL, NULL);
+    check_option(value, root, CLARGS_OPTION_VALUE, 'o', "output", NULL, clargs_type_string());
+
+    /* The same with a required option. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(value, true), CLARGS_ERROR_NONE);
+    check_takes_no_initial_state(value);
+    check_attributes(value, "Value.", "FILE", "a.out", true, false);
+
+    /* The schema can be used after the failures: the attributes that the
+     * kinds do have are set, and an option is added. */
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(flag, "Still a flag."), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(negatable, false), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(value, "PATH"), CLARGS_ERROR_NONE);
+    check_attributes(flag, "Still a flag.", NULL, NULL, false, false);
+    check_attributes(negatable, "Negatable.", NULL, NULL, false, false);
+    check_attributes(value, "Value.", "PATH", "a.out", true, false);
+    (void)add(CLARGS_OPTION_FLAG, root, 'x', NULL);
+    NAOS_CHECK_UINT_EQ(clargs_command_option_count(root), 5);
+
+    destroy_root(root);
+}
+
+/* The strings are copied: the caller may change its buffers after the
+ * call. */
+NAOS_TEST(the_strings_of_the_attributes_are_copied)
+{
+    char description[] = "Where the output goes.";
+    char value_name[] = "FILE";
+    char default_value[] = "a.out";
+    clargs_command_t *root = create_root();
+    clargs_option_t *option = add(CLARGS_OPTION_VALUE, root, 'o', "output");
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(option, description), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(option, value_name), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(option, default_value), CLARGS_ERROR_NONE);
+
+    memset(description, 'x', sizeof(description) - 1);
+    memset(value_name, 'y', sizeof(value_name) - 1);
+    memset(default_value, 'z', sizeof(default_value) - 1);
+
+    NAOS_CHECK_TRUE(clargs_option_description(option) != description);
+    NAOS_CHECK_TRUE(clargs_option_value_name(option) != value_name);
+    NAOS_CHECK_TRUE(clargs_option_default(option) != default_value);
+    check_attributes(option, "Where the output goes.", "FILE", "a.out", false, false);
+
+    /* The same when a value is replaced. */
+    memcpy(value_name, "PATH", sizeof(value_name));
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(option, value_name), CLARGS_ERROR_NONE);
+    memset(value_name, 'y', sizeof(value_name) - 1);
+    check_attributes(option, "Where the output goes.", "PATH", "a.out", false, false);
+
+    destroy_root(root);
+}
+
+/* An attribute can be set with a string that was read from another
+ * attribute or from a name of the tree: it gets a copy of its own. */
+NAOS_TEST(an_attribute_can_be_set_with_a_string_that_was_read)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *option = add(CLARGS_OPTION_VALUE, root, 'o', "output");
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(option, "FILE"), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(option, clargs_option_value_name(option)),
+                      CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(option, clargs_option_long_name(option)),
+                      CLARGS_ERROR_NONE);
+    check_attributes(option, "output", "FILE", "FILE", false, false);
+    NAOS_CHECK_TRUE(clargs_option_default(option) != clargs_option_value_name(option));
+
+    destroy_root(root);
+}
+
+/* Required and a default value do not go together, but that is found by the
+ * validation of the tree: the order in which the two are set does not
+ * matter, and each set succeeds. */
+NAOS_TEST(required_and_a_default_value_are_both_kept)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *first = add(CLARGS_OPTION_VALUE, root, 'a', NULL);
+    clargs_option_t *second = add(CLARGS_OPTION_VALUE, root, 'b', NULL);
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(first, true), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(first, "1"), CLARGS_ERROR_NONE);
+    check_attributes(first, NULL, NULL, "1", true, false);
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(second, "2"), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_required(second, true), CLARGS_ERROR_NONE);
+    check_attributes(second, NULL, NULL, "2", true, false);
+
+    destroy_root(root);
+}
+
 /* ---- Destruction ------------------------------------------------------- */
 
-/* One destruction of the root frees the options of every command and their
- * names. */
+/* One destruction of the root frees the options of every command, their
+ * names and the strings of their attributes. */
 NAOS_TEST(destroy_frees_the_options_of_the_whole_tree)
 {
     clargs_command_t *root = create_root();
     clargs_command_t *build = add_sub(root, "build");
     clargs_command_t *inner = add_sub(build, "inner");
+    clargs_option_t *output;
+    clargs_option_t *pager;
 
     (void)add(CLARGS_OPTION_FLAG, root, 'v', "verbose");
     (void)add(CLARGS_OPTION_FLAG, root, 'x', NULL);
     (void)add(CLARGS_OPTION_NEGATABLE, root, 'c', "color");
     (void)add(CLARGS_OPTION_COUNT, build, 'd', "debug");
-    (void)add(CLARGS_OPTION_VALUE, build, 'o', "output");
-    (void)add(CLARGS_OPTION_NEGATABLE, inner, '\0', "pager");
+    output = add(CLARGS_OPTION_VALUE, build, 'o', "output");
+    pager = add(CLARGS_OPTION_NEGATABLE, inner, '\0', "pager");
     (void)add(CLARGS_OPTION_VALUE, inner, '\0', "jobs");
+
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(output, "Where the output goes."), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_value_name(output, "FILE"), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_default(output, "a.out"), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_description(pager, "Use a pager."), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(clargs_option_set_initial(pager, true), CLARGS_ERROR_NONE);
 
     NAOS_CHECK_TRUE(clargs_test_allocator_live() > 0);
 
@@ -963,6 +1387,82 @@ NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
     check_clean();
 }
 
+/* When the copy of a string of an attribute cannot be allocated, the set is
+ * out of memory, the attribute has the value it had, set or not, and nothing
+ * leaks. A set makes one allocation, the copy. */
+NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
+{
+    static const text_attribute_t attributes[TEXT_ATTRIBUTE_COUNT] = { TEXT_DESCRIPTION, TEXT_VALUE_NAME,
+                                                                       TEXT_DEFAULT };
+    size_t index;
+    size_t was_set;
+
+    clargs_test_allocator_install();
+
+    for (index = 0; index < TEXT_ATTRIBUTE_COUNT; ++index) {
+        for (was_set = 0; was_set < 2; ++was_set) {
+            const text_attribute_t attribute = attributes[index];
+            const char *const old = was_set != 0 ? "old value" : NULL;
+            clargs_command_t *root = NULL;
+            clargs_option_t *option;
+            size_t requests;
+            size_t live;
+            size_t other;
+
+            clargs_test_allocator_reset();
+            NAOS_REQUIRE_TRUE(clargs_command_create("app", &root) == CLARGS_ERROR_NONE);
+            option = add(CLARGS_OPTION_VALUE, root, 'o', "output");
+
+            /* The other attributes are set, so that it shows if the failure
+             * touches one of them. */
+            for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other) {
+                if (other != index) {
+                    NAOS_REQUIRE_TRUE(set_text(attributes[other], option, "other") == CLARGS_ERROR_NONE);
+                }
+            }
+            NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
+            if (old != NULL) {
+                NAOS_REQUIRE_TRUE(set_text(attribute, option, old) == CLARGS_ERROR_NONE);
+            }
+
+            requests = clargs_test_allocator_requests();
+            live = clargs_test_allocator_live();
+            clargs_test_allocator_fail_at(requests + 1);
+
+            NAOS_CHECK_INT_EQ(set_text(attribute, option, "a new and longer value"),
+                              CLARGS_ERROR_OUT_OF_MEMORY);
+            NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 1);
+
+            /* The option is as it was before the call, and nothing of the
+             * call stays allocated. */
+            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+            check_text(get_text(attribute, option), old);
+            for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other) {
+                if (other != index) {
+                    check_text(get_text(attributes[other], option), "other");
+                }
+            }
+            NAOS_CHECK_TRUE(clargs_option_is_required(option));
+            check_option(option, root, CLARGS_OPTION_VALUE, 'o', "output", NULL, clargs_type_string());
+            NAOS_CHECK_UINT_EQ(clargs_command_option_count(root), 1);
+
+            /* The same set works afterwards, with one allocation. */
+            clargs_test_allocator_fail_at(0);
+            NAOS_CHECK_INT_EQ(set_text(attribute, option, "a new and longer value"), CLARGS_ERROR_NONE);
+            NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 2);
+            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), old != NULL ? live : live + 1);
+            check_text(get_text(attribute, option), "a new and longer value");
+
+            clargs_command_destroy(root);
+            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+            NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+        }
+    }
+
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
 NAOS_SUITE(add,
     NAOS_ADD_TEST(the_four_kinds_are_added_and_read),
     NAOS_ADD_TEST(an_option_has_a_short_name_a_long_name_or_both),
@@ -992,18 +1492,32 @@ NAOS_SUITE(lookup,
     NAOS_ADD_TEST(find_long_compares_exactly_length_bytes)
 )
 
+NAOS_SUITE(attribute,
+    NAOS_ADD_TEST(a_new_option_has_no_attribute),
+    NAOS_ADD_TEST(a_description_is_set_on_every_kind),
+    NAOS_ADD_TEST(the_attributes_of_an_option_with_a_value_are_set_and_read),
+    NAOS_ADD_TEST(an_attribute_that_is_set_again_is_replaced),
+    NAOS_ADD_TEST(the_initial_state_of_a_negatable_flag_is_set_and_read),
+    NAOS_ADD_TEST(an_attribute_of_another_kind_is_an_inconsistent_definition),
+    NAOS_ADD_TEST(the_strings_of_the_attributes_are_copied),
+    NAOS_ADD_TEST(an_attribute_can_be_set_with_a_string_that_was_read),
+    NAOS_ADD_TEST(required_and_a_default_value_are_both_kept)
+)
+
 NAOS_SUITE(destroy,
     NAOS_ADD_TEST(destroy_frees_the_options_of_the_whole_tree)
 )
 
 NAOS_SUITE(failure,
-    NAOS_ADD_TEST(a_failed_addition_leaves_the_tree_as_it_was)
+    NAOS_ADD_TEST(a_failed_addition_leaves_the_tree_as_it_was),
+    NAOS_ADD_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
 )
 
 NAOS_MAIN(
     NAOS_ADD_SUITE(add),
     NAOS_ADD_SUITE(check),
     NAOS_ADD_SUITE(lookup),
+    NAOS_ADD_SUITE(attribute),
     NAOS_ADD_SUITE(destroy),
     NAOS_ADD_SUITE(failure)
 )

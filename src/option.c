@@ -1,6 +1,6 @@
 /*
  * CLArgs - options: the addition of the four kinds of options to a command,
- * and the reading of an option.
+ * the attributes of an option, and the reading of an option.
  */
 #include "schema_internal.h"
 
@@ -198,6 +198,79 @@ clargs_error_t clargs_command_add_value(clargs_command_t *command, char short_na
     return add_option(command, CLARGS_OPTION_VALUE, short_name, long_name, type, out);
 }
 
+/* ---- Attributes --------------------------------------------------------- */
+
+/* Sets an attribute that is a string: *slot, a member of option, gets a
+ * copy of text. only_value tells whether the attribute is one that only an
+ * option with a value has. The check of the kind comes before the
+ * allocation, so a set on another kind touches nothing. */
+static clargs_error_t set_string(clargs_option_t *option, char **slot, const char *text, bool only_value)
+{
+    clargs_error_t error;
+
+    if (only_value && option->kind != CLARGS_OPTION_VALUE) {
+        return CLARGS_ERROR_INVALID_DEFINITION;
+    }
+
+    error = clargs_schema_replace_string(slot, text);
+    if (error != CLARGS_ERROR_NONE) {
+        return error;
+    }
+
+    clargs_schema_touch(option->command);
+    return CLARGS_ERROR_NONE;
+}
+
+clargs_error_t clargs_option_set_description(clargs_option_t *option, const char *text)
+{
+    assert(option != NULL);
+    assert(text != NULL);
+
+    return set_string(option, &option->description, text, false);
+}
+
+clargs_error_t clargs_option_set_value_name(clargs_option_t *option, const char *name)
+{
+    assert(option != NULL);
+    assert(name != NULL);
+
+    return set_string(option, &option->value_name, name, true);
+}
+
+clargs_error_t clargs_option_set_required(clargs_option_t *option, bool required)
+{
+    assert(option != NULL);
+
+    if (option->kind != CLARGS_OPTION_VALUE) {
+        return CLARGS_ERROR_INVALID_DEFINITION;
+    }
+
+    option->required = required;
+    clargs_schema_touch(option->command);
+    return CLARGS_ERROR_NONE;
+}
+
+clargs_error_t clargs_option_set_default(clargs_option_t *option, const char *value)
+{
+    assert(option != NULL);
+    assert(value != NULL);
+
+    return set_string(option, &option->default_value, value, true);
+}
+
+clargs_error_t clargs_option_set_initial(clargs_option_t *option, bool on)
+{
+    assert(option != NULL);
+
+    if (option->kind != CLARGS_OPTION_NEGATABLE) {
+        return CLARGS_ERROR_INVALID_DEFINITION;
+    }
+
+    option->initial = on;
+    clargs_schema_touch(option->command);
+    return CLARGS_ERROR_NONE;
+}
+
 /* ---- Reading ------------------------------------------------------------ */
 
 const clargs_command_t *clargs_option_command(const clargs_option_t *option)
@@ -240,4 +313,39 @@ const clargs_type_t *clargs_option_type(const clargs_option_t *option)
     assert(option != NULL);
 
     return option->type;
+}
+
+const char *clargs_option_description(const clargs_option_t *option)
+{
+    assert(option != NULL);
+
+    return option->description;
+}
+
+const char *clargs_option_value_name(const clargs_option_t *option)
+{
+    assert(option != NULL);
+
+    return option->value_name;
+}
+
+bool clargs_option_is_required(const clargs_option_t *option)
+{
+    assert(option != NULL);
+
+    return option->required;
+}
+
+const char *clargs_option_default(const clargs_option_t *option)
+{
+    assert(option != NULL);
+
+    return option->default_value;
+}
+
+bool clargs_option_initial(const clargs_option_t *option)
+{
+    assert(option != NULL);
+
+    return option->initial;
 }

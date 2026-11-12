@@ -396,6 +396,103 @@ CLARGS_API const char *clargs_option_negated_name(const clargs_option_t *option)
  */
 CLARGS_API const clargs_type_t *clargs_option_type(const clargs_option_t *option);
 
+/*
+ * Set an attribute of option. An option has the attributes that its kind
+ * takes; every attribute is optional, and each is set on its own, in any
+ * order, after the option was added:
+ *
+ * - clargs_option_set_description(): the description. Every kind has one.
+ * - clargs_option_set_value_name(): the display name of the value, such as
+ *   "FILE". Only an option that takes a value, CLARGS_OPTION_VALUE.
+ * - clargs_option_set_required(): whether the option must be given. Only
+ *   an option that takes a value.
+ * - clargs_option_set_default(): the default value, as a string of the form
+ *   in which the value is written on a command line. Only an option that
+ *   takes a value. The string is kept as it is; whether the value type of
+ *   the option takes it is not checked here.
+ * - clargs_option_set_initial(): the initial state of a negatable flag,
+ *   CLARGS_OPTION_NEGATABLE: the state it has when it is not given, true
+ *   for on and false for off. Only a negatable flag.
+ *
+ * A string is copied. The empty string can be set; it is not the same as an
+ * attribute that is not set. An attribute that was set before is replaced.
+ * An attribute that is set cannot be made unset again.
+ *
+ * Return CLARGS_ERROR_NONE on success. On failure, the option and the rest
+ * of the tree are as they were before the call, the attribute keeps the
+ * value it had, and nothing of the call stays allocated. The conditions are
+ * checked in this order:
+ *
+ * - CLARGS_ERROR_INVALID_DEFINITION: the kind of option is not one that
+ *   takes the attribute, whatever the value is.
+ * - CLARGS_ERROR_OUT_OF_MEMORY: for a string, the allocation of the copy
+ *   failed.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL (checked with assert) and is a handle that one of
+ *   the functions that add an option wrote.
+ * - text, name and value are not NULL. Checked with assert.
+ * - text, name and value are not the string that option has for that same
+ *   attribute, nor a part of it.
+ */
+CLARGS_API clargs_error_t clargs_option_set_description(clargs_option_t *option, const char *text);
+CLARGS_API clargs_error_t clargs_option_set_value_name(clargs_option_t *option, const char *name);
+CLARGS_API clargs_error_t clargs_option_set_required(clargs_option_t *option, bool required);
+CLARGS_API clargs_error_t clargs_option_set_default(clargs_option_t *option, const char *value);
+CLARGS_API clargs_error_t clargs_option_set_initial(clargs_option_t *option, bool on);
+
+/*
+ * Returns the description of option, or NULL when none has been set.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API const char *clargs_option_description(const clargs_option_t *option);
+
+/*
+ * Returns the display name of the value of option, or NULL when none has
+ * been set. It is always NULL for an option that takes no value.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API const char *clargs_option_value_name(const clargs_option_t *option);
+
+/*
+ * Returns whether option is required. It is false until it is set, and
+ * always false for an option that takes no value.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API bool clargs_option_is_required(const clargs_option_t *option);
+
+/*
+ * Returns the default value of option, the string that was set, or NULL
+ * when none has been set. It is always NULL for an option that takes no
+ * value.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API const char *clargs_option_default(const clargs_option_t *option);
+
+/*
+ * Returns the initial state of option: true for on, false for off. It is
+ * off until it is set, and always false for an option that is not a
+ * negatable flag.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API bool clargs_option_initial(const clargs_option_t *option);
+
 #ifdef __cplusplus
 }
 #endif
