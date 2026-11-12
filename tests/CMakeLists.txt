@@ -19,6 +19,7 @@ clargs_add_test(schema_failure SOURCES public/schema_failure_test.c support/test
 clargs_add_test(str SOURCES internal/str_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(test_allocator SOURCES public/test_allocator_test.c support/test_allocator.c)
 clargs_add_test(type SOURCES public/type_test.c support/test_allocator.c)
+clargs_add_test(utf8 SOURCES internal/utf8_test.c INTERNAL)
 clargs_add_test(validate SOURCES public/validate_test.c support/test_allocator.c)
 clargs_add_test(vec SOURCES internal/vec_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(version SOURCES public/version_test.c)
