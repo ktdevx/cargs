@@ -3,6 +3,7 @@ set(CLARGS_SOURCES
     alloc.c
     error.c
     str.c
+    vec.c
     version.c
 )
 
