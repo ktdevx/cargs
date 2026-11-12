@@ -194,8 +194,8 @@ docs/
 | 順 | 作業 | 触るファイル | 並行 |
 |---|---|---|---|
 | 1 | エラーコード | `include/clargs/error.h` | — |
-| 2 | Name | `src/name.h`、`src/name.c`、`tests/internal/name_test.c` | 3 と並行できる |
-| 3 | Number | `src/number.h`、`src/number.c`、`tests/internal/number_test.c` | 2 と並行できる |
+| 2 | Name | `src/name.h`、`src/name.c`、`tests/internal/name_test.c` | 1 の後 |
+| 3 | Number | `src/number.h`、`src/number.c`、`tests/internal/number_test.c` | 2 の後 |
 | 4 | Type | `include/clargs/type.h`、`src/type_internal.h`、`src/type.c`、`tests/public/type_test.c`、`clargs.h` | 2、3 の後 |
 | 5 | Command | `include/clargs/schema.h`（新規。型とコマンドの節）、`src/schema_internal.h`（新規。3 つの構造体と補助関数）、`src/command.c`、`tests/public/command_test.c`、`clargs.h` | 4 の後 |
 | 6 | Option | `schema.h`（オプションの節を追記）、`src/option.c`、`tests/public/option_test.c` | 5 の後 |
@@ -205,7 +205,7 @@ docs/
 
 - `src/schema_internal.h` の 3 つの構造体は、5 で、Logical Data Model のとおりに全部を定義する。`command.c` の破棄が、オプションと位置引数の中身を解放するためである。6 と 7 は、このヘッダを変えない。
 - 5 の時点では、オプションと位置引数を足す関数がまだない。`command.c` の列挙と検索は、空の配列に対して動く形で実装し、中身のある場合のテストは 6 と 7 で足す。位置引数を持つコマンドへのサブコマンドの追加（4.7）のテストは、7 の `positional_test.c` に置く。
-- 6、7、8 は、どれも `schema.h`、`src/CMakeLists.txt`、`tests/CMakeLists.txt` に追記するので、並行させない。
+- どの作業も `src/CMakeLists.txt` と `tests/CMakeLists.txt` に追記し、6、7、8 は `schema.h` にも追記する。同じファイルを触るので、並行させず、表の順に行う。
 - どの作業も、自分のソースを `CLARGS_SOURCES` に、自分のテストを `tests/CMakeLists.txt` に、その作業の中で足す。
 
 ## System Flows
