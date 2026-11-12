@@ -159,3 +159,122 @@ B と同じ構成で、3.2 のために command-schema に読み取り関数を 
   - Windows 以外の `wchar_t`（32 ビット）で、サロゲートの範囲の値や `0x10FFFF` を超える値をどう扱うか。
   - メッセージの文面の型（引用符の付け方、束の中の 1 文字の示し方）。help-formatter の文面と揃えるかどうか。
   - 利用者定義の値型が、既定値の変換を解析のたびに受けることを、`docs/schema.md` の記述（変換関数は副作用を持たない）と合わせて文書にどう書くか。
+
+---
+
+# Research & Design Decisions
+
+## Summary
+
+- **Feature**: `argv-parser`
+- **Discovery Scope**: Extension（command-schema の上に、解析のモジュールを足す）。調査の対象は、上のギャップ分析と、既存のコードと規約（`include/clargs/`、`src/`、`cmake/ClargsCheckExports.cmake`、`cmake/ClargsTargetDefaults.cmake`、`docs/conventions.md`、`docs/ownership.md`）、および command-schema の `design.md` である。外部のライブラリを採用しないので、Web での調査は行っていない。
+- **Key Findings**:
+  - `cmake/ClargsCheckExports.cmake` は、前処理の行を正規表現で取り除いてから `CLARGS_API` の宣言を集める（108 行目）。条件付きの宣言は、すべての環境で export が求められる。動的ライブラリでの実行では確かめていない。スクリプトを読んだ結果である。
+  - 文字列の値型の値は入力へのポインタなので、結果は、変換に渡した文字列を自分で持つか、借りる期間を利用者に課すかのどちらかになる。ワイド文字の入口では、変換した UTF-8 を結果が持つしかない。
+  - C では、`char **` から `const char *const *` へ暗黙に変換できない。`main` の argv をキャストなしで渡すには、引数の型を `char *const *` にする。
+  - 警告の設定（`-Wall -Wextra -Wpedantic` ほか、MSVC は `/W4`）に `-Wwrite-strings` はない。テストは `char *argv[] = { "tool", "-v" };` の形で argv を書ける。
+  - カウントの回数は argv の総バイト数を超えないので、`size_t` で桁あふれが起こらない。
+- **Consulted skills**: `kiro-spec-design` の `design-principles.md`、`design-discovery-light.md`、`design-synthesis.md`、`design-review-gate.md`。ほかに、この作業に当たるスキルはなかった。
+
+## Research Log
+
+### export の検査と、条件付きの宣言
+
+- **Context**: ワイド文字の入口を Windows だけにできるか（要件 12.6）。
+- **Sources Consulted**: `cmake/ClargsCheckExports.cmake`、`docs/conventions.md` の「公開関数を足す」。
+- **Findings**: 前処理の行（`#` で始まる行）はすべて取り除かれる。`#ifdef _WIN32` の中の宣言も、期待する名前に入る。Linux と macOS の動的ライブラリがその関数を export しなければ、`clargs.exports` が失敗する。
+- **Implications**: 入口をすべての環境で提供する。検査のスクリプト（build-foundation のファイル）は直さない。
+
+### `wchar_t` の幅
+
+- **Context**: すべての環境で入口を提供するなら、Windows 以外の `wchar_t` をどう読むか。
+- **Sources Consulted**: C99 の `<stdint.h>`（`WCHAR_MAX`）、対応環境（Linux の GCC と Clang、macOS の Clang、Windows の MSVC）。
+- **Findings**: MSVC では 16 ビットの符号なしで、内容は UTF-16 である。Linux と macOS では 32 ビットの符号付きで、内容は UTF-32 である。`WCHAR_MAX` は前処理で比べられる。
+- **Implications**: `WCHAR_MAX <= 0xFFFF` で読み方を分ける。32 ビットの環境では、負の値、サロゲートの範囲、U+10FFFF を超える値を、変換できない単位とする。テストも同じ条件で入力を分ける。
+
+### `main` の argv の型
+
+- **Context**: 要件 1.2（加工せずにそのまま渡せる）。
+- **Findings**: `char **` は `char *const *` に暗黙に変換できる。`const char *const *` には、C ではできない（C++ ではできる）。command-schema の `clargs_type_create_choice()` は `const char *const *` を取るが、あちらは利用者が自分で作る配列である。
+- **Implications**: `clargs_parse()` は `char *const *argv` を取る。文字列を書き換えないことは、型ではなくコメントで約束する。
+
+## Architecture Pattern Evaluation
+
+| Option | Description | Strengths | Risks / Limitations | Notes |
+|--------|-------------|-----------|---------------------|-------|
+| 段に分けたパイプライン | 入力の適応 → 字句 → 照合 → 値の解決。全段が 1 つの結果に書く | brief.md の境界と一致。字句と変換を単独でテストできる。環境変数を足す場所が決まっている | 内部関数の数が増える | 採用 |
+| 1 つの関数にまとめる | 走査、変換、解決を 1 か所に書く | ファイルが少ない | 値の解決を後から分けると、利用者に見えない範囲でも作り直しになる。`roadmap.md` の「初版で守ること」に反する | 不採用 |
+| イベント駆動のコア | 要素ごとにイベントを出し、上の層が結果を作る | 低水準のイテレータを公開できる | `roadmap.md` が、初版には過剰として退けている | 不採用 |
+
+## Design Decisions
+
+### Decision: 結果が argv を複製する
+
+- **Context**: 要件 13.7。`docs/ownership.md` は、既定を複製とし、借りるなら例外として期間を書くとしている。
+- **Alternatives Considered**:
+  1. 借りる — 確保が減る。利用者は、結果の破棄まで argv を保つ。
+  2. 複製する — 結果が自分で持つ。
+- **Selected Approach**: 複製する。配列とすべての文字列を、1 回の確保にまとめる。
+- **Rationale**: ワイド文字の入口では、変換した UTF-8 を結果が持つしかない。`char` の入口だけ借りると、寿命の規則が入口ごとに違ってしまう。複製なら、エラーの `argument` も値の文字列も、結果の寿命だけで説明できる。
+- **Trade-offs**: 確保が 1 回と、argv の総バイト数ぶんのメモリが増える。
+- **Follow-up**: 大きさの合計の桁あふれを検査する。
+
+### Decision: 解析エラーのエラーコードは 1 つ
+
+- **Context**: 要件 11.11。規約は、エラーコードに位置や対象を持たせず、一覧を 1 つにしている。
+- **Alternatives Considered**:
+  1. 種類ごとにエラーコードを足す（9 つ）。
+  2. エラーコードは 1 つにし、種類は結果から読む列挙にする。
+- **Selected Approach**: `CLARGS_ERROR_INVALID_COMMAND_LINE` の 1 つ。種類は `clargs_parse_error_kind_t`。
+- **Rationale**: 利用者は、どのみち結果からメッセージを読む。戻り値は、結果があるか（成功、解析エラー）、ないか（確保の失敗）を分ければ足りる。種類を足しても、ライブラリ全体のエラーコードの一覧が増えない。
+- **Trade-offs**: 種類を知るのに、関数の呼び出しが 1 回増える。
+
+### Decision: 解析エラーのときも結果を渡す
+
+- **Context**: 要件 10.10。既存の規約は、失敗したら `*out` を `NULL` にする。
+- **Selected Approach**: 解析エラーでは `*out` に結果を渡し、確保の失敗では `NULL` にする。
+- **Rationale**: エラーの情報とメッセージの置き場所が、結果の 1 つで済む。別の型（エラーオブジェクト）と、その破棄が要らない。
+- **Trade-offs**: 規約の例外になる。`docs/ownership.md` と関数のコメントに書く。利用者は、解析エラーのときも結果を破棄する。
+
+### Decision: 定義要素から枠を、線形の探索で引く
+
+- **Context**: ギャップ分析の 3.2。
+- **Alternatives Considered**:
+  1. 公開の列挙でポインタを比べる。
+  2. command-schema に、番号を返す読み取り関数を足す。
+- **Selected Approach**: 1。
+- **Rationale**: 承認済みの command-schema を変更せずに済む。オプションは数十個までの想定である。
+- **Follow-up**: 足りなくなったら 2 に替える。公開の関数の形は変わらない。
+
+### Decision: 値の出どころと、エラーの位置の出どころを、同じ列挙にする（一般化）
+
+- **Context**: 要件 9.9 と 11.5 は、どちらも「後から種類を足せる出どころ」を求めている。
+- **Selected Approach**: `clargs_source_t` の 1 つにし、`NONE`、`DEFAULT`、`COMMAND_LINE` を持たせる。`NONE` は、値がないこと、位置がないことを表す。
+- **Rationale**: 環境変数を足すときに、値の出どころにも、エラーの位置にも、同じ値が 1 つ増える。値の有無の問い合わせ（10.5）も、この列挙で答えられる。
+
+### Decision: 値の変換と保持を、結果の 1 か所に置く（単純化）
+
+- **Context**: コマンドラインの値と既定値は、どちらも「文字列を値型で変換して、枠に入れる」処理である。
+- **Selected Approach**: 内部関数 `clargs_result_record_option_value()` と `clargs_result_record_positional_value()` を、照合と値の解決の両方が使う。違いは、出どころの引数だけである。
+- **Rationale**: 置き換え、後始末、変換の結果の対応づけが 1 か所になる。既定値の変換の失敗も、出どころが `DEFAULT` の `INVALID_VALUE` として、同じ経路で表せる。
+
+### Decision: 自前で作るもの（Build vs. Adopt）
+
+- UTF-8 への変換: C 標準ライブラリの変換はロケールに左右され、OS の API は依存の制約に反する。変換は数十行で書ける。自前で書く。
+- メッセージの組み立て: `snprintf` は、長さが `int` を超える場合の扱いと、ロケールの影響を考える必要がある。埋め込むのは文字列だけなので、長さを数えて写す処理を自前で書く。
+- 低水準のイテレータ、候補の提案: 要件にない。作らない。
+
+## Risks & Mitigations
+
+- 値を次の要素から取り込むときの添字の進め忘れ、終端の後ろでの分類 — 取り込まれた `--` と `-x` をテストに必ず含める。
+- 置き換え、解析エラー、確保の失敗での後始末の漏れ、または二重の後始末 — 利用者定義の値型で変換と後始末の回数を数えるテストと、確保の各回を失敗させるテストで確かめる。
+- `clargs.exports` が、条件付きでない新しい宣言で想定どおり通るか — 作業 4（最初に `parse.h` を足す作業）で、動的の構成で確かめる。
+- 設計書が 1000 行に近い — 公開の関数の数（解析 2、読み取りと破棄 29）によるもので、責務は 1 つである。分割はしない。作業は Implementation Order の 10 段に分ける。
+- メッセージの文面を後から変えると、利用者のテストが壊れうる — 文面を `docs/parse.md` に載せ、変更を Revalidation Triggers に入れた。
+
+## References
+
+- `.kiro/steering/roadmap.md` — 境界、Future boundaries、制約
+- `docs/ownership.md`、`docs/conventions.md` — 所有権と寿命の規約、手順
+- `.kiro/specs/command-schema/design.md` — 読み取りの関数と値型の契約
+- `include/clargs/schema.h`、`include/clargs/type.h` — 上流の公開関数
