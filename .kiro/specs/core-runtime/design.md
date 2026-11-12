@@ -646,7 +646,7 @@ size_t clargs_test_allocator_violations(void);
 **Implementation Notes**
 
 - Integration: 使うテストは、`clargs_add_test()` の `SOURCES` に `support/test_allocator.c` を足し、`#include "../support/test_allocator.h"` と書く（9.7）。各テストは、`install` で始め、`uninstall` で終える。
-- Validation: `tests/public/test_allocator_test.c`。`get` で得た 4 つの関数を直接呼んで確かめる。指定した回だけが失敗すること（3 種類の要求のどれでも）、指定がなければ成功すること、`calloc_fn` の返すメモリがすべて 0 であること、回数と個数、契約違反が数えられること、`reset` で数が戻ること、失敗させた再確保の後も元の内容が読めること、`install` の後は要求がテスト用アロケータへ届き、`uninstall` の後は届かないこと。
+- Validation: `tests/public/test_allocator_test.c`。`get` で得た 4 つの関数を直接呼んで確かめる。指定した回だけが失敗すること（3 種類の要求のどれでも）、指定がなければ成功すること、`calloc_fn` の返すメモリがすべて 0 であること、回数と個数、契約違反が数えられること、`reset` で数が戻ること、失敗させた再確保の後も元の内容が読めること、`install` と `uninstall` で設定と解除ができることは、内部のメモリ関数のテスト（`alloc_internal_test.c`）で確かめる。
 - Risks: 状態が `static` なので、テストが `uninstall` を忘れると、同じ実行ファイルの後のテストに影響する。使い方の文書に書く。
 
 ### 文書
