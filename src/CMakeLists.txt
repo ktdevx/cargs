@@ -4,6 +4,7 @@ set(CLARGS_SOURCES
     command.c
     error.c
     lex.c
+    message.c
     name.c
     number.c
     option.c

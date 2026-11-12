@@ -11,6 +11,7 @@ clargs_add_test(alloc_internal SOURCES internal/alloc_internal_test.c support/te
 clargs_add_test(command SOURCES public/command_test.c support/test_allocator.c)
 clargs_add_test(error SOURCES public/error_test.c)
 clargs_add_test(lex SOURCES internal/lex_test.c INTERNAL)
+clargs_add_test(message SOURCES internal/message_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(name SOURCES internal/name_test.c INTERNAL)
 clargs_add_test(option SOURCES public/option_test.c support/test_allocator.c)
 clargs_add_test(positional SOURCES public/positional_test.c support/test_allocator.c)
