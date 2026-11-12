@@ -493,6 +493,147 @@ CLARGS_API const char *clargs_option_default(const clargs_option_t *option);
  */
 CLARGS_API bool clargs_option_initial(const clargs_option_t *option);
 
+/* ---- Positionals -------------------------------------------------------- */
+
+/*
+ * Adds a positional with the name name, the value type type and the arity
+ * arity to command, after the positionals that command has already, and
+ * writes it to *out if out is not NULL. The positionals of a command take
+ * the arguments of a command line in the order in which they were added.
+ *
+ * The name is for display and for telling the positionals apart; it never
+ * appears on a command line. Any string that is not empty is a name: there
+ * is no rule of characters. The name is copied.
+ *
+ * The value type is borrowed, not copied: the caller keeps it valid until
+ * the root of the tree is destroyed, and destroys it afterwards.
+ *
+ * The positional belongs to the tree and is destroyed with the root.
+ *
+ * Returns CLARGS_ERROR_NONE on success. On failure, the tree is as it was
+ * before the call, nothing of the call stays allocated, and *out is NULL.
+ * The conditions are checked in this order:
+ *
+ * - CLARGS_ERROR_INVALID_NAME: name is the empty string.
+ * - CLARGS_ERROR_INVALID_DEFINITION: command has a subcommand. A command
+ *   has positionals or subcommands, not both. (It can have options with
+ *   either.)
+ * - CLARGS_ERROR_NAME_CONFLICT: command has a positional of the same name
+ *   already. The same name can be used in another command.
+ * - CLARGS_ERROR_OUT_OF_MEMORY: an allocation failed.
+ *
+ * Whether the arities of the positionals of a command follow each other in
+ * an order that a command line can follow (nothing required after an
+ * optional one, nothing after one that takes any number) is not checked
+ * here. The validation of the tree checks it.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ * - name is not NULL. Checked with assert.
+ * - type is not NULL (checked with assert) and is a value type that has not
+ *   been destroyed.
+ * - arity is one of the values of clargs_arity_t. Checked with assert.
+ * - out may be NULL, when the handle is not needed.
+ */
+CLARGS_API clargs_error_t clargs_command_add_positional(clargs_command_t *command, const char *name,
+                                                        const clargs_type_t *type, clargs_arity_t arity,
+                                                        clargs_positional_t **out);
+
+/*
+ * Set an attribute of positional. Both attributes are optional, and each is
+ * set on its own, in any order, after the positional was added:
+ *
+ * - clargs_positional_set_description(): the description. Every arity has
+ *   one.
+ * - clargs_positional_set_default(): the default value, as a string of the
+ *   form in which the value is written on a command line. Only a positional
+ *   that takes none or one argument, CLARGS_ARITY_OPTIONAL. The string is
+ *   kept as it is; whether the value type of the positional takes it is not
+ *   checked here.
+ *
+ * The string is copied. The empty string can be set; it is not the same as
+ * an attribute that is not set. An attribute that was set before is
+ * replaced. An attribute that is set cannot be made unset again.
+ *
+ * Return CLARGS_ERROR_NONE on success. On failure, the positional and the
+ * rest of the tree are as they were before the call, the attribute keeps
+ * the value it had, and nothing of the call stays allocated. The conditions
+ * are checked in this order:
+ *
+ * - CLARGS_ERROR_INVALID_DEFINITION: for the default value, the arity of
+ *   positional is not CLARGS_ARITY_OPTIONAL, whatever the value is.
+ * - CLARGS_ERROR_OUT_OF_MEMORY: the allocation of the copy failed.
+ *
+ * Preconditions:
+ *
+ * - positional is not NULL (checked with assert) and is a handle that
+ *   clargs_command_add_positional() wrote.
+ * - text and value are not NULL. Checked with assert.
+ */
+CLARGS_API clargs_error_t clargs_positional_set_description(clargs_positional_t *positional,
+                                                            const char *text);
+CLARGS_API clargs_error_t clargs_positional_set_default(clargs_positional_t *positional,
+                                                        const char *value);
+
+/*
+ * Returns the command that positional belongs to. Never NULL.
+ *
+ * Preconditions:
+ *
+ * - positional is not NULL. Checked with assert.
+ */
+CLARGS_API const clargs_command_t *clargs_positional_command(const clargs_positional_t *positional);
+
+/*
+ * Returns the name of positional. Never NULL and never empty.
+ *
+ * Preconditions:
+ *
+ * - positional is not NULL. Checked with assert.
+ */
+CLARGS_API const char *clargs_positional_name(const clargs_positional_t *positional);
+
+/*
+ * Returns the arity of positional: how many arguments it takes.
+ *
+ * Preconditions:
+ *
+ * - positional is not NULL. Checked with assert.
+ */
+CLARGS_API clargs_arity_t clargs_positional_arity(const clargs_positional_t *positional);
+
+/*
+ * Returns the value type of positional. Never NULL. It is the value type
+ * that was passed to clargs_command_add_positional(); it belongs to the
+ * caller of that function.
+ *
+ * Preconditions:
+ *
+ * - positional is not NULL. Checked with assert.
+ */
+CLARGS_API const clargs_type_t *clargs_positional_type(const clargs_positional_t *positional);
+
+/*
+ * Returns the description of positional, or NULL when none has been set.
+ *
+ * Preconditions:
+ *
+ * - positional is not NULL. Checked with assert.
+ */
+CLARGS_API const char *clargs_positional_description(const clargs_positional_t *positional);
+
+/*
+ * Returns the default value of positional, the string that was set, or NULL
+ * when none has been set. It is always NULL for a positional whose arity is
+ * not CLARGS_ARITY_OPTIONAL.
+ *
+ * Preconditions:
+ *
+ * - positional is not NULL. Checked with assert.
+ */
+CLARGS_API const char *clargs_positional_default(const clargs_positional_t *positional);
+
 #ifdef __cplusplus
 }
 #endif
