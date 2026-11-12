@@ -3,8 +3,9 @@
  * clargs_command_is_validated() of <clargs/schema.h>.
  *
  * Trees are built the way a consumer does it and validated. The tests cover
- * the rules of the validation, where it reports a fault, the order in which
- * it finds faults, and the state of the tree: validated by a validation
+ * the rules of the validation, the default values that it converts with
+ * their value types, where it reports a fault, the order in which it finds
+ * faults, and the state of the tree: validated by a validation
  * that succeeds, back to not validated by every addition and every set that
  * succeeds, and unchanged by one that fails.
  *
@@ -1322,6 +1323,873 @@ NAOS_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_valid
     check_clean();
 }
 
+/* ---- Default values, checked with their value types ---------------------- */
+
+/* Additions with a value type that must succeed. */
+static clargs_option_t *add_typed_value(clargs_command_t *command, char short_name,
+                                        const char *long_name, const clargs_type_t *type)
+{
+    clargs_option_t *option = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
+                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(option != NULL);
+    return option;
+}
+
+/* Adds an optional positional: the only kind that takes a default value. */
+static clargs_positional_t *add_typed_positional(clargs_command_t *command, const char *name,
+                                                 const clargs_type_t *type)
+{
+    clargs_positional_t *positional = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, CLARGS_ARITY_OPTIONAL,
+                                                    &positional) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(positional != NULL);
+    return positional;
+}
+
+static void set_option_default(clargs_option_t *option, const char *value)
+{
+    NAOS_REQUIRE_TRUE(clargs_option_set_default(option, value) == CLARGS_ERROR_NONE);
+}
+
+static void set_positional_default(clargs_positional_t *positional, const char *value)
+{
+    NAOS_REQUIRE_TRUE(clargs_positional_set_default(positional, value) == CLARGS_ERROR_NONE);
+}
+
+/* Creates the value type of the choices "debug", "release" and "". */
+static clargs_type_t *new_choice_type(void)
+{
+    static const char *const choices[] = { "debug", "release", "" };
+    clargs_type_t *type = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_type_create_choice(choices, 3, &type) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(type != NULL);
+    return type;
+}
+
+/* What the functions of a user-defined value type count. It is the user
+ * data of the value type. */
+typedef struct probe {
+    size_t conversions; /* calls of the conversion function */
+    size_t successes;   /* conversions that succeeded */
+    size_t releases;    /* calls of the cleanup function */
+    size_t mismatches;  /* cleanups of something that is not a value */
+} probe_t;
+
+/* The value of the user-defined value type. It is larger than every value
+ * of a built-in value type, and the conversion writes all of it. */
+typedef struct probe_value {
+    double number;
+    const char *text;
+    int marker;
+    unsigned char fill[48];
+} probe_value_t;
+
+#define PROBE_FILL 0xA5
+#define PROBE_MARKER 1234
+
+/* The inputs that the conversion of the user-defined value type does not
+ * take, and what it returns for each. Every other input is taken. */
+#define PROBE_REJECTED "rejected"       /* CLARGS_ERROR_INVALID_VALUE */
+#define PROBE_OTHER_CODE "other-code"   /* CLARGS_ERROR_INVALID_NAME */
+#define PROBE_NO_MEMORY "no-memory"     /* CLARGS_ERROR_OUT_OF_MEMORY */
+
+static clargs_error_t probe_convert(const char *text, void *value, void *context)
+{
+    probe_t *probe = context;
+    probe_value_t *out = value;
+
+    ++probe->conversions;
+
+    /* The whole area is written, also by a conversion that fails: what it
+     * leaves behind is not a value and must not be cleaned up. */
+    memset(out, PROBE_FILL, sizeof(*out));
+
+    if (strcmp(text, PROBE_REJECTED) == 0) {
+        return CLARGS_ERROR_INVALID_VALUE;
+    }
+    if (strcmp(text, PROBE_OTHER_CODE) == 0) {
+        return CLARGS_ERROR_INVALID_NAME;
+    }
+    if (strcmp(text, PROBE_NO_MEMORY) == 0) {
+        return CLARGS_ERROR_OUT_OF_MEMORY;
+    }
+
+    out->number = 1.5;
+    out->text = text;
+    out->marker = PROBE_MARKER;
+    ++probe->successes;
+    return CLARGS_ERROR_NONE;
+}
+
+static void probe_release(void *value, void *context)
+{
+    probe_t *probe = context;
+    const probe_value_t *in = value;
+
+    ++probe->releases;
+
+    /* The value is the one that the last conversion wrote, and that
+     * conversion succeeded. */
+    if (probe->releases > probe->successes || in->marker != PROBE_MARKER || in->text == NULL ||
+        in->fill[0] != PROBE_FILL || in->fill[sizeof(in->fill) - 1] != PROBE_FILL) {
+        ++probe->mismatches;
+    }
+}
+
+/* Creates the user-defined value type that counts in probe. */
+static clargs_type_t *new_probe_type(probe_t *probe)
+{
+    clargs_type_t *type = NULL;
+
+    probe->conversions = 0;
+    probe->successes = 0;
+    probe->releases = 0;
+    probe->mismatches = 0;
+
+    NAOS_REQUIRE_TRUE(clargs_type_create("probe", sizeof(probe_value_t), probe_convert, probe_release,
+                                         probe, &type) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(type != NULL);
+    return type;
+}
+
+/* Checks the counts of a user-defined value type. */
+static void check_probe(const probe_t *probe, size_t conversions, size_t successes)
+{
+    NAOS_CHECK_UINT_EQ(probe->conversions, conversions);
+    NAOS_CHECK_UINT_EQ(probe->successes, successes);
+
+    /* The cleanup function is called once for each conversion that
+     * succeeded, and for nothing else. */
+    NAOS_CHECK_UINT_EQ(probe->releases, successes);
+    NAOS_CHECK_UINT_EQ(probe->mismatches, 0);
+}
+
+/* A conversion that needs no cleanup function. Takes the input "yes". */
+static clargs_error_t plain_convert(const char *text, void *value, void *context)
+{
+    int *out = value;
+
+    (void)context;
+
+    if (strcmp(text, "yes") != 0) {
+        return CLARGS_ERROR_INVALID_VALUE;
+    }
+    *out = 1;
+    return CLARGS_ERROR_NONE;
+}
+
+/* Ends a test that destroyed its roots and its value types itself. */
+static void end_test(void)
+{
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* The number of validations that one check_validate() makes. */
+#define CHECK_VALIDATE_ROUNDS 8
+
+/*
+ * Validates the tree of root with every combination of outputs, each time
+ * with the nth request of the validation made to fail, and checks that the
+ * validation fails for a lack of memory: the error code, NULL in every
+ * output that is given, no block more or less than before, and the state as
+ * it was.
+ */
+static void check_validate_without_memory(clargs_command_t *root, size_t nth)
+{
+    const bool validated = clargs_command_is_validated(root);
+    clargs_command_t *other = NULL;
+    clargs_option_t *other_option;
+    clargs_positional_t *other_positional;
+    unsigned mask;
+
+    NAOS_REQUIRE_TRUE(clargs_command_create("other", &other) == CLARGS_ERROR_NONE);
+    other_option = add_flag(other, 's', "sentinel");
+    other_positional = add_positional(other, "sentinel", CLARGS_ARITY_REQUIRED);
+
+    for (mask = 0; mask < 8; ++mask) {
+        const clargs_command_t *command = other;
+        const clargs_option_t *option = other_option;
+        const clargs_positional_t *positional = other_positional;
+        const bool with_command = (mask & 1u) != 0;
+        const bool with_option = (mask & 2u) != 0;
+        const bool with_positional = (mask & 4u) != 0;
+        const size_t requests = clargs_test_allocator_requests();
+        const size_t live = clargs_test_allocator_live();
+        clargs_error_t error;
+
+        clargs_test_allocator_fail_at(requests + nth);
+        error = clargs_command_validate(root, with_command ? &command : NULL,
+                                        with_option ? &option : NULL,
+                                        with_positional ? &positional : NULL);
+        clargs_test_allocator_fail_at(0);
+
+        NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
+        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + nth);
+        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+        NAOS_CHECK_TRUE(clargs_command_is_validated(root) == validated);
+
+        if (with_command) {
+            NAOS_CHECK_TRUE(command == NULL);
+        }
+        if (with_option) {
+            NAOS_CHECK_TRUE(option == NULL);
+        }
+        if (with_positional) {
+            NAOS_CHECK_TRUE(positional == NULL);
+        }
+    }
+
+    clargs_command_destroy(other);
+}
+
+NAOS_TEST(a_default_value_that_is_not_a_number_is_rejected_by_the_integer_type)
+{
+    static const char *const rejected[] = { "abc", "", "12x", " 12", "1.5", "9223372036854775808" };
+    clargs_command_t *root = create_root();
+    clargs_option_t *jobs;
+    size_t index;
+
+    (void)add_flag(root, 'v', "verbose");
+    jobs = add_typed_value(root, 'j', "jobs", clargs_type_int());
+
+    for (index = 0; index < sizeof(rejected) / sizeof(rejected[0]); ++index) {
+        set_option_default(jobs, rejected[index]);
+
+        check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, jobs, NULL);
+        NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+
+        /* The option is as it was defined, the default value included. */
+        NAOS_CHECK_STR_EQ(clargs_option_default(jobs), rejected[index]);
+        NAOS_CHECK_TRUE(clargs_option_type(jobs) == clargs_type_int());
+        NAOS_CHECK_FALSE(clargs_option_is_required(jobs));
+    }
+
+    /* With a number, the same tree is valid. */
+    set_option_default(jobs, "-12");
+    check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+    NAOS_CHECK_STR_EQ(clargs_option_default(jobs), "-12");
+
+    destroy_root(root);
+}
+
+NAOS_TEST(a_default_value_that_is_not_a_number_is_rejected_by_the_float_type)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *ratio = add_typed_value(root, 'r', "ratio", clargs_type_float());
+
+    set_option_default(ratio, "half");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, ratio, NULL);
+    NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+
+    set_option_default(ratio, "0.5");
+    check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+
+    destroy_root(root);
+}
+
+NAOS_TEST(a_default_value_that_is_not_a_choice_is_rejected_by_the_choice_type)
+{
+    clargs_type_t *choice;
+    clargs_command_t *root;
+    clargs_option_t *mode;
+
+    clargs_test_allocator_install();
+    choice = new_choice_type();
+    root = new_root();
+    mode = add_typed_value(root, 'm', "mode", choice);
+
+    set_option_default(mode, "fast");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, mode, NULL);
+    NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+    NAOS_CHECK_STR_EQ(clargs_option_default(mode), "fast");
+
+    /* Upper and lower case are different. */
+    set_option_default(mode, "Debug");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, mode, NULL);
+
+    set_option_default(mode, "release");
+    check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+
+    /* The empty string is one of the choices. */
+    set_option_default(mode, "");
+    check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
+
+    clargs_command_destroy(root);
+    clargs_type_destroy(choice);
+    end_test();
+}
+
+NAOS_TEST(a_default_value_that_a_user_defined_type_rejects_is_an_invalid_default_value)
+{
+    probe_t probe;
+    clargs_type_t *type;
+    clargs_command_t *root;
+    clargs_option_t *port;
+
+    clargs_test_allocator_install();
+    type = new_probe_type(&probe);
+    root = new_root();
+    port = add_typed_value(root, 'p', "port", type);
+
+    set_option_default(port, PROBE_REJECTED);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, port, NULL);
+    NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+    NAOS_CHECK_STR_EQ(clargs_option_default(port), PROBE_REJECTED);
+
+    /* Every validation asked for the conversion, and nothing was cleaned
+     * up: no conversion succeeded. */
+    check_probe(&probe, CHECK_VALIDATE_ROUNDS, 0);
+
+    clargs_command_destroy(root);
+    clargs_type_destroy(type);
+    end_test();
+}
+
+/* A conversion function may return any code for a failure. Whatever it is,
+ * other than the lack of memory, the validation reports an invalid default
+ * value. */
+NAOS_TEST(any_other_code_of_a_user_defined_conversion_is_an_invalid_default_value)
+{
+    probe_t probe;
+    clargs_type_t *type;
+    clargs_command_t *root;
+    clargs_command_t *run;
+    clargs_positional_t *target;
+
+    clargs_test_allocator_install();
+    type = new_probe_type(&probe);
+    root = new_root();
+    run = add_sub(root, "run");
+    target = add_typed_positional(run, "target", type);
+
+    set_positional_default(target, PROBE_OTHER_CODE);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, run, NULL, target);
+    NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+    check_probe(&probe, CHECK_VALIDATE_ROUNDS, 0);
+
+    clargs_command_destroy(root);
+    clargs_type_destroy(type);
+    end_test();
+}
+
+NAOS_TEST(a_default_value_of_a_positional_that_its_type_rejects_is_reported_with_the_positional)
+{
+    clargs_type_t *choice;
+    clargs_command_t *root;
+    clargs_command_t *build;
+    clargs_positional_t *profile;
+    clargs_positional_t *level;
+
+    clargs_test_allocator_install();
+    choice = new_choice_type();
+    root = new_root();
+    build = add_sub(add_sub(root, "project"), "build");
+    (void)add_positional(build, "target", CLARGS_ARITY_REQUIRED);
+    profile = add_typed_positional(build, "profile", choice);
+    level = add_typed_positional(build, "level", clargs_type_int());
+
+    set_positional_default(profile, "debug");
+    set_positional_default(level, "high");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, build, NULL, level);
+    NAOS_CHECK_FALSE(clargs_command_is_validated(build));
+    NAOS_CHECK_STR_EQ(clargs_positional_default(level), "high");
+    NAOS_CHECK_TRUE(clargs_positional_command(level) == build);
+
+    /* The first positional with such a default value is the one reported. */
+    set_positional_default(profile, "fast");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, build, NULL, profile);
+
+    set_positional_default(profile, "release");
+    set_positional_default(level, "3");
+    check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(build));
+
+    clargs_command_destroy(root);
+    clargs_type_destroy(choice);
+    end_test();
+}
+
+NAOS_TEST(default_values_that_their_types_take_are_valid)
+{
+    probe_t probe;
+    clargs_type_t *custom;
+    clargs_type_t *choice;
+    clargs_type_t *plain = NULL;
+    clargs_command_t *root;
+    clargs_command_t *run;
+    size_t requests;
+
+    clargs_test_allocator_install();
+    custom = new_probe_type(&probe);
+    choice = new_choice_type();
+    NAOS_REQUIRE_TRUE(clargs_type_create("plain", sizeof(int), plain_convert, NULL, NULL, &plain) ==
+                      CLARGS_ERROR_NONE);
+    root = new_root();
+    run = add_sub(root, "run");
+
+    set_option_default(add_typed_value(root, 'n', "name", clargs_type_string()), "");
+    set_option_default(add_typed_value(root, 'j', "jobs", clargs_type_int()), "+8");
+    set_option_default(add_typed_value(root, 'r', "ratio", clargs_type_float()), "-1.5e-3");
+    set_option_default(add_typed_value(run, 'm', "mode", choice), "debug");
+    set_option_default(add_typed_value(run, 'p', "port", custom), "8080");
+
+    /* A value type without a cleanup function. */
+    set_option_default(add_typed_value(run, 'y', "confirm", plain), "yes");
+    set_positional_default(add_typed_positional(run, "level", clargs_type_int()), "0");
+
+    /* Definitions without a default value are not converted. */
+    (void)add_typed_value(run, 'q', "quota", clargs_type_int());
+    (void)add_typed_value(run, 'o', "other-port", custom);
+    (void)add_typed_positional(run, "extra", custom);
+
+    requests = clargs_test_allocator_requests();
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+    NAOS_CHECK_TRUE(clargs_command_is_validated(run));
+    check_probe(&probe, 1, 1);
+
+    /* One allocation for each of the seven default values: the area that
+     * the value is written to. */
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 7);
+
+    check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
+    check_probe(&probe, 1 + CHECK_VALIDATE_ROUNDS, 1 + CHECK_VALIDATE_ROUNDS);
+
+    clargs_command_destroy(root);
+    clargs_type_destroy(plain);
+    clargs_type_destroy(choice);
+    clargs_type_destroy(custom);
+    end_test();
+}
+
+/* The cleanup function of a user-defined value type is called as often as
+ * its conversions succeeded: no more, no less, and before the validation
+ * returns. */
+NAOS_TEST(the_cleanup_function_is_called_once_for_each_conversion_that_succeeded)
+{
+    probe_t probe;
+    clargs_type_t *type;
+    clargs_command_t *root;
+    clargs_command_t *run;
+    clargs_option_t *second;
+    clargs_positional_t *last;
+    const clargs_command_t *command = NULL;
+    const clargs_option_t *option = NULL;
+    const clargs_positional_t *positional = NULL;
+
+    clargs_test_allocator_install();
+    type = new_probe_type(&probe);
+    root = new_root();
+    run = add_sub(root, "run");
+
+    set_option_default(add_typed_value(root, 'a', "first", type), "one");
+    second = add_typed_value(root, 'b', "second", type);
+    set_option_default(second, "two");
+    set_option_default(add_typed_value(run, 'c', "third", type), "three");
+    last = add_typed_positional(run, "last", type);
+    set_positional_default(last, "four");
+
+    /* The creation of the tree asked for no conversion. */
+    check_probe(&probe, 0, 0);
+
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
+    check_probe(&probe, 4, 4);
+
+    /* Every validation converts again. */
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
+    check_probe(&probe, 8, 8);
+
+    /* The validation stops at the conversion that fails: the one before it
+     * is cleaned up, the one that failed is not, the ones after it are not
+     * asked for. */
+    set_option_default(second, PROBE_REJECTED);
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, &command, &option, &positional),
+                      CLARGS_ERROR_INVALID_DEFAULT);
+    NAOS_CHECK_TRUE(command == root);
+    NAOS_CHECK_TRUE(option == second);
+    NAOS_CHECK_TRUE(positional == NULL);
+    check_probe(&probe, 10, 9);
+
+    /* The last default value of the tree fails: three succeed first. */
+    set_option_default(second, "two");
+    set_positional_default(last, PROBE_OTHER_CODE);
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, &command, &option, &positional),
+                      CLARGS_ERROR_INVALID_DEFAULT);
+    NAOS_CHECK_TRUE(command == run);
+    NAOS_CHECK_TRUE(option == NULL);
+    NAOS_CHECK_TRUE(positional == last);
+    check_probe(&probe, 14, 12);
+
+    /* The destruction of the tree and of the value type calls neither. */
+    clargs_command_destroy(root);
+    clargs_type_destroy(type);
+    check_probe(&probe, 14, 12);
+    end_test();
+}
+
+NAOS_TEST(one_value_type_can_be_given_to_several_definitions)
+{
+    probe_t probe;
+    clargs_type_t *custom;
+    clargs_type_t *choice;
+    clargs_command_t *root;
+    clargs_command_t *build;
+    clargs_command_t *test;
+    clargs_option_t *root_mode;
+    clargs_option_t *build_mode;
+    clargs_positional_t *test_mode;
+    clargs_positional_t *test_port;
+
+    clargs_test_allocator_install();
+    custom = new_probe_type(&probe);
+    choice = new_choice_type();
+    root = new_root();
+    build = add_sub(root, "build");
+    test = add_sub(root, "test");
+
+    /* The same value types in three commands, for options and for
+     * positionals, with a default value and without. */
+    root_mode = add_typed_value(root, 'm', "mode", choice);
+    (void)add_typed_value(root, 'p', "port", custom);
+    (void)add_typed_value(root, 'j', "jobs", clargs_type_int());
+    build_mode = add_typed_value(build, 'm', "mode", choice);
+    set_option_default(add_typed_value(build, 'p', "port", custom), "80");
+    set_option_default(add_typed_value(build, 'q', "proxy-port", custom), "8080");
+    set_option_default(add_typed_value(build, 'j', "jobs", clargs_type_int()), "4");
+    test_mode = add_typed_positional(test, "mode", choice);
+    test_port = add_typed_positional(test, "port", custom);
+    set_positional_default(add_typed_positional(test, "jobs", clargs_type_int()), "1");
+
+    set_option_default(root_mode, "debug");
+    set_option_default(build_mode, "release");
+    set_positional_default(test_mode, "debug");
+    set_positional_default(test_port, "443");
+
+    NAOS_CHECK_TRUE(clargs_option_type(root_mode) == clargs_option_type(build_mode));
+    NAOS_CHECK_TRUE(clargs_option_type(root_mode) == clargs_positional_type(test_mode));
+
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(test));
+    check_probe(&probe, 3, 3);
+
+    /* Each definition is checked for itself: one of those that share the
+     * value type has a default value that the type does not take. */
+    set_option_default(build_mode, "fast");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, build, build_mode, NULL);
+    set_option_default(build_mode, "debug");
+
+    set_positional_default(test_port, PROBE_REJECTED);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, test, NULL, test_port);
+    set_positional_default(test_port, "443");
+
+    check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+
+    clargs_command_destroy(root);
+    clargs_type_destroy(choice);
+    clargs_type_destroy(custom);
+    check_probe(&probe, probe.conversions, probe.successes);
+    end_test();
+}
+
+/* For one option, required with a default value is checked first: the
+ * default value of such an option is not converted. */
+NAOS_TEST(a_required_option_with_a_default_value_is_reported_before_its_default_value_is_checked)
+{
+    probe_t probe;
+    clargs_type_t *type;
+    clargs_command_t *root;
+    clargs_option_t *port;
+
+    clargs_test_allocator_install();
+    type = new_probe_type(&probe);
+    root = new_root();
+    port = add_typed_value(root, 'p', "port", type);
+    set_option_default(port, PROBE_REJECTED);
+    NAOS_REQUIRE_TRUE(clargs_option_set_required(port, true) == CLARGS_ERROR_NONE);
+
+    check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, root, port, NULL);
+    check_probe(&probe, 0, 0);
+
+    NAOS_REQUIRE_TRUE(clargs_option_set_required(port, false) == CLARGS_ERROR_NONE);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, port, NULL);
+
+    clargs_command_destroy(root);
+    clargs_type_destroy(type);
+    end_test();
+}
+
+/* The options are checked one after the other, each with both of its
+ * checks: an option whose default value is not taken comes before a later
+ * option that is required and has a default value. */
+NAOS_TEST(the_options_are_checked_one_by_one_in_the_order_of_their_definition)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *first = add_typed_value(root, 'a', "first", clargs_type_int());
+    clargs_option_t *second = add_typed_value(root, 'b', "second", clargs_type_int());
+    clargs_option_t *third = add_typed_value(root, 'c', "third", clargs_type_int());
+
+    /* The faults are made from the last option to the first. */
+    set_option_default(third, "three");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, third, NULL);
+
+    make_faulty(second);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, root, second, NULL);
+
+    set_option_default(first, "one");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, first, NULL);
+
+    destroy_root(root);
+}
+
+/* In one command: the order of the positionals, then the options, then the
+ * default values of the positionals. */
+NAOS_TEST(the_default_values_of_the_positionals_are_checked_after_the_options)
+{
+    clargs_command_t *root = create_root();
+    clargs_positional_t *level = add_typed_positional(root, "level", clargs_type_int());
+    clargs_positional_t *late;
+    clargs_option_t *jobs;
+    clargs_option_t *output;
+
+    /* The positional is defined before the options. */
+    set_positional_default(level, "high");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, NULL, level);
+
+    /* An option that is required and has a default value comes first. */
+    (void)add_flag(root, 'v', "verbose");
+    output = add_value(root, 'o', "output");
+    make_faulty(output);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, root, output, NULL);
+    NAOS_REQUIRE_TRUE(clargs_option_set_required(output, false) == CLARGS_ERROR_NONE);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, NULL, level);
+
+    /* So does an option whose default value is not taken. */
+    jobs = add_typed_value(root, 'j', "jobs", clargs_type_int());
+    set_option_default(jobs, "many");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, jobs, NULL);
+
+    /* The order of the positionals comes before all of it. */
+    late = add_positional(root, "late", CLARGS_ARITY_REQUIRED);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, root, NULL, late);
+
+    destroy_root(root);
+}
+
+NAOS_TEST(a_default_value_of_a_command_is_checked_before_its_subcommands)
+{
+    clargs_command_t *root = create_root();
+    clargs_command_t *first = add_sub(root, "first");
+    clargs_command_t *second = add_sub(root, "second");
+    clargs_command_t *below = add_sub(first, "below");
+    clargs_option_t *in_root = add_typed_value(root, 'j', "jobs", clargs_type_int());
+    clargs_option_t *in_first = add_value(first, 'o', "output");
+    clargs_option_t *in_second = add_typed_value(second, 'j', "jobs", clargs_type_int());
+    clargs_positional_t *in_below = add_typed_positional(below, "level", clargs_type_int());
+
+    /* The faults are made in the reverse of the order of the check. */
+    set_option_default(in_second, "many");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, second, in_second, NULL);
+
+    /* A command below the first subcommand comes before the second
+     * subcommand. */
+    set_positional_default(in_below, "high");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, below, NULL, in_below);
+
+    /* A fault of another kind in a command that is checked earlier comes
+     * first. */
+    make_faulty(in_first);
+    check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, first, in_first, NULL);
+
+    set_option_default(in_root, "many");
+    check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, in_root, NULL);
+
+    destroy_root(root);
+}
+
+NAOS_TEST(an_invalid_default_value_leaves_the_tree_not_validated_and_unchanged)
+{
+    full_tree_t tree;
+    clargs_option_t *limit;
+    int round;
+
+    clargs_test_allocator_install();
+    build_full_tree(&tree);
+    NAOS_REQUIRE_TRUE(clargs_command_validate(tree.root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
+    check_full_tree_state(&tree, true);
+
+    /* A new option with a default value that its value type does not
+     * take. The changes take the state back. */
+    limit = add_typed_value(tree.add, 'l', "limit", clargs_type_int());
+    set_option_default(limit, "none");
+    check_full_tree_state(&tree, false);
+
+    for (round = 0; round < 3; ++round) {
+        const clargs_command_t *command = NULL;
+        const clargs_option_t *option = NULL;
+        const clargs_positional_t *positional = tree.target;
+
+        NAOS_CHECK_INT_EQ(clargs_command_validate(tree.root, &command, &option, &positional),
+                          CLARGS_ERROR_INVALID_DEFAULT);
+        NAOS_CHECK_TRUE(command == tree.add);
+        NAOS_CHECK_TRUE(option == limit);
+        NAOS_CHECK_TRUE(positional == NULL);
+        check_full_tree_state(&tree, false);
+    }
+
+    /* The definition is as it was, the fault included. */
+    check_full_tree(&tree);
+    NAOS_REQUIRE_TRUE(clargs_command_option_count(tree.add) == 2);
+    NAOS_CHECK_TRUE(clargs_command_option_at(tree.add, 1) == limit);
+    NAOS_CHECK_STR_EQ(clargs_option_default(limit), "none");
+
+    /* Without the fault, the same tree is valid. */
+    set_option_default(limit, "10");
+    NAOS_CHECK_INT_EQ(clargs_command_validate(tree.root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
+    check_full_tree_state(&tree, true);
+
+    destroy_root(tree.root);
+}
+
+/* The area that a value is written to cannot be allocated. */
+NAOS_TEST(a_validation_that_cannot_allocate_the_area_of_a_value_fails_for_a_lack_of_memory)
+{
+    probe_t probe;
+    clargs_type_t *type;
+    clargs_command_t *root;
+    clargs_command_t *run;
+    size_t nth;
+
+    clargs_test_allocator_install();
+    type = new_probe_type(&probe);
+    root = new_root();
+    run = add_sub(root, "run");
+    set_option_default(add_typed_value(root, 'p', "port", type), "80");
+    set_option_default(add_typed_value(root, 'j', "jobs", clargs_type_int()), "4");
+    set_positional_default(add_typed_positional(run, "level", type), "3");
+
+    /* The tree has three default values, so a validation asks for three
+     * areas. Each of them fails in turn, on a tree that is not validated. */
+    for (nth = 1; nth <= 3; ++nth) {
+        const size_t successes = probe.successes;
+
+        check_validate_without_memory(root, nth);
+        NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+        NAOS_CHECK_FALSE(clargs_command_is_validated(run));
+
+        /* The value that was converted before the failure is cleaned up.
+         * That is the first default value when the second or the third
+         * area fails; the second default value is an integer and is not
+         * counted. */
+        check_probe(&probe, probe.conversions, probe.successes);
+        NAOS_CHECK_UINT_EQ(probe.successes, successes + (nth == 1 ? 0 : CHECK_VALIDATE_ROUNDS));
+    }
+
+    /* The same tree is valid when memory is there. */
+    check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+
+    /* A validation that fails for a lack of memory does not change the
+     * state: the tree stays validated. */
+    check_validate_without_memory(root, 1);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+    NAOS_CHECK_TRUE(clargs_command_is_validated(run));
+
+    clargs_command_destroy(root);
+    clargs_type_destroy(type);
+    end_test();
+}
+
+/* A conversion function that reports a lack of memory: the validation
+ * returns that, and not an invalid default value. */
+NAOS_TEST(a_lack_of_memory_of_a_user_defined_conversion_is_returned_as_it_is)
+{
+    probe_t probe;
+    clargs_type_t *type;
+    clargs_command_t *root;
+    clargs_option_t *port;
+    clargs_command_t *other = NULL;
+    const clargs_command_t *command;
+    const clargs_option_t *option;
+    const clargs_positional_t *positional;
+    size_t live;
+
+    clargs_test_allocator_install();
+    type = new_probe_type(&probe);
+    root = new_root();
+    set_option_default(add_typed_value(root, 'a', "first", type), "one");
+    port = add_typed_value(root, 'p', "port", type);
+    set_option_default(port, PROBE_NO_MEMORY);
+
+    NAOS_REQUIRE_TRUE(clargs_command_create("other", &other) == CLARGS_ERROR_NONE);
+    command = other;
+    option = port;
+    positional = add_positional(other, "sentinel", CLARGS_ARITY_REQUIRED);
+    live = clargs_test_allocator_live();
+
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, &command, &option, &positional),
+                      CLARGS_ERROR_OUT_OF_MEMORY);
+
+    /* It is a lack of memory, not a fault of a definition: the outputs
+     * hold NULL. */
+    NAOS_CHECK_TRUE(command == NULL);
+    NAOS_CHECK_TRUE(option == NULL);
+    NAOS_CHECK_TRUE(positional == NULL);
+    NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+
+    /* The value before it was cleaned up, the conversion that failed was
+     * not. */
+    check_probe(&probe, 2, 1);
+
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+    check_probe(&probe, 4, 2);
+
+    clargs_command_destroy(other);
+    clargs_command_destroy(root);
+    clargs_type_destroy(type);
+    end_test();
+}
+
+/* The float conversion copies an input that is too long for its fixed
+ * array. When that allocation fails, the validation fails for a lack of
+ * memory, and the area of the value is freed. */
+NAOS_TEST(a_lack_of_memory_of_a_built_in_conversion_is_returned_as_it_is)
+{
+    static const char long_number[] =
+        "1.00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    clargs_command_t *root = create_root();
+    clargs_command_t *run = add_sub(root, "run");
+    clargs_positional_t *ratio = add_typed_positional(run, "ratio", clargs_type_float());
+    size_t requests;
+
+    set_positional_default(ratio, long_number);
+
+    /* The second request of the validation is the copy of the input. */
+    check_validate_without_memory(root, 2);
+    NAOS_CHECK_FALSE(clargs_command_is_validated(root));
+    NAOS_CHECK_STR_EQ(clargs_positional_default(ratio), long_number);
+
+    /* With memory, the default value is taken, and the validation asked
+     * for both allocations. */
+    requests = clargs_test_allocator_requests();
+    NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 2);
+    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+
+    destroy_root(root);
+}
+
 NAOS_SUITE(valid,
     NAOS_ADD_TEST(a_new_root_is_not_validated),
     NAOS_ADD_TEST(a_new_subcommand_reads_a_tree_that_is_not_validated),
@@ -1365,10 +2233,31 @@ NAOS_SUITE(state,
     NAOS_ADD_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_validated)
 )
 
+NAOS_SUITE(defaults,
+    NAOS_ADD_TEST(a_default_value_that_is_not_a_number_is_rejected_by_the_integer_type),
+    NAOS_ADD_TEST(a_default_value_that_is_not_a_number_is_rejected_by_the_float_type),
+    NAOS_ADD_TEST(a_default_value_that_is_not_a_choice_is_rejected_by_the_choice_type),
+    NAOS_ADD_TEST(a_default_value_that_a_user_defined_type_rejects_is_an_invalid_default_value),
+    NAOS_ADD_TEST(any_other_code_of_a_user_defined_conversion_is_an_invalid_default_value),
+    NAOS_ADD_TEST(a_default_value_of_a_positional_that_its_type_rejects_is_reported_with_the_positional),
+    NAOS_ADD_TEST(default_values_that_their_types_take_are_valid),
+    NAOS_ADD_TEST(the_cleanup_function_is_called_once_for_each_conversion_that_succeeded),
+    NAOS_ADD_TEST(one_value_type_can_be_given_to_several_definitions),
+    NAOS_ADD_TEST(a_required_option_with_a_default_value_is_reported_before_its_default_value_is_checked),
+    NAOS_ADD_TEST(the_options_are_checked_one_by_one_in_the_order_of_their_definition),
+    NAOS_ADD_TEST(the_default_values_of_the_positionals_are_checked_after_the_options),
+    NAOS_ADD_TEST(a_default_value_of_a_command_is_checked_before_its_subcommands),
+    NAOS_ADD_TEST(an_invalid_default_value_leaves_the_tree_not_validated_and_unchanged),
+    NAOS_ADD_TEST(a_validation_that_cannot_allocate_the_area_of_a_value_fails_for_a_lack_of_memory),
+    NAOS_ADD_TEST(a_lack_of_memory_of_a_user_defined_conversion_is_returned_as_it_is),
+    NAOS_ADD_TEST(a_lack_of_memory_of_a_built_in_conversion_is_returned_as_it_is)
+)
+
 NAOS_MAIN(
     NAOS_ADD_SUITE(valid),
     NAOS_ADD_SUITE(positional_order),
     NAOS_ADD_SUITE(required_default),
     NAOS_ADD_SUITE(traversal),
-    NAOS_ADD_SUITE(state)
+    NAOS_ADD_SUITE(state),
+    NAOS_ADD_SUITE(defaults)
 )

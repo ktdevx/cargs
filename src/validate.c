@@ -3,9 +3,13 @@
  * whether the tree has been validated.
  *
  * The validation reads the tree through the reading functions of the
- * schema. The only thing it writes is the state of the root.
+ * schema. The only thing it writes is the state of the root. The only
+ * memory it allocates is the area that a default value is converted to, one
+ * at a time, and it frees each before it goes on.
  */
 #include "schema_internal.h"
+
+#include "alloc_internal.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -57,28 +61,128 @@ static const clargs_positional_t *find_positional_fault(const clargs_command_t *
     return NULL;
 }
 
-/* Returns the first option of command that is required and has a default
- * value, or NULL when there is none. */
-static const clargs_option_t *find_option_fault(const clargs_command_t *command)
+/*
+ * Checks that the value type takes text, a default value, by converting it
+ * once. The value is written to an area of the size of the values of the
+ * type, cleaned up if the conversion succeeded, and the area is freed: when
+ * the function returns, nothing of the conversion is left.
+ *
+ * Returns CLARGS_ERROR_NONE when the value type takes text,
+ * CLARGS_ERROR_OUT_OF_MEMORY when the area cannot be allocated or the
+ * conversion returns that code, and CLARGS_ERROR_INVALID_DEFAULT for every
+ * other code of the conversion.
+ */
+static clargs_error_t check_default(const clargs_type_t *type, const char *text)
+{
+    /* Memory of the allocator is aligned for an object of any type, as the
+     * conversion needs it, and the size of a value is never 0. */
+    void *value = clargs_malloc(clargs_type_value_size(type));
+    clargs_error_t error;
+
+    if (value == NULL) {
+        return CLARGS_ERROR_OUT_OF_MEMORY;
+    }
+
+    error = clargs_type_convert(type, text, value);
+    if (error == CLARGS_ERROR_NONE) {
+        clargs_type_release(type, value);
+    }
+    clargs_free(value);
+
+    if (error == CLARGS_ERROR_NONE || error == CLARGS_ERROR_OUT_OF_MEMORY) {
+        return error;
+    }
+    return CLARGS_ERROR_INVALID_DEFAULT;
+}
+
+/*
+ * Checks the options of command in the order of their definition, each
+ * with two rules, in this order:
+ *
+ * 1. It is not both required and given a default value
+ *    (CLARGS_ERROR_INVALID_DEFINITION).
+ * 2. Its value type takes its default value, if it has one
+ *    (CLARGS_ERROR_INVALID_DEFAULT).
+ *
+ * Stops at the first option that breaks a rule, writes it to *faulty and
+ * returns the error code. Returns CLARGS_ERROR_OUT_OF_MEMORY, with *faulty
+ * not written, when a default value cannot be checked for a lack of memory,
+ * and CLARGS_ERROR_NONE, with *faulty not written, when no rule is broken.
+ */
+static clargs_error_t check_options(const clargs_command_t *command, const clargs_option_t **faulty)
 {
     const size_t count = clargs_command_option_count(command);
     size_t index;
 
     for (index = 0; index < count; ++index) {
         const clargs_option_t *option = clargs_command_option_at(command, index);
+        const char *text = clargs_option_default(option);
+        clargs_error_t error;
 
-        if (clargs_option_is_required(option) && clargs_option_default(option) != NULL) {
-            return option;
+        /* Only an option that takes a value has a default value. */
+        if (text == NULL) {
+            continue;
+        }
+
+        if (clargs_option_is_required(option)) {
+            *faulty = option;
+            return CLARGS_ERROR_INVALID_DEFINITION;
+        }
+
+        error = check_default(clargs_option_type(option), text);
+        if (error == CLARGS_ERROR_INVALID_DEFAULT) {
+            *faulty = option;
+        }
+        if (error != CLARGS_ERROR_NONE) {
+            return error;
         }
     }
-    return NULL;
+    return CLARGS_ERROR_NONE;
+}
+
+/*
+ * Checks, in the order of the definition, that the value type of every
+ * positional of command that has a default value takes it. Stops at the
+ * first that does not, writes it to *faulty and returns
+ * CLARGS_ERROR_INVALID_DEFAULT. Returns CLARGS_ERROR_OUT_OF_MEMORY, with
+ * *faulty not written, when a default value cannot be checked for a lack of
+ * memory, and CLARGS_ERROR_NONE, with *faulty not written, when every
+ * default value is taken.
+ */
+static clargs_error_t check_positional_defaults(const clargs_command_t *command,
+                                                const clargs_positional_t **faulty)
+{
+    const size_t count = clargs_command_positional_count(command);
+    size_t index;
+
+    for (index = 0; index < count; ++index) {
+        const clargs_positional_t *positional = clargs_command_positional_at(command, index);
+        const char *text = clargs_positional_default(positional);
+        clargs_error_t error;
+
+        if (text == NULL) {
+            continue;
+        }
+
+        error = check_default(clargs_positional_type(positional), text);
+        if (error == CLARGS_ERROR_INVALID_DEFAULT) {
+            *faulty = positional;
+        }
+        if (error != CLARGS_ERROR_NONE) {
+            return error;
+        }
+    }
+    return CLARGS_ERROR_NONE;
 }
 
 /*
  * Checks command and then its subcommands, in the order of their
- * definition, each with everything below it. Stops at the first fault,
- * writes where it is to *fault and returns its error code. Returns
- * CLARGS_ERROR_NONE, with *fault not written, when there is no fault.
+ * definition, each with everything below it. Within one command: the order
+ * of the positionals, then the options, then the default values of the
+ * positionals. Stops at the first fault, writes where it is to *fault and
+ * returns its error code. Returns CLARGS_ERROR_NONE, with *fault not
+ * written, when there is no fault, and CLARGS_ERROR_OUT_OF_MEMORY, with
+ * *fault not written, when a check fails for a lack of memory.
  *
  * The order of the checks is part of the contract of
  * clargs_command_validate(). The depth of the recursion is the depth of
@@ -87,7 +191,8 @@ static const clargs_option_t *find_option_fault(const clargs_command_t *command)
 static clargs_error_t check_command(const clargs_command_t *command, fault_t *fault)
 {
     const clargs_positional_t *positional = find_positional_fault(command);
-    const clargs_option_t *option;
+    const clargs_option_t *option = NULL;
+    clargs_error_t error;
     size_t count;
     size_t index;
 
@@ -98,18 +203,29 @@ static clargs_error_t check_command(const clargs_command_t *command, fault_t *fa
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
 
-    option = find_option_fault(command);
+    error = check_options(command, &option);
     if (option != NULL) {
         fault->command = command;
         fault->option = option;
         fault->positional = NULL;
-        return CLARGS_ERROR_INVALID_DEFINITION;
+    }
+    if (error != CLARGS_ERROR_NONE) {
+        return error;
+    }
+
+    error = check_positional_defaults(command, &positional);
+    if (positional != NULL) {
+        fault->command = command;
+        fault->option = NULL;
+        fault->positional = positional;
+    }
+    if (error != CLARGS_ERROR_NONE) {
+        return error;
     }
 
     count = clargs_command_subcommand_count(command);
     for (index = 0; index < count; ++index) {
-        clargs_error_t error = check_command(clargs_command_subcommand_at(command, index), fault);
-
+        error = check_command(clargs_command_subcommand_at(command, index), fault);
         if (error != CLARGS_ERROR_NONE) {
             return error;
         }

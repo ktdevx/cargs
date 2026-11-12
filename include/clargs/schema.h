@@ -653,21 +653,45 @@ CLARGS_API const char *clargs_positional_default(const clargs_positional_t *posi
  *      one (CLARGS_ARITY_OPTIONAL, CLARGS_ARITY_ZERO_OR_MORE), or
  *    - a positional before it takes any number of arguments
  *      (CLARGS_ARITY_ZERO_OR_MORE, CLARGS_ARITY_ONE_OR_MORE).
- * 2. The options, in the order in which they were added. An option is
- *    faulty when it is required and has a default value.
+ * 2. The options, in the order in which they were added, each with both
+ *    of its checks before the next option. An option is faulty when
+ *    - it is required and has a default value
+ *      (CLARGS_ERROR_INVALID_DEFINITION), or
+ *    - its value type does not take its default value
+ *      (CLARGS_ERROR_INVALID_DEFAULT).
+ * 3. The default values of the positionals, in the order in which the
+ *    positionals were added. A positional is faulty when its value type
+ *    does not take its default value (CLARGS_ERROR_INVALID_DEFAULT).
  *
  * The validation stops at the first fault. The order is fixed, so the same
  * definition gives the same result every time.
  *
+ * A default value is checked by converting it: for each default value, the
+ * validation allocates an area for the value, calls clargs_type_convert()
+ * with the value type of the option or positional, calls
+ * clargs_type_release() if the conversion succeeded, and frees the area.
+ * So the conversion function and the cleanup function of a user-defined
+ * value type are called during the validation, once for each default value
+ * of that type that is reached, in every validation. The values are cleaned
+ * up before the validation returns; none is kept. Any failure of a
+ * conversion other than CLARGS_ERROR_OUT_OF_MEMORY, whatever its code, is a
+ * default value that the value type does not take.
+ *
  * Returns CLARGS_ERROR_NONE when the tree has no fault. The tree is then
  * validated, and NULL is written to *command, *option and *positional.
  *
- * Returns CLARGS_ERROR_INVALID_DEFINITION for a fault. The command that the
- * faulty option or positional belongs to is written to *command, the faulty
- * option to *option or the faulty positional to *positional, and NULL to
- * the other of the two. The handles are those of the tree: they are valid
- * until the root is destroyed and can be read with the reading functions.
- * The tree stays not validated.
+ * Returns CLARGS_ERROR_INVALID_DEFINITION or CLARGS_ERROR_INVALID_DEFAULT
+ * for a fault, as given with the checks above. The command that the faulty
+ * option or positional belongs to is written to *command, the faulty option
+ * to *option or the faulty positional to *positional, and NULL to the other
+ * of the two. The handles are those of the tree: they are valid until the
+ * root is destroyed and can be read with the reading functions. The tree
+ * stays not validated.
+ *
+ * Returns CLARGS_ERROR_OUT_OF_MEMORY when the area for a value cannot be
+ * allocated or a conversion returns that code. NULL is written to *command,
+ * *option and *positional, nothing stays allocated, and the state of the
+ * tree is as it was before the call.
  *
  * The validation never changes a definition: whatever it returns, the
  * commands, options, positionals and their attributes are as they were
