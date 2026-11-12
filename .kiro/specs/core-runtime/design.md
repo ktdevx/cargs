@@ -54,7 +54,7 @@
 - C 標準ライブラリ（C99）。`<assert.h>`、`<stddef.h>`、`<stdlib.h>`（`src/alloc.c` だけ）、`<string.h>`（`memcpy`、`strlen`）、`<stdint.h>`（`SIZE_MAX`）。
 - build-foundation の成果: `CLARGS_API`、`CLARGS_SOURCES`、`clargs_add_test()`、`clargs_internal` ターゲット、`docs/conventions.md` の命名規約。
 - テストだけ: Naos v0.4.0。
-- 依存の向き: `error` ← `alloc` ← `str`、`vec`。逆向きの取り込みをしない。このスペックのコードは、後続のスペックのヘッダを取り込まない。
+- 依存の向き: `alloc` ← `str`、`vec`、および `error` ← `vec`。逆向きの取り込みをしない。`alloc` と `error` は互いに依存しない（`clargs_set_allocator()` が失敗しなくなったため）。このスペックのコードは、後続のスペックのヘッダを取り込まない。
 
 ### Revalidation Triggers
 
@@ -103,9 +103,9 @@ graph TB
 
     Error --> ErrorH
     Allocator --> AllocatorH
-    Allocator --> ErrorH
     Str --> Allocator
     Vec --> Allocator
+    Vec --> ErrorH
     Downstream --> Str
     Downstream --> Vec
     Downstream --> Allocator
@@ -288,7 +288,7 @@ sequenceDiagram
 |-----------|-------|--------|--------------|------------------|-----------|
 | Error | 公開 | エラーコードと説明文 | 4.1, 4.3–4.9, 6.1, 6.3–6.5, 10.2–10.5 | なし | Service |
 | 前提条件の検査 | 全体の規則 | プログラムの誤りを `assert` で検査する | 4.11–4.13, 1.6 | `<assert.h>` (P0) | — |
-| Allocator | 公開と内部 | アロケータの型、設定、既定、メモリ操作 | 1.1–1.6, 2.1–2.3, 3.1, 3.3–3.5, 5.1, 5.4, 5.5, 7.6, 10.1–10.3 | Error (P0) | Service、State |
+| Allocator | 公開と内部 | アロケータの型、設定、既定、メモリ操作 | 1.1–1.6, 2.1–2.3, 3.1, 3.3–3.5, 5.1, 5.4, 5.5, 7.6, 10.1–10.3 | なし | Service、State |
 | Str | 内部 | 文字列の複製 | 8.1, 8.3, 8.5, 8.6, 5.1, 5.2 | Allocator (P0) | Service |
 | Vec | 内部 | 伸長する配列 | 8.2–8.6, 5.3, 5.4, 5.5 | Allocator (P0) | Service、State |
 | AllocationCheck | 検査 | 確保関数の直接呼び出しを検出 | 3.1, 3.2, 3.6 | CMake (P0) | Batch |
