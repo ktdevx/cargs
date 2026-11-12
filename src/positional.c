@@ -13,13 +13,6 @@
 #include <stddef.h>
 #include <string.h>
 
-/* Whether arity is one of the arities that there are. */
-static bool is_arity(clargs_arity_t arity)
-{
-    return arity == CLARGS_ARITY_REQUIRED || arity == CLARGS_ARITY_OPTIONAL ||
-           arity == CLARGS_ARITY_ZERO_OR_MORE || arity == CLARGS_ARITY_ONE_OR_MORE;
-}
-
 /* Whether command has a positional with the name name. The whole name is
  * compared, byte by byte. */
 static bool name_is_in_use(const clargs_command_t *command, const char *name)
@@ -81,7 +74,8 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
     assert(command != NULL);
     assert(name != NULL);
     assert(type != NULL);
-    assert(is_arity(arity));
+    assert(arity == CLARGS_ARITY_REQUIRED || arity == CLARGS_ARITY_OPTIONAL ||
+           arity == CLARGS_ARITY_ZERO_OR_MORE || arity == CLARGS_ARITY_ONE_OR_MORE);
 
     if (out != NULL) {
         *out = NULL;

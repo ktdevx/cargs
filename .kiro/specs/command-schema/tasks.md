@@ -154,3 +154,4 @@
 - 4.3: `<clargs/schema.h>` のオプションの文字列の設定の Preconditions に、設計にない 1 文（今その属性として持っている文字列やその一部を渡さない）がある。実装は複製してから解放するので不要で、`clargs_command_set_description()` のコメントとも食い違う。6.2 のヘッダのコメントの点検で消す。位置引数の設定（4.4）には書かない。
 - 5.1: `tests/public/validate_test.c` の状態のテストは、失敗させる確保点の個数の下限を持ち、`src/vec.c` の初期の容量 4 に依存する。`an_empty_root_is_valid` は、検証が確保を求めないことを表明する（既定値のない木なので、5.2 の後も成り立つ）。
 - 5.2: 変換が `CLARGS_ERROR_OUT_OF_MEMORY` を返したときも、領域の確保の失敗と同じく、3 つの出力先に `NULL` を書く（設計の Postconditions の「確保の失敗」に当たる）。`tests/public/validate_test.c` の確保の回数の表明は、「既定値 1 つにつき確保 1 回」と、`src/number.c` の `SHORT_COPY_SIZE`（64）に依存する。
+- 6.1: Release の構成（`NDEBUG`）では、`assert` の中でしか使わない `static` 関数が未使用になり、警告がエラーになる（4.4 の `src/positional.c` の `is_arity()` がこれに当たり、6.1 の後に式を `assert` に直接書く形へ直した。規約文書「前提条件の検査」）。検証は Debug と Release の両方で行う。
