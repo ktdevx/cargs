@@ -10,7 +10,7 @@
  * A value type never changes. So one value type can be used in several
  * places and from several threads at the same time.
  *
- * The built-in value types and the values they write:
+ * The kinds of value types and the values they write:
  *
  *     kind                  name        type of the value   value
  *     CLARGS_TYPE_STRING    "string"    const char *        the pointer to the input string
@@ -114,6 +114,46 @@ CLARGS_API const clargs_type_t *clargs_type_int(void);
 CLARGS_API const clargs_type_t *clargs_type_float(void);
 
 /*
+ * Creates a value type of the kind CLARGS_TYPE_CHOICE from the count
+ * strings of the array choices, and writes it to *out. Its name is
+ * "choice".
+ *
+ * The value type takes an input that is exactly one of the choices, upper
+ * and lower case being different, and nothing else. The value is the index
+ * of the choice that matched, from 0, in the order of the array. The empty
+ * string can be a choice.
+ *
+ * The strings are copied: the array and its strings may be changed or
+ * freed after the call. The caller owns the value type and destroys it with
+ * clargs_type_destroy().
+ *
+ * Returns CLARGS_ERROR_NONE on success. On failure, nothing is created,
+ * nothing stays allocated, and *out is NULL:
+ *
+ * - CLARGS_ERROR_INVALID_DEFINITION: count is 0, or a string is in the
+ *   array more than once.
+ * - CLARGS_ERROR_OUT_OF_MEMORY: an allocation failed.
+ *
+ * Preconditions:
+ *
+ * - out is not NULL. Checked with assert.
+ * - If count is not 0, choices and each of its count elements are not NULL.
+ *   Checked with assert.
+ */
+CLARGS_API clargs_error_t clargs_type_create_choice(const char *const *choices, size_t count,
+                                                    clargs_type_t **out);
+
+/*
+ * Destroys a value type that clargs_type_create_choice() created, and frees
+ * its memory. Does nothing for NULL and for a built-in value type (what
+ * clargs_type_string(), clargs_type_int() and clargs_type_float() return).
+ *
+ * Preconditions: nothing uses the value type any more; a value type is
+ * destroyed only after everything that was defined with it. Not checked.
+ */
+CLARGS_API void clargs_type_destroy(clargs_type_t *type);
+
+/*
  * Returns the name of the value type, such as "integer". The result is
  * never NULL. The string is valid as long as the value type is; do not free
  * it and do not modify it.
@@ -136,6 +176,27 @@ CLARGS_API clargs_type_kind_t clargs_type_kind(const clargs_type_t *type);
  * Preconditions: type is not NULL. Checked with assert.
  */
 CLARGS_API size_t clargs_type_value_size(const clargs_type_t *type);
+
+/*
+ * Returns the number of the choices of the value type. It is 0 for a value
+ * type that is not of the kind CLARGS_TYPE_CHOICE.
+ *
+ * Preconditions: type is not NULL. Checked with assert.
+ */
+CLARGS_API size_t clargs_type_choice_count(const clargs_type_t *type);
+
+/*
+ * Returns the choice with the index, from 0. The choices are in the order
+ * in which they were given to clargs_type_create_choice(). The result is
+ * never NULL. The string is valid as long as the value type is; do not free
+ * it and do not modify it.
+ *
+ * Preconditions:
+ *
+ * - type is not NULL. Checked with assert.
+ * - index is less than clargs_type_choice_count(type). Checked with assert.
+ */
+CLARGS_API const char *clargs_type_choice_at(const clargs_type_t *type, size_t index);
 
 /*
  * Converts text with the value type and writes the value to the area that

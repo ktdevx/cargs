@@ -15,14 +15,17 @@
 /*
  * A value type. It is not modified after it has been made.
  *
- * - name: the name of the type. Never NULL.
+ * - name: the name of the type. Never NULL. A fixed string for the built-in
+ *   value types and for the kind CLARGS_TYPE_CHOICE.
  * - value_size: the size of a value in bytes. Greater than 0.
  * - convert_fn: the conversion function. Never NULL.
  * - release_fn: the cleanup function, or NULL when the values need none.
  * - context: the user data that is passed to convert_fn and release_fn, or
- *   NULL.
+ *   NULL. For the kind CLARGS_TYPE_CHOICE, the value type itself.
  * - choices, choice_count: the list of the choices of a value type of the
- *   kind CLARGS_TYPE_CHOICE. NULL and 0 for every other kind.
+ *   kind CLARGS_TYPE_CHOICE, in the order of the definition. The array and
+ *   each string are owned by the value type. NULL and 0 for every other
+ *   kind.
  * - is_static: true for a built-in value type, which is a fixed object that
  *   is never destroyed.
  */
