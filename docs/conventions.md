@@ -13,20 +13,29 @@ CLArgs に公開関数、ヘッダ、ソース、テストを足すときに従�
 
 | 対象 | 規約 | 例 |
 |---|---|---|
-| 公開する関数と型 | `clargs_` + 小文字のスネークケース | `clargs_version` |
+| 公開する関数と型 | `clargs_` + 小文字のスネークケース。型の名前は `_t` で終える | `clargs_version`、`clargs_example_t` |
 | 公開するマクロと列挙定数 | `CLARGS_` + 大文字のスネークケース | `CLARGS_VERSION_MAJOR` |
-| 内部の関数と型（ファイルをまたぐもの） | 公開と同じ `clargs_` + 小文字のスネークケース。`CLARGS_API` を付けず、`src/` の内部ヘッダで宣言する | `clargs_version_pack` |
+| 内部の関数と型（ファイルをまたぐもの） | 公開と同じ `clargs_` + 小文字のスネークケース。型の名前は `_t` で終える。`CLARGS_API` を付けず、`src/` の内部ヘッダで宣言する | `clargs_version_pack` |
+| 構造体と列挙のタグ | 型の名前から `_t` を除いたもの。`_t` を付けない | `struct clargs_example`、`enum clargs_example_kind` |
+| 関数ポインタの型と、それを持つフィールド | 型は `clargs_<名前>_fn_t`、フィールドは `<名前>_fn` | `clargs_example_fn_t`、`example_fn` |
 | 内部のマクロ | 公開と同じ `CLARGS_` + 大文字のスネークケース。`src/` の内部ヘッダで定義する | `CLARGS_VERSION_INTERNAL_H`（インクルードガード） |
 | ファイル内だけの関数 | `static` を付ける。接頭辞は不要 | — |
 | 公開ヘッダ | `include/clargs/<名前>.h` | `include/clargs/version.h` |
-| ソースと内部ヘッダ | `src/<名前>.c`、`src/<名前>_internal.h` | `src/version.c`、`src/version_internal.h` |
-| テスト | `tests/public/<名前>_test.c`、`tests/internal/<名前>_test.c` | `tests/public/version_test.c`、`tests/internal/version_internal_test.c` |
+| ソース | `src/<名前>.c` | `src/version.c` |
+| 内部ヘッダ | 同じ名前の公開ヘッダ（`include/clargs/<名前>.h`）があるモジュールは `src/<名前>_internal.h`、ないモジュールは `src/<名前>.h` | `src/version_internal.h`（`include/clargs/version.h` がある） |
+| 公開 API のテスト | `tests/public/<名前>_test.c` | `tests/public/version_test.c` |
+| 内部関数のテスト | `tests/internal/<内部ヘッダの名前>_test.c` | `tests/internal/version_internal_test.c` |
 | CMake のオプション、関数、モジュール | `CLARGS_<名前>`、`clargs_<名前>()`、`cmake/Clargs<名前>.cmake` | `CLARGS_BUILD_TESTS`、`clargs_add_test()`、`cmake/ClargsTesting.cmake` |
 
 - 公開と内部は接頭辞で区別しない。公開かどうかは、`include/clargs/` のヘッダで `CLARGS_API` を付けて宣言されているかで決まる。`CLARGS_API`（`include/clargs/export.h`）は、公開関数に付ける唯一の印である。ほかの方法（コンパイラの属性を直接書く、`.def` ファイルを足すなど）で関数を公開しない。
 - どの公開名（成果物、ヘッダ、識別子、パッケージ）にも `cargs` を使わない。プロジェクト名は `CLArgs`、ライブラリと取り込みパスは `clargs` である。
 - 公開する変数を持たない。公開するのは関数、型、マクロだけである。`CLARGS_API` を変数に付けると、export の確認（`clargs.exports`）が失敗する。
 - インクルードガードは `CLARGS_<ファイル名を大文字にしたもの>_H` とする（`CLARGS_VERSION_H`、`CLARGS_VERSION_INTERNAL_H`）。
+- 型の名前（`typedef` で付ける名前）は、公開・内部・テスト支援のどれも `_t` で終える。構造体と列挙のタグには `_t` を付けない（`typedef struct clargs_example clargs_example_t;`）。
+- 関数ポインタの型は `clargs_<名前>_fn_t` とし、それを持つ構造体のフィールドは `<名前>_fn` とする。
+- 内部ヘッダに `_internal` を付けるのは、同じ名前の公開ヘッダと区別するためである。公開ヘッダのないモジュールでは付けない。内部関数のテストのファイル名と、`clargs_add_test()` の `<name>` は、内部ヘッダの名前に合わせる。
+- 標準の関数に対応するものは、名前と引数を標準に合わせる（`malloc` に対応する関数は `clargs_malloc`、`strdup` に対応する関数は `clargs_strdup`。引数の名前も `ptr`、`str` のように標準に合わせる）。
+- モジュールの名前（`<名前>`）は短くする（`alloc`、`str`、`vec` など）。
 
 ## ディレクトリ構成
 
@@ -41,7 +50,7 @@ include/
 src/                  ソースと内部ヘッダ。インストールされない
 ├── CMakeLists.txt    ソース一覧 CLARGS_SOURCES、ターゲット clargs と clargs_internal
 ├── <名前>.c
-└── <名前>_internal.h
+└── <名前>_internal.h  内部ヘッダ。同じ名前の公開ヘッダがなければ <名前>.h
 tests/
 ├── CMakeLists.txt    clargs_add_test() の呼び出しと、export の確認の登録
 ├── public/           公開 API のテスト。CLArgs::clargs にリンクする
@@ -51,7 +60,7 @@ docs/                 文書
 ```
 
 - 利用者は `#include <clargs/clargs.h>` だけを書く。公開ヘッダどうしも `<clargs/<名前>.h>` の形で取り込む。
-- `src/` の内部ヘッダは、`src/` のソースと内部関数のテストだけが `"<名前>_internal.h"` の形で取り込む。公開ヘッダから内部ヘッダを取り込まない。
+- `src/` の内部ヘッダは、`src/` のソースと内部関数のテストだけが `"<名前>_internal.h"`（同じ名前の公開ヘッダがなければ `"<名前>.h"`）の形で取り込む。公開ヘッダから内部ヘッダを取り込まない。
 - ビルドディレクトリは、リポジトリの外か、ルートの `build/` または `build-*/` に作る（バージョン管理から除外されている）。
 
 ## 手順
@@ -61,9 +70,9 @@ docs/                 文書
 | 公開関数を足す | 公開ヘッダの宣言の先頭に `CLARGS_API` を付ける。`CLARGS_API`、戻り値の型、関数名、`(` をこの順に書く。`extern "C"` のガードの中に書く。実装は `src/` のソースに書く |
 | 公開ヘッダを足す | `include/clargs/` に置き、`clargs.h` に取り込みを 1 行足す |
 | ソースを足す | `src/` に置き、`src/CMakeLists.txt` の `CLARGS_SOURCES` に 1 行足す |
-| 内部関数を足す | `src/<名前>_internal.h` で `CLARGS_API` なしで宣言し、`src/` のソースで実装する |
+| 内部関数を足す | 内部ヘッダ（`src/<名前>_internal.h`。同じ名前の公開ヘッダがなければ `src/<名前>.h`）で `CLARGS_API` なしで宣言し、`src/` のソースで実装する |
 | 公開 API のテストを足す | `tests/public/` に置き、`tests/CMakeLists.txt` に `clargs_add_test(<name> SOURCES public/<file>)` を足す |
-| 内部関数のテストを足す | `tests/internal/` に置き、`tests/CMakeLists.txt` に `clargs_add_test(<name> SOURCES internal/<file> INTERNAL)` を足す |
+| 内部関数のテストを足す | `tests/internal/<内部ヘッダの名前>_test.c` に置き、`tests/CMakeLists.txt` に `clargs_add_test(<name> SOURCES internal/<file> INTERNAL)` を足す |
 | CMake のモジュールを足す | `cmake/Clargs<名前>.cmake` に置き、`include("${CMAKE_CURRENT_LIST_DIR}/cmake/Clargs<名前>.cmake")` の形で取り込む |
 
 どの手順でも、上の 1 行以外に CMake のファイルを直す必要はない。インストール規則は `include/clargs/` の `*.h` をすべて対象にし、export の確認は公開ヘッダから期待する名前を読み取る。
@@ -82,9 +91,9 @@ CLARGS_API int clargs_example_add(int left, int right);
 - 関数ポインタを直接返す宣言（`CLARGS_API int (*clargs_example_get(void))(int);`）は、名前を読み取れない。`typedef` で型に名前を付けてから使う。
 
   ```c
-  typedef int (*clargs_example_callback)(int value);
+  typedef int (*clargs_example_fn_t)(int value);
 
-  CLARGS_API clargs_example_callback clargs_example_get(void);
+  CLARGS_API clargs_example_fn_t clargs_example_get(void);
   ```
 
 - 定義（`src/` のソース）には `CLARGS_API` を書かない。ソースは、その関数を宣言している公開ヘッダを取り込む。取り込まないと、印が定義に届かず、動的ライブラリから export されない（GCC と Clang では、その前に `-Wmissing-prototypes` の警告でビルドが止まる）。
@@ -155,7 +164,16 @@ set(CLARGS_SOURCES
 
 ### 内部関数を足す
 
-ファイルをまたいで使う内部関数は、`src/example_internal.h` で宣言する。`CLARGS_API` を付けず、`extern "C"` のガードも要らない。
+ファイルをまたいで使う内部関数は、内部ヘッダで宣言する。`CLARGS_API` を付けず、`extern "C"` のガードも要らない。
+
+内部ヘッダの名前は、同じ名前の公開ヘッダがあるかどうかで決まる。
+
+| モジュール | 内部ヘッダ | インクルードガード |
+|---|---|---|
+| 公開ヘッダ `include/clargs/example.h` がある | `src/example_internal.h` | `CLARGS_EXAMPLE_INTERNAL_H` |
+| 公開ヘッダがない | `src/example.h` | `CLARGS_EXAMPLE_H` |
+
+ここでは、公開ヘッダ `include/clargs/example.h` がある場合を書く。
 
 ```c
 /*
@@ -169,7 +187,7 @@ int clargs_example_twice(int value);
 #endif /* CLARGS_EXAMPLE_INTERNAL_H */
 ```
 
-定義するソースは `#include "example_internal.h"` と書く。内部関数は動的ライブラリから export されず、内部ヘッダはインストールされない。内部関数には、`tests/internal/` に内部関数のテストを足す。
+定義するソースは `#include "example_internal.h"` と書く。公開ヘッダがないモジュールでは、ファイル名が `src/example.h`、インクルードガードが `CLARGS_EXAMPLE_H`、取り込みが `#include "example.h"` になるだけで、ほかは同じである。内部関数は動的ライブラリから export されず、内部ヘッダはインストールされない。内部関数には、`tests/internal/` に内部関数のテストを足す。
 
 ### 公開 API のテストを足す
 
@@ -207,7 +225,7 @@ clargs_add_test(example SOURCES public/example_test.c)
 
 ### 内部関数のテストを足す
 
-`tests/internal/example_internal_test.c` を作る。内部ヘッダを `"example_internal.h"` の形で取り込む。
+内部ヘッダの名前に `_test` を付けたファイルを作る。内部ヘッダが `src/example_internal.h` なら `tests/internal/example_internal_test.c` である。内部ヘッダを `"example_internal.h"` の形で取り込む。
 
 ```c
 /*
@@ -237,6 +255,12 @@ NAOS_MAIN(
 clargs_add_test(example_internal SOURCES internal/example_internal_test.c INTERNAL)
 ```
 
+`<name>` は内部ヘッダの名前にする。公開ヘッダがないモジュール（内部ヘッダが `src/example.h`）では、次のようになる。
+
+```cmake
+clargs_add_test(example SOURCES internal/example_test.c INTERNAL)
+```
+
 内部関数のテストは `clargs_internal` にリンクする。静的と動的のどちらの構成でも、ライブラリのソースが静的にリンクされるので、内部関数を呼べる。
 
 ### `clargs_add_test()` の規則
@@ -245,7 +269,7 @@ clargs_add_test(example_internal SOURCES internal/example_internal_test.c INTERN
 clargs_add_test(<name> SOURCES <source>... [INTERNAL])
 ```
 
-- `<name>` は英数字と下線だけで書き、公開・内部を通して一意にする。実行ファイルは `clargs_test_<name>` になる。内部関数のテストの `<name>` は `<名前>_internal` とする。
+- `<name>` は英数字と下線だけで書き、公開・内部を通して一意にする。実行ファイルは `clargs_test_<name>` になる。内部関数のテストの `<name>` は、内部ヘッダの名前（`<名前>_internal`。同じ名前の公開ヘッダがなければ `<名前>`）とする。公開 API のテストの `<name>` と重ならないようにする。
 - `INTERNAL` がなければ公開 API のテストになる。`PUBLIC` というキーワードはない。
 - `<source>` は `tests/` からの相対パスで書く。1 ファイル 1 実行ファイルを基本とする。
 - CTest には、`<name>.<suite>.<test>` の名前（例: `version.version.number_matches_the_headers`）と、`public` または `internal` のラベルで登録される。`ctest -L public` のように選べる。
