@@ -244,7 +244,7 @@ sequenceDiagram
 | 5.5 | 大きさの桁あふれ | Allocator、Vec | `clargs_calloc`、`clargs_vec_push` | — |
 | 6.1 | 値を変えずに足せる | Error | `CLARGS_ERROR_LIST` の末尾に足す | — |
 | 6.2 | 足す手順の文書 | 規約文書 | `docs/conventions.md` | — |
-| 6.3 | 値を再利用しない | Error、規約文書 | 値の規則 | — |
+| 6.3 | 値を再利用しない | Error、規約文書 | 行を削除しない規則 | — |
 | 6.4 | すべてのコードに固有の説明文 | Error のテスト | `CLARGS_ERROR_LIST` から生成した表 | — |
 | 6.5 | 種類だけを表す | Error | `clargs_error_t` | — |
 | 7.1 | 規約の文書 | 所有権の規約 | `docs/ownership.md` | — |
@@ -301,8 +301,8 @@ sequenceDiagram
 **Responsibilities & Constraints**
 
 - `clargs_error_t` は失敗の種類だけを表す。位置や対象を持たない。
-- エラーコードの名前、値、説明文を、X マクロ `CLARGS_ERROR_LIST` の 1 か所に書く。列挙、説明文を返す関数、テストは、この一覧から生成する。
-- 値は明示して書き、一度公開した値を変えず、別の意味に使わない。
+- エラーコードの名前と説明文を、X マクロ `CLARGS_ERROR_LIST` の 1 か所に書く。列挙、説明文を返す関数、テストは、この一覧から生成する。
+- 値は一覧の順で決まる。一度公開した値を変えず、別の意味に使わない。そのために、一覧は末尾にだけ足し、行を削除せず、並べ替えない。
 - 説明文は英語の文字列リテラルで、メモリを確保しない。
 
 **Contracts**: Service [x]
@@ -312,12 +312,12 @@ sequenceDiagram
 ```c
 /* include/clargs/error.h */
 #define CLARGS_ERROR_LIST(X) \
-    X(CLARGS_ERROR_NONE, 0, "success") \
-    X(CLARGS_ERROR_OUT_OF_MEMORY, 1, "out of memory") \
-    X(CLARGS_ERROR_INVALID_ARGUMENT, 2, "invalid argument")
+    X(CLARGS_ERROR_NONE, "success") \
+    X(CLARGS_ERROR_OUT_OF_MEMORY, "out of memory") \
+    X(CLARGS_ERROR_INVALID_ARGUMENT, "invalid argument")
 
 typedef enum clargs_error {
-#define CLARGS_ERROR_ENUM(name, value, message) name = value,
+#define CLARGS_ERROR_ENUM(name, message) name,
     CLARGS_ERROR_LIST(CLARGS_ERROR_ENUM)
 #undef CLARGS_ERROR_ENUM
 } clargs_error_t;
@@ -325,7 +325,7 @@ typedef enum clargs_error {
 CLARGS_API const char *clargs_error_message(clargs_error_t error);
 ```
 
-- `CLARGS_ERROR_LIST(X)` は、エラーコードごとに `X(名前, 値, 説明文)` を 1 回ずつ展開する。利用者も、自分の表を作るために使ってよい。
+- `CLARGS_ERROR_LIST(X)` は、エラーコードごとに `X(名前, 説明文)` を 1 回ずつ展開する。値は一覧の順に 0 から付く。利用者も、自分の表を作るために使ってよい。
 - 列挙の最後の列挙子の後にカンマが残る。C99 はこれを許す。
 - `clargs_error_message`
   - Preconditions: なし。どんな値を渡してもよい。
@@ -334,19 +334,18 @@ CLARGS_API const char *clargs_error_message(clargs_error_t error);
 
 **エラーコードの足し方**（`docs/conventions.md` に記載する。6.1、6.2、6.3）
 
-- 直すのは 1 か所だけである。`include/clargs/error.h` の `CLARGS_ERROR_LIST` の末尾に、`X(名前, 値, 説明文)` を 1 行足す。列挙、`clargs_error_message()`、テストは、一覧から生成されるので直さない。
+- 直すのは 1 か所だけである。`include/clargs/error.h` の `CLARGS_ERROR_LIST` の末尾に、`X(名前, 説明文)` を 1 行足す。列挙、`clargs_error_message()`、テストは、一覧から生成されるので直さない。
 - すべてのエラーコードをこの 1 つの一覧に書く。スペックごとに別の型や番号の範囲を作らない。
 - 名前は `CLARGS_ERROR_<内容>` とする。成功は `CLARGS_ERROR_NONE` である。
-- 値は、一覧の最後の値に 1 を足したものを明示して書く。既存の行の値と名前は変えない。
-- 一度公開した値は、行を削除しても再利用しない。
+- 値は書かない。一覧の順に 0 から付く。既存の行を削除せず、並べ替えず、途中に行を足さない。値が変わるためである。使わなくなったエラーコードも、行は残す。
 - 説明文は、英語の小文字で始まる短い句にし、ほかのコードと重ならないものにする。
 - 利用者は、知らない値を受け取りうるものとして書く（`switch` に `default` を置く）。この注意をヘッダのコメントに書く。
 
 **Implementation Notes**
 
-- Integration: `src/error.c` は、`CLARGS_ERROR_LIST` から `switch` の `case` を生成する（`case 名前: return 説明文;`）。一覧にない値は `switch` の後で `"unknown error code"` を返す。同じ値を 2 度書くと、`case` の重複としてコンパイルエラーになる。
-- Validation: `tests/public/error_test.c` は、`CLARGS_ERROR_LIST` から、名前・値・説明文の表を生成する。各行について、`clargs_error_message()` が一覧の説明文と同じ内容を返すこと、空でないこと、`"unknown error code"` と異なること、ほかの行の説明文と異なることを確かめる（6.4）。エラーコードを足しても、このテストは直さない。`CLARGS_ERROR_NONE` が 0 であること、一覧にない値（`(clargs_error_t)-1`、`(clargs_error_t)9999`）で `"unknown error code"` が返ることも確かめる。
-- Risks: 公開ヘッダに関数形式のマクロと補助のマクロが入る。補助のマクロ（`CLARGS_ERROR_ENUM`）は、使った直後に `#undef` する。並行して進むスペックが同じ値を取ると、マージのときにコンパイルエラーで分かる。列挙型の大きさを変えるコンパイラのオプション（`-fshort-enums`）は対象外とする。
+- Integration: `src/error.c` は、`CLARGS_ERROR_LIST` から `switch` の `case` を生成する（`case 名前: return 説明文;`）。一覧にない値は `switch` の後で `"unknown error code"` を返す。同じ名前を 2 度書くと、列挙子の重複としてコンパイルエラーになる。
+- Validation: `tests/public/error_test.c` は、`CLARGS_ERROR_LIST` から、名前と説明文の表を生成する。各行について、`clargs_error_message()` が一覧の説明文と同じ内容を返すこと、空でないこと、`"unknown error code"` と異なること、ほかの行の説明文と異なることを確かめる（6.4）。エラーコードを足しても、このテストは直さない。`CLARGS_ERROR_NONE` が 0、`CLARGS_ERROR_OUT_OF_MEMORY` が 1、`CLARGS_ERROR_INVALID_ARGUMENT` が 2 であること（公開した値が動いていないことの確認）、一覧にない値（`(clargs_error_t)-1`、`(clargs_error_t)9999`）で `"unknown error code"` が返ることも確かめる。
+- Risks: 公開ヘッダに関数形式のマクロと補助のマクロが入る。補助のマクロ（`CLARGS_ERROR_ENUM`）は、使った直後に `#undef` する。並行して進むスペックがそれぞれ末尾に足すと、マージの順で値が決まる。公開（リリース）するまでは値が動いてもよい。列挙型の大きさを変えるコンパイラのオプション（`-fshort-enums`）は対象外とする。
 
 ### 公開と内部
 
@@ -415,9 +414,13 @@ void clargs_free(void *ptr);
 
 - `clargs_malloc`: 成功したら `NULL` でないポインタ、失敗したら `NULL` を返す。内容は不定である。`size` が 0 のときは、アロケータを呼ばずに `NULL` を返す。
 - `clargs_calloc`: 成功したら、すべてのバイトが 0 のメモリを返す。構造体や配列の最初の確保に使う。`count * size` が `size_t` で表せないときは、アロケータを呼ばずに `NULL` を返す（5.5）。`count` または `size` が 0 のときも、アロケータを呼ばずに `NULL` を返す。
-- `clargs_realloc`: Preconditions: `ptr` は、`clargs_malloc`、`clargs_calloc`、`clargs_realloc` で得た `NULL` でないポインタ。`size` が 0 のときは、アロケータを呼ばずに `NULL` を返す。`NULL` を返したとき、`ptr` の指すメモリと内容は有効なままである（5.4）。大きさ 0 のときも `ptr` を解放しない。呼び出し側は、戻り値を確かめてから元のポインタを置き換える。大きさを積で求める呼び出し側は、自分で桁あふれを確かめる。
+- `clargs_realloc`: 広く使われている `realloc` の実装と同じ動作にする。
+  - `ptr` が `NULL` なら、`clargs_malloc(size)` と同じである。
+  - `ptr` が `NULL` でなく `size` が 0 なら、`ptr` を解放して `NULL` を返す（`clargs_free(ptr)` と同じ）。
+  - それ以外は `realloc_fn` を呼ぶ。`NULL` を返したとき、`ptr` の指すメモリと内容は有効なままである（5.4）。呼び出し側は、戻り値を確かめてから元のポインタを置き換える。
+  - 大きさを積で求める呼び出し側は、自分で桁あふれを確かめる。
 - `clargs_free`: `ptr` が `NULL` なら何もしない。そうでなければ `free_fn` を呼ぶ。
-- 大きさが 0 でない要求への `NULL` の戻り値は、確保の失敗である。呼び出し側は、それを `CLARGS_ERROR_OUT_OF_MEMORY` として上へ返す（5.1）。大きさが 0 になりうる呼び出し側は、呼ぶ前に大きさを確かめ、0 のときの `NULL` を失敗として扱わない。
+- 大きさが 0 でない要求への `NULL` の戻り値は、確保の失敗である。呼び出し側は、それを `CLARGS_ERROR_OUT_OF_MEMORY` として上へ返す（5.1）。大きさが 0 になりうる呼び出し側は、呼ぶ前に大きさを確かめ、0 のときの `NULL` を失敗として扱わない。`clargs_realloc` に大きさ 0 を渡すと元のメモリは解放されるので、呼び出し側は元のポインタを使わない。
 - Invariants: これらの関数は、`errno` を書かず、何も出力せず、プロセスを中断しない。
 
 **アロケータ呼び出しの契約**
@@ -448,7 +451,7 @@ void clargs_free(void *ptr);
 
 - Integration: 後続のスペックは `#include "alloc_internal.h"` で取り込む。公開関数にアロケータの引数を足さない。
 - Validation（公開、`tests/public/alloc_test.c`）: 関数が 1 つ欠けたアロケータ 4 通りとゼロ初期化が `CLARGS_ERROR_INVALID_ARGUMENT` になること。`NULL` と、標準の関数をそのまま並べた構造体が `CLARGS_ERROR_NONE` になること。各テストの終わりに `clargs_set_allocator(NULL)` で既定に戻す。
-- Validation（内部、`tests/internal/alloc_internal_test.c`）: 未設定で 4 つの内部関数が動くこと（2.1）。テスト用アロケータを設定すると、要求がそこへ届くこと（1.3）。不正な設定の後も、前の設定が使われ続けること（1.6）。`NULL` の設定の後は、テスト用アロケータへ要求が届かないこと（2.2）。`clargs_calloc` の返すメモリがすべて 0 であること。大きさ 0 または個数 0 で `NULL` が返り、アロケータが呼ばれないこと（要求の回数が増えず、再確保では元の内容が残る）。桁あふれでアロケータが呼ばれないこと。再確保の失敗で元の内容が残ること。同じ操作の列を、既定と、標準の関数を包んだだけのアロケータで実行し、結果が同じであること（2.3）。
+- Validation（内部、`tests/internal/alloc_internal_test.c`）: 未設定で 4 つの内部関数が動くこと（2.1）。テスト用アロケータを設定すると、要求がそこへ届くこと（1.3）。不正な設定の後も、前の設定が使われ続けること（1.6）。`NULL` の設定の後は、テスト用アロケータへ要求が届かないこと（2.2）。`clargs_calloc` の返すメモリがすべて 0 であること。大きさ 0 または個数 0 で `NULL` が返り、アロケータが呼ばれないこと（要求の回数が増えない）。`clargs_realloc` が、`NULL` の `ptr` では確保になり、大きさ 0 では解放になること（未解放の個数で確かめる）。桁あふれでアロケータが呼ばれないこと。再確保の失敗で元の内容が残ること。同じ操作の列を、既定と、標準の関数を包んだだけのアロケータで実行し、結果が同じであること（2.3）。
 - Risks: 設定してよい時点を破っても、ライブラリは検出しない。文書と、テスト用アロケータの `live` で防ぐ。既定のアロケータの `malloc` などが、失敗時に `errno` を設定することがある。これは C 標準ライブラリの動作であり、ライブラリは `errno` を読まず、書かない（4.8）。
 
 ### 内部
@@ -519,7 +522,7 @@ void clargs_vec_destroy(clargs_vec_t *vec);
 ##### State Management
 
 - State model: 空（`items == NULL`、`count == 0`、`capacity == 0`）→ 要素あり（`count <= capacity`）→ `destroy` で空。
-- 伸長: 最初の確保は 4 要素、以後は 2 倍。最初は `clargs_calloc`、以後は `clargs_realloc` を使う。
+- 伸長: 最初の確保は 4 要素、以後は 2 倍。どちらも `clargs_realloc` を使う（最初は `items` が `NULL` なので確保になる）。
 - Concurrency: 同期しない。1 つの `clargs_vec_t` を複数のスレッドから同時に変更しない。
 
 **Implementation Notes**
