@@ -51,6 +51,8 @@ include/
     ├── alloc.h       アロケータの型と clargs_set_allocator() の宣言
     ├── error.h       エラーコードの一覧 CLARGS_ERROR_LIST、clargs_error_t、clargs_error_message() の宣言
     ├── export.h      CLARGS_API
+    ├── schema.h      スキーマ: コマンド、オプション、位置引数の定義、属性、検証、読み取りの宣言
+    ├── type.h        値型: clargs_type_t、組み込みの値型、生成、破棄、読み取り、変換の宣言
     └── version.h     バージョンのマクロと clargs_version() の宣言
 src/                  ソースと内部ヘッダ。インストールされない
 ├── CMakeLists.txt    ソース一覧 CLARGS_SOURCES、ターゲット clargs と clargs_internal
@@ -64,7 +66,8 @@ tests/
 └── consumer/         利用側からの取り込みの確認。本体のビルドには含めない
 docs/                 文書
 ├── conventions.md    この文書
-└── ownership.md      所有権と寿命の規約
+├── ownership.md      所有権と寿命の規約
+└── schema.md         スキーマの使い方（利用者向け）: 定義から検証、破棄までの例、値型の契約、破棄の順序
 ```
 
 - 利用者は `#include <clargs/clargs.h>` だけを書く。公開ヘッダどうしも `<clargs/<名前>.h>` の形で取り込む。

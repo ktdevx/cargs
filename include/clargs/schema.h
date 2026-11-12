@@ -433,8 +433,6 @@ CLARGS_API const clargs_type_t *clargs_option_type(const clargs_option_t *option
  * - option is not NULL (checked with assert) and is a handle that one of
  *   the functions that add an option wrote.
  * - text, name and value are not NULL. Checked with assert.
- * - text, name and value are not the string that option has for that same
- *   attribute, nor a part of it.
  */
 CLARGS_API clargs_error_t clargs_option_set_description(clargs_option_t *option, const char *text);
 CLARGS_API clargs_error_t clargs_option_set_value_name(clargs_option_t *option, const char *name);

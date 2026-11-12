@@ -76,6 +76,10 @@ typedef enum clargs_type_kind {
  *
  * On failure, the function leaves nothing to clean up: the cleanup function
  * is not called for a conversion that failed.
+ *
+ * The function has no side effect: it only writes the value. It is called
+ * whenever a conversion is requested, and the validation of a schema
+ * requests one for every default value, each time it runs.
  */
 typedef clargs_error_t (*clargs_convert_fn_t)(const char *text, void *value, void *context);
 
@@ -116,6 +120,8 @@ extern "C" {
  * The integer and the float conversion fail with CLARGS_ERROR_INVALID_VALUE.
  * The float conversion of a very long input can also fail with
  * CLARGS_ERROR_OUT_OF_MEMORY.
+ *
+ * Preconditions: none.
  */
 CLARGS_API const clargs_type_t *clargs_type_string(void);
 CLARGS_API const clargs_type_t *clargs_type_int(void);
