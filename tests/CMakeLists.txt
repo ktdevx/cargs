@@ -9,6 +9,7 @@
 clargs_add_test(alloc SOURCES public/alloc_test.c)
 clargs_add_test(alloc_internal SOURCES internal/alloc_internal_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(error SOURCES public/error_test.c)
+clargs_add_test(name SOURCES internal/name_test.c INTERNAL)
 clargs_add_test(str SOURCES internal/str_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(test_allocator SOURCES public/test_allocator_test.c support/test_allocator.c)
 clargs_add_test(vec SOURCES internal/vec_test.c support/test_allocator.c INTERNAL)
