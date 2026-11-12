@@ -5,6 +5,7 @@ set(CLARGS_SOURCES
     name.c
     number.c
     str.c
+    type.c
     vec.c
     version.c
 )
