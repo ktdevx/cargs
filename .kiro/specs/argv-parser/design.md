@@ -107,24 +107,23 @@ graph TB
     User --> Parse
     User --> Result
     Parse --> Lex
-    Parse --> Utf8
     Parse --> Resolve
     Parse --> Result
     Resolve --> Result
     Result --> Message
+    Result --> Utf8
     Parse --> SchemaRead
     Resolve --> SchemaRead
     Result --> SchemaRead
     Result --> TypeApi
     Result --> Alloc
-    Utf8 --> Alloc
     Message --> Alloc
 ```
 
 **Architecture Integration**:
 
 - Selected pattern: 段に分けたパイプライン。brief.md の Boundary Candidates（字句、照合、値の解決、結果、エラーとメッセージ、入力の適応）を、そのままコンポーネントにした。
-- 依存の向き: `Lex`、`Utf8`、`Message` は、スキーマも結果も知らない（葉）。`Result` は、スキーマの読み取り、値型、`Message` を使う。`Resolve` は `Result` を使う。`Parse` は全部を使う。逆向きの取り込みはしない。
+- 依存の向き: `Lex`、`Utf8`、`Message` は、スキーマも結果も知らない（葉）。`Result` は、スキーマの読み取り、値型、`Message`、`Utf8` を使う。`Resolve` は `Result` を使う。`Parse` は全部を使う。逆向きの取り込みはしない。
 - `Lex` はスキーマを知らない。負の数の規則（2.5）は、`Lex` が「負の数の形か」を答え、`Parse` が「現在のコマンドに数字の短い名前があるか」と組み合わせる。
 - `Resolve` を `Parse` から分ける。初版では既定値と必須だけを扱うが、後から argv → 環境 → 既定値の順を足す場所になる（`roadmap.md` の Future boundaries）。`Resolve` は argv を読まない。
 - 値を変換して保持する処理は `Result` の 1 か所に置く。コマンドラインの値も既定値も、同じ内部関数を通る。置き換えと後始末の規則（5.4、8.7）が 1 か所で済む。
@@ -351,8 +350,8 @@ flowchart TD
 | 11.12 | 情報とメッセージの寿命 | Result | 結果が所有する |
 | 11.13 | 前提条件の文書 | 文書 | `parse.h` のコメント、`docs/parse.md` |
 | 12.1, 12.6 | ワイド文字の入口と、提供する環境 | Parse | `clargs_parse_wide()`（全環境） |
-| 12.2, 12.3 | UTF-8 の argv と同じ結果、UTF-8 で返す | Parse、Utf8、Result | 変換の後は同じ経路 |
-| 12.4 | 変換できない並び | Utf8、Parse | `CLARGS_PARSE_ERROR_INVALID_ENCODING` |
+| 12.2, 12.3 | UTF-8 の argv と同じ結果、UTF-8 で返す | Utf8、Result | 変換の後は同じ経路 |
+| 12.4 | 変換できない並び | Utf8、Result、Parse | `CLARGS_PARSE_ERROR_INVALID_ENCODING` |
 | 12.5 | `char` の argv はバイトの並び | Parse、Result | 検査も変換もしない複製 |
 | 13.1 | アロケータ | 全体 | `src/alloc_internal.h` |
 | 13.2, 13.3 | 確保の失敗と `*out` | Parse、Result | 失敗時は結果を破棄して `NULL` |
@@ -373,9 +372,9 @@ flowchart TD
 | Lex | 内部 | 要素の形の分類 | 2.1–2.6, 3.1 | なし | Service |
 | Utf8 | 内部 | ワイド文字列から UTF-8 へ | 12.2–12.4 | なし | Service |
 | Message | 内部 | メッセージの組み立て | 11.8–11.10 | Allocator (P0) | Service |
-| Result | 公開と内部 | 結果の保持、値の変換、読み取り、エラーの記録、破棄 | 5.1–5.5, 8.1–8.7, 9.7, 9.9, 10.2–10.15, 11.2–11.7, 11.12, 12.5, 13.4–13.7, 14.1 | Schema read (P0)、Type (P0)、Vec (P0)、Message (P0) | Service、State |
+| Result | 公開と内部 | 結果の保持、値の変換、読み取り、エラーの記録、破棄 | 5.1–5.5, 8.1–8.7, 9.7, 9.9, 10.2–10.15, 11.2–11.7, 11.12, 12.5, 13.4–13.7, 14.1 | Schema read (P0)、Type (P0)、Vec (P0)、Message (P0)、Utf8 (P0) | Service、State |
 | Resolve | 内部 | 必須の検査と既定値の適用 | 9.1–9.6, 9.8, 9.10 | Result (P0)、Schema read (P0) | Service |
-| Parse | 公開 | 入口、走査、照合 | 1.1–1.8, 2.5, 2.7–2.9, 3.2–3.10, 4.1–4.8, 6.1–6.6, 7.1–7.8, 10.1, 10.10, 11.1, 12.1, 12.6, 13.2, 13.3 | Lex (P0)、Utf8 (P0)、Result (P0)、Resolve (P0)、Schema read (P0) | Service |
+| Parse | 公開 | 入口、走査、照合 | 1.1–1.8, 2.5, 2.7–2.9, 3.2–3.10, 4.1–4.8, 6.1–6.6, 7.1–7.8, 10.1, 10.10, 11.1, 12.1, 12.6, 13.2, 13.3 | Lex (P0)、Result (P0)、Resolve (P0)、Schema read (P0) | Service |
 | Error（追記） | 公開 | エラーコード 1 つ | 11.11 | 既存の `CLARGS_ERROR_LIST` | — |
 | 文書 | 文書 | `docs/parse.md` と既存の文書への追記 | 11.13, 13.6, 13.7, 14.7 | — | — |
 
@@ -571,7 +570,7 @@ typedef enum clargs_parse_error_kind {
 
 **Dependencies**
 
-- Outbound: Lex — 分類 (P0)。Result — 記録 (P0)。Resolve — 値の解決 (P0)。Utf8 — Result の引数の複製を通して使う (P0)
+- Outbound: Lex — 分類 (P0)。Result — 記録 (P0)。Resolve — 値の解決 (P0)
 - External: command-schema の読み取りと検索 (P0)
 
 **Contracts**: Service [x]
@@ -843,7 +842,7 @@ clargs_error_t clargs_resolve(clargs_result_t *result);
 
 ### 文書
 
-- `docs/parse.md`（新規）: 解析から破棄までの一連の例（スキーマの検証、`clargs_parse()`、`--help` を先に見てからエラーを見る順序、値の読み取り、`clargs_result_destroy()`）。引数の書き方の一覧（System Flows の表と、値の取り方の表）。解析エラーの種類とメッセージの一覧。寿命の規則（結果はスキーマより先に破棄する。結果がある間はスキーマを変更しない。argv は解析の後に解放してよい）。ワイド文字の入口（すべての環境で提供すること、`wchar_t` が 16 ビットの環境では UTF-16、それより広い環境では UTF-32 として読むこと）と、`wmain` での例（12.6）。前提条件の一覧。
+- `docs/parse.md`（新規）: 解析から破棄までの一連の例（スキーマの検証、`clargs_parse()`、`--help` を先に見てからエラーを見る順序、値の読み取り、`clargs_result_destroy()`）。引数の書き方の一覧（System Flows の表と、値の取り方の表）。解析エラーの種類とメッセージの一覧。サブコマンドごとの `--help`（オプションは定義したコマンドの区間でだけ認識されるので、`tool sub --help` を受け付けるには、サブコマンドにも `--help` を定義する）。寿命の規則（結果はスキーマより先に破棄する。結果がある間はスキーマを変更しない。argv は解析の後に解放してよい）。ワイド文字の入口（すべての環境で提供すること、`wchar_t` が 16 ビットの環境では UTF-16、それより広い環境では UTF-32 として読むこと）と、`wmain` での例（12.6）。前提条件の一覧。
 - `parse.h` の各関数のコメントに、既存のヘッダと同じ形で、戻り値、所有権、`Preconditions:` を英語で書く（11.13）。
 
 ## Data Models
