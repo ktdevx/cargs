@@ -634,6 +634,74 @@ CLARGS_API const char *clargs_positional_description(const clargs_positional_t *
  */
 CLARGS_API const char *clargs_positional_default(const clargs_positional_t *positional);
 
+/* ---- Validation --------------------------------------------------------- */
+
+/*
+ * Validates the tree of root: checks, in root and in every subcommand below
+ * it, what the functions that add and set cannot check because it depends
+ * on more than one definition. A tree that passes is marked as validated.
+ *
+ * The commands are checked from the root down: a command first, then its
+ * subcommands in the order in which they were added, each with everything
+ * below it before the next. Within one command, the checks are made in this
+ * order:
+ *
+ * 1. The positionals, in the order in which they were added. A positional
+ *    is faulty when
+ *    - it needs an argument (CLARGS_ARITY_REQUIRED,
+ *      CLARGS_ARITY_ONE_OR_MORE) and a positional before it can do without
+ *      one (CLARGS_ARITY_OPTIONAL, CLARGS_ARITY_ZERO_OR_MORE), or
+ *    - a positional before it takes any number of arguments
+ *      (CLARGS_ARITY_ZERO_OR_MORE, CLARGS_ARITY_ONE_OR_MORE).
+ * 2. The options, in the order in which they were added. An option is
+ *    faulty when it is required and has a default value.
+ *
+ * The validation stops at the first fault. The order is fixed, so the same
+ * definition gives the same result every time.
+ *
+ * Returns CLARGS_ERROR_NONE when the tree has no fault. The tree is then
+ * validated, and NULL is written to *command, *option and *positional.
+ *
+ * Returns CLARGS_ERROR_INVALID_DEFINITION for a fault. The command that the
+ * faulty option or positional belongs to is written to *command, the faulty
+ * option to *option or the faulty positional to *positional, and NULL to
+ * the other of the two. The handles are those of the tree: they are valid
+ * until the root is destroyed and can be read with the reading functions.
+ * The tree stays not validated.
+ *
+ * The validation never changes a definition: whatever it returns, the
+ * commands, options, positionals and their attributes are as they were
+ * before the call. The depth of the recursion is the depth of the tree.
+ *
+ * Preconditions:
+ *
+ * - root is not NULL and is a root, not a subcommand. Both are checked with
+ *   assert.
+ * - command, option and positional may each be NULL, when that part of the
+ *   place of a fault is not needed. An output that is not NULL is written
+ *   by every call.
+ */
+CLARGS_API clargs_error_t clargs_command_validate(clargs_command_t *root,
+                                                  const clargs_command_t **command,
+                                                  const clargs_option_t **option,
+                                                  const clargs_positional_t **positional);
+
+/*
+ * Returns whether the tree that command belongs to is validated: whether
+ * clargs_command_validate() succeeded on its root and nothing was added to
+ * the tree or set in it since. Any command of the tree can be passed; the
+ * result is the same for all of them.
+ *
+ * A new root is not validated. Every addition and every set that succeeds,
+ * anywhere in the tree, takes the tree back to not validated, also when it
+ * sets the value that was there. One that fails leaves the state as it was.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ */
+CLARGS_API bool clargs_command_is_validated(const clargs_command_t *command);
+
 #ifdef __cplusplus
 }
 #endif

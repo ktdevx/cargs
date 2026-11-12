@@ -9,6 +9,7 @@ set(CLARGS_SOURCES
     positional.c
     str.c
     type.c
+    validate.c
     vec.c
     version.c
 )
