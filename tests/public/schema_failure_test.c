@@ -852,7 +852,7 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
 
     default:
         NAOS_FAIL("a test asked for an unknown operation");
-        return false;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 

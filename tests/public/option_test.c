@@ -75,7 +75,7 @@ static clargs_error_t add_kind(clargs_option_kind_t kind, clargs_command_t *comm
         return clargs_command_add_value(command, short_name, long_name, clargs_type_string(), out);
     default:
         NAOS_FAIL("a test asked for an option of an unknown kind");
-        return CLARGS_ERROR_NONE;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 
@@ -179,7 +179,7 @@ static clargs_error_t set_text(text_attribute_t attribute, clargs_option_t *opti
         return clargs_option_set_default(option, text);
     default:
         NAOS_FAIL("a test asked for an unknown attribute");
-        return CLARGS_ERROR_NONE;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 
@@ -195,7 +195,7 @@ static const char *get_text(text_attribute_t attribute, const clargs_option_t *o
         return clargs_option_default(option);
     default:
         NAOS_FAIL("a test asked for an unknown attribute");
-        return NULL;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 

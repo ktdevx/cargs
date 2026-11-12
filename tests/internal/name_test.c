@@ -69,10 +69,10 @@ NAOS_TEST(short_rejects_the_neighbours_of_the_ranges)
  * not, and whatever the locale calls a letter. */
 NAOS_TEST(short_rejects_bytes_outside_ascii)
 {
-    NAOS_CHECK_FALSE(clargs_name_is_short((char)0x80));
-    NAOS_CHECK_FALSE(clargs_name_is_short((char)0xC1)); /* 'A' + 0x80 */
-    NAOS_CHECK_FALSE(clargs_name_is_short((char)0xE9)); /* e acute in Latin-1 */
-    NAOS_CHECK_FALSE(clargs_name_is_short((char)0xFF));
+    NAOS_CHECK_FALSE(clargs_name_is_short('\x80'));
+    NAOS_CHECK_FALSE(clargs_name_is_short('\xC1')); /* 'A' + 0x80 */
+    NAOS_CHECK_FALSE(clargs_name_is_short('\xE9')); /* e acute in Latin-1 */
+    NAOS_CHECK_FALSE(clargs_name_is_short('\xFF'));
     NAOS_CHECK_FALSE(clargs_name_is_short((char)0x7F));
 }
 

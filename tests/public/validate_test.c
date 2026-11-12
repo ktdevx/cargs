@@ -1009,7 +1009,7 @@ static clargs_error_t mutate(const fixture_t *fixture, mutation_t mutation)
         return clargs_positional_set_default(fixture->optional, "more");
     default:
         NAOS_FAIL("a test asked for an unknown change");
-        return CLARGS_ERROR_NONE;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 
@@ -1173,7 +1173,7 @@ static clargs_error_t refusal_error(refusal_t refusal)
         return CLARGS_ERROR_INVALID_DEFINITION;
     default:
         NAOS_FAIL("a test asked for an unknown refusal");
-        return CLARGS_ERROR_NONE;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 
@@ -1226,7 +1226,7 @@ static clargs_error_t attempt(const fixture_t *fixture, refusal_t refusal)
         return clargs_positional_set_default(fixture->required, "more");
     default:
         NAOS_FAIL("a test asked for an unknown refusal");
-        return CLARGS_ERROR_NONE;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 

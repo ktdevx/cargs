@@ -187,7 +187,7 @@ static clargs_error_t set_text(text_attribute_t attribute, clargs_positional_t *
         return clargs_positional_set_default(positional, text);
     default:
         NAOS_FAIL("a test asked for an unknown attribute");
-        return CLARGS_ERROR_NONE;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 
@@ -201,7 +201,7 @@ static const char *get_text(text_attribute_t attribute, const clargs_positional_
         return clargs_positional_default(positional);
     default:
         NAOS_FAIL("a test asked for an unknown attribute");
-        return NULL;
+        /* NAOS_FAIL does not return; nothing may follow it (MSVC C4702). */
     }
 }
 
