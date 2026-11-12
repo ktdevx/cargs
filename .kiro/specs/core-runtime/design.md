@@ -67,14 +67,6 @@
 - テスト用アロケータの API、または回数の数え方の変更。
 - 検査スクリプトの禁止する名前の一覧の変更。
 
-### 上流の文書との食い違い
-
-この設計は、レビューでの指示により、アロケータをグローバルに 1 つ設定する形にした。次の文書は、まだ「オブジェクトごとに渡す」「変更可能なグローバル状態を持たない」と書いている。後続のスペックを作る前に直す必要がある。
-
-- `.kiro/steering/roadmap.md` — Constraints の「状態」、Approach Decision の Why の 2 つ目、Overview の「公開 API」の段落。
-- `.kiro/specs/core-runtime/brief.md` — Approach と Constraints。
-- `.kiro/specs/command-schema/brief.md` — Approach の「ルートコマンドを作るときにアロケータを渡し」。
-
 ## Architecture
 
 ### Existing Architecture Analysis
@@ -126,7 +118,7 @@ graph TB
 - **Domain boundaries**: エラーモデル（`error`）はメモリを確保しない。メモリ（`alloc`）はコマンドラインを知らない。ユーティリティ（`str`、`vec`）は `alloc` の内部関数だけを通してメモリを得る。
 - **Existing patterns preserved**: 公開ヘッダ、テストの置き方と登録方法は `docs/conventions.md` のとおり。内部ヘッダの名前の規約だけを直す。
 - **New components rationale**: 下の Components を参照。どれも要件に直接対応する。
-- **Steering compliance**: C99・拡張なし、実行時の依存は C 標準ライブラリのみ、公開名は `clargs_` / `CLARGS_`。「変更可能なグローバル状態を持たない」は、設定されたアロケータを唯一の例外とする（上の「上流の文書との食い違い」）。
+- **Steering compliance**: C99・拡張なし、実行時の依存は C 標準ライブラリのみ、公開名は `clargs_` / `CLARGS_`。変更可能なグローバル状態は、設定されたアロケータだけである（`roadmap.md` の Constraints のとおり）。
 
 ### Technology Stack
 

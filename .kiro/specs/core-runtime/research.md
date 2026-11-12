@@ -5,7 +5,7 @@
 - **Feature**: `core-runtime`
 - **Discovery Scope**: Extension（build-foundation の土台の上に、最初の機能モジュールを足す）。軽い調査を行った。対象は、既存のコードと規約、および C ライブラリで広く使われているアロケータとエラーコードの形である。
 - **Key Findings**:
-  - アロケータは、レビューでの指示により、ライブラリ全体に 1 つ設定する形にした。関数は標準の `malloc`、`realloc`、`calloc`、`free` と同じ形で、利用者のデータは持たない。`roadmap.md` と `brief.md` の「グローバル状態を持たない」「オブジェクトごとに渡す」とは食い違う。
+  - アロケータは、レビューでの指示により、ライブラリ全体に 1 つ設定する形にした。関数は標準の `malloc`、`realloc`、`calloc`、`free` と同じ形で、利用者のデータは持たない。`roadmap.md` と各スペックの `brief.md` も、この決定に合わせて直した。
   - 既存の export の確認は公開ヘッダを読んで期待する名前を得るので、公開関数を足しても build-foundation のファイルを直す必要がない。内部ユーティリティが export されないことも、同じ確認が保証する。
   - テスト用アロケータは公開ヘッダだけに依存させられる。そうすると、テストの `SOURCES` に 1 ファイル足すだけで、公開・内部のどちらのテストからも使え、`cmake/ClargsTesting.cmake` を変更せずに済む。
 
@@ -63,7 +63,7 @@
   - 変更可能なグローバル状態が 1 つできる。設定は同期しないので、オブジェクトがなく、ほかのスレッドが呼んでいないときに行う、という利用者側の決まりが要る。ライブラリは違反を検出しない。
   - 利用者のデータがないので、状態を持つアロケータは、利用者が自分のグローバルな状態を使う。テスト用アロケータも `static` の状態になる。
   - 静的ライブラリを複数のモジュールにリンクすると、モジュールごとに別の設定になる。
-- **Follow-up**: `roadmap.md`（Constraints の「状態」など）、`core-runtime/brief.md`、`command-schema/brief.md` を、この決定に合わせて直す。要件 1、2、3、7.6、9.1、9.6 は直した。
+- **Follow-up**: `roadmap.md`（Overview、Approach Decision、Constraints）と、core-runtime、command-schema、argv-parser、help-formatter の `brief.md` を、この決定に合わせて直した。要件 1、2、3、7.6、9.1、9.6 も直した。
 
 ### Decision: アロケータの構造体の配置を固定する
 
