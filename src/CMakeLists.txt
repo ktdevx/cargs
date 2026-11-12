@@ -9,6 +9,7 @@ set(CLARGS_SOURCES
     number.c
     option.c
     positional.c
+    result.c
     str.c
     type.c
     utf8.c
