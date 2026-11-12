@@ -38,6 +38,7 @@
 
 #include <clargs/error.h>
 #include <clargs/export.h>
+#include <clargs/type.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -273,6 +274,127 @@ CLARGS_API const clargs_option_t *clargs_command_find_long(const clargs_command_
  */
 CLARGS_API const clargs_command_t *clargs_command_find_subcommand(const clargs_command_t *command,
                                                                   const char *name);
+
+/* ---- Options ------------------------------------------------------------ */
+
+/*
+ * Add an option to command, after the options that command has already,
+ * and write it to *out if out is not NULL. There is one function for each
+ * kind of option:
+ *
+ * - clargs_command_add_flag(): a flag, CLARGS_OPTION_FLAG.
+ * - clargs_command_add_negatable(): a negatable flag,
+ *   CLARGS_OPTION_NEGATABLE. Its negated name, "no-" and the long name, is
+ *   made here; a long name "color" gives the negated name "no-color".
+ * - clargs_command_add_count(): a count, CLARGS_OPTION_COUNT.
+ * - clargs_command_add_value(): an option that takes one value,
+ *   CLARGS_OPTION_VALUE. It is the only one with a value type, type. The
+ *   value type is borrowed, not copied: the caller keeps it valid until the
+ *   root of the tree is destroyed, and destroys it afterwards.
+ *
+ * An option has a short name, a long name, or both. short_name is '\0' for
+ * an option without a short name, and long_name is NULL for an option
+ * without a long name. A short name is one ASCII letter or digit. A long
+ * name has two characters or more; the first is an ASCII letter or digit,
+ * the others are ASCII letters, digits, '-' or '_'. The long name is
+ * copied. A negatable flag always has a long name.
+ *
+ * The option belongs to the tree and is destroyed with the root.
+ *
+ * Return CLARGS_ERROR_NONE on success. On failure, the tree is as it was
+ * before the call, nothing of the call stays allocated, and *out is NULL.
+ * The conditions are checked in this order:
+ *
+ * - CLARGS_ERROR_INVALID_NAME: there is neither a short name nor a long
+ *   name.
+ * - CLARGS_ERROR_INVALID_NAME: a negatable flag has no long name.
+ * - CLARGS_ERROR_INVALID_NAME: the short name or the long name does not
+ *   follow the rule; the empty string is not a long name.
+ * - CLARGS_ERROR_NAME_CONFLICT: command has an option with the same short
+ *   name already.
+ * - CLARGS_ERROR_NAME_CONFLICT: command has an option whose long name or
+ *   negated name is the long name.
+ * - CLARGS_ERROR_NAME_CONFLICT: for a negatable flag, command has an option
+ *   whose long name or negated name is the negated name.
+ * - CLARGS_ERROR_OUT_OF_MEMORY: an allocation failed.
+ *
+ * The same names can be used in another command, also in the parent and in
+ * a subcommand of command.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ * - short_name may be '\0' and long_name may be NULL, as described above.
+ * - For clargs_command_add_value(): type is not NULL (checked with assert)
+ *   and is a value type that has not been destroyed.
+ * - out may be NULL, when the handle is not needed.
+ */
+CLARGS_API clargs_error_t clargs_command_add_flag(clargs_command_t *command, char short_name,
+                                                  const char *long_name, clargs_option_t **out);
+CLARGS_API clargs_error_t clargs_command_add_negatable(clargs_command_t *command, char short_name,
+                                                       const char *long_name, clargs_option_t **out);
+CLARGS_API clargs_error_t clargs_command_add_count(clargs_command_t *command, char short_name,
+                                                   const char *long_name, clargs_option_t **out);
+CLARGS_API clargs_error_t clargs_command_add_value(clargs_command_t *command, char short_name,
+                                                   const char *long_name, const clargs_type_t *type,
+                                                   clargs_option_t **out);
+
+/*
+ * Returns the command that option belongs to. Never NULL.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API const clargs_command_t *clargs_option_command(const clargs_option_t *option);
+
+/*
+ * Returns the kind of option.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API clargs_option_kind_t clargs_option_kind(const clargs_option_t *option);
+
+/*
+ * Returns the short name of option, or '\0' when it has none.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API char clargs_option_short_name(const clargs_option_t *option);
+
+/*
+ * Returns the long name of option, or NULL when it has none.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API const char *clargs_option_long_name(const clargs_option_t *option);
+
+/*
+ * Returns the negated name of option, "no-" and its long name, when option
+ * is a negatable flag, and NULL for every other kind.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API const char *clargs_option_negated_name(const clargs_option_t *option);
+
+/*
+ * Returns the value type of option when option takes a value, and NULL for
+ * every other kind. It is the value type that was passed to
+ * clargs_command_add_value(); it belongs to the caller of that function.
+ *
+ * Preconditions:
+ *
+ * - option is not NULL. Checked with assert.
+ */
+CLARGS_API const clargs_type_t *clargs_option_type(const clargs_option_t *option);
 
 #ifdef __cplusplus
 }

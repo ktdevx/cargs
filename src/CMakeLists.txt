@@ -5,6 +5,7 @@ set(CLARGS_SOURCES
     error.c
     name.c
     number.c
+    option.c
     str.c
     type.c
     vec.c
