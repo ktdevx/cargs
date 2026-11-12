@@ -31,7 +31,12 @@
  */
 #define CLARGS_ERROR_LIST(X) \
     X(CLARGS_ERROR_NONE, "success") \
-    X(CLARGS_ERROR_OUT_OF_MEMORY, "out of memory")
+    X(CLARGS_ERROR_OUT_OF_MEMORY, "out of memory") \
+    X(CLARGS_ERROR_INVALID_NAME, "invalid name") \
+    X(CLARGS_ERROR_NAME_CONFLICT, "name already in use") \
+    X(CLARGS_ERROR_INVALID_DEFINITION, "inconsistent definition") \
+    X(CLARGS_ERROR_INVALID_DEFAULT, "default value rejected by its value type") \
+    X(CLARGS_ERROR_INVALID_VALUE, "invalid value")
 
 /* The kind of a failure, or CLARGS_ERROR_NONE for success. */
 typedef enum clargs_error {
