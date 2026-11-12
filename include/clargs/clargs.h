@@ -10,6 +10,7 @@
 #ifndef CLARGS_CLARGS_H
 #define CLARGS_CLARGS_H
 
+#include <clargs/error.h>
 #include <clargs/export.h>
 #include <clargs/version.h>
 
