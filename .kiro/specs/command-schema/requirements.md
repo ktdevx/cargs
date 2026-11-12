@@ -126,7 +126,7 @@ core-runtime が、アロケータ、エラーコード、所有権の規約を�
 
 ### Requirement 4: 位置引数の定義
 
-**Objective:** As a ライブラリ利用者, I want 必須、任意、可変個の位置引数を、受け取る順に定義すること, so that `cp <src>... <dst>` や `tool <input> [output]` のような引数の並びを表せる
+**Objective:** As a ライブラリ利用者, I want 必須、任意、可変個の位置引数を、受け取る順に定義すること, so that `rm <file>...` や `tool <input> [output]` のような引数の並びを表せる
 
 #### Acceptance Criteria
 

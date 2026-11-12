@@ -184,8 +184,29 @@ docs/
 - `include/clargs/clargs.h` — `#include <clargs/schema.h>` と `#include <clargs/type.h>` を足す。
 - `src/CMakeLists.txt` — `CLARGS_SOURCES` に `command.c`、`name.c`、`number.c`、`option.c`、`positional.c`、`type.c`、`validate.c` を足す。
 - `tests/CMakeLists.txt` — 上の 8 つのテストを `clargs_add_test()` で登録する。`schema_failure` と、確保を伴う公開 API のテストには `support/test_allocator.c` を足す。
-- `docs/conventions.md` — ディレクトリ構成の一覧に、新しいヘッダと `docs/schema.md` を足す。
+- `docs/conventions.md` — ディレクトリ構成の一覧に、新しいヘッダと `docs/schema.md` を足す。「エラーコードを足す」の「エラーコードにするのは、実行時の失敗だけである」の項に、定義の誤り（文字列の内容と、定義どうしの関係に由来するもの）は実行時の失敗として扱うことを足す。`docs/ownership.md` への追記と同じ分け方を書く。
 - `docs/ownership.md` — 「実行時の失敗とプログラムの誤り」に、定義の誤りをエラーコードにする理由と分け方を足す。「スキーマ、argv、結果への適用」の表に、値型の寿命（スキーマが借りる。スキーマを先に破棄する）を足す。
+
+### Implementation Order
+
+公開ヘッダに `CLARGS_API` で宣言した関数は、すべて export されていなければならない（既存の検査 `clargs.exports`）。宣言だけを先に足すと、動的の構成でこの検査が失敗する。そこで、公開ヘッダの宣言は、その関数を実装する作業の中で足す。
+
+| 順 | 作業 | 触るファイル | 並行 |
+|---|---|---|---|
+| 1 | エラーコード | `include/clargs/error.h` | — |
+| 2 | Name | `src/name.h`、`src/name.c`、`tests/internal/name_test.c` | 3 と並行できる |
+| 3 | Number | `src/number.h`、`src/number.c`、`tests/internal/number_test.c` | 2 と並行できる |
+| 4 | Type | `include/clargs/type.h`、`src/type_internal.h`、`src/type.c`、`tests/public/type_test.c`、`clargs.h` | 2、3 の後 |
+| 5 | Command | `include/clargs/schema.h`（新規。型とコマンドの節）、`src/schema_internal.h`（新規。3 つの構造体と補助関数）、`src/command.c`、`tests/public/command_test.c`、`clargs.h` | 4 の後 |
+| 6 | Option | `schema.h`（オプションの節を追記）、`src/option.c`、`tests/public/option_test.c` | 5 の後 |
+| 7 | Positional | `schema.h`（位置引数の節を追記）、`src/positional.c`、`tests/public/positional_test.c` | 6 の後 |
+| 8 | Validate | `schema.h`（検証の節を追記）、`src/validate.c`、`tests/public/validate_test.c` | 7 の後 |
+| 9 | 失敗注入のテスト、文書 | `tests/public/schema_failure_test.c`、`docs/` | 8 の後 |
+
+- `src/schema_internal.h` の 3 つの構造体は、5 で、Logical Data Model のとおりに全部を定義する。`command.c` の破棄が、オプションと位置引数の中身を解放するためである。6 と 7 は、このヘッダを変えない。
+- 5 の時点では、オプションと位置引数を足す関数がまだない。`command.c` の列挙と検索は、空の配列に対して動く形で実装し、中身のある場合のテストは 6 と 7 で足す。位置引数を持つコマンドへのサブコマンドの追加（4.7）のテストは、7 の `positional_test.c` に置く。
+- 6、7、8 は、どれも `schema.h`、`src/CMakeLists.txt`、`tests/CMakeLists.txt` に追記するので、並行させない。
+- どの作業も、自分のソースを `CLARGS_SOURCES` に、自分のテストを `tests/CMakeLists.txt` に、その作業の中で足す。
 
 ## System Flows
 
