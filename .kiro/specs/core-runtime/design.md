@@ -23,7 +23,9 @@
 - オブジェクトごとのアロケータ、利用者のデータ（コンテキスト）をアロケータへ渡す仕組み。
 - 設定されているアロケータを取得する公開関数。
 - アロケータの設定のスレッド同期。設定してよい時点を文書で決める。
-- 失敗の位置や対象を表す仕組み、利用者向けメッセージの整形、ログ、アサーションのフック。
+- 失敗の位置や対象を表す仕組み、利用者向けメッセージの整形、ログ。
+- アサーションの動作を利用者が差し替えるフック。標準の `assert` をそのまま使う。
+- プログラムの誤り（必須の引数の `NULL` など）をエラーコードで報告すること。
 - アリーナやプールの実装。
 - 長さ指定の文字列複製、ハッシュ表など、いま使う相手のいない内部ユーティリティ。
 
@@ -49,7 +51,7 @@
 
 ### Allowed Dependencies
 
-- C 標準ライブラリ（C99）。`<stddef.h>`、`<stdlib.h>`（`src/alloc.c` だけ）、`<string.h>`（`memcpy`、`strlen`）、`<stdint.h>`（`SIZE_MAX`）。
+- C 標準ライブラリ（C99）。`<assert.h>`、`<stddef.h>`、`<stdlib.h>`（`src/alloc.c` だけ）、`<string.h>`（`memcpy`、`strlen`）、`<stdint.h>`（`SIZE_MAX`）。
 - build-foundation の成果: `CLARGS_API`、`CLARGS_SOURCES`、`clargs_add_test()`、`clargs_internal` ターゲット、`docs/conventions.md` の命名規約。
 - テストだけ: Naos v0.4.0。
 - 依存の向き: `error` ← `alloc` ← `str`、`vec`。逆向きの取り込みをしない。このスペックのコードは、後続のスペックのヘッダを取り込まない。
@@ -60,6 +62,7 @@
 
 - アロケータの持ち方の変更（グローバルに 1 つ、という前提）。
 - `clargs_allocator_t` の配置（フィールドの数、順序、型）、関数ポインタ型のシグネチャ、アロケータ呼び出しの契約の変更。
+- プログラムの誤りの扱い（前提条件と `assert`）の変更。
 - 既存の `clargs_error_t` の値や意味の変更、`CLARGS_ERROR_LIST` の形（引数の数と順序）の変更。
 - `clargs_malloc` などの内部のメモリ関数、`clargs_strdup`、`clargs_vec_*` のシグネチャや、失敗時の保証の変更。
 - `docs/ownership.md` の規約の変更（特に、文字列の複製、`NULL` の扱い、失敗時の出力先の状態、アロケータを設定してよい時点）。
@@ -216,7 +219,7 @@ sequenceDiagram
 | 1.3 | 設定後は設定された関数だけを使う | Allocator | `clargs_malloc` などの内部関数 | — |
 | 1.4 | 同じアロケータで解放する | Allocator、所有権の規約、TestAllocator | `clargs_free`、`live` | 失敗注入 |
 | 1.5 | 標準の関数と同じ形 | Allocator | 関数ポインタ型 4 つ | — |
-| 1.6 | 関数が欠けていたら不正な引数 | Allocator | `clargs_set_allocator` | — |
+| 1.6 | 4 つの関数がそろっていることは前提条件 | Allocator、前提条件の検査 | `clargs_set_allocator` の Preconditions | — |
 | 1.7 | 設定してよい時点の文書 | 所有権の規約 | 規則 5 | — |
 | 2.1 | 未設定なら `malloc` 系 | Allocator | 既定のアロケータ | — |
 | 2.2 | 未指定の値で既定に戻す | Allocator | `clargs_set_allocator(NULL)` | — |
@@ -228,15 +231,18 @@ sequenceDiagram
 | 3.5 | 別オブジェクトへの同時呼び出し | Allocator、所有権の規約 | 設定は読むだけ | — |
 | 3.6 | 自動の検査 | AllocationCheck | `clargs.allocations` | — |
 | 4.1 | エラーコードの型 | Error | `clargs_error_t` | — |
-| 4.2 | 失敗しうる公開関数はエラーコードを返す | 所有権の規約、Allocator | 規則 7、`clargs_set_allocator` | — |
+| 4.2 | 失敗しうる公開関数はエラーコードを返す | 所有権の規約 | 規則 7 | — |
 | 4.3 | 成功は 1 つ | Error | `CLARGS_ERROR_NONE` | — |
-| 4.4 | 確保の失敗と不正な引数を区別 | Error | `CLARGS_ERROR_OUT_OF_MEMORY`、`CLARGS_ERROR_INVALID_ARGUMENT` | — |
+| 4.4 | エラーコードは実行時の失敗だけ | Error | `CLARGS_ERROR_OUT_OF_MEMORY` | — |
 | 4.5 | 説明文を返す | Error | `clargs_error_message` | — |
 | 4.6 | 未知の値にも文字列 | Error | `clargs_error_message` | — |
 | 4.7 | 説明文は解放不要で常に有効 | Error | 文字列リテラル | — |
 | 4.8 | `errno` を使わない | Error、Allocator | — | — |
-| 4.9 | 中断せず、出力しない | すべて | — | — |
+| 4.9 | 実行時の失敗では中断せず、出力しない | すべて | — | — |
 | 4.10 | 失敗時の出力先の状態 | 所有権の規約 | 規則 7 | — |
+| 4.11 | プログラムの誤りは前提条件として扱う | 前提条件の検査、所有権の規約 | 各関数の Preconditions、規則 4 | — |
+| 4.12 | Debug 構成では中断する | 前提条件の検査 | `assert` | — |
+| 4.13 | Release 構成では検査しない | 前提条件の検査 | `NDEBUG` | — |
 | 5.1 | 確保の失敗をエラーコードで返す | Allocator、Str、Vec | `NULL` → `CLARGS_ERROR_OUT_OF_MEMORY` | 失敗注入 |
 | 5.2 | 途中の確保を解放して戻る | 所有権の規約、Str、Vec | 規則 7 | 失敗注入 |
 | 5.3 | 失敗後も使用・破棄できる | 所有権の規約、Vec | `clargs_vec_push` の保証 | 失敗注入 |
@@ -281,6 +287,7 @@ sequenceDiagram
 | Component | Layer | Intent | Req Coverage | Key Dependencies | Contracts |
 |-----------|-------|--------|--------------|------------------|-----------|
 | Error | 公開 | エラーコードと説明文 | 4.1, 4.3–4.9, 6.1, 6.3–6.5, 10.2–10.5 | なし | Service |
+| 前提条件の検査 | 全体の規則 | プログラムの誤りを `assert` で検査する | 4.11–4.13, 1.6 | `<assert.h>` (P0) | — |
 | Allocator | 公開と内部 | アロケータの型、設定、既定、メモリ操作 | 1.1–1.6, 2.1–2.3, 3.1, 3.3–3.5, 5.1, 5.4, 5.5, 7.6, 10.1–10.3 | Error (P0) | Service、State |
 | Str | 内部 | 文字列の複製 | 8.1, 8.3, 8.5, 8.6, 5.1, 5.2 | Allocator (P0) | Service |
 | Vec | 内部 | 伸長する配列 | 8.2–8.6, 5.3, 5.4, 5.5 | Allocator (P0) | Service、State |
@@ -313,8 +320,7 @@ sequenceDiagram
 /* include/clargs/error.h */
 #define CLARGS_ERROR_LIST(X) \
     X(CLARGS_ERROR_NONE, "success") \
-    X(CLARGS_ERROR_OUT_OF_MEMORY, "out of memory") \
-    X(CLARGS_ERROR_INVALID_ARGUMENT, "invalid argument")
+    X(CLARGS_ERROR_OUT_OF_MEMORY, "out of memory")
 
 typedef enum clargs_error {
 #define CLARGS_ERROR_ENUM(name, message) name,
@@ -344,7 +350,7 @@ CLARGS_API const char *clargs_error_message(clargs_error_t error);
 **Implementation Notes**
 
 - Integration: `src/error.c` は、`CLARGS_ERROR_LIST` から `switch` の `case` を生成する（`case 名前: return 説明文;`）。一覧にない値は `switch` の後で `"unknown error code"` を返す。同じ名前を 2 度書くと、列挙子の重複としてコンパイルエラーになる。
-- Validation: `tests/public/error_test.c` は、`CLARGS_ERROR_LIST` から、名前と説明文の表を生成する。各行について、`clargs_error_message()` が一覧の説明文と同じ内容を返すこと、空でないこと、`"unknown error code"` と異なること、ほかの行の説明文と異なることを確かめる（6.4）。エラーコードを足しても、このテストは直さない。`CLARGS_ERROR_NONE` が 0、`CLARGS_ERROR_OUT_OF_MEMORY` が 1、`CLARGS_ERROR_INVALID_ARGUMENT` が 2 であること（公開した値が動いていないことの確認）、一覧にない値（`(clargs_error_t)-1`、`(clargs_error_t)9999`）で `"unknown error code"` が返ることも確かめる。
+- Validation: `tests/public/error_test.c` は、`CLARGS_ERROR_LIST` から、名前と説明文の表を生成する。各行について、`clargs_error_message()` が一覧の説明文と同じ内容を返すこと、空でないこと、`"unknown error code"` と異なること、ほかの行の説明文と異なることを確かめる（6.4）。エラーコードを足しても、このテストは直さない。`CLARGS_ERROR_NONE` が 0、`CLARGS_ERROR_OUT_OF_MEMORY` が 1 であること（公開した値が動いていないことの確認）、一覧にない値（`(clargs_error_t)-1`、`(clargs_error_t)9999`）で `"unknown error code"` が返ることも確かめる。
 - Risks: 公開ヘッダに関数形式のマクロと補助のマクロが入る。補助のマクロ（`CLARGS_ERROR_ENUM`）は、使った直後に `#undef` する。並行して進むスペックがそれぞれ末尾に足すと、マージの順で値が決まる。公開（リリース）するまでは値が動いてもよい。列挙型の大きさを変えるコンパイラのオプション（`-fshort-enums`）は対象外とする。
 
 ### 公開と内部
@@ -388,16 +394,17 @@ typedef struct clargs_allocator {
     clargs_free_fn_t free_fn;
 } clargs_allocator_t;
 
-CLARGS_API clargs_error_t clargs_set_allocator(const clargs_allocator_t *allocator);
+CLARGS_API void clargs_set_allocator(const clargs_allocator_t *allocator);
 ```
 
 `clargs_set_allocator`
 
-- `allocator` が `NULL` なら、設定を既定のアロケータに戻して `CLARGS_ERROR_NONE` を返す（2.2）。
-- `allocator` の 4 つの関数のどれかが `NULL` なら、現在の設定を変更せず、どのアロケータも呼ばずに `CLARGS_ERROR_INVALID_ARGUMENT` を返す（1.6）。構造体をゼロで初期化したものも、これに当たる。
-- それ以外は、`*allocator` を複製して設定し、`CLARGS_ERROR_NONE` を返す。利用者は、呼び出しが戻ったら構造体を破棄してよい。
+- 失敗しないので、値を返さない。
+- `allocator` が `NULL` なら、設定を既定のアロケータに戻す（2.2）。
+- それ以外は、`*allocator` を複製して設定する。利用者は、呼び出しが戻ったら構造体を破棄してよい。
 - この関数はメモリを確保しない。
-- Preconditions（利用者が守る。ライブラリは検査しない）: ライブラリのオブジェクトが 1 つも存在しない。ほかのスレッドがライブラリの関数を呼び出していない。ふつうは、プログラムの開始時に 1 度だけ呼ぶ。
+- Preconditions（`assert` で検査する）: `allocator` が `NULL` でないなら、4 つの関数がどれも `NULL` でない（1.6）。構造体をゼロで初期化したものは、これに反する。
+- Preconditions（利用者が守る。ライブラリは検査できない）: ライブラリのオブジェクトが 1 つも存在しない。ほかのスレッドがライブラリの関数を呼び出していない。ふつうは、プログラムの開始時に 1 度だけ呼ぶ。
 - 関数ポインタの型は標準の関数と同じ形なので、`{ malloc, realloc, calloc, free }` をそのまま設定できる（1.5）。
 
 ##### Service Interface（内部）
@@ -421,7 +428,7 @@ void clargs_free(void *ptr);
   - 大きさを積で求める呼び出し側は、自分で桁あふれを確かめる。
 - `clargs_free`: `ptr` が `NULL` なら何もしない。そうでなければ `free_fn` を呼ぶ。
 - 大きさが 0 でない要求への `NULL` の戻り値は、確保の失敗である。呼び出し側は、それを `CLARGS_ERROR_OUT_OF_MEMORY` として上へ返す（5.1）。大きさが 0 になりうる呼び出し側は、呼ぶ前に大きさを確かめ、0 のときの `NULL` を失敗として扱わない。`clargs_realloc` に大きさ 0 を渡すと元のメモリは解放されるので、呼び出し側は元のポインタを使わない。
-- Invariants: これらの関数は、`errno` を書かず、何も出力せず、プロセスを中断しない。
+- Invariants: これらの関数は、`errno` を書かない。実行時の失敗（確保の失敗）では、何も出力せず、プロセスを中断しない。
 
 **アロケータ呼び出しの契約**
 
@@ -450,8 +457,8 @@ void clargs_free(void *ptr);
 **Implementation Notes**
 
 - Integration: 後続のスペックは `#include "alloc_internal.h"` で取り込む。公開関数にアロケータの引数を足さない。
-- Validation（公開、`tests/public/alloc_test.c`）: 関数が 1 つ欠けたアロケータ 4 通りとゼロ初期化が `CLARGS_ERROR_INVALID_ARGUMENT` になること。`NULL` と、標準の関数をそのまま並べた構造体が `CLARGS_ERROR_NONE` になること。各テストの終わりに `clargs_set_allocator(NULL)` で既定に戻す。
-- Validation（内部、`tests/internal/alloc_internal_test.c`）: 未設定で 4 つの内部関数が動くこと（2.1）。テスト用アロケータを設定すると、要求がそこへ届くこと（1.3）。不正な設定の後も、前の設定が使われ続けること（1.6）。`NULL` の設定の後は、テスト用アロケータへ要求が届かないこと（2.2）。`clargs_calloc` の返すメモリがすべて 0 であること。大きさ 0 または個数 0 で `NULL` が返り、アロケータが呼ばれないこと（要求の回数が増えない）。`clargs_realloc` が、`NULL` の `ptr` では確保になり、大きさ 0 では解放になること（未解放の個数で確かめる）。桁あふれでアロケータが呼ばれないこと。再確保の失敗で元の内容が残ること。同じ操作の列を、既定と、標準の関数を包んだだけのアロケータで実行し、結果が同じであること（2.3）。
+- Validation（公開、`tests/public/alloc_test.c`）: 標準の関数をそのまま並べた構造体を設定できること。`NULL` で既定に戻せること。設定した後に構造体を書き換えても、設定が変わらないこと（複製していることの確認。テスト用アロケータの要求の回数で確かめる）。各テストの終わりに `clargs_set_allocator(NULL)` で既定に戻す。
+- Validation（内部、`tests/internal/alloc_internal_test.c`）: 未設定で 4 つの内部関数が動くこと（2.1）。テスト用アロケータを設定すると、要求がそこへ届くこと（1.3）。`NULL` の設定の後は、テスト用アロケータへ要求が届かないこと（2.2）。`clargs_calloc` の返すメモリがすべて 0 であること。大きさ 0 または個数 0 で `NULL` が返り、アロケータが呼ばれないこと（要求の回数が増えない）。`clargs_realloc` が、`NULL` の `ptr` では確保になり、大きさ 0 では解放になること（未解放の個数で確かめる）。桁あふれでアロケータが呼ばれないこと。再確保の失敗で元の内容が残ること。同じ操作の列を、既定と、標準の関数を包んだだけのアロケータで実行し、結果が同じであること（2.3）。
 - Risks: 設定してよい時点を破っても、ライブラリは検出しない。文書と、テスト用アロケータの `live` で防ぐ。既定のアロケータの `malloc` などが、失敗時に `errno` を設定することがある。これは C 標準ライブラリの動作であり、ライブラリは `errno` を読まず、書かない（4.8）。
 
 ### 内部
@@ -530,6 +537,33 @@ void clargs_vec_destroy(clargs_vec_t *vec);
 - Validation: `tests/internal/vec_test.c`。空の状態、4 を超える伸長で内容が保たれること、大きさの違う要素（`char`、`int`、構造体、ポインタ）、失敗注入の各回で `count` と既存の要素が変わらず、その後の `push` が成功すること、`destroy` の後に解放漏れがなく、再び使えること。
 - Risks: 型のない `void *` の境界なので、要素の型の取り違えをコンパイラは検出しない。後続のスペックは、型ごとの薄い `static` 関数で包む。
 
+### 全体の規則
+
+#### 前提条件の検査
+
+| Field | Detail |
+|-------|--------|
+| Intent | 呼び出し側のプログラムの誤りを、エラーコードではなく `assert` で扱う |
+| Requirements | 4.11, 4.12, 4.13, 1.6 |
+
+**Responsibilities & Constraints**
+
+- 失敗を 2 種類に分ける。
+  - **実行時の失敗**: 正しいプログラムでも起こりうるもの（確保の失敗、後続のスペックでは利用者の入力の誤りなど）。`clargs_error_t` で返す。
+  - **プログラムの誤り**: 呼び出し側のコードを直さない限り必ず起こり、実行時に対処しようがないもの（必須の引数の `NULL`、関数の欠けたアロケータ、範囲外の添字、破棄済みのオブジェクトの使用）。関数の前提条件とし、エラーコードを割り当てない。
+- 検査できる前提条件は、関数の入口で標準の `assert`（`<assert.h>`）を使って検査する。公開関数も内部関数も同じである。独自のマクロや、動作を差し替える仕組みは持たない。
+- `NDEBUG` が定義されていないビルド（CMake の Debug 構成）では、違反すると `assert` が条件、ファイル名、行番号を標準エラー出力に書いて `abort` する（4.12）。これは、「中断しない、出力しない」（4.9）の対象外である。4.9 は実行時の失敗についての決まりである。
+- `NDEBUG` が定義されたビルド（CMake の Release、RelWithDebInfo、MinSizeRel 構成）では、`assert` は何もしない。前提条件を破ったときの動作は定めない（4.13）。
+- `assert` の式に副作用を書かない。`assert` の有無で、正しい呼び出しの動作が変わらないようにする。
+- 前提条件は、公開関数ではヘッダのコメントに、内部関数では内部ヘッダのコメントに書く（4.11）。
+- 検査できない前提条件（オブジェクトが存在しないときにアロケータを設定する、など）は、文書に書くだけにする。
+
+**Implementation Notes**
+
+- Integration: 後続のスペックも同じ規則に従う。`docs/conventions.md` と `docs/ownership.md` に書く。エラーコードを足す前に、それが実行時の失敗かどうかを確かめる。
+- Validation: 違反で中断することは、自動のテストで確かめない（中断を移植性のある形で捕まえられない）。テストは Debug 構成でも実行されるので、正しい呼び出しが `assert` に掛からないことは確かめられる。
+- Risks: Release 構成では、誤りが検出されずにクラッシュや破壊になりうる。利用者には、開発中は Debug 構成のライブラリを使うことを勧める。動的ライブラリで `abort` すると、利用者のプロセスごと終了する。
+
 ### 検査
 
 #### AllocationCheck
@@ -585,7 +619,7 @@ void clargs_vec_destroy(clargs_vec_t *vec);
 ```c
 /* tests/support/test_allocator.h */
 clargs_allocator_t clargs_test_allocator_get(void);
-clargs_error_t clargs_test_allocator_install(void);
+void clargs_test_allocator_install(void);
 void clargs_test_allocator_uninstall(void);
 void clargs_test_allocator_reset(void);
 void clargs_test_allocator_fail_at(size_t request);
@@ -595,7 +629,7 @@ size_t clargs_test_allocator_violations(void);
 ```
 
 - `get`: テスト用アロケータの 4 つの関数を入れた `clargs_allocator_t` を返す。状態は変えない。
-- `install`: `reset` と同じ初期化をしてから、`clargs_set_allocator()` に `get` の値を渡して設定し、その戻り値を返す（9.1）。
+- `install`: `reset` と同じ初期化をしてから、`clargs_set_allocator()` に `get` の値を渡して設定する（9.1）。
 - `uninstall`: `clargs_set_allocator(NULL)` で既定に戻す。
 - `reset`: 回数、個数、違反の数を 0 にし、失敗させる回の指定をなくす（9.6）。未解放のブロックがあるときに呼ぶと、その後の `live` は正しくない。
 - `fail_at(n)`: `reset` の後から数えて `n` 回目（1 から数える）の要求（`malloc_fn`、`calloc_fn`、`realloc_fn` のどれか）を失敗させる。その回だけが失敗し、前後の要求は成功する（9.2）。`n` が 0 なら、どの要求も失敗させない（9.3）。
@@ -612,7 +646,7 @@ size_t clargs_test_allocator_violations(void);
 **Implementation Notes**
 
 - Integration: 使うテストは、`clargs_add_test()` の `SOURCES` に `support/test_allocator.c` を足し、`#include "../support/test_allocator.h"` と書く（9.7）。各テストは、`install` で始め、`uninstall` で終える。
-- Validation: `tests/public/test_allocator_test.c`。`get` で得た 4 つの関数を直接呼んで確かめる。指定した回だけが失敗すること（3 種類の要求のどれでも）、指定がなければ成功すること、`calloc_fn` の返すメモリがすべて 0 であること、回数と個数、契約違反が数えられること、`reset` で数が戻ること、失敗させた再確保の後も元の内容が読めること、`install` が `CLARGS_ERROR_NONE` を返すこと。
+- Validation: `tests/public/test_allocator_test.c`。`get` で得た 4 つの関数を直接呼んで確かめる。指定した回だけが失敗すること（3 種類の要求のどれでも）、指定がなければ成功すること、`calloc_fn` の返すメモリがすべて 0 であること、回数と個数、契約違反が数えられること、`reset` で数が戻ること、失敗させた再確保の後も元の内容が読めること、`install` の後は要求がテスト用アロケータへ届き、`uninstall` の後は届かないこと。
 - Risks: 状態が `static` なので、テストが `uninstall` を忘れると、同じ実行ファイルの後のテストに影響する。使い方の文書に書く。
 
 ### 文書
@@ -634,7 +668,7 @@ size_t clargs_test_allocator_violations(void);
 4. **`NULL`**（7.5）
    - `destroy` に `NULL` を渡すと、何もしない。
    - `clargs_set_allocator()` の `NULL` は、既定のアロケータに戻すことを意味する。
-   - それ以外の引数は、関数のコメントが「`NULL` でもよい」と書いていない限り、`NULL` を渡せない。エラーコードを返す関数は、そのような `NULL` に `CLARGS_ERROR_INVALID_ARGUMENT` を返し、何も変更しない。エラーコードを返さない関数は、`NULL` を渡されたときに返す値をコメントに書く。
+   - それ以外の引数は、関数のコメントが「`NULL` でもよい」と書いていない限り、`NULL` を渡せない。渡すのは前提条件の違反である（下の「前提条件の検査」）。エラーコードは返さない。
 5. **アロケータ**（1.7、7.6）
    - アロケータは、ライブラリ全体に 1 つである。公開関数はアロケータを引数に取らない。
    - `clargs_set_allocator()` は、ライブラリのオブジェクトが 1 つも存在せず、ほかのスレッドがライブラリを呼び出していないときに呼ぶ。ふつうは、プログラムの開始時に 1 度だけ呼ぶ。
@@ -644,8 +678,8 @@ size_t clargs_test_allocator_violations(void);
    - ライブラリが確保したメモリは、ライブラリの `destroy` を通してだけ解放する。利用者が `free` や自分の解放関数を直接呼ぶ公開 API を作らない。
    - 利用者が確保したメモリを、ライブラリが解放する公開 API も作らない。
 7. **失敗の返し方**（4.2、4.10、5.2、5.3）
-   - 失敗しうる公開関数は `clargs_error_t` を返し、結果は出力用の引数で返す。失敗しえない関数（`destroy`、単純な取得）は、値を直接返してよい。
-   - 失敗したとき、生成したオブジェクトや文字列を受け取る出力先は `NULL` になる。それ以外の出力先は変更されない。出力先のポインタ自体が `NULL` の場合は、何も書かない。
+   - 実行時に失敗しうる公開関数は `clargs_error_t` を返し、結果は出力用の引数で返す。実行時に失敗しえない関数（`destroy`、単純な取得、`clargs_set_allocator()`）は、値を直接返すか、何も返さない。前提条件の違反は、失敗に数えない。
+   - 失敗したとき、生成したオブジェクトや文字列を受け取る出力先は `NULL` になる。それ以外の出力先は変更されない。
    - 失敗したとき、その呼び出しの中で確保したメモリは、すべて解放してから戻る。
    - 既存のオブジェクトを変更する関数が失敗したとき、そのオブジェクトは呼び出しの前と同じ内容を保つ。それができない関数は、少なくとも使用と破棄ができる状態を保ち、残る違いをコメントに書く。
 8. **スレッド**（3.5）
@@ -666,6 +700,7 @@ size_t clargs_test_allocator_violations(void);
 - **内部ヘッダの名前**: 同じ名前の公開ヘッダ（`include/clargs/<名前>.h`）があるモジュールの内部ヘッダは `src/<名前>_internal.h`、ないモジュールの内部ヘッダは `src/<名前>.h` とする。内部関数のテストは `tests/internal/<内部ヘッダの名前>_test.c` とし、`clargs_add_test()` の `<name>` は内部ヘッダの名前にする（`alloc_internal`、`str`、`vec`）。公開 API のテストと `<name>` が重ならないようにする。
 - **名前の付け方**: 標準の関数に対応するものは、名前と引数を標準に合わせる（`clargs_malloc`、`clargs_strdup`、引数の `ptr`、`str`）。モジュールの名前は短くする（`alloc`、`str`、`vec`）。
 - **エラーコードを足す**: Error の「エラーコードの足し方」のとおり（6.2、6.3）。
+- **前提条件の検査**: 「前提条件の検査」の規則のとおり。実行時の失敗とプログラムの誤りの分け方、`assert` の書き方（入口に書く、副作用を書かない）、前提条件をコメントに書くこと（4.11）。
 - **内部関数の戻り値**: 標準の関数と対になる内部関数（`clargs_malloc`、`clargs_strdup` など）は、標準と同じ形で返す（失敗は `NULL`）。それ以外の、失敗しうる内部関数は `clargs_error_t` を返す。
 - **メモリを確保する**: `src/` のコードは `clargs_malloc`、`clargs_calloc`、`clargs_realloc`、`clargs_free` を通す。`alloc.c` 以外で標準の確保関数を書かない。検査 `clargs.allocations` の説明と、単独での実行方法。`alloc.c` の設定されたアロケータ以外に、変更可能な `static` 変数とグローバル変数を書かない（3.4）。
 - **テスト用アロケータを使う**: 取り込み方、System Flows の繰り返しをそのまま書いた例、各回で `live` と `violations` が 0 であることを確かめること、`install` と `uninstall` を対にすること（9.9）。
@@ -675,15 +710,15 @@ size_t clargs_test_allocator_violations(void);
 
 ### Error Strategy
 
-- 失敗は戻り値の `clargs_error_t` だけで伝える。`errno`、出力、`abort`、`exit`、`assert` を使わない（4.8、4.9）。
+- 実行時に起こりうる失敗は、戻り値の `clargs_error_t` だけで伝える。`errno`、出力、`abort`、`exit` を使わない（4.8、4.9）。
+- 呼び出し側のプログラムの誤りは、エラーコードにしない。前提条件として `assert` で検査する（4.11〜4.13。Components の「前提条件の検査」）。
 - 内部のメモリ関数は `NULL` で失敗を返し、それを受けた関数が `CLARGS_ERROR_OUT_OF_MEMORY` に直して上へ返す。途中で握りつぶさない。
-- 引数の検査は、公開関数の入口で行う。内部関数は前提条件を信頼し、検査を繰り返さない。
 
 ### Error Categories and Responses
 
 | 種類 | エラーコード | 起こる場所 | 応答 |
 |---|---|---|---|
-| 利用者の誤り | `CLARGS_ERROR_INVALID_ARGUMENT` | 関数の欠けたアロケータ、必須の引数の `NULL` | 何も変更せず、何も確保せずに戻る |
+| プログラムの誤り | なし | 必須の引数の `NULL`、関数の欠けたアロケータ、範囲外の添字 | Debug 構成では `assert` で中断する。Release 構成では検査しない |
 | 資源の不足 | `CLARGS_ERROR_OUT_OF_MEMORY` | 確保または再確保の失敗、大きさの桁あふれ | その呼び出しの確保を解放し、オブジェクトを元の内容に保って戻る |
 
 ### Monitoring
@@ -697,12 +732,12 @@ size_t clargs_test_allocator_violations(void);
 ### 公開 API のテスト（`tests/public/`、静的・動的の両方）
 
 - `error_test.c`: `CLARGS_ERROR_LIST` のすべてのエラーコードについて、説明文が一覧のとおりであること。`CLARGS_ERROR_NONE` が 0 であること。未定義の値に `"unknown error code"` が返ること。すべてのコードの説明文が固有であること（6.4）。`<clargs/clargs.h>` だけを取り込んで書く（10.2）。
-- `alloc_test.c`: Allocator の Validation（公開）の項目（1.1、1.2、1.5、1.6、2.2）。
+- `alloc_test.c`: Allocator の Validation（公開）の項目（1.1、1.2、1.5、2.2）。
 - `test_allocator_test.c`: TestAllocator の Validation の項目（9.1〜9.6）。
 
 ### 内部関数のテスト（`tests/internal/`）
 
-- `alloc_internal_test.c`: Allocator の Validation（内部）の項目（1.3、1.4、1.6、2.1、2.2、2.3、5.4、5.5）。
+- `alloc_internal_test.c`: Allocator の Validation（内部）の項目（1.3、1.4、2.1、2.2、2.3、5.4、5.5）。
 - `str_test.c`: Str の Validation の項目（8.1、8.3、5.1）。
 - `vec_test.c`: Vec の Validation の項目（8.2、8.3、8.4、5.3）。失敗注入は System Flows の繰り返しで書き、後続のスペックの手本にする。
 
@@ -715,6 +750,7 @@ size_t clargs_test_allocator_violations(void);
 
 - 変更可能なグローバル状態が設定されたアロケータだけであること（3.4）と、別々のオブジェクトへの同時呼び出し（3.5）は、C99 にスレッドの標準がないので、自動のテストを書かない。`src/` に、`alloc.c` の 1 つを除いて、`const` でない `static` 変数とファイルスコープの変数がないことを、レビューで確かめる。
 - オブジェクトが存在する間にアロケータを設定し直す誤用は、検出しない。
+- 前提条件の違反で中断すること（4.12）は、自動のテストを書かない。
 
 ## Performance & Scalability
 
