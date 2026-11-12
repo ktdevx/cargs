@@ -124,8 +124,10 @@ void clargs_schema_touch(clargs_command_t *command);
  * Returns CLARGS_ERROR_NONE, or CLARGS_ERROR_OUT_OF_MEMORY when the copy
  * cannot be allocated; *slot and its string are then as they were.
  *
- * Preconditions: slot and text are not NULL, and text is not the string at
- * *slot nor a part of it. That neither is NULL is checked with assert.
+ * The copy is made before the old string is freed, so text may be the
+ * string at *slot or a part of it.
+ *
+ * Preconditions: slot and text are not NULL. Checked with assert.
  */
 clargs_error_t clargs_schema_replace_string(char **slot, const char *text);
 
