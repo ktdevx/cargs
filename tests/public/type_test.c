@@ -583,6 +583,507 @@ NAOS_TEST(choice_creation_frees_everything_when_an_allocation_fails)
     check_clean();
 }
 
+/* ---- User-defined value types ------------------------------------------ */
+
+/* The user data of the test value type. The conversion and the cleanup
+ * function write what they were called with here. */
+typedef struct probe {
+    clargs_error_t result;  /* what the conversion function returns */
+    size_t convert_calls;
+    size_t release_calls;
+    const char *last_text;  /* the text of the last conversion */
+    void *last_converted;   /* the area of the last conversion */
+    void *last_released;    /* the area of the last cleanup */
+} probe_t;
+
+static void probe_init(probe_t *probe, clargs_error_t result)
+{
+    probe->result = result;
+    probe->convert_calls = 0;
+    probe->release_calls = 0;
+    probe->last_text = NULL;
+    probe->last_converted = NULL;
+    probe->last_released = NULL;
+}
+
+/* The conversion function of the test value type. The value is an int: the
+ * length of the input. */
+static clargs_error_t probe_convert(const char *text, void *value, void *context)
+{
+    probe_t *probe = (probe_t *)context;
+
+    ++probe->convert_calls;
+    probe->last_text = text;
+    probe->last_converted = value;
+    if (probe->result == CLARGS_ERROR_NONE) {
+        *(int *)value = (int)strlen(text);
+    }
+    return probe->result;
+}
+
+/* The cleanup function of the test value type. */
+static void probe_release(void *value, void *context)
+{
+    probe_t *probe = (probe_t *)context;
+
+    ++probe->release_calls;
+    probe->last_released = value;
+}
+
+/* The user data that the functions without a probe were called with. */
+static void *seen_convert_context;
+static void *seen_release_context;
+
+/* A conversion function that needs no user data. The value is an int. */
+static clargs_error_t plain_convert(const char *text, void *value, void *context)
+{
+    seen_convert_context = context;
+    *(int *)value = (int)strlen(text);
+    return CLARGS_ERROR_NONE;
+}
+
+static void plain_release(void *value, void *context)
+{
+    (void)value;
+    seen_release_context = context;
+}
+
+NAOS_TEST(custom_has_its_name_kind_and_value_size)
+{
+    probe_t probe;
+    clargs_type_t *type = NULL;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+
+    NAOS_REQUIRE_TRUE(clargs_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
+                                         &type) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(type != NULL);
+    NAOS_CHECK_STR_EQ(clargs_type_name(type), "port");
+    NAOS_CHECK_INT_EQ(clargs_type_kind(type), CLARGS_TYPE_CUSTOM);
+    NAOS_CHECK_UINT_EQ(clargs_type_value_size(type), sizeof(int));
+    NAOS_CHECK_UINT_EQ(clargs_type_choice_count(type), 0);
+
+    /* The creation calls neither function. */
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, 0);
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 0);
+
+    clargs_type_destroy(type);
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, 0);
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 0);
+
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* The value size is the one that was given, whatever it is. */
+NAOS_TEST(custom_value_size_is_the_one_given)
+{
+    probe_t probe;
+    clargs_type_t *small = NULL;
+    clargs_type_t *large = NULL;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+
+    NAOS_REQUIRE_TRUE(clargs_type_create("small", 1, probe_convert, NULL, &probe, &small) ==
+                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(clargs_type_create("large", 4096, probe_convert, NULL, &probe, &large) ==
+                      CLARGS_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(clargs_type_value_size(small), 1);
+    NAOS_CHECK_UINT_EQ(clargs_type_value_size(large), 4096);
+
+    clargs_type_destroy(large);
+    clargs_type_destroy(small);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* The value type keeps a copy of the name: the string that was passed is
+ * not used after the creation. */
+NAOS_TEST(custom_name_is_copied)
+{
+    char name[] = "port";
+    probe_t probe;
+    clargs_type_t *type = NULL;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+
+    NAOS_REQUIRE_TRUE(clargs_type_create(name, sizeof(int), probe_convert, NULL, &probe, &type) ==
+                      CLARGS_ERROR_NONE);
+    memcpy(name, "PATH", sizeof(name));
+
+    NAOS_CHECK_TRUE(clargs_type_name(type) != name);
+    NAOS_CHECK_STR_EQ(clargs_type_name(type), "port");
+
+    clargs_type_destroy(type);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* A name is any string that is not empty; it does not follow the rules of
+ * the names of options. */
+NAOS_TEST(custom_name_can_be_any_string_that_is_not_empty)
+{
+    static const char *const names[] = { "p", "port number", "-x", "caf\xc3\xa9", "string", "choice" };
+    probe_t probe;
+    size_t index;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+
+    for (index = 0; index < sizeof(names) / sizeof(names[0]); ++index) {
+        clargs_type_t *type = NULL;
+
+        NAOS_REQUIRE_TRUE(clargs_type_create(names[index], sizeof(int), probe_convert, NULL, &probe,
+                                             &type) == CLARGS_ERROR_NONE);
+        NAOS_CHECK_STR_EQ(clargs_type_name(type), names[index]);
+        NAOS_CHECK_INT_EQ(clargs_type_kind(type), CLARGS_TYPE_CUSTOM);
+        clargs_type_destroy(type);
+    }
+
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* An empty name creates nothing and allocates nothing. */
+NAOS_TEST(an_empty_name_is_an_invalid_name)
+{
+    probe_t probe;
+    clargs_type_t *type = as_destroyable(clargs_type_string());
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+
+    NAOS_CHECK_INT_EQ(clargs_type_create("", sizeof(int), probe_convert, probe_release, &probe, &type),
+                      CLARGS_ERROR_INVALID_NAME);
+    NAOS_CHECK_TRUE(type == NULL);
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, 0);
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 0);
+
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* The conversion function gets the input, the area and the user data as
+ * they were passed. A conversion allocates nothing by itself. */
+NAOS_TEST(custom_conversion_passes_the_input_and_the_user_data)
+{
+    const char *input = "hello";
+    probe_t probe;
+    clargs_type_t *type = NULL;
+    size_t requests;
+    int value = -1;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+    NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
+                                         &type) == CLARGS_ERROR_NONE);
+    requests = clargs_test_allocator_requests();
+
+    NAOS_CHECK_INT_EQ(clargs_type_convert(type, input, &value), CLARGS_ERROR_NONE);
+    /* The probe was written, so the user data arrived. */
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, 1);
+    NAOS_CHECK_TRUE(probe.last_text == input);
+    NAOS_CHECK_TRUE(probe.last_converted == (void *)&value);
+    NAOS_CHECK_INT_EQ(value, 5);
+
+    clargs_type_release(type, &value);
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 1);
+    NAOS_CHECK_TRUE(probe.last_released == (void *)&value);
+
+    /* The empty input is passed like every other. */
+    NAOS_CHECK_INT_EQ(clargs_type_convert(type, "", &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, 2);
+    NAOS_REQUIRE_TRUE(probe.last_text != NULL);
+    NAOS_CHECK_STR_EQ(probe.last_text, "");
+    NAOS_CHECK_INT_EQ(value, 0);
+    clargs_type_release(type, &value);
+
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+
+    clargs_type_destroy(type);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* The user data may be NULL; then the functions get NULL. */
+NAOS_TEST(custom_user_data_can_be_null)
+{
+    clargs_type_t *type = NULL;
+    int marker = 0;
+    int value = -1;
+
+    clargs_test_allocator_install();
+    NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), plain_convert, plain_release, NULL,
+                                         &type) == CLARGS_ERROR_NONE);
+
+    seen_convert_context = &marker;
+    seen_release_context = &marker;
+    NAOS_CHECK_INT_EQ(clargs_type_convert(type, "abc", &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(value, 3);
+    NAOS_CHECK_TRUE(seen_convert_context == NULL);
+    clargs_type_release(type, &value);
+    NAOS_CHECK_TRUE(seen_release_context == NULL);
+
+    clargs_type_destroy(type);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* What the conversion function returns is what the conversion returns,
+ * whatever the code is. */
+NAOS_TEST(custom_conversion_returns_what_the_function_returns)
+{
+    static const clargs_error_t results[] = {
+        CLARGS_ERROR_NONE, CLARGS_ERROR_INVALID_VALUE, CLARGS_ERROR_OUT_OF_MEMORY,
+        CLARGS_ERROR_INVALID_NAME, CLARGS_ERROR_INVALID_DEFINITION
+    };
+    probe_t probe;
+    clargs_type_t *type = NULL;
+    size_t index;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+    NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
+                                         &type) == CLARGS_ERROR_NONE);
+
+    for (index = 0; index < sizeof(results) / sizeof(results[0]); ++index) {
+        int value = -1;
+
+        probe.result = results[index];
+        NAOS_CHECK_INT_EQ(clargs_type_convert(type, "abcd", &value), results[index]);
+        NAOS_CHECK_UINT_EQ(probe.convert_calls, index + 1);
+        if (results[index] == CLARGS_ERROR_NONE) {
+            NAOS_CHECK_INT_EQ(value, 4);
+            clargs_type_release(type, &value);
+        }
+    }
+
+    clargs_type_destroy(type);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* The cleanup function is called once for each release that is requested,
+ * which is once for each conversion that succeeded. Neither a conversion,
+ * whether it succeeds or fails, nor the destruction calls it. */
+NAOS_TEST(custom_cleanup_is_called_once_for_each_successful_conversion)
+{
+    static const char *const inputs[] = { "a", "bad", "bb", "bad", "bad", "ccc", "dddd" };
+    probe_t probe;
+    clargs_type_t *type = NULL;
+    size_t successes = 0;
+    size_t index;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+    NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
+                                         &type) == CLARGS_ERROR_NONE);
+
+    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index) {
+        int value = -1;
+        clargs_error_t error;
+
+        probe.result = strcmp(inputs[index], "bad") == 0 ? CLARGS_ERROR_INVALID_VALUE : CLARGS_ERROR_NONE;
+        error = clargs_type_convert(type, inputs[index], &value);
+
+        /* The conversion itself cleans nothing up. */
+        NAOS_CHECK_UINT_EQ(probe.release_calls, successes);
+        if (error == CLARGS_ERROR_NONE) {
+            clargs_type_release(type, &value);
+            ++successes;
+            NAOS_CHECK_TRUE(probe.last_released == (void *)&value);
+        }
+        NAOS_CHECK_UINT_EQ(probe.release_calls, successes);
+    }
+
+    NAOS_CHECK_UINT_EQ(successes, 4);
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, sizeof(inputs) / sizeof(inputs[0]));
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 4);
+
+    clargs_type_destroy(type);
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 4);
+
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* A value type without a cleanup function can be asked to release a value;
+ * the request does nothing. */
+NAOS_TEST(custom_release_without_a_cleanup_function_does_nothing)
+{
+    probe_t probe;
+    clargs_type_t *type = NULL;
+    int value = -1;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+    NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, NULL, &probe, &type) ==
+                      CLARGS_ERROR_NONE);
+
+    NAOS_CHECK_INT_EQ(clargs_type_convert(type, "abc", &value), CLARGS_ERROR_NONE);
+    clargs_type_release(type, &value);
+    NAOS_CHECK_INT_EQ(value, 3);
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, 1);
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 0);
+
+    clargs_type_destroy(type);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* A user-defined value type is used with the same calls as the built-in
+ * ones: the caller needs the kind only to read the value. */
+NAOS_TEST(custom_and_builtin_types_are_used_the_same_way)
+{
+    typedef union any_value {
+        const char *as_string;
+        int64_t as_int;
+        double as_float;
+        int as_length;
+    } any_value_t;
+    const char *input = "12";
+    probe_t probe;
+    clargs_type_t *custom = NULL;
+    const clargs_type_t *types[4];
+    size_t index;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+    NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
+                                         &custom) == CLARGS_ERROR_NONE);
+
+    types[0] = clargs_type_string();
+    types[1] = custom;
+    types[2] = clargs_type_int();
+    types[3] = clargs_type_float();
+
+    for (index = 0; index < 4; ++index) {
+        any_value_t value;
+
+        value.as_int = 0;
+        NAOS_REQUIRE_TRUE(clargs_type_name(types[index])[0] != '\0');
+        NAOS_REQUIRE_TRUE(clargs_type_value_size(types[index]) <= sizeof(value));
+        NAOS_REQUIRE_TRUE(clargs_type_convert(types[index], input, &value) == CLARGS_ERROR_NONE);
+
+        switch (clargs_type_kind(types[index])) {
+        case CLARGS_TYPE_STRING:
+            NAOS_CHECK_TRUE(value.as_string == input);
+            break;
+        case CLARGS_TYPE_INT:
+            NAOS_CHECK_TRUE(value.as_int == 12);
+            break;
+        case CLARGS_TYPE_FLOAT:
+            NAOS_CHECK_TRUE(value.as_float == 12.0);
+            break;
+        case CLARGS_TYPE_CUSTOM:
+            NAOS_CHECK_INT_EQ(value.as_length, 2);
+            break;
+        default:
+            NAOS_FAIL("a value type has an unexpected kind");
+            break;
+        }
+
+        clargs_type_release(types[index], &value);
+    }
+
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, 1);
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 1);
+
+    clargs_type_destroy(custom);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* Two value types made from the same functions are separate: each passes
+ * its own user data. */
+NAOS_TEST(custom_types_keep_their_own_user_data)
+{
+    probe_t first_probe;
+    probe_t second_probe;
+    clargs_type_t *first = NULL;
+    clargs_type_t *second = NULL;
+    int value = -1;
+
+    probe_init(&first_probe, CLARGS_ERROR_NONE);
+    probe_init(&second_probe, CLARGS_ERROR_INVALID_VALUE);
+    clargs_test_allocator_install();
+    NAOS_REQUIRE_TRUE(clargs_type_create("first", sizeof(int), probe_convert, probe_release,
+                                         &first_probe, &first) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(clargs_type_create("second", sizeof(int), probe_convert, probe_release,
+                                         &second_probe, &second) == CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(first != second);
+
+    NAOS_CHECK_INT_EQ(clargs_type_convert(first, "abc", &value), CLARGS_ERROR_NONE);
+    clargs_type_release(first, &value);
+    NAOS_CHECK_INT_EQ(clargs_type_convert(second, "abc", &value), CLARGS_ERROR_INVALID_VALUE);
+
+    NAOS_CHECK_UINT_EQ(first_probe.convert_calls, 1);
+    NAOS_CHECK_UINT_EQ(first_probe.release_calls, 1);
+    NAOS_CHECK_UINT_EQ(second_probe.convert_calls, 1);
+    NAOS_CHECK_UINT_EQ(second_probe.release_calls, 0);
+    NAOS_CHECK_STR_EQ(clargs_type_name(first), "first");
+    NAOS_CHECK_STR_EQ(clargs_type_name(second), "second");
+
+    /* The destruction of one leaves the other as it is. */
+    clargs_type_destroy(first);
+    NAOS_CHECK_STR_EQ(clargs_type_name(second), "second");
+    clargs_type_destroy(second);
+
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* When an allocation of the creation fails, whichever it is, nothing stays
+ * allocated, the output is NULL, and the error is the allocation failure. */
+NAOS_TEST(custom_creation_frees_everything_when_an_allocation_fails)
+{
+    probe_t probe;
+    clargs_type_t *type = NULL;
+    size_t allocation_points;
+    size_t n;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+
+    /* How many requests a creation takes. */
+    NAOS_REQUIRE_TRUE(clargs_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
+                                         &type) == CLARGS_ERROR_NONE);
+    allocation_points = clargs_test_allocator_requests();
+    clargs_type_destroy(type);
+    NAOS_REQUIRE_TRUE(allocation_points > 0);
+    NAOS_REQUIRE_TRUE(clargs_test_allocator_live() == 0);
+
+    for (n = 1; n <= allocation_points; ++n) {
+        clargs_test_allocator_reset();
+        clargs_test_allocator_fail_at(n);
+
+        type = as_destroyable(clargs_type_string());
+        NAOS_CHECK_INT_EQ(clargs_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
+                                             &type),
+                          CLARGS_ERROR_OUT_OF_MEMORY);
+        NAOS_CHECK_TRUE(type == NULL);
+        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n);
+        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+        NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    }
+
+    /* The creation works again afterwards. */
+    clargs_test_allocator_reset();
+    NAOS_CHECK_INT_EQ(clargs_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
+                                         &type),
+                      CLARGS_ERROR_NONE);
+    clargs_type_destroy(type);
+
+    NAOS_CHECK_UINT_EQ(probe.convert_calls, 0);
+    NAOS_CHECK_UINT_EQ(probe.release_calls, 0);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
 /* ---- Destroy ---------------------------------------------------------- */
 
 /* The destruction frees every block of the creation. */
@@ -594,6 +1095,26 @@ NAOS_TEST(destroy_frees_everything)
     clargs_test_allocator_install();
 
     NAOS_REQUIRE_TRUE(clargs_type_create_choice(choices, 3, &type) == CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(clargs_test_allocator_live() > 0);
+    clargs_type_destroy(type);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* The destruction of a user-defined value type frees every block of the
+ * creation, the copy of the name included. */
+NAOS_TEST(destroy_frees_everything_of_a_custom_type)
+{
+    probe_t probe;
+    clargs_type_t *type = NULL;
+
+    probe_init(&probe, CLARGS_ERROR_NONE);
+    clargs_test_allocator_install();
+
+    NAOS_REQUIRE_TRUE(clargs_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
+                                         &type) == CLARGS_ERROR_NONE);
     NAOS_CHECK_TRUE(clargs_test_allocator_live() > 0);
     clargs_type_destroy(type);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -670,8 +1191,25 @@ NAOS_SUITE(choice,
     NAOS_ADD_TEST(choice_creation_frees_everything_when_an_allocation_fails)
 )
 
+NAOS_SUITE(custom,
+    NAOS_ADD_TEST(custom_has_its_name_kind_and_value_size),
+    NAOS_ADD_TEST(custom_value_size_is_the_one_given),
+    NAOS_ADD_TEST(custom_name_is_copied),
+    NAOS_ADD_TEST(custom_name_can_be_any_string_that_is_not_empty),
+    NAOS_ADD_TEST(an_empty_name_is_an_invalid_name),
+    NAOS_ADD_TEST(custom_conversion_passes_the_input_and_the_user_data),
+    NAOS_ADD_TEST(custom_user_data_can_be_null),
+    NAOS_ADD_TEST(custom_conversion_returns_what_the_function_returns),
+    NAOS_ADD_TEST(custom_cleanup_is_called_once_for_each_successful_conversion),
+    NAOS_ADD_TEST(custom_release_without_a_cleanup_function_does_nothing),
+    NAOS_ADD_TEST(custom_and_builtin_types_are_used_the_same_way),
+    NAOS_ADD_TEST(custom_types_keep_their_own_user_data),
+    NAOS_ADD_TEST(custom_creation_frees_everything_when_an_allocation_fails)
+)
+
 NAOS_SUITE(destroy,
     NAOS_ADD_TEST(destroy_frees_everything),
+    NAOS_ADD_TEST(destroy_frees_everything_of_a_custom_type),
     NAOS_ADD_TEST(destroy_does_nothing_for_null),
     NAOS_ADD_TEST(destroy_does_nothing_for_the_builtin_types)
 )
@@ -680,5 +1218,6 @@ NAOS_MAIN(
     NAOS_ADD_SUITE(builtin),
     NAOS_ADD_SUITE(convert),
     NAOS_ADD_SUITE(choice),
+    NAOS_ADD_SUITE(custom),
     NAOS_ADD_SUITE(destroy)
 )

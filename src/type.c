@@ -74,15 +74,15 @@ static bool has_duplicate(const char *const *choices, size_t count)
 
 /* The built-in value types: fixed objects that are never modified. */
 static const clargs_type_t string_type = {
-    CLARGS_TYPE_STRING, "string", sizeof(const char *), convert_string, NULL, NULL, NULL, 0, true
+    CLARGS_TYPE_STRING, "string", NULL, sizeof(const char *), convert_string, NULL, NULL, NULL, 0, true
 };
 
 static const clargs_type_t int_type = {
-    CLARGS_TYPE_INT, "integer", sizeof(int64_t), convert_int, NULL, NULL, NULL, 0, true
+    CLARGS_TYPE_INT, "integer", NULL, sizeof(int64_t), convert_int, NULL, NULL, NULL, 0, true
 };
 
 static const clargs_type_t float_type = {
-    CLARGS_TYPE_FLOAT, "float", sizeof(double), convert_float, NULL, NULL, NULL, 0, true
+    CLARGS_TYPE_FLOAT, "float", NULL, sizeof(double), convert_float, NULL, NULL, NULL, 0, true
 };
 
 const clargs_type_t *clargs_type_string(void)
@@ -134,6 +134,7 @@ clargs_error_t clargs_type_create_choice(const char *const *choices, size_t coun
 
     type->kind = CLARGS_TYPE_CHOICE;
     type->name = "choice";
+    type->owned_name = NULL;
     type->value_size = sizeof(size_t);
     type->convert_fn = convert_choice;
     type->release_fn = NULL;
@@ -162,6 +163,48 @@ clargs_error_t clargs_type_create_choice(const char *const *choices, size_t coun
     return CLARGS_ERROR_NONE;
 }
 
+clargs_error_t clargs_type_create(const char *name, size_t value_size, clargs_convert_fn_t convert_fn,
+                                  clargs_release_fn_t release_fn, void *context, clargs_type_t **out)
+{
+    clargs_type_t *type;
+
+    assert(out != NULL);
+
+    *out = NULL;
+
+    assert(name != NULL);
+    assert(value_size > 0);
+    assert(convert_fn != NULL);
+
+    if (name[0] == '\0') {
+        return CLARGS_ERROR_INVALID_NAME;
+    }
+
+    type = (clargs_type_t *)clargs_malloc(sizeof(*type));
+    if (type == NULL) {
+        return CLARGS_ERROR_OUT_OF_MEMORY;
+    }
+
+    type->owned_name = clargs_strdup(name);
+    if (type->owned_name == NULL) {
+        clargs_free(type);
+        return CLARGS_ERROR_OUT_OF_MEMORY;
+    }
+
+    type->kind = CLARGS_TYPE_CUSTOM;
+    type->name = type->owned_name;
+    type->value_size = value_size;
+    type->convert_fn = convert_fn;
+    type->release_fn = release_fn;
+    type->context = context;
+    type->choices = NULL;
+    type->choice_count = 0;
+    type->is_static = false;
+
+    *out = type;
+    return CLARGS_ERROR_NONE;
+}
+
 void clargs_type_destroy(clargs_type_t *type)
 {
     size_t index;
@@ -175,6 +218,10 @@ void clargs_type_destroy(clargs_type_t *type)
             clargs_free(type->choices[index]);
         }
         clargs_free(type->choices);
+    }
+    /* Only a copied name is freed; the other names are fixed strings. */
+    if (type->owned_name != NULL) {
+        clargs_free(type->owned_name);
     }
     clargs_free(type);
 }

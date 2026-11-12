@@ -70,7 +70,12 @@ typedef enum clargs_type_kind {
  *
  * Returns CLARGS_ERROR_NONE on success, CLARGS_ERROR_INVALID_VALUE when the
  * input is not valid, and CLARGS_ERROR_OUT_OF_MEMORY when an allocation
- * fails. Any value other than CLARGS_ERROR_NONE is a failure.
+ * fails. Any value other than CLARGS_ERROR_NONE is a failure, and it is
+ * what clargs_type_convert() returns. A function that a user writes returns
+ * CLARGS_ERROR_INVALID_VALUE for an input that it does not take.
+ *
+ * On failure, the function leaves nothing to clean up: the cleanup function
+ * is not called for a conversion that failed.
  */
 typedef clargs_error_t (*clargs_convert_fn_t)(const char *text, void *value, void *context);
 
@@ -78,6 +83,9 @@ typedef clargs_error_t (*clargs_convert_fn_t)(const char *text, void *value, voi
  * The cleanup function of a value type. Cleans up a value that a conversion
  * of the same value type wrote to the area that value points to. It does
  * not free the area itself. context is the user data of the value type.
+ *
+ * It is called once for each clargs_type_release(), which is requested
+ * exactly once for each conversion that succeeded.
  */
 typedef void (*clargs_release_fn_t)(void *value, void *context);
 
@@ -144,12 +152,59 @@ CLARGS_API clargs_error_t clargs_type_create_choice(const char *const *choices, 
                                                     clargs_type_t **out);
 
 /*
- * Destroys a value type that clargs_type_create_choice() created, and frees
- * its memory. Does nothing for NULL and for a built-in value type (what
- * clargs_type_string(), clargs_type_int() and clargs_type_float() return).
+ * Creates a user-defined value type, of the kind CLARGS_TYPE_CUSTOM, and
+ * writes it to *out. It is used with the same functions as every other
+ * value type.
  *
- * Preconditions: nothing uses the value type any more; a value type is
- * destroyed only after everything that was defined with it. Not checked.
+ * - name: the name of the type, such as "port". It is copied: the string
+ *   may be changed or freed after the call. Any string that is not empty
+ *   is a name.
+ * - value_size: the size of a value in bytes; the area that a conversion
+ *   writes to has at least this size.
+ * - convert_fn: the conversion function. clargs_type_convert() calls it
+ *   with the input, the area and context, and returns what it returns,
+ *   unchanged. It returns CLARGS_ERROR_INVALID_VALUE for an input that is
+ *   not valid; see clargs_convert_fn_t.
+ * - release_fn: the cleanup function, or NULL when the values need no
+ *   cleanup. clargs_type_release() calls it with the area and context.
+ * - context: the user data that is passed to both functions, or NULL. It
+ *   is only borrowed: the library neither copies nor frees it. Keep it
+ *   valid until the value type has been destroyed.
+ *
+ * The caller owns the value type and destroys it with
+ * clargs_type_destroy(), after every schema that uses it has been
+ * destroyed. The creation and the destruction call neither function.
+ *
+ * Returns CLARGS_ERROR_NONE on success. On failure, nothing is created,
+ * nothing stays allocated, and *out is NULL:
+ *
+ * - CLARGS_ERROR_INVALID_NAME: name is the empty string.
+ * - CLARGS_ERROR_OUT_OF_MEMORY: an allocation failed.
+ *
+ * Preconditions:
+ *
+ * - out is not NULL. Checked with assert.
+ * - name is not NULL. Checked with assert.
+ * - value_size is greater than 0. Checked with assert.
+ * - convert_fn is not NULL. Checked with assert.
+ */
+CLARGS_API clargs_error_t clargs_type_create(const char *name, size_t value_size,
+                                             clargs_convert_fn_t convert_fn,
+                                             clargs_release_fn_t release_fn, void *context,
+                                             clargs_type_t **out);
+
+/*
+ * Destroys a value type that clargs_type_create_choice() or
+ * clargs_type_create() created, and frees its memory. Does nothing for NULL
+ * and for a built-in value type (what clargs_type_string(),
+ * clargs_type_int() and clargs_type_float() return).
+ *
+ * The user data of a user-defined value type is not freed; it is the
+ * caller's, and it is not used after this call.
+ *
+ * Preconditions: nothing uses the value type any more. Destroy every schema
+ * that uses a value type before the value type itself: a schema only
+ * borrows its value types. Not checked.
  */
 CLARGS_API void clargs_type_destroy(clargs_type_t *type);
 
@@ -190,6 +245,9 @@ CLARGS_API size_t clargs_type_choice_count(const clargs_type_t *type);
  * in which they were given to clargs_type_create_choice(). The result is
  * never NULL. The string is valid as long as the value type is; do not free
  * it and do not modify it.
+ *
+ * A value type that is not of the kind CLARGS_TYPE_CHOICE has no choices,
+ * so a call for it always violates the precondition on index.
  *
  * Preconditions:
  *
