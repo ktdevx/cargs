@@ -365,7 +365,7 @@ CLARGS_API const char *clargs_error_message(clargs_error_t error);
 **Responsibilities & Constraints**
 
 - 設定されたアロケータを、`src/alloc.c` の `static clargs_allocator_t` の変数 1 つに持つ。初期値は既定のアロケータである。これが、ライブラリでただ 1 つの変更可能なグローバル状態である（3.4）。
-- `src/alloc.c` は、標準の `malloc`、`calloc`、`realloc`、`free` を呼ぶ唯一のファイルである。既定のアロケータは、標準の関数そのものを指す 4 つのフィールドである。
+- `src/alloc.c` は、標準の `malloc`、`calloc`、`realloc`、`free` を呼ぶ唯一のファイルである。既定のアロケータは、標準の関数を包む `static` 関数 4 つを指す。標準の関数そのものを静的な初期化子に書かないのは、MSVC の DLL ランタイムでは標準の関数が import され、そのアドレスを静的な初期化子に使えないためである。
 - ライブラリのほかのコードは、`clargs_malloc`、`clargs_calloc`、`clargs_realloc`、`clargs_free` だけを通してメモリを得る。設定されたアロケータの関数ポインタを直接読まない。
 - `clargs_allocator_t` の配置を固定する。フィールドを足さず、順序も型も変えない（10.1）。将来、機能を足すときは、新しい型と、それを設定する新しい関数を足す。
 - アロケータは利用者のデータ（コンテキスト）を持たない。利用者のアロケータが状態を必要とするなら、利用者が自分の側に持つ。
