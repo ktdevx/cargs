@@ -15,7 +15,13 @@
  * - Every string that is passed in is copied. The caller may change or free
  *   its string after the call.
  * - The handles and the strings that the functions return are valid until
- *   the root is destroyed. The caller does not free them. A handle does not
+ *   the root is destroyed, with one exception: a string read from an
+ *   attribute that can be set again (the description of a command; the
+ *   description, the value name and the default value of an option; the
+ *   description and the default value of a positional) is valid until the
+ *   root is destroyed or that attribute is set again, whichever comes first.
+ *   Setting an attribute again frees the string it had. Names are never
+ *   replaced. The caller does not free what is returned. A handle does not
  *   change when more is added to the tree.
  *
  * Errors:
