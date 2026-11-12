@@ -33,7 +33,7 @@
 
 - 公開の型 `clargs_allocator_t` と、その関数ポインタ型 4 つ。公開関数 `clargs_set_allocator()`。ライブラリが利用者のアロケータを呼ぶときの契約（後述の「アロケータ呼び出しの契約」）。
 - 設定されたアロケータを保持する、ライブラリでただ 1 つの変更可能なグローバル状態。
-- 公開の型 `clargs_error_t`、その値の割り当て（番号の範囲を含む）、公開関数 `clargs_error_message()`。
+- 公開の型 `clargs_error_t`、エラーコードの一覧 `CLARGS_ERROR_LIST`、公開関数 `clargs_error_message()`。
 - 内部 API: メモリ操作（`clargs_malloc`、`clargs_calloc`、`clargs_realloc`、`clargs_free`）、文字列の複製（`clargs_strdup`）、伸長する配列（`clargs_vec_*`）。
 - 既定のアロケータの実装。`src/alloc.c` は、標準の確保関数を呼んでよい唯一のファイルである。
 - 確保関数の直接呼び出しを検査するスクリプトと、その CTest への登録（`clargs.allocations`）。
@@ -60,7 +60,7 @@
 
 - アロケータの持ち方の変更（グローバルに 1 つ、という前提）。
 - `clargs_allocator_t` の配置（フィールドの数、順序、型）、関数ポインタ型のシグネチャ、アロケータ呼び出しの契約の変更。
-- 既存の `clargs_error_t` の値や意味の変更、番号の範囲の割り当ての変更。
+- 既存の `clargs_error_t` の値や意味の変更、`CLARGS_ERROR_LIST` の形（引数の数と順序）の変更。
 - `clargs_malloc` などの内部のメモリ関数、`clargs_strdup`、`clargs_vec_*` のシグネチャや、失敗時の保証の変更。
 - `docs/ownership.md` の規約の変更（特に、文字列の複製、`NULL` の扱い、失敗時の出力先の状態、アロケータを設定してよい時点）。
 - 型の名前の規則（`_t`）、内部ヘッダの名前の規則の変更。
@@ -134,7 +134,7 @@ graph TB
 
 ```
 include/clargs/
-├── error.h               clargs_error_t、clargs_error_message()
+├── error.h               CLARGS_ERROR_LIST、clargs_error_t、clargs_error_message()
 └── alloc.h           clargs_allocator_t、関数ポインタ型、clargs_set_allocator()
 src/
 ├── error.c               clargs_error_message() の実装
@@ -236,16 +236,16 @@ sequenceDiagram
 | 4.7 | 説明文は解放不要で常に有効 | Error | 文字列リテラル | — |
 | 4.8 | `errno` を使わない | Error、Allocator | — | — |
 | 4.9 | 中断せず、出力しない | すべて | — | — |
-| 4.10 | 失敗時の出力先の状態 | 所有権の規約、Str | 規則 7 | — |
+| 4.10 | 失敗時の出力先の状態 | 所有権の規約 | 規則 7 | — |
 | 5.1 | 確保の失敗をエラーコードで返す | Allocator、Str、Vec | `NULL` → `CLARGS_ERROR_OUT_OF_MEMORY` | 失敗注入 |
 | 5.2 | 途中の確保を解放して戻る | 所有権の規約、Str、Vec | 規則 7 | 失敗注入 |
 | 5.3 | 失敗後も使用・破棄できる | 所有権の規約、Vec | `clargs_vec_push` の保証 | 失敗注入 |
 | 5.4 | 再確保の失敗で元を保つ | Allocator、Vec | `clargs_realloc` | 失敗注入 |
 | 5.5 | 大きさの桁あふれ | Allocator、Vec | `clargs_calloc`、`clargs_vec_push` | — |
-| 6.1 | 値を変えずに足せる | Error | 明示した値と番号の範囲 | — |
+| 6.1 | 値を変えずに足せる | Error | `CLARGS_ERROR_LIST` の末尾に足す | — |
 | 6.2 | 足す手順の文書 | 規約文書 | `docs/conventions.md` | — |
-| 6.3 | 値を再利用しない | Error、規約文書 | 番号の規則 | — |
-| 6.4 | すべてのコードに固有の説明文 | Error のテスト | `error_test.c` の網羅 | — |
+| 6.3 | 値を再利用しない | Error、規約文書 | 値の規則 | — |
+| 6.4 | すべてのコードに固有の説明文 | Error のテスト | `CLARGS_ERROR_LIST` から生成した表 | — |
 | 6.5 | 種類だけを表す | Error | `clargs_error_t` | — |
 | 7.1 | 規約の文書 | 所有権の規約 | `docs/ownership.md` | — |
 | 7.2 | 生成と破棄の対 | 所有権の規約 | 規則 1 | — |
@@ -282,7 +282,7 @@ sequenceDiagram
 |-----------|-------|--------|--------------|------------------|-----------|
 | Error | 公開 | エラーコードと説明文 | 4.1, 4.3–4.9, 6.1, 6.3–6.5, 10.2–10.5 | なし | Service |
 | Allocator | 公開と内部 | アロケータの型、設定、既定、メモリ操作 | 1.1–1.6, 2.1–2.3, 3.1, 3.3–3.5, 5.1, 5.4, 5.5, 7.6, 10.1–10.3 | Error (P0) | Service、State |
-| Str | 内部 | 文字列の複製 | 8.1, 8.3, 8.5, 8.6, 4.10, 5.2 | Allocator (P0) | Service |
+| Str | 内部 | 文字列の複製 | 8.1, 8.3, 8.5, 8.6, 5.1, 5.2 | Allocator (P0) | Service |
 | Vec | 内部 | 伸長する配列 | 8.2–8.6, 5.3, 5.4, 5.5 | Allocator (P0) | Service、State |
 | AllocationCheck | 検査 | 確保関数の直接呼び出しを検出 | 3.1, 3.2, 3.6 | CMake (P0) | Batch |
 | TestAllocator | テスト支援 | 失敗注入と計数 | 9.1–9.8, 1.4 | Allocator (P0) | Service、State |
@@ -301,6 +301,7 @@ sequenceDiagram
 **Responsibilities & Constraints**
 
 - `clargs_error_t` は失敗の種類だけを表す。位置や対象を持たない。
+- エラーコードの名前、値、説明文を、X マクロ `CLARGS_ERROR_LIST` の 1 か所に書く。列挙、説明文を返す関数、テストは、この一覧から生成する。
 - 値は明示して書き、一度公開した値を変えず、別の意味に使わない。
 - 説明文は英語の文字列リテラルで、メモリを確保しない。
 
@@ -310,51 +311,42 @@ sequenceDiagram
 
 ```c
 /* include/clargs/error.h */
+#define CLARGS_ERROR_LIST(X) \
+    X(CLARGS_ERROR_NONE, 0, "success") \
+    X(CLARGS_ERROR_OUT_OF_MEMORY, 1, "out of memory") \
+    X(CLARGS_ERROR_INVALID_ARGUMENT, 2, "invalid argument")
+
 typedef enum clargs_error {
-    CLARGS_ERROR_NONE = 0,
-    CLARGS_ERROR_OUT_OF_MEMORY = 1,
-    CLARGS_ERROR_INVALID_ARGUMENT = 2
+#define CLARGS_ERROR_ENUM(name, value, message) name = value,
+    CLARGS_ERROR_LIST(CLARGS_ERROR_ENUM)
+#undef CLARGS_ERROR_ENUM
 } clargs_error_t;
 
 CLARGS_API const char *clargs_error_message(clargs_error_t error);
 ```
 
-- Preconditions: なし。どんな値を渡してもよい。
-- Postconditions: `NULL` でない、空でない、`'\0'` で終わる文字列を返す。プログラムの終了まで有効で、利用者は解放しない。定義されていない値には `"unknown error code"` を返す。
+- `CLARGS_ERROR_LIST(X)` は、エラーコードごとに `X(名前, 値, 説明文)` を 1 回ずつ展開する。利用者も、自分の表を作るために使ってよい。
+- 列挙の最後の列挙子の後にカンマが残る。C99 はこれを許す。
+- `clargs_error_message`
+  - Preconditions: なし。どんな値を渡してもよい。
+  - Postconditions: `NULL` でない、空でない、`'\0'` で終わる文字列を返す。プログラムの終了まで有効で、利用者は解放しない。一覧にない値には `"unknown error code"` を返す。
 - Invariants: `CLARGS_ERROR_NONE` だけが成功を表す。成功の判定は `error == CLARGS_ERROR_NONE` と書く。
-
-説明文:
-
-| 値 | 説明文 |
-|---|---|
-| `CLARGS_ERROR_NONE` | `"success"` |
-| `CLARGS_ERROR_OUT_OF_MEMORY` | `"out of memory"` |
-| `CLARGS_ERROR_INVALID_ARGUMENT` | `"invalid argument"` |
-| それ以外 | `"unknown error code"` |
 
 **エラーコードの足し方**（`docs/conventions.md` に記載する。6.1、6.2、6.3）
 
-- すべてのエラーコードを `include/clargs/error.h` の 1 つの列挙に書く。スペックごとに別の型を作らない。
+- 直すのは 1 か所だけである。`include/clargs/error.h` の `CLARGS_ERROR_LIST` の末尾に、`X(名前, 値, 説明文)` を 1 行足す。列挙、`clargs_error_message()`、テストは、一覧から生成されるので直さない。
+- すべてのエラーコードをこの 1 つの一覧に書く。スペックごとに別の型や番号の範囲を作らない。
 - 名前は `CLARGS_ERROR_<内容>` とする。成功は `CLARGS_ERROR_NONE` である。
-- 値は明示して書く。スペックごとに範囲を割り当て、範囲の中で小さい順に使う。
-
-  | 範囲 | 持ち主 |
-  |---|---|
-  | 0 | `CLARGS_ERROR_NONE` |
-  | 1〜99 | core-runtime |
-  | 100〜199 | command-schema |
-  | 200〜299 | argv-parser |
-  | 300〜399 | help-formatter |
-
-- 一度公開した値は、削除しても番号を再利用しない。
-- 足すときは 3 か所を直す: `error.h` の列挙、`src/error.c` の `switch` の `case`、`tests/public/error_test.c` の一覧。
+- 値は、一覧の最後の値に 1 を足したものを明示して書く。既存の行の値と名前は変えない。
+- 一度公開した値は、行を削除しても再利用しない。
+- 説明文は、英語の小文字で始まる短い句にし、ほかのコードと重ならないものにする。
 - 利用者は、知らない値を受け取りうるものとして書く（`switch` に `default` を置く）。この注意をヘッダのコメントに書く。
 
 **Implementation Notes**
 
-- Integration: `clargs_error_message()` は、`default` のない `switch` で書き、未知の値は `switch` の後で扱う。GCC と Clang は、`case` のない列挙子を `-Wswitch`（`-Wall` に含まれる）で警告し、既定では警告がエラーになる。
-- Validation: `tests/public/error_test.c` は、すべてのエラーコードの一覧を持ち、各コードの説明文が `NULL` でなく、空でなく、未知用の説明文と異なり、互いに異なることを確かめる。一覧の網羅は、テストの中の `default` のない `switch`（列挙子 → 一覧の添字）でコンパイラに確かめさせる（6.4）。範囲外の値（`(clargs_error_t)-1`、`(clargs_error_t)9999`）で未知用の説明文が返ることも確かめる。
-- Risks: MSVC は列挙子の `case` の不足を既定では警告しない。CI の GCC と Clang の構成が検出する。列挙型の大きさを変えるコンパイラのオプション（`-fshort-enums`）は対象外とする。
+- Integration: `src/error.c` は、`CLARGS_ERROR_LIST` から `switch` の `case` を生成する（`case 名前: return 説明文;`）。一覧にない値は `switch` の後で `"unknown error code"` を返す。同じ値を 2 度書くと、`case` の重複としてコンパイルエラーになる。
+- Validation: `tests/public/error_test.c` は、`CLARGS_ERROR_LIST` から、名前・値・説明文の表を生成する。各行について、`clargs_error_message()` が一覧の説明文と同じ内容を返すこと、空でないこと、`"unknown error code"` と異なること、ほかの行の説明文と異なることを確かめる（6.4）。エラーコードを足しても、このテストは直さない。`CLARGS_ERROR_NONE` が 0 であること、一覧にない値（`(clargs_error_t)-1`、`(clargs_error_t)9999`）で `"unknown error code"` が返ることも確かめる。
+- Risks: 公開ヘッダに関数形式のマクロと補助のマクロが入る。補助のマクロ（`CLARGS_ERROR_ENUM`）は、使った直後に `#undef` する。並行して進むスペックが同じ値を取ると、マージのときにコンパイルエラーで分かる。列挙型の大きさを変えるコンパイラのオプション（`-fshort-enums`）は対象外とする。
 
 ### 公開と内部
 
@@ -421,11 +413,11 @@ void clargs_free(void *ptr);
 
 名前と引数は、標準の関数と対にしてある。どれも、設定されたアロケータの対応する関数を呼ぶ。
 
-- `clargs_malloc`: 成功したら `NULL` でないポインタ、失敗したら `NULL` を返す。内容は不定である。`size` が 0 のときは 1 バイトを要求する。
-- `clargs_calloc`: 成功したら、すべてのバイトが 0 のメモリを返す。構造体や配列の最初の確保に使う。`count * size` が `size_t` で表せないときは、アロケータを呼ばずに `NULL` を返す（5.5）。積が 0 のときは 1 個 × 1 バイトを要求する。
-- `clargs_realloc`: Preconditions: `ptr` は、`clargs_malloc`、`clargs_calloc`、`clargs_realloc` で得た `NULL` でないポインタ。`size` が 0 のときは 1 バイトを要求する。`NULL` を返したとき、`ptr` の指すメモリと内容は有効なままである（5.4）。呼び出し側は、戻り値を確かめてから元のポインタを置き換える。大きさを積で求める呼び出し側は、自分で桁あふれを確かめる。
+- `clargs_malloc`: 成功したら `NULL` でないポインタ、失敗したら `NULL` を返す。内容は不定である。`size` が 0 のときは、アロケータを呼ばずに `NULL` を返す。
+- `clargs_calloc`: 成功したら、すべてのバイトが 0 のメモリを返す。構造体や配列の最初の確保に使う。`count * size` が `size_t` で表せないときは、アロケータを呼ばずに `NULL` を返す（5.5）。`count` または `size` が 0 のときも、アロケータを呼ばずに `NULL` を返す。
+- `clargs_realloc`: Preconditions: `ptr` は、`clargs_malloc`、`clargs_calloc`、`clargs_realloc` で得た `NULL` でないポインタ。`size` が 0 のときは、アロケータを呼ばずに `NULL` を返す。`NULL` を返したとき、`ptr` の指すメモリと内容は有効なままである（5.4）。大きさ 0 のときも `ptr` を解放しない。呼び出し側は、戻り値を確かめてから元のポインタを置き換える。大きさを積で求める呼び出し側は、自分で桁あふれを確かめる。
 - `clargs_free`: `ptr` が `NULL` なら何もしない。そうでなければ `free_fn` を呼ぶ。
-- 呼び出し側は、`NULL` の戻り値を `CLARGS_ERROR_OUT_OF_MEMORY` として上へ返す（5.1）。
+- 大きさが 0 でない要求への `NULL` の戻り値は、確保の失敗である。呼び出し側は、それを `CLARGS_ERROR_OUT_OF_MEMORY` として上へ返す（5.1）。大きさが 0 になりうる呼び出し側は、呼ぶ前に大きさを確かめ、0 のときの `NULL` を失敗として扱わない。
 - Invariants: これらの関数は、`errno` を書かず、何も出力せず、プロセスを中断しない。
 
 **アロケータ呼び出しの契約**
@@ -456,7 +448,7 @@ void clargs_free(void *ptr);
 
 - Integration: 後続のスペックは `#include "alloc_internal.h"` で取り込む。公開関数にアロケータの引数を足さない。
 - Validation（公開、`tests/public/alloc_test.c`）: 関数が 1 つ欠けたアロケータ 4 通りとゼロ初期化が `CLARGS_ERROR_INVALID_ARGUMENT` になること。`NULL` と、標準の関数をそのまま並べた構造体が `CLARGS_ERROR_NONE` になること。各テストの終わりに `clargs_set_allocator(NULL)` で既定に戻す。
-- Validation（内部、`tests/internal/alloc_internal_test.c`）: 未設定で 4 つの内部関数が動くこと（2.1）。テスト用アロケータを設定すると、要求がそこへ届くこと（1.3）。不正な設定の後も、前の設定が使われ続けること（1.6）。`NULL` の設定の後は、テスト用アロケータへ要求が届かないこと（2.2）。`clargs_calloc` の返すメモリがすべて 0 であること。大きさ 0 が 1 バイトの要求になること。桁あふれでアロケータが呼ばれないこと。再確保の失敗で元の内容が残ること。同じ操作の列を、既定と、標準の関数を包んだだけのアロケータで実行し、結果が同じであること（2.3）。
+- Validation（内部、`tests/internal/alloc_internal_test.c`）: 未設定で 4 つの内部関数が動くこと（2.1）。テスト用アロケータを設定すると、要求がそこへ届くこと（1.3）。不正な設定の後も、前の設定が使われ続けること（1.6）。`NULL` の設定の後は、テスト用アロケータへ要求が届かないこと（2.2）。`clargs_calloc` の返すメモリがすべて 0 であること。大きさ 0 または個数 0 で `NULL` が返り、アロケータが呼ばれないこと（要求の回数が増えず、再確保では元の内容が残る）。桁あふれでアロケータが呼ばれないこと。再確保の失敗で元の内容が残ること。同じ操作の列を、既定と、標準の関数を包んだだけのアロケータで実行し、結果が同じであること（2.3）。
 - Risks: 設定してよい時点を破っても、ライブラリは検出しない。文書と、テスト用アロケータの `live` で防ぐ。既定のアロケータの `malloc` などが、失敗時に `errno` を設定することがある。これは C 標準ライブラリの動作であり、ライブラリは `errno` を読まず、書かない（4.8）。
 
 ### 内部
@@ -466,7 +458,7 @@ void clargs_free(void *ptr);
 | Field | Detail |
 |-------|--------|
 | Intent | 設定されたアロケータで文字列を複製する |
-| Requirements | 8.1, 8.3, 8.5, 8.6, 4.10, 5.2 |
+| Requirements | 8.1, 8.3, 8.5, 8.6, 5.1, 5.2 |
 
 **Contracts**: Service [x]
 
@@ -474,16 +466,18 @@ void clargs_free(void *ptr);
 
 ```c
 /* src/str.h */
-clargs_error_t clargs_strdup(const char *str, char **out);
+char *clargs_strdup(const char *str);
 ```
 
-- Preconditions: `str` と `out` は `NULL` でない。
-- Postconditions: 成功したら、`*out` は `str` と同じ内容の、`'\0'` で終わる新しい文字列を指す。呼び出し側が `clargs_free` で解放する。失敗したら `*out` は `NULL` になり、`CLARGS_ERROR_OUT_OF_MEMORY` を返す。
+標準的な `strdup` と同じ形である。
+
+- Preconditions: `str` は `NULL` でない。
+- Postconditions: 成功したら、`str` と同じ内容の、`'\0'` で終わる新しい文字列を返す。呼び出し側が `clargs_free` で解放する。確保に失敗したら `NULL` を返す。呼び出し側は、それを `CLARGS_ERROR_OUT_OF_MEMORY` として上へ返す。
 - 空文字列の複製は成功し、1 バイトの文字列を返す。
 
 **Implementation Notes**
 
-- Validation: `tests/internal/str_test.c`。内容と終端、空文字列、元の文字列と別の領域であること、1 回目の確保の失敗で `*out` が `NULL` になり解放漏れがないこと。
+- Validation: `tests/internal/str_test.c`。内容と終端、空文字列、元の文字列と別の領域であること、1 回目の確保の失敗で `NULL` が返り解放漏れがないこと。
 
 #### Vec
 
@@ -669,6 +663,7 @@ size_t clargs_test_allocator_violations(void);
 - **内部ヘッダの名前**: 同じ名前の公開ヘッダ（`include/clargs/<名前>.h`）があるモジュールの内部ヘッダは `src/<名前>_internal.h`、ないモジュールの内部ヘッダは `src/<名前>.h` とする。内部関数のテストは `tests/internal/<内部ヘッダの名前>_test.c` とし、`clargs_add_test()` の `<name>` は内部ヘッダの名前にする（`alloc_internal`、`str`、`vec`）。公開 API のテストと `<name>` が重ならないようにする。
 - **名前の付け方**: 標準の関数に対応するものは、名前と引数を標準に合わせる（`clargs_malloc`、`clargs_strdup`、引数の `ptr`、`str`）。モジュールの名前は短くする（`alloc`、`str`、`vec`）。
 - **エラーコードを足す**: Error の「エラーコードの足し方」のとおり（6.2、6.3）。
+- **内部関数の戻り値**: 標準の関数と対になる内部関数（`clargs_malloc`、`clargs_strdup` など）は、標準と同じ形で返す（失敗は `NULL`）。それ以外の、失敗しうる内部関数は `clargs_error_t` を返す。
 - **メモリを確保する**: `src/` のコードは `clargs_malloc`、`clargs_calloc`、`clargs_realloc`、`clargs_free` を通す。`alloc.c` 以外で標準の確保関数を書かない。検査 `clargs.allocations` の説明と、単独での実行方法。`alloc.c` の設定されたアロケータ以外に、変更可能な `static` 変数とグローバル変数を書かない（3.4）。
 - **テスト用アロケータを使う**: 取り込み方、System Flows の繰り返しをそのまま書いた例、各回で `live` と `violations` が 0 であることを確かめること、`install` と `uninstall` を対にすること（9.9）。
 - ディレクトリ構成に `tests/support/` を足す。
@@ -698,14 +693,14 @@ size_t clargs_test_allocator_violations(void);
 
 ### 公開 API のテスト（`tests/public/`、静的・動的の両方）
 
-- `error_test.c`: 3 つのエラーコードの説明文が表のとおりであること。`CLARGS_ERROR_NONE` が 0 であること。未定義の値に `"unknown error code"` が返ること。すべてのコードの説明文が固有であること（6.4）。`<clargs/clargs.h>` だけを取り込んで書く（10.2）。
+- `error_test.c`: `CLARGS_ERROR_LIST` のすべてのエラーコードについて、説明文が一覧のとおりであること。`CLARGS_ERROR_NONE` が 0 であること。未定義の値に `"unknown error code"` が返ること。すべてのコードの説明文が固有であること（6.4）。`<clargs/clargs.h>` だけを取り込んで書く（10.2）。
 - `alloc_test.c`: Allocator の Validation（公開）の項目（1.1、1.2、1.5、1.6、2.2）。
 - `test_allocator_test.c`: TestAllocator の Validation の項目（9.1〜9.6）。
 
 ### 内部関数のテスト（`tests/internal/`）
 
 - `alloc_internal_test.c`: Allocator の Validation（内部）の項目（1.3、1.4、1.6、2.1、2.2、2.3、5.4、5.5）。
-- `str_test.c`: Str の Validation の項目（8.1、8.3、4.10）。
+- `str_test.c`: Str の Validation の項目（8.1、8.3、5.1）。
 - `vec_test.c`: Vec の Validation の項目（8.2、8.3、8.4、5.3）。失敗注入は System Flows の繰り返しで書き、後続のスペックの手本にする。
 
 ### 検査
