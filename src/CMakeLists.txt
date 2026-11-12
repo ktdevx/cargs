@@ -3,6 +3,7 @@ set(CLARGS_SOURCES
     alloc.c
     command.c
     error.c
+    lex.c
     name.c
     number.c
     option.c
