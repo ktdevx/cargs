@@ -36,7 +36,8 @@
     X(CLARGS_ERROR_NAME_CONFLICT, "name already in use") \
     X(CLARGS_ERROR_INVALID_DEFINITION, "inconsistent definition") \
     X(CLARGS_ERROR_INVALID_DEFAULT, "default value rejected by its value type") \
-    X(CLARGS_ERROR_INVALID_VALUE, "invalid value")
+    X(CLARGS_ERROR_INVALID_VALUE, "invalid value") \
+    X(CLARGS_ERROR_INVALID_COMMAND_LINE, "invalid command line")
 
 /* The kind of a failure, or CLARGS_ERROR_NONE for success. */
 typedef enum clargs_error {
