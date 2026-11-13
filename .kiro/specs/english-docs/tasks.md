@@ -121,7 +121,7 @@
   - _Depends: 2.1, 2.2, 2.3, 2.4, 3.2, 3.3, 4.1, 4.2_
   - _Requirements: 1.1, 1.2, 2.1, 2.2, 6.3, 9.1, 9.2, 9.5, 9.7, 11.1, 11.2, 11.3, 11.4, 11.6, 11.7_
 
-- [ ] 5.3 英語にした文書の例をビルドして動かす
+- [x] 5.3 英語にした文書の例をビルドして動かす
   - 1.2 の手順を、英語にした後の文書に対して繰り返す。取り出した `main` の例を警告をエラーにしてコンパイルしてリンクし、`wmain` の例はコンパイルだけを行う
   - README の例を、README の実行の例の 4 つのコマンドラインで実行し、出力と終了の仕方を README と比べる。schema の例が `the schema of pack is valid` を出して 0 で終わること、parse と help の例が文書の示す出力のとおりであること、ownership の例が 0 で終わることを確かめる
   - 違いがあれば、翻訳の写し間違いなら文書を直す。1.2 の時点で既にあった違いなら、実装に合わせて文書を直し、記録に残す
@@ -148,3 +148,4 @@
 - 3.2: conventions の 3 件の missing-file（`../CONTRIBUTING.md` ×2、`docs/README.md`）は 3.3 と 4.2 で解決する。5.2 で 0 件を確かめる。
 - 5.1: `python3 .kiro/specs/english-docs/check_docs.py check --files $(git ls-files include src tests cmake .github tools CMakeLists.txt)`（130 ファイル）は english-docs 0、release-automation 0、failures 0、exit 0。`LC_ALL=C.UTF-8 grep -nP` で日本語の範囲を探しても、`grep -niE` で kiro・スペック名・steering を探しても一致なし（exit 1）。ASCII 外の文字は `tests/public/command_test.c` の罫線（U+2500、U+2502、U+2514、U+251C）だけで、報告されない。変更したファイルはない。
 - 5.2: 制限なしの `check` は english-docs 0、release-automation 0、failures 0、pending 0、exit 0。README から幅優先でたどると、schema、parse、help、ownership、versioning、docs/README、CONTRIBUTING、conventions、CHANGELOG は 1 回、releasing は 2 回のリンクで届く。release-automation への指摘はない。変更したファイルはない。
+- 5.3: 英語にした文書で `bash .kiro/specs/english-docs/build_examples.sh /home/user/cargs <outdir>` は exit 0。7 例（README 1、schema 1、parse 2 のうち wmain 1、help 2、ownership 1）を取り出し、28 の確認がすべて通った。README の 4 つのコマンドライン、schema の `the schema of pack is valid`、parse と help の出力、ownership の終了コード 0 が文書のとおり。1.2 の時点からの違いはない。
