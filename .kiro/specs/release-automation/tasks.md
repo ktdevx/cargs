@@ -47,7 +47,7 @@
   - 完了の目安: `release.changes` が通り、`.github/workflows/` のファイルを含む一覧と `tests/release/fixtures/` の `.md` だけの一覧は `docs_only=false`、根と `docs/` と `.github/` の Markdown と `docs/` だけの一覧は `docs_only=true` になる
   - _Requirements: 7.3, 7.4, 7.10, 9.1, 9.2_
 
-- [ ] 3. 入口のスクリプト
+- [x] 3. 入口のスクリプト
 - [x] 3.1 リリース PR の前の検証と書き換えのスクリプトを作る
   - 設計の PrepareScript の入力、検証の順序、出力のとおりに作る。すべての検証は書く前に行い、2 つのファイルの新しい中身を作ってから書き、ヘッダを読み直して確かめる。検証だけの指定では何も書かない
   - タグの一覧のうち、`v` に続けて正しい SemVer になるものだけを既存のリリースとして扱う。ヘッダの版と同じ版は、そのタグがないときだけ受け付ける
@@ -55,7 +55,7 @@
   - 完了の目安: `release.prepare` が通る。最初のリリース（ヘッダ 0.1.0、タグなし、`0.1.0`）と通常のプレリリースが成功し、変わるのはヘッダと CHANGELOG だけで、出力ファイルに `version`、`tag`、`prerelease` が書かれる
   - _Requirements: 4.2, 4.3, 4.6, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 9.1, 9.2, 9.4_
 
-- [ ] 3.2 マージ後の照合とノートのスクリプトを作る
+- [x] 3.2 マージ後の照合とノートのスクリプトを作る
   - 設計の PublishScript の入力、照合（ヘッダの完全なバージョン、CHANGELOG の最新の版）、出力（ノートのファイル、`prerelease`、`title`）のとおりに作る。ノートが空なら失敗する
   - 設計の Testing Strategy の `release.publish` の内容をテストとして足す
   - 完了の目安: `release.publish` が通り、プレリリースは `prerelease=true`、先行するプレリリースのある正式版のノートに参照の文が入り、ヘッダか CHANGELOG が一致しない写しでは失敗する
@@ -137,3 +137,4 @@
 - 2.3: CMake 3.28 の `file(READ)` は CRLF を LF にする（`file(READ ... HEX)` のバイトには CR がある）。改行の形を保つ必要があるファイル（CHANGELOG.md、version.h）は、`tools/release/ClargsVersionHeader.cmake` の HEX と `string(ASCII)` による読み方（`_clargs_version_header_read_bytes`）を使うか共通化して読む。ヘッダは `clargs_version_header_write(<path> <major> <minor> <patch> <prerelease>)` が書き込みと `clargs_read_version` による読み直しまで行う（書く前の検査には `clargs_version_header_render`）。
 - 2.4: `tools/ci/changes.cmake` は `-D CLARGS_CHANGED_FILES=<一覧のファイル>`、`-D CLARGS_CHANGES_OUTPUT=<出力ファイル>`（`$GITHUB_OUTPUT` をそのまま渡せる。`docs_only=<v>` を追記）。標準出力は message(STATUS) なので行頭に `-- ` が付く。終了コードは常に 0。
 - 3.1: `tools/release/prepare.cmake` の入力は `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_DATE`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_TAGS_FILE`、`CLARGS_RELEASE_OUTPUT`（任意）、`CLARGS_RELEASE_CHECK_ONLY`（任意）。出力は `version=`、`tag=`、`prerelease=`。バイト単位の読み込みは `_clargs_prepare_read_bytes` に写しがある（`ClargsVersionHeader.cmake` の private 関数と重複。3.2 で共通化を検討）。
+- 3.2: `tools/release/publish.cmake` の入力は `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_NOTES`、`CLARGS_RELEASE_OUTPUT`（任意）。出力は `prerelease=`、`title=v<V>`。バイト単位の読み込みは `tools/release/ClargsReadBytes.cmake` の `clargs_read_bytes(<path> <what> <out>)` に共通化した。

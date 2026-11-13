@@ -63,28 +63,8 @@ cmake_minimum_required(VERSION 3.21)
 include("${CMAKE_CURRENT_LIST_DIR}/ClargsSemver.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/ClargsChangelog.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/ClargsVersionHeader.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/ClargsReadBytes.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/ClargsVersion.cmake")
-
-# Sets <out-var> to the bytes of the file <path>, with every CR kept, since
-# file(READ) without HEX drops the CR of a CRLF line ending. <what> names the
-# file in the error for a file that holds a NUL byte, which cannot be a string.
-function(_clargs_prepare_read_bytes path what out_var)
-    file(READ "${path}" hex HEX)
-    set(text "")
-    if(NOT hex STREQUAL "")
-        string(REGEX MATCHALL ".." bytes "${hex}")
-        set(codes "")
-        foreach(byte IN LISTS bytes)
-            if(byte STREQUAL "00")
-                message(FATAL_ERROR "error: cannot read ${what} ${path}: the file holds a NUL byte.")
-            endif()
-            math(EXPR code "0x${byte}")
-            list(APPEND codes ${code})
-        endforeach()
-        string(ASCII ${codes} text)
-    endif()
-    set(${out_var} "${text}" PARENT_SCOPE)
-endfunction()
 
 # --- 1. The inputs -------------------------------------------------------------
 
@@ -221,7 +201,7 @@ endif()
 
 # --- 6. The changelog -------------------------------------------------------------
 
-_clargs_prepare_read_bytes("${_clargs_prepare_changelog}" "the changelog"
+clargs_read_bytes("${_clargs_prepare_changelog}" "the changelog"
     _clargs_prepare_changelog_text)
 clargs_changelog_parse("${_clargs_prepare_changelog_text}" _clargs_prepare_c)
 if(NOT _clargs_prepare_c_VALID)
@@ -243,7 +223,7 @@ endif()
 
 # Both texts are made in full before either file is written; each function
 # stops with a FATAL_ERROR when it cannot make its text.
-_clargs_prepare_read_bytes("${_clargs_prepare_header}" "the version header"
+clargs_read_bytes("${_clargs_prepare_header}" "the version header"
     _clargs_prepare_header_text)
 clargs_version_header_render("${_clargs_prepare_header_text}"
     "${_clargs_prepare_v_MAJOR}" "${_clargs_prepare_v_MINOR}" "${_clargs_prepare_v_PATCH}"

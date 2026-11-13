@@ -45,6 +45,7 @@
 include_guard(GLOBAL)
 
 include("${CMAKE_CURRENT_LIST_DIR}/ClargsSemver.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/ClargsReadBytes.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/ClargsVersion.cmake")
 
 # The functions keep the policies in effect here, whatever the caller has set
@@ -79,27 +80,6 @@ function(_clargs_version_header_comment_state line in_comment out_var)
         endif()
     endwhile()
     set(${out_var} ${state} PARENT_SCOPE)
-endfunction()
-
-# Sets <out-var> to the bytes of the file <path>, with every CR kept. A file
-# that holds a NUL byte cannot be a string, and stops with a FATAL_ERROR.
-function(_clargs_version_header_read_bytes path out_var)
-    file(READ "${path}" hex HEX)
-    set(text "")
-    if(NOT hex STREQUAL "")
-        string(REGEX MATCHALL ".." bytes "${hex}")
-        set(codes "")
-        foreach(byte IN LISTS bytes)
-            if(byte STREQUAL "00")
-                message(FATAL_ERROR
-                    "error: cannot rewrite the version header ${path}: the file holds a NUL byte.")
-            endif()
-            math(EXPR code "0x${byte}")
-            list(APPEND codes ${code})
-        endforeach()
-        string(ASCII ${codes} text)
-    endif()
-    set(${out_var} "${text}" PARENT_SCOPE)
 endfunction()
 
 function(clargs_version_header_render text major minor patch prerelease out_var)
@@ -218,7 +198,7 @@ function(clargs_version_header_write header major minor patch prerelease)
             "error: cannot rewrite the version header ${path}: the file does not exist.")
     endif()
 
-    _clargs_version_header_read_bytes("${path}" text)
+    clargs_read_bytes("${path}" "the version header" text)
     clargs_version_header_render("${text}" "${major}" "${minor}" "${patch}" "${prerelease}" result)
     file(WRITE "${path}" "${result}")
 
