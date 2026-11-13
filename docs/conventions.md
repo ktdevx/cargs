@@ -51,6 +51,7 @@ include/
     ├── alloc.h       アロケータの型と clargs_set_allocator() の宣言
     ├── error.h       エラーコードの一覧 CLARGS_ERROR_LIST、clargs_error_t、clargs_error_message() の宣言
     ├── export.h      CLARGS_API
+    ├── parse.h       解析: clargs_parse()、clargs_parse_wide()、結果 clargs_result_t の読み取りと破棄、解析エラーの情報の宣言
     ├── schema.h      スキーマ: コマンド、オプション、位置引数の定義、属性、検証、読み取りの宣言
     ├── type.h        値型: clargs_type_t、組み込みの値型、生成、破棄、読み取り、変換の宣言
     └── version.h     バージョンのマクロと clargs_version() の宣言
@@ -67,6 +68,7 @@ tests/
 docs/                 文書
 ├── conventions.md    この文書
 ├── ownership.md      所有権と寿命の規約
+├── parse.md          解析の使い方（利用者向け）: 解析から破棄までの例、引数の書き方の一覧、解析エラー、寿命の規則、前提条件
 └── schema.md         スキーマの使い方（利用者向け）: 定義から検証、破棄までの例、値型の契約、破棄の順序
 ```
 

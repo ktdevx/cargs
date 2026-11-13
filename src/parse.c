@@ -1,5 +1,5 @@
 /*
- * CLArgs - parsing: the entry, and the scan of the arguments.
+ * CLArgs - parsing: the two entries, and the scan of the arguments.
  *
  * The arguments are read once each, from the first after the name of the
  * program to the last, classified by their shape ("lex.h") and matched
@@ -69,6 +69,35 @@ static clargs_error_t fail_at(clargs_result_t *result, const scan_t *scan, clarg
 }
 
 /*
+ * Checks the argument that scan is at before it is read: a wide argument
+ * with a sequence that could not be converted to UTF-8 is a parse error,
+ * whatever it would be read as. The argument and the value of the error
+ * are the argument as the result holds it, with U+FFFD for each unit that
+ * could not be converted; the error has no option and no letter.
+ *
+ * The result remembers the first such argument only. That is enough: the
+ * scan stops there, so no later one is ever read.
+ */
+static clargs_error_t check_encoding(clargs_result_t *result, const scan_t *scan)
+{
+    clargs_result_where_t where;
+
+    /* The scan starts after the name of the program, and 0 is "none". */
+    if (scan->index != clargs_result_first_invalid_arg(result)) {
+        return CLARGS_ERROR_NONE;
+    }
+
+    where.source = CLARGS_SOURCE_COMMAND_LINE;
+    where.index = scan->index;
+    where.short_name = '\0';
+    where.name_prefix = "";
+    where.name = NULL;
+    where.name_length = 0;
+    return fail_at(result, scan, CLARGS_PARSE_ERROR_INVALID_ENCODING, &where,
+                   clargs_result_arg(result, scan->index), NULL);
+}
+
+/*
  * Records that option, an option of the current command of scan, was given
  * by the argument that scan is at. where tells how it was written. on is
  * the state that a negatable flag was given with. value is the value that
@@ -77,12 +106,14 @@ static clargs_error_t fail_at(clargs_result_t *result, const scan_t *scan, clarg
  *
  * An option that takes a value without one takes the next argument,
  * whatever it looks like, and scan moves on to it; where->index is then
- * set to that argument, the one that holds the value.
+ * set to that argument, the one that holds the value. The argument is
+ * checked before it is taken (check_encoding()).
  */
 static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const clargs_option_t *option,
                                     bool on, const char *value, clargs_result_where_t *where)
 {
     const clargs_option_kind_t kind = clargs_option_kind(option);
+    clargs_error_t error;
 
     if (kind == CLARGS_OPTION_VALUE) {
         if (value == NULL) {
@@ -90,6 +121,10 @@ static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const
                 return fail_at(result, scan, CLARGS_PARSE_ERROR_MISSING_VALUE, where, NULL, option);
             }
             scan->index++;
+            error = check_encoding(result, scan);
+            if (error != CLARGS_ERROR_NONE) {
+                return error;
+            }
             where->index = scan->index;
             value = clargs_result_arg(result, scan->index);
         }
@@ -262,7 +297,8 @@ static clargs_error_t scan_plain(clargs_result_t *result, scan_t *scan, const ch
  * only selected command, from the first after the name of the program.
  * The current command is root at first and then the subcommand that was
  * named last: an option is looked up in the current command only, never in
- * its parent or its subcommands. Stops at the first error.
+ * its parent or its subcommands. Each argument is checked before it is
+ * read (check_encoding()). Stops at the first error.
  *
  * Returns CLARGS_ERROR_NONE when all the arguments were read,
  * CLARGS_ERROR_INVALID_COMMAND_LINE when a parse error was recorded, and
@@ -278,8 +314,11 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
 
     for (scan.index = 1; scan.index < scan.count; scan.index++) {
         const char *arg = clargs_result_arg(result, scan.index);
-        clargs_error_t error = CLARGS_ERROR_NONE;
+        clargs_error_t error = check_encoding(result, &scan);
 
+        if (error != CLARGS_ERROR_NONE) {
+            return error;
+        }
         if (scan.options_ended) {
             /* After the terminator, an argument is not classified: it is
              * not an option, whatever it looks like, a second "--"
@@ -358,6 +397,30 @@ clargs_error_t clargs_parse(const clargs_command_t *root, int argc, char *const 
     assert(argc == 0 || argv != NULL);
 
     error = clargs_result_create(root, argc, argv, &result);
+    if (error != CLARGS_ERROR_NONE) {
+        *out = NULL;
+        return error;
+    }
+    return parse_result(result, root, (size_t)argc, out);
+}
+
+clargs_error_t clargs_parse_wide(const clargs_command_t *root, int argc, wchar_t *const *argv,
+                                 clargs_result_t **out)
+{
+    clargs_result_t *result = NULL;
+    clargs_error_t error;
+
+    /* That no argument is NULL is checked by clargs_result_create_wide(). */
+    assert(root != NULL);
+    assert(out != NULL);
+    assert(clargs_command_parent(root) == NULL);
+    assert(clargs_command_is_validated(root));
+    assert(argc >= 0);
+    assert(argc == 0 || argv != NULL);
+
+    /* The arguments are converted to UTF-8 here. From here on the two
+     * entries are the same. */
+    error = clargs_result_create_wide(root, argc, argv, &result);
     if (error != CLARGS_ERROR_NONE) {
         *out = NULL;
         return error;

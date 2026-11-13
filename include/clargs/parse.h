@@ -1,10 +1,11 @@
 /*
  * CLArgs - parsing: what a command line is read into.
  *
- * This header holds the function that parses a command line,
- * clargs_parse(), the result of a parse, clargs_result_t, the functions
- * that read and destroy it, and the enumerations that tell where a value
- * came from and what kind of error a command line has.
+ * This header holds the functions that parse a command line,
+ * clargs_parse() and clargs_parse_wide() for wide strings, the result of a
+ * parse, clargs_result_t, the functions that read and destroy it, and the
+ * enumerations that tell where a value came from and what kind of error a
+ * command line has.
  *
  * Ownership:
  *
@@ -16,9 +17,27 @@
  * - What the functions that read a result return is valid until the result
  *   is destroyed. The caller does not free it.
  *
- * A function that only reads takes a const result, changes nothing and
- * cannot fail. Such functions may be called on one result from several
- * threads at the same time.
+ * Errors:
+ *
+ * - The two functions that parse return a clargs_error_t. A command line
+ *   that does not match the schema is CLARGS_ERROR_INVALID_COMMAND_LINE,
+ *   and then, other than with every other failure, the output is a result
+ *   and not NULL: it holds the parse error.
+ * - A function that only reads takes a const result, changes nothing,
+ *   allocates nothing and cannot fail. Such functions may be called on one
+ *   result from several threads at the same time. What a result does not
+ *   have reads as "none": false, 0, NULL or CLARGS_SOURCE_NONE.
+ * - A NULL pointer where none is allowed, a schema that is not validated,
+ *   an option or a positional of another schema or of the wrong kind, and
+ *   an index of a command that is out of range are errors of the program,
+ *   not error codes: see the preconditions of each function.
+ *
+ * Preconditions of every function that takes a result, besides those that
+ * each function lists:
+ *
+ * - The result has not been destroyed. Not checked.
+ * - The schema that the result was made from, and the value types it uses,
+ *   have not been changed or destroyed. Not checked.
  */
 #ifndef CLARGS_PARSE_H
 #define CLARGS_PARSE_H
@@ -277,6 +296,42 @@ extern "C" {
  */
 CLARGS_API clargs_error_t clargs_parse(const clargs_command_t *root, int argc, char *const *argv,
                                        clargs_result_t **out);
+
+/*
+ * Parses a command line of wide strings, such as the argv of wmain(), with
+ * the schema of root: the same as clargs_parse(), after each argument was
+ * converted to UTF-8. The function is there on every platform.
+ *
+ * How a wide string is read depends on the width of wchar_t:
+ *
+ * - 16 bits (Windows): as UTF-16. A high surrogate followed by a low
+ *   surrogate is one character.
+ * - wider (Linux, macOS): as UTF-32.
+ *
+ * The conversion does not depend on the locale. What it gives is what
+ * clargs_parse() gives for the same command line written in UTF-8: the same
+ * result, or the same parse error. Every string that is read from the
+ * result is UTF-8: the values, and the argument, the value and the message
+ * of a parse error. clargs_parse() itself does not look at the bytes of its
+ * arguments: bytes that are not UTF-8 are passed on as they are.
+ *
+ * An argument that cannot be converted is the parse error
+ * CLARGS_PARSE_ERROR_INVALID_ENCODING. That is an argument with a surrogate
+ * that is not part of a pair, in UTF-16, or with a value that is negative,
+ * in the range of the surrogates (U+D800 to U+DFFF) or above U+10FFFF, in
+ * UTF-32. It is found when the argument is about to be read, also when it
+ * would be the value of the option before it, so an error of an earlier
+ * argument is reported instead. The argument and the value of the error
+ * are the argument in UTF-8, with U+FFFD in the place of each unit that
+ * could not be converted; the error has no option, no positional and no
+ * letter. argv[0] is not parsed, and so it is never this error.
+ *
+ * What is returned, what is written to *out, the ownership and the
+ * preconditions are those of clargs_parse(), with argv and its wide
+ * strings in the place of argv and its strings.
+ */
+CLARGS_API clargs_error_t clargs_parse_wide(const clargs_command_t *root, int argc, wchar_t *const *argv,
+                                            clargs_result_t **out);
 
 /*
  * Destroys result: frees the copy of the arguments and everything else the
