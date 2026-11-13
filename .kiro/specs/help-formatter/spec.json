@@ -1,0 +1,22 @@
+{
+  "feature_name": "help-formatter",
+  "created_at": "2026-11-13T04:26:17Z",
+  "updated_at": "2026-11-13T06:59:40Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": false
+}
