@@ -41,6 +41,30 @@ clargs_add_test(version SOURCES public/version_test.c)
 clargs_add_test(version_internal SOURCES internal/version_internal_test.c INTERNAL)
 clargs_add_test(wrap SOURCES internal/wrap_test.c INTERNAL)
 
+# The tests of the release scripts and modules: tests/release/<name>_test.cmake,
+# run with "cmake -P" (see tests/release/ReleaseTestHelpers.cmake). They need
+# no build, so they are registered for a static and for a shared library alike,
+# under the name release.<name> and with the label "release". Each test owns
+# the work directory release/<name> of this build directory.
+#
+# To add a test, put the file in release/ and add
+#     clargs_add_release_test(<name>)
+function(clargs_add_release_test name)
+    set(script "${CMAKE_CURRENT_SOURCE_DIR}/release/${name}_test.cmake")
+    if(NOT EXISTS "${script}")
+        message(FATAL_ERROR "clargs_add_release_test: there is no test ${script}")
+    endif()
+    add_test(NAME release.${name}
+        COMMAND "${CMAKE_COMMAND}"
+            "-DCLARGS_SOURCE_ROOT=${PROJECT_SOURCE_DIR}"
+            "-DCLARGS_TEST_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/release/${name}"
+            -P "${script}"
+    )
+    set_tests_properties(release.${name} PROPERTIES LABELS release)
+endfunction()
+
+clargs_add_release_test(version_read)
+
 # The check of the allocations; see cmake/ClargsCheckAllocations.cmake. The
 # library sources must not use the allocation functions of the C standard
 # library directly. The test reads the sources and needs no build, so it is

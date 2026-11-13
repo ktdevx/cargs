@@ -1,9 +1,15 @@
 /*
  * CLArgs - library version.
  *
- * This header is the single source of the version. The build reads the three
- * macros below as text, so keep each of them on one line in the form
- * "#define CLARGS_VERSION_<PART> <integer>". Each part is in the range 0-255.
+ * This header is the single source of the version. The build reads the four
+ * macros below as text, so keep each of them on one line. The three numeric
+ * parts are in the form "#define CLARGS_VERSION_<PART> <integer>", each in the
+ * range 0-255. The pre-release identifiers are in the form
+ *
+ *     #define CLARGS_VERSION_PRERELEASE "<identifiers>"
+ *
+ * one string literal holding the SemVer 2.0.0 pre-release identifiers without
+ * the leading hyphen, such as "rc.1", or an empty string for a release.
  */
 #ifndef CLARGS_VERSION_H
 #define CLARGS_VERSION_H
@@ -13,6 +19,9 @@
 #define CLARGS_VERSION_MAJOR 0
 #define CLARGS_VERSION_MINOR 1
 #define CLARGS_VERSION_PATCH 0
+/* The pre-release identifiers of the version without the leading hyphen, such as "rc.1".
+   An empty string for a release. */
+#define CLARGS_VERSION_PRERELEASE ""
 
 /* Packs a version into one number: 0x00MMmmpp. Each part is in 0-255. */
 #define CLARGS_MAKE_VERSION(major, minor, patch) \
