@@ -173,7 +173,7 @@ Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、�
 
 ## Direct Implementation Candidates
 
-- [ ] community-health-files -- CODE_OF_CONDUCT.md（Contributor Covenant。連絡先は vabelorg@gmail.com）、SECURITY.md（GitHub の非公開の脆弱性報告で受け付ける。対応するバージョンの方針を書く）、Issue テンプレート（バグ報告、機能要望、`config.yml` で脆弱性は SECURITY へ案内）、PR テンプレート。定型の文書で境界の設計が要らないため、スペックにしない。PR テンプレートの CHANGELOG の項目は、release-automation の規則が決まってから書く。すべて英語。
+- [x] community-health-files -- CODE_OF_CONDUCT.md（Contributor Covenant。連絡先は vabelorg@gmail.com）、SECURITY.md（GitHub の非公開の脆弱性報告で受け付ける。対応するバージョンの方針を書く）、Issue テンプレート（バグ報告、機能要望、`config.yml` で脆弱性は SECURITY へ案内）、PR テンプレート。定型の文書で境界の設計が要らないため、スペックにしない。PR テンプレートの CHANGELOG の項目は、release-automation の規則が決まってから書く。すべて英語。
 
 ## Specs (dependency order)
 
