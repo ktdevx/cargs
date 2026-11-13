@@ -143,3 +143,4 @@
 - 4.3: release-publish.yml の concurrency はジョブに置いた（ジョブが飛ばされる実行が group に入って保留中の実行を置き換えないように）。手動のやり直しは main で起動し、`gh pr list --state merged --head release/v<V>` で同じリポジトリの PR を 1 つだけ見つける。タグが別のコミットを指すと止まる（手順書 5.3 に戻し方を書く）。
 - 5.3: 正式版の前のプレリリースから変更がなくても、`Unreleased` に 1 項目が要る（要件 5.7。手順書の Making a pre-release に例を書いた）。
 - 6.2: 最終確認の結果: static/shared × Debug/Release で 746/747 件すべて合格、release ラベル 7 件、consumer check 4 構成すべて合格、言語・語・権限・actionlint の確認はすべて空または合格。GitHub 上での通し確認（フォークでのリハーサル、文書だけの PR、公開のやり直し）はメンテナーが手順書どおりに行う。
+- 検証（kiro-validate-impl）: 最初のリリース（ヘッダと同じ版）では version.h が変わらないため、release-pr.yml のコミットの手順が止まっていた。CHANGELOG.md だけの変更も受け付けるよう直し、PR の本文と手順書のリハーサルにその場合を加えた。

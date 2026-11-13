@@ -143,6 +143,7 @@ tools/
 │   ├── ClargsSemver.cmake        # SemVer 2.0.0 の解析と優先順位の比較
 │   ├── ClargsChangelog.cmake     # CHANGELOG の解析、Unreleased の移動、リンクの更新、ノートの取り出し
 │   ├── ClargsVersionHeader.cmake # version.h の 4 つのマクロの値の書き換えと、読み直しによる確認
+│   ├── ClargsReadBytes.cmake     # ファイルをバイト単位で読む（CRLF を保つ）。prepare、publish、ClargsVersionHeader が共有する（実装時に追加）
 │   ├── prepare.cmake             # 入口: リリース PR の前の検証と、ヘッダ・CHANGELOG の書き換え
 │   └── publish.cmake             # 入口: マージ後の照合、ノートの作成、Pre-release の判定
 └── ci/

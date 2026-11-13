@@ -354,6 +354,12 @@ test tag or Release.
    header: a pre-release of the version already in the header (such as
    `0.1.0-rehearsal.1` while the header holds `0.1.0`) is refused, so use a
    pre-release of a higher version.
+
+   While the repository has no release yet, rehearse the first release too,
+   before the pre-release: start **Release PR** with the version already in
+   the header, such as `0.1.0`. Its pull request changes only `CHANGELOG.md`,
+   since the header already holds that version, and merging it creates the
+   tag `v0.1.0` and its Release.
 3. Check:
    - that a wrong input stops the workflow without creating anything, for
      example `0.2.0+build`, `0.2`, or a run started on another branch;

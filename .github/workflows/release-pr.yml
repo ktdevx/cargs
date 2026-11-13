@@ -142,9 +142,12 @@ jobs:
           git switch -c "release/v$VERSION"
           git add include/clargs/version.h CHANGELOG.md
           changes="$(git status --porcelain --untracked-files=all)"
-          expected="$(printf '%s\n' 'M  CHANGELOG.md' 'M  include/clargs/version.h')"
-          if [ "$(printf '%s\n' "$changes" | LC_ALL=C sort)" != "$expected" ]; then
-            reason="The working tree does not hold exactly the changes of include/clargs/version.h and CHANGELOG.md."
+          # CHANGELOG.md always changes. The version header changes too, except
+          # for a release of the version it already holds (the first release).
+          sorted="$(printf '%s\n' "$changes" | LC_ALL=C sort)"
+          with_header="$(printf '%s\n' 'M  CHANGELOG.md' 'M  include/clargs/version.h')"
+          if [ "$sorted" != "$with_header" ] && [ "$sorted" != 'M  CHANGELOG.md' ]; then
+            reason="The working tree does not hold only the changes of CHANGELOG.md and include/clargs/version.h."
             echo "error: $reason"
             printf '%s\n' "$changes"
             {
@@ -186,12 +189,17 @@ jobs:
             first="This pull request releases CLArgs v$VERSION."
             kind="It is a full release, not a pre-release."
           fi
+          if git diff --quiet HEAD~1 HEAD -- include/clargs/version.h; then
+            header="the version macros already hold $VERSION, so this file is not changed."
+          else
+            header="the version macros are set to $VERSION."
+          fi
           cat > "$body" <<EOF
           $first
 
           ## What this pull request changes
 
-          - \`include/clargs/version.h\`: the version macros are set to $VERSION.
+          - \`include/clargs/version.h\`: $header
           - \`CHANGELOG.md\`: the entries under [Unreleased] move to the new section [$VERSION] - $DATE, [Unreleased] is left empty, and the links at the end of the file are updated.
 
           No other file is changed.
