@@ -1,7 +1,8 @@
 /*
  * CLArgs - parsing: what a command line is read into.
  *
- * This header holds the result of a parse, clargs_result_t, the functions
+ * This header holds the function that parses a command line,
+ * clargs_parse(), the result of a parse, clargs_result_t, the functions
  * that read and destroy it, and the enumerations that tell where a value
  * came from and what kind of error a command line has.
  *
@@ -70,6 +71,83 @@ typedef enum clargs_parse_error_kind {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*
+ * Parses the command line argv, which has argc arguments, with the schema
+ * of root, and writes a new result to *out. argc and argv can be passed as
+ * main() received them.
+ *
+ * argv[0] is the name of the program and is not parsed. When there is no
+ * other argument, also when argc is 0, the command line is one on which
+ * nothing was given. The other arguments are read once each, from the
+ * first to the last, and matched with the command they are for; the scan
+ * stops at the first argument that does not match the schema.
+ *
+ * An argument that starts with "--" and has more characters is a long
+ * option. Its name ends before the first '=' and is compared as a whole,
+ * byte by byte, with the long names and the negated names of the options
+ * of the command: upper and lower case are different, and a part of a name
+ * does not match.
+ *
+ *     --name         a flag is given; a count is one more; a negatable
+ *                    flag is on
+ *     --no-name      a negatable flag is off
+ *     --name=value   an option that takes a value has the value, which is
+ *                    everything after the first '=' and may be empty
+ *     --name value   an option that takes a value has the next argument as
+ *                    its value, whatever that argument looks like
+ *
+ * An option may be given more than once: a flag stays given, a count is
+ * the number of times, a negatable flag has the state that was given last,
+ * and an option that takes a value has the value that was given last. Each
+ * value is converted with the value type of its option when it is read,
+ * also a value that is replaced later.
+ *
+ * What is returned, and what is written to *out:
+ *
+ *     CLARGS_ERROR_NONE                  a result  The command line matches
+ *                                                  the schema.
+ *     CLARGS_ERROR_INVALID_COMMAND_LINE  a result  It does not. The result
+ *                                                  holds the parse error and
+ *                                                  what was read before it.
+ *     CLARGS_ERROR_OUT_OF_MEMORY         NULL      An allocation failed, or
+ *                                                  a value type returned
+ *                                                  this code. Nothing stays
+ *                                                  allocated.
+ *
+ * A parse error is read with clargs_result_error_kind() and the functions
+ * next to it.
+ *
+ * Ownership:
+ *
+ * - The caller owns the result and destroys it with
+ *   clargs_result_destroy(), also the result of a parse that returned
+ *   CLARGS_ERROR_INVALID_COMMAND_LINE.
+ * - argv and its strings are only read, and the result keeps its own copy
+ *   of them: after the call, argv may be changed or freed.
+ * - The schema and its value types are only read, and the result borrows
+ *   them: destroy the result before the schema, and do not add to the
+ *   schema or set anything in it while a result of it exists.
+ *
+ * Nothing is kept between two calls: the same schema and the same argv give
+ * the same result every time.
+ *
+ * Preconditions:
+ *
+ * - root and out are not NULL. Checked with assert.
+ * - root is a root, not a subcommand. Checked with assert.
+ * - The schema is validated: clargs_command_validate() succeeded on root
+ *   and nothing was added or set since (clargs_command_is_validated()).
+ *   Checked with assert. A schema that is not validated is not reported
+ *   with an error code.
+ * - argc is not negative. Checked with assert.
+ * - If argc is greater than 0, argv is not NULL and none of argv[0] to
+ *   argv[argc - 1] is NULL. Checked with assert. argv[argc] is not read.
+ * - The schema and its value types are not changed or destroyed before the
+ *   result is destroyed. Not checked.
+ */
+CLARGS_API clargs_error_t clargs_parse(const clargs_command_t *root, int argc, char *const *argv,
+                                       clargs_result_t **out);
 
 /*
  * Destroys result: frees the copy of the arguments and everything else the
