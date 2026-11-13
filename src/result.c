@@ -285,6 +285,154 @@ clargs_error_t clargs_result_push_command(clargs_result_t *result, const clargs_
     return CLARGS_ERROR_NONE;
 }
 
+/* ---- The slots of the options ------------------------------------------- */
+
+/* Returns the root of the schema of command: the command that has no
+ * parent, reached from command through the parents. */
+static const clargs_command_t *root_of(const clargs_command_t *command)
+{
+    const clargs_command_t *parent = clargs_command_parent(command);
+
+    while (parent != NULL) {
+        command = parent;
+        parent = clargs_command_parent(command);
+    }
+    return command;
+}
+
+/*
+ * Returns the slot of option in result, or NULL when the command of option
+ * is not a selected command of result.
+ *
+ * The frame is that of the command of option, and the slot has the index
+ * that option has in that command. A command of another schema is never
+ * selected, so its options have no slot.
+ */
+static clargs_option_slot_t *find_option_slot(const clargs_result_t *result,
+                                              const clargs_option_t *option)
+{
+    const clargs_command_t *command = clargs_option_command(option);
+    size_t i;
+    size_t k;
+
+    if (root_of(command) != result->root) {
+        return NULL;
+    }
+
+    for (i = 0; i < result->frames.count; ++i) {
+        clargs_result_frame_t *frame = frame_at(result, i);
+
+        if (frame->command != command) {
+            continue;
+        }
+        for (k = 0; k < frame->option_count; ++k) {
+            if (clargs_command_option_at(command, k) == option) {
+                return &frame->options[k];
+            }
+        }
+        return NULL;
+    }
+    return NULL;
+}
+
+void clargs_result_record_flag(clargs_result_t *result, const clargs_option_t *option)
+{
+    clargs_option_slot_t *slot;
+
+    assert(result != NULL);
+    assert(option != NULL);
+    assert(clargs_option_kind(option) == CLARGS_OPTION_FLAG);
+
+    slot = find_option_slot(result, option);
+    assert(slot != NULL);
+
+    slot->on = true;
+    slot->source = CLARGS_SOURCE_COMMAND_LINE;
+}
+
+void clargs_result_record_state(clargs_result_t *result, const clargs_option_t *option, bool on)
+{
+    clargs_option_slot_t *slot;
+
+    assert(result != NULL);
+    assert(option != NULL);
+    assert(clargs_option_kind(option) == CLARGS_OPTION_NEGATABLE);
+
+    slot = find_option_slot(result, option);
+    assert(slot != NULL);
+
+    slot->on = on;
+    slot->source = CLARGS_SOURCE_COMMAND_LINE;
+}
+
+void clargs_result_record_count(clargs_result_t *result, const clargs_option_t *option)
+{
+    clargs_option_slot_t *slot;
+
+    assert(result != NULL);
+    assert(option != NULL);
+    assert(clargs_option_kind(option) == CLARGS_OPTION_COUNT);
+
+    slot = find_option_slot(result, option);
+    assert(slot != NULL);
+
+    slot->count += 1;
+    slot->source = CLARGS_SOURCE_COMMAND_LINE;
+}
+
+bool clargs_result_flag(const clargs_result_t *result, const clargs_option_t *option)
+{
+    const clargs_option_slot_t *slot;
+
+    assert(result != NULL);
+    assert(option != NULL);
+    assert(root_of(clargs_option_command(option)) == result->root);
+    assert(clargs_option_kind(option) == CLARGS_OPTION_FLAG
+           || clargs_option_kind(option) == CLARGS_OPTION_NEGATABLE);
+
+    slot = find_option_slot(result, option);
+    if (slot == NULL) {
+        /* Not given: false for a flag, the initial state for a negatable
+         * flag. */
+        return clargs_option_initial(option);
+    }
+    return slot->on;
+}
+
+size_t clargs_result_count(const clargs_result_t *result, const clargs_option_t *option)
+{
+    const clargs_option_slot_t *slot;
+
+    assert(result != NULL);
+    assert(option != NULL);
+    assert(root_of(clargs_option_command(option)) == result->root);
+    assert(clargs_option_kind(option) == CLARGS_OPTION_COUNT);
+
+    slot = find_option_slot(result, option);
+    if (slot == NULL) {
+        return 0;
+    }
+    return slot->count;
+}
+
+clargs_source_t clargs_result_option_source(const clargs_result_t *result,
+                                            const clargs_option_t *option)
+{
+    const clargs_option_slot_t *slot;
+
+    assert(result != NULL);
+    assert(option != NULL);
+    assert(root_of(clargs_option_command(option)) == result->root);
+
+    slot = find_option_slot(result, option);
+    if (slot == NULL) {
+        return CLARGS_SOURCE_NONE;
+    }
+    return slot->source;
+}
+
+/* ---- The outcome and the selected commands ------------------------------ */
+
 clargs_error_t clargs_result_error(const clargs_result_t *result)
 {
     assert(result != NULL);

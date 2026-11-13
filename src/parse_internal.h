@@ -150,7 +150,9 @@ size_t clargs_result_first_invalid_arg(const clargs_result_t *result);
  * Preconditions, checked with assert:
  *
  * - result and command are not NULL.
- * - command is a subcommand of the last selected command of result.
+ * - command is a subcommand of the last selected command of result, or
+ *   the root that result was created with when result has no selected
+ *   command yet.
  */
 clargs_error_t clargs_result_push_command(clargs_result_t *result, const clargs_command_t *command);
 
@@ -166,8 +168,9 @@ clargs_error_t clargs_result_push_command(clargs_result_t *result, const clargs_
  *
  * - result and option are not NULL.
  * - option belongs to a selected command of result.
- * - option is a flag, a negatable flag and a count, in this order of the
- *   functions.
+ * - The option of clargs_result_record_flag() is a flag, that of
+ *   clargs_result_record_state() a negatable flag and that of
+ *   clargs_result_record_count() a count.
  */
 void clargs_result_record_flag(clargs_result_t *result, const clargs_option_t *option);
 void clargs_result_record_state(clargs_result_t *result, const clargs_option_t *option, bool on);

@@ -487,6 +487,314 @@ NAOS_TEST(slots_of_the_root_are_allocated_at_the_creation)
     destroy_root(full);
 }
 
+/* ---- Flags, counts and negatable flags ---------------------------------- */
+
+/* The options that add_four_options() adds, by their index in the command. */
+enum { FLAG = 0, COLOR = 1, VERBOSE = 2, OUT = 3 };
+
+/* The option of command at index. */
+static const clargs_option_t *option_of(const clargs_command_t *command, size_t index)
+{
+    return clargs_command_option_at(command, index);
+}
+
+NAOS_TEST(slots_start_as_not_given)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *plain = NULL;
+    clargs_result_t *result;
+
+    /* --color starts on; --plain keeps the initial state of the schema, off. */
+    add_four_options(root);
+    NAOS_REQUIRE_TRUE(clargs_command_add_negatable(root, 'p', "plain", &plain) == CLARGS_ERROR_NONE);
+    result = create_result(root, 0, NULL);
+
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(root, FLAG)));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, COLOR)));
+    NAOS_CHECK_FALSE(clargs_result_flag(result, plain));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(root, VERBOSE)), 0);
+
+    /* What a flag, a negatable flag and a count have when they are not
+     * given comes from the schema; an option with a value has no value. */
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, FLAG)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, COLOR)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, plain), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, VERBOSE)),
+                      CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, OUT)), CLARGS_SOURCE_NONE);
+
+    clargs_result_destroy(result);
+    destroy_root(root);
+}
+
+NAOS_TEST(slots_of_a_pushed_command_start_as_not_given)
+{
+    clargs_command_t *root = create_root();
+    clargs_command_t *sub = add_sub(root, "sub");
+    clargs_result_t *result;
+
+    add_four_options(sub);
+    result = create_result(root, 0, NULL);
+    NAOS_REQUIRE_TRUE(clargs_result_push_command(result, sub) == CLARGS_ERROR_NONE);
+
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(sub, FLAG)));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(sub, COLOR)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(sub, VERBOSE)), 0);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(sub, FLAG)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(sub, COLOR)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(sub, VERBOSE)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(sub, OUT)), CLARGS_SOURCE_NONE);
+
+    clargs_result_destroy(result);
+    destroy_root(root);
+}
+
+NAOS_TEST(flag_recorded_twice_is_given)
+{
+    clargs_command_t *root = create_root();
+    clargs_result_t *result;
+
+    add_four_options(root);
+    result = create_result(root, 0, NULL);
+
+    clargs_result_record_flag(result, option_of(root, FLAG));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, FLAG)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, FLAG)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+
+    clargs_result_record_flag(result, option_of(root, FLAG));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, FLAG)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, FLAG)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+
+    /* The other options are as they were. */
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, COLOR)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, COLOR)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(root, VERBOSE)), 0);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, VERBOSE)),
+                      CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, OUT)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
+
+    clargs_result_destroy(result);
+    destroy_root(root);
+}
+
+NAOS_TEST(count_is_the_number_of_records)
+{
+    clargs_command_t *root = create_root();
+    clargs_result_t *result;
+    size_t i;
+
+    add_four_options(root);
+    result = create_result(root, 0, NULL);
+
+    clargs_result_record_count(result, option_of(root, VERBOSE));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(root, VERBOSE)), 1);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, VERBOSE)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+
+    for (i = 2; i <= 40; ++i) {
+        clargs_result_record_count(result, option_of(root, VERBOSE));
+        NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(root, VERBOSE)), i);
+    }
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, VERBOSE)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+
+    /* The other options are as they were. */
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(root, FLAG)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, FLAG)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, COLOR)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, COLOR)), CLARGS_SOURCE_DEFAULT);
+
+    clargs_result_destroy(result);
+    destroy_root(root);
+}
+
+NAOS_TEST(negatable_flag_has_the_last_recorded_state)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *plain = NULL;
+    clargs_result_t *result;
+
+    add_four_options(root);
+    NAOS_REQUIRE_TRUE(clargs_command_add_negatable(root, 'p', "plain", &plain) == CLARGS_ERROR_NONE);
+    result = create_result(root, 0, NULL);
+
+    /* --color starts on. */
+    clargs_result_record_state(result, option_of(root, COLOR), false);
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(root, COLOR)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, COLOR)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+    clargs_result_record_state(result, option_of(root, COLOR), true);
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, COLOR)));
+    clargs_result_record_state(result, option_of(root, COLOR), true);
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, COLOR)));
+    clargs_result_record_state(result, option_of(root, COLOR), false);
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(root, COLOR)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, COLOR)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+
+    /* --plain starts off. The state that is recorded may be the initial
+     * one: the source still tells that it was given. */
+    clargs_result_record_state(result, plain, false);
+    NAOS_CHECK_FALSE(clargs_result_flag(result, plain));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, plain), CLARGS_SOURCE_COMMAND_LINE);
+    clargs_result_record_state(result, plain, true);
+    NAOS_CHECK_TRUE(clargs_result_flag(result, plain));
+
+    /* The other options are as they were. */
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(root, FLAG)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, FLAG)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(root, VERBOSE)), 0);
+
+    clargs_result_destroy(result);
+    destroy_root(root);
+}
+
+NAOS_TEST(options_of_each_selected_command_are_kept_apart)
+{
+    clargs_command_t *root = create_root();
+    clargs_command_t *sub = add_sub(root, "sub");
+    clargs_command_t *leaf = add_sub(sub, "leaf");
+    clargs_result_t *result;
+
+    /* The three commands have options of the same names. */
+    add_four_options(root);
+    add_four_options(sub);
+    add_four_options(leaf);
+    result = create_result(root, 0, NULL);
+    NAOS_REQUIRE_TRUE(clargs_result_push_command(result, sub) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(clargs_result_push_command(result, leaf) == CLARGS_ERROR_NONE);
+
+    clargs_result_record_flag(result, option_of(root, FLAG));
+    clargs_result_record_count(result, option_of(sub, VERBOSE));
+    clargs_result_record_count(result, option_of(sub, VERBOSE));
+    clargs_result_record_state(result, option_of(leaf, COLOR), false);
+    clargs_result_record_count(result, option_of(leaf, VERBOSE));
+
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, FLAG)));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, COLOR)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(root, VERBOSE)), 0);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, FLAG)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, VERBOSE)),
+                      CLARGS_SOURCE_DEFAULT);
+
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(sub, FLAG)));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(sub, COLOR)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(sub, VERBOSE)), 2);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(sub, FLAG)), CLARGS_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(sub, VERBOSE)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(leaf, FLAG)));
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(leaf, COLOR)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(leaf, VERBOSE)), 1);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(leaf, COLOR)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(leaf, OUT)), CLARGS_SOURCE_NONE);
+
+    clargs_result_destroy(result);
+    destroy_root(root);
+}
+
+NAOS_TEST(options_of_a_command_that_is_not_selected_read_as_not_given)
+{
+    clargs_command_t *root = create_root();
+    clargs_command_t *remote = add_sub(root, "remote");
+    clargs_command_t *add = add_sub(remote, "add");
+    clargs_command_t *other = add_sub(root, "other");
+    clargs_result_t *result;
+
+    add_four_options(root);
+    add_four_options(remote);
+    add_four_options(add);
+    add_four_options(other);
+    result = create_result(root, 0, NULL);
+
+    /* Only the root is selected: the options of its subcommand, of the
+     * subcommand of that, and of the other subcommand have no source. */
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(remote, FLAG)));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(remote, COLOR)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(remote, VERBOSE)), 0);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(remote, FLAG)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(remote, COLOR)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(remote, VERBOSE)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(remote, OUT)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(add, FLAG)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(add, VERBOSE)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(other, COLOR)), CLARGS_SOURCE_NONE);
+
+    /* Once a command is selected, its options have slots. What is recorded
+     * for the same names of the selected commands does not show in the
+     * commands that are not selected. */
+    NAOS_REQUIRE_TRUE(clargs_result_push_command(result, remote) == CLARGS_ERROR_NONE);
+    clargs_result_record_flag(result, option_of(root, FLAG));
+    clargs_result_record_flag(result, option_of(remote, FLAG));
+    clargs_result_record_state(result, option_of(remote, COLOR), false);
+    clargs_result_record_count(result, option_of(remote, VERBOSE));
+
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(remote, FLAG)));
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(remote, FLAG)),
+                      CLARGS_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(remote, OUT)), CLARGS_SOURCE_NONE);
+
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(add, FLAG)));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(add, COLOR)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(add, VERBOSE)), 0);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(add, FLAG)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(add, COLOR)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(add, VERBOSE)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(add, OUT)), CLARGS_SOURCE_NONE);
+
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(other, FLAG)));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(other, COLOR)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(other, VERBOSE)), 0);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(other, FLAG)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(other, COLOR)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(other, VERBOSE)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(other, OUT)), CLARGS_SOURCE_NONE);
+
+    /* Asking about them is not an error of the result. */
+    NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
+
+    clargs_result_destroy(result);
+    destroy_root(root);
+}
+
+NAOS_TEST(recording_and_reading_allocate_nothing)
+{
+    clargs_command_t *root = create_root();
+    clargs_command_t *sub = add_sub(root, "sub");
+    clargs_command_t *other = add_sub(root, "other");
+    clargs_result_t *result;
+    size_t before;
+
+    add_four_options(root);
+    add_four_options(sub);
+    add_four_options(other);
+    result = create_result(root, 0, NULL);
+    NAOS_REQUIRE_TRUE(clargs_result_push_command(result, sub) == CLARGS_ERROR_NONE);
+    before = clargs_test_allocator_requests();
+
+    clargs_result_record_flag(result, option_of(sub, FLAG));
+    clargs_result_record_state(result, option_of(sub, COLOR), false);
+    clargs_result_record_count(result, option_of(sub, VERBOSE));
+    NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(sub, FLAG)));
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(sub, COLOR)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(sub, VERBOSE)), 1);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(sub, OUT)), CLARGS_SOURCE_NONE);
+    NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(other, FLAG)));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(other, VERBOSE)), 0);
+    NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(other, OUT)), CLARGS_SOURCE_NONE);
+
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), before);
+
+    clargs_result_destroy(result);
+    destroy_root(root);
+}
+
 /* ---- The failure of an allocation --------------------------------------- */
 
 /*
@@ -671,6 +979,17 @@ NAOS_SUITE(commands,
     NAOS_ADD_TEST(slots_of_the_root_are_allocated_at_the_creation)
 )
 
+NAOS_SUITE(options,
+    NAOS_ADD_TEST(slots_start_as_not_given),
+    NAOS_ADD_TEST(slots_of_a_pushed_command_start_as_not_given),
+    NAOS_ADD_TEST(flag_recorded_twice_is_given),
+    NAOS_ADD_TEST(count_is_the_number_of_records),
+    NAOS_ADD_TEST(negatable_flag_has_the_last_recorded_state),
+    NAOS_ADD_TEST(options_of_each_selected_command_are_kept_apart),
+    NAOS_ADD_TEST(options_of_a_command_that_is_not_selected_read_as_not_given),
+    NAOS_ADD_TEST(recording_and_reading_allocate_nothing)
+)
+
 NAOS_SUITE(failure,
     NAOS_ADD_TEST(fails_at_every_allocation_point)
 )
@@ -680,5 +999,6 @@ NAOS_MAIN(
     NAOS_ADD_SUITE(creation),
     NAOS_ADD_SUITE(arguments),
     NAOS_ADD_SUITE(commands),
+    NAOS_ADD_SUITE(options),
     NAOS_ADD_SUITE(failure)
 )

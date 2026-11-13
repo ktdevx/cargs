@@ -122,6 +122,52 @@ CLARGS_API size_t clargs_result_command_count(const clargs_result_t *result);
 CLARGS_API const clargs_command_t *clargs_result_command_at(const clargs_result_t *result, size_t index);
 CLARGS_API const clargs_command_t *clargs_result_command(const clargs_result_t *result);
 
+/*
+ * Read an option that takes no value.
+ *
+ * clargs_result_flag() returns whether a flag was given, and whether a
+ * negatable flag is on: the state that was given last or, when it was not
+ * given, its initial state.
+ * clargs_result_count() returns how many times a count was given, by its
+ * short name and its long name together.
+ *
+ * An option of a command that the command line did not select reads as not
+ * given: false, 0, and the initial state of a negatable flag.
+ *
+ * Preconditions:
+ *
+ * - result and option are not NULL. Checked with assert.
+ * - option belongs to the schema that result was made from. Checked with
+ *   assert.
+ * - The option of clargs_result_flag() is a flag or a negatable flag,
+ *   CLARGS_OPTION_FLAG or CLARGS_OPTION_NEGATABLE. Checked with assert.
+ * - The option of clargs_result_count() is a count, CLARGS_OPTION_COUNT.
+ *   Checked with assert.
+ */
+CLARGS_API bool clargs_result_flag(const clargs_result_t *result, const clargs_option_t *option);
+CLARGS_API size_t clargs_result_count(const clargs_result_t *result, const clargs_option_t *option);
+
+/*
+ * Returns where what result holds for option came from. option may be of
+ * any kind.
+ *
+ * - CLARGS_SOURCE_COMMAND_LINE: option was given on the command line.
+ * - CLARGS_SOURCE_DEFAULT: option was not given, and what result holds
+ *   comes from the schema: the default value of an option that takes a
+ *   value, the initial state of a negatable flag, "not given" for a flag
+ *   and 0 for a count.
+ * - CLARGS_SOURCE_NONE: an option that takes a value has none, or option
+ *   belongs to a command that the command line did not select.
+ *
+ * Preconditions:
+ *
+ * - result and option are not NULL. Checked with assert.
+ * - option belongs to the schema that result was made from. Checked with
+ *   assert.
+ */
+CLARGS_API clargs_source_t clargs_result_option_source(const clargs_result_t *result,
+                                                       const clargs_option_t *option);
+
 #ifdef __cplusplus
 }
 #endif
