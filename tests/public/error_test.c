@@ -151,6 +151,22 @@ NAOS_TEST(command_line_message_is_fixed)
                       "invalid command line");
 }
 
+/* The code of the write failures follows the command line mistakes. It is
+ * the last code of the list. */
+NAOS_TEST(write_value_is_fixed)
+{
+    NAOS_CHECK_INT_EQ(CLARGS_ERROR_WRITE_FAILED, 8);
+    NAOS_REQUIRE_UINT_GT(error_entry_count, 0);
+    NAOS_CHECK_UINT_EQ((size_t)CLARGS_ERROR_WRITE_FAILED, error_entry_count - 1);
+    NAOS_CHECK_INT_EQ(error_entries[error_entry_count - 1].error, CLARGS_ERROR_WRITE_FAILED);
+}
+
+/* The code of the write failures has the message it was published with. */
+NAOS_TEST(write_message_is_fixed)
+{
+    NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_WRITE_FAILED), "write failed");
+}
+
 /* A value that is not in the list gets the unknown message, never NULL. */
 NAOS_TEST(unknown_value_has_the_unknown_message)
 {
@@ -192,6 +208,8 @@ NAOS_SUITE(error,
     NAOS_ADD_TEST(definition_messages_are_fixed),
     NAOS_ADD_TEST(command_line_value_is_fixed),
     NAOS_ADD_TEST(command_line_message_is_fixed),
+    NAOS_ADD_TEST(write_value_is_fixed),
+    NAOS_ADD_TEST(write_message_is_fixed),
     NAOS_ADD_TEST(unknown_value_has_the_unknown_message),
     NAOS_ADD_TEST(message_is_the_same_on_every_call)
 )
