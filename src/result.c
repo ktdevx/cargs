@@ -89,11 +89,14 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
  * that has such a unit, or to 0 when there is none; a unit of argv[0] that
  * cannot be converted is replaced and not reported.
  *
- * The length of one string in UTF-8 is not checked against size_t: a wide
- * string takes two bytes or more for each unit, and a unit gives four bytes
- * at most where it has four itself and three where it has two, so the
- * count stays below the size of an object that exists. The sum over the
- * strings is checked as in copy_args().
+ * The length of one string in UTF-8 is not checked against size_t. A unit
+ * gives four bytes at most where it has four itself, so the count is not
+ * more than the size of the wide string, an object that exists. Where a
+ * unit has two bytes it gives three at most, which is more than it has:
+ * there the count stays in range because an object has PTRDIFF_MAX bytes
+ * at most, so a string has SIZE_MAX / 4 units at most, and three times
+ * that is less than SIZE_MAX. The sum over the strings is checked as in
+ * copy_args().
  */
 static clargs_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***out, size_t *first_invalid)
 {
