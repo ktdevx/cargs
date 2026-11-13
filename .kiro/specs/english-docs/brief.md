@@ -65,8 +65,8 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 
 ## Upstream / Downstream
 
-- **Upstream**: Phase 1 の全スペック（文書が説明する API と、build-foundation が決めたビルド・取り込みの方法）。
-- **Downstream**: community-health-files（CONTRIBUTING から CoC と SECURITY へリンクする）、release-automation（README と CONTRIBUTING からリリース手順書と CHANGELOG へリンクする）。最初のリリース v0.1.0 の README。
+- **Upstream**: Phase 1 の全スペック（文書が説明する API と、build-foundation が決めたビルド・取り込みの方法）。release-automation（roadmap の「実装の順序」により先に実装する。english-docs の実装の時点で、CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`tools/release/`、`tools/ci/changes.cmake`、`tests/release/`、`release-pr.yml`、`release-publish.yml`、更新された `ci.yml`、日本語のまま更新された `docs/conventions.md` の「バージョンについての注意」が既にある。english-docs はそれらへリンクし、ディレクトリ構成に載せ、その節を英語にするが、release-automation のファイルは変えない）。community-health-files（直接実装済み。CONTRIBUTING から CoC と SECURITY へリンクする）。
+- **Downstream**: 最初のリリース v0.1.0 の README。
 
 ## Existing Spec Touchpoints
 

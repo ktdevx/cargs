@@ -8,6 +8,8 @@
 
 **Impact**: README.md と `docs/` の 5 文書を英語に書き直し、`docs/ownership.md` の開発者だけに向けた記述を `docs/conventions.md` へ移し、索引 `docs/README.md` と CONTRIBUTING.md を足す。ライブラリのコード、テスト、ビルド、ワークフローは変えない。完了の判定には、スペックのディレクトリに置く検査スクリプトを使う。
 
+**Dependency**: このスペックは release-automation に依存する（`.kiro/steering/roadmap.md` の「実装の順序」）。release-automation を先に実装するので、このスペックの実装を始める時点で、CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`（英語）、`tools/release/*`、`tools/ci/changes.cmake`、`tests/release/*` とその `tests/CMakeLists.txt` での登録、`.github/workflows/release-pr.yml`、`release-publish.yml`、更新された `ci.yml`、「バージョンについての注意」をプレリリースの内容で更新した（日本語のままの）`docs/conventions.md` が、既にある。この設計は、それらが存在することを前提にリンクとディレクトリ構成を書く。
+
 ### Goals
 
 - 人向けのファイルに日本語の文字と `.kiro` の文字列が 1 つもない（要件 1、2、10、11）。
@@ -19,6 +21,7 @@
 
 - API、挙動、ビルド、CI の変更。文書の誤りは文書を直す。
 - CHANGELOG.md、リリース手順書（`docs/releasing.md`）、バージョン方針の文書（`docs/versioning.md`）、SemVer とプレリリースの規則の中身、「Version notes」の節の内容の更新（release-automation）。
+- release-automation のファイル（`tools/`、`tests/release/`、`.github/workflows/`、`tests/CMakeLists.txt` の登録）の変更。
 - CODE_OF_CONDUCT.md、SECURITY.md、Issue と PR のテンプレートの変更。
 - 恒久的な文書の検査（CI のジョブ、リポジトリの `scripts/`）。API リファレンスのサイト生成。
 - `.kiro/`、`.claude/`、CLAUDE.md の中の文書。
@@ -29,14 +32,14 @@
 
 - README.md の本文と構成（バッジ、概要、特徴、例、ビルドとテスト、オプション、取り込み方法、文書とコントリビューションとリリースへの案内、ライセンス）。
 - `docs/schema.md`、`docs/parse.md`、`docs/help.md`、`docs/ownership.md` の英語の本文。
-- `docs/conventions.md` の英語の本文と構成。ただし「Version notes」の節は、英語にすることだけを持つ（内容は release-automation）。
+- `docs/conventions.md` の英語の本文と構成。「Directory layout」の節は、このスペックが内容まで持つ（release-automation はこの節を変えていない）。「Version notes」の節は、英語にすることだけを持つ（内容は release-automation）。
 - 新しい `docs/README.md`（文書の索引）と、ルートの CONTRIBUTING.md。
 - 人向けの文書の見出しの英訳とアンカー（「見出しの対応表」）、文書間のリンク。
 - 人向けのファイルの言語の点検と、その検査スクリプト `.kiro/specs/english-docs/check_docs.py`。
 
 ### Out of Boundary
 
-- CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md` の作成と中身、SemVer とプレリリースの規則、`Unreleased` への記録の規則、`Version notes` の内容の更新、`ci.yml` のトリガーとジョブ、required check の名前（release-automation）。
+- CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md` の作成と中身、SemVer とプレリリースの規則、`Unreleased` への記録の規則、`Version notes` の内容の更新、`tools/release/*`、`tools/ci/changes.cmake`、`tests/release/*` と `tests/CMakeLists.txt` でのその登録、`ci.yml`、`release-pr.yml`、`release-publish.yml` の中身、required check の名前（release-automation）。これらは `<base>`（Testing Strategy）の時点で既にあり、このスペックの差分に含めない。検査がこれらに問題を見つけたら、直さずに release-automation への指摘として報告する。
 - CODE_OF_CONDUCT.md、SECURITY.md、`.github/ISSUE_TEMPLATE/*`、`.github/pull_request_template.md`（直接実装済み）。
 - `include/`、`src/`、`tests/`、`cmake/`、CMakeLists.txt、`.github/workflows/` のコードと定義。点検で日本語が見つかった場合のコメントと文字列の英訳だけを例外とする（要件 10.2、12.1）。現状の走査では、該当はない。
 - LICENSE、`.editorconfig`、`.gitattributes`、`.gitignore`。
@@ -47,11 +50,13 @@
 - 用語の正本: 公開ヘッダのコメントの英語の用語（「用語の対応」）。
 - 外部: GitHub の Markdown の表示とアンカーの生成規則、GitHub Actions のステータスバッジ、shields.io の静的バッジ。
 - 検証の道具: Python 3（標準ライブラリだけ）、CMake 3.21 以上、C99 のコンパイラ。どれもリポジトリには足さない。
-- release-automation の成果物へは、リンクだけで依存する（`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`。release-automation の設計の File Structure Plan と一致することを確認済み）。
+- release-automation（先に実装される上流のスペック）: 成果物へは、リンクとディレクトリ構成の記述だけで依存する（`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`、`tools/release/`、`tools/ci/`、`tests/release/`、`.github/workflows/` の 3 ファイル。release-automation の設計の File Structure Plan と一致することを確認済み）。`docs/conventions.md` の「Version notes」の内容は、release-automation が更新した版を正本とする。
 
 ### Revalidation Triggers
 
-- release-automation が `CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md` のパスを変えた → README、CONTRIBUTING、`docs/README.md`、`docs/conventions.md` のディレクトリ構成のリンクと、検査スクリプトの保留のパスの一覧を直す。
+- release-automation が `CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md` のパスを変えた → README、CONTRIBUTING、`docs/README.md`、`docs/conventions.md` のディレクトリ構成のリンクと、検査スクリプトの release-automation のパスの一覧を直す。
+- release-automation が `tools/`、`tests/release/`、ワークフローのファイルを足す、消す、名前を変える → `docs/conventions.md` の Directory layout を直す。
+- release-automation の `docs/versioning.md` の互換の節の見出しが変わった → README の find_package の節のリンクを直す。
 - release-automation が `docs/conventions.md` のパス、または `Version notes` の見出しを変えた → README の find_package の節のリンクを直す。english-docs は両方を約束として固定する（パス `docs/conventions.md`、アンカー `#version-notes`）。
 - `ci.yml` のファイル名が変わった → README の CI のバッジを直す。
 - README の 3 つのコマンドを変える → `ci.yml` の `quickstart` ジョブとそのコメントの再確認（このスペックでは変えない）。
@@ -66,6 +71,7 @@
 - `docs/conventions.md` は開発者向けで、冒頭で ownership.md を先に読むよう案内している。
 - テストのコメント 2 か所が `docs/conventions.md` の節を英語の言い回し（"the failure of every allocation in turn"）で指している。
 - `ci.yml` は README の 3 つのコマンドを、そのまま実行する。PR テンプレートはルートの CONTRIBUTING.md と CHANGELOG.md を URL で指す。
+- 実装の時点（release-automation の実装の後）では、上の Overview の Dependency に挙げた release-automation のファイルが既にある。`docs/conventions.md` の「バージョンについての注意」はプレリリースの内容を含み、`docs/versioning.md` と `docs/releasing.md` へファイルのリンクで案内している。Directory layout の節は、まだ release-automation のファイルを載せていない。
 
 ### Architecture Pattern & Boundary Map
 
@@ -142,7 +148,9 @@ docs/
 ├── parse.md               # 英語に書き直す。利用者向け
 ├── help.md                # 英語に書き直す。利用者向け
 ├── ownership.md           # 英語に書き直し、開発者だけに向けた記述を除く。利用者向け
-└── conventions.md         # 英語に書き直し、ownership.md から移す記述を足す。開発者向け
+├── conventions.md         # 英語に書き直し、ownership.md から移す記述を足し、Directory layout を更新する。開発者向け
+├── versioning.md          # release-automation の既存のファイル（英語）。変えない。リンクするだけ
+└── releasing.md           # release-automation の既存のファイル（英語）。変えない。リンクするだけ
 .kiro/specs/english-docs/
 └── check_docs.py          # 新規。検査スクリプト（人向けのファイルではない）
 ```
@@ -152,11 +160,11 @@ docs/
 - `README.md` — 英語化と再構成。3 つのコマンドと 4 つの取り込み方法の CMake の例は、`GIT_TAG` を除き、コードを変えない。
 - `docs/schema.md`、`docs/parse.md`、`docs/help.md` — 英語化。見出しは対応表に従う。
 - `docs/ownership.md` — 英語化。「ownership.md から移す記述」を除き、スペックへの言及を書き換える。
-- `docs/conventions.md` — 英語化。ディレクトリ構成の `docs/` の一覧を更新し、`Applying the ownership rules` の節を足す。
+- `docs/conventions.md` — 英語化。Directory layout を実装の時点のリポジトリに合わせて更新し（DevConventions）、`Applying the ownership rules` の節を足す。`Version notes` は release-automation が更新した内容を訳すだけである。
 
 ### Files Not Modified
 
-`include/`、`src/`、`tests/`、`cmake/`、CMakeLists.txt、`.github/`、CODE_OF_CONDUCT.md、SECURITY.md、LICENSE、`.editorconfig`、`.gitattributes`、`.gitignore`。検査で日本語が見つかった場合のコメントと文字列だけを例外とする（現状は該当なし）。テストのコメント（`tests/public/parse_failure_test.c`、`tests/public/schema_failure_test.c`）は、見出しの英訳をその言い回しに合わせることで、変えずに済ませる。
+`include/`、`src/`、`tests/`（`tests/release/` と `tests/CMakeLists.txt` を含む）、`cmake/`、CMakeLists.txt、`.github/`、`tools/`、CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、CODE_OF_CONDUCT.md、SECURITY.md、LICENSE、`.editorconfig`、`.gitattributes`、`.gitignore`。検査で日本語が見つかった場合のコメントと文字列だけを例外とする（現状は該当なし）。テストのコメント（`tests/public/parse_failure_test.c`、`tests/public/schema_failure_test.c`）は、見出しの英訳をその言い回しに合わせることで、変えずに済ませる。
 
 ## System Flows
 
@@ -182,7 +190,7 @@ graph TB
 ```
 
 - 各文書のタスクは、終わる前に `check_docs.py` をその文書について実行し、その文書から出るリンクとアンカーが解決することを確かめる。他の文書へのアンカーは、対応表の英語の見出しで書くので、相手の翻訳が終わる前でも書ける。相手がまだ日本語なら、そのアンカーは最終の確認まで未解決として報告される。
-- release-automation のパスが未作成なら、検査は保留として報告し、失敗にしない（要件 9.5）。
+- release-automation のファイルは実装の時点で既にあるので、そのパスへのリンクは最初から解決する（要件 9.7）。検査の `pending` は、万一ファイルがない場合の安全網として残す（要件 9.5）。最終の確認では `pending` が 0 件であることを求める。
 
 ## Requirements Traceability
 
@@ -197,6 +205,8 @@ graph TB
 | 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8 | README の構成 | ReadmeEntry | README の構成 | README のタスク |
 | 3.4 | README の例が動く | ReadmeEntry、DocsChecker | `extract` | Examples build and run |
 | 4.1, 4.2, 4.3, 4.4, 4.5 | 取り込み方法 | ReadmeEntry | README の構成（Using CLArgs in your project） | README のタスク |
+| 4.6 | find_package から versioning へ | ReadmeEntry | README の構成（find_package の節のリンク） | README のタスク |
+| 4.7 | タグの形 `v<SemVer>` とプレリリース | ReadmeEntry | README の構成（FetchContent の後の案内、Releases and changes） | README のタスク |
 | 5.1–5.3, 5.5 | API の説明 | UserGuides | 翻訳の規則、用語の対応 | 各文書のタスク |
 | 5.4 | 完全な例が動く | UserGuides、DocsChecker | `extract` | Examples build and run |
 | 6.1 | 利用者向けと開発者向けを分ける | OwnershipGuide、DevConventions | 移す記述の一覧 | ownership と conventions のタスク |
@@ -206,28 +216,34 @@ graph TB
 | 7.1–7.10 | CONTRIBUTING | Contributing | CONTRIBUTING の構成 | CONTRIBUTING のタスク |
 | 8.1, 8.3, 8.6 | 規約の英語化 | DevConventions | 見出しの対応表 | conventions のタスク |
 | 8.2 | 開発者向けの記述を移す | DevConventions、OwnershipGuide | 移す記述の一覧 | ownership と conventions のタスク |
-| 8.4, 8.5 | Version notes を意味を変えずに訳す | DevConventions | Version notes の扱い | conventions のタスク |
+| 8.4, 8.5, 8.8 | Version notes を意味を変えずに訳す（プレリリースの内容を含む） | DevConventions | Version notes の扱い | conventions のタスク |
+| 8.7 | Directory layout が実装の時点のすべてを載せる | DevConventions | Directory layout の構成 | conventions のディレクトリ構成のタスク |
 | 9.1, 9.2 | リンクとアンカーが解決する | 全文書、DocsChecker | `check` の `missing-file`、`missing-anchor` | Final verification |
 | 9.3 | 古いファイル名を残さない | 全文書 | ファイル名を変えない決定 | Final verification |
 | 9.4 | コメントが指す節がある | DevConventions | 見出しの対応表（The failure of every allocation in turn） | conventions のタスク |
 | 9.5 | 未作成の release-automation のパス | DocsChecker、ReadmeEntry、Contributing、DocsIndex | `check` の `pending` | Final verification |
 | 9.6 | Version notes へのリンク | ReadmeEntry | アンカー `#version-notes` | README のタスク |
+| 9.7 | release-automation の文書へのリンクが解決する | ReadmeEntry、Contributing、DocsIndex、DevConventions、DocsChecker | `check` の `missing-file`（`pending` が 0 件） | Final verification |
 | 10.1, 10.3 | コメントと文字列の点検 | DocsChecker | `check` の対象と `japanese` の範囲 | ソースの点検のタスク |
 | 10.2 | 見つかれば英訳 | DocsChecker（検出）、該当するソースのファイル | 翻訳の規則、Error Handling | ソースの点検のタスク |
+| 10.4 | release-automation のファイルの指摘は報告だけ | DocsChecker | release-automation のパスの一覧、Error Handling | ソースの点検のタスク、Final verification |
 | 11.1, 11.2, 11.3, 11.4, 11.5 | 機械的な確認 | DocsChecker | `check` の契約 | Final verification |
+| 11.6 | release-automation の文書の報告は直さず指摘にする | DocsChecker | `check` の契約（release-automation のパスの一覧）、Error Handling | Final verification |
+| 11.7 | `specification` を報告しない | DocsChecker | `check` の `spec-term`（`\bspecs?\b`） | 検査スクリプトのタスク |
 | 12.1, 12.2 | 変更の範囲 | 全コンポーネント | Files Not Modified | Final verification（差分の確認） |
 | 12.3 | 3 つのコマンドが通る | ReadmeEntry | — | Final verification |
+| 12.4 | `<base>` と release-automation のファイルを差分に含めない | 全コンポーネント | Files Not Modified、`<base>` の定義 | Final verification（差分の確認） |
 
 ## Components and Interfaces
 
 | Component | Domain | Intent | Req Coverage | Key Dependencies | Contracts |
 |-----------|--------|--------|--------------|------------------|-----------|
-| ReadmeEntry | 入口 | `README.md`。OSS の入口 | 1, 2, 3, 4, 6.3, 6.4, 9.6, 12.3 | 公開ヘッダ、CMake の定義（P0）、release-automation のパス（P1） | 文書の構成 |
+| ReadmeEntry | 入口 | `README.md`。OSS の入口 | 1, 2, 3, 4, 6.3, 6.4, 9.6, 9.7, 12.3 | 公開ヘッダ、CMake の定義（P0）、release-automation の文書（P1） | 文書の構成 |
 | DocsIndex | 入口 | `docs/README.md`。文書の索引 | 6.2, 6.3 | 各文書（P1） | 文書の構成 |
 | UserGuides | 利用者向け | `docs/schema.md`、`parse.md`、`help.md`、`ownership.md` | 1, 2, 5, 6.1, 6.4, 6.5, 8.2, 9 | 公開ヘッダ（P0）、見出しの対応表（P0） | 翻訳の規則 |
 | Contributing | 開発者向け | `CONTRIBUTING.md`。コントリビューターの入口 | 7, 6.3 | PR テンプレート、CoC、SECURITY（P1）、release-automation のパス（P1） | 文書の構成 |
-| DevConventions | 開発者向け | `docs/conventions.md` | 8, 6.1, 9.4 | ownership.md の旧版（P0）、release-automation の節（P1） | 翻訳の規則 |
-| DocsChecker | 検証 | `.kiro/specs/english-docs/check_docs.py` | 1.2, 2.1, 2.2, 3.4, 5.4, 9.1, 9.2, 9.5, 10.1, 10.3, 11 | Python 3（P0） | Batch |
+| DevConventions | 開発者向け | `docs/conventions.md` | 8, 6.1, 9.4, 9.7 | ownership.md の旧版（P0）、release-automation が更新した節とファイル（P1） | 翻訳の規則 |
+| DocsChecker | 検証 | `.kiro/specs/english-docs/check_docs.py` | 1.2, 2.1, 2.2, 3.4, 5.4, 9.1, 9.2, 9.5, 9.7, 10.1, 10.3, 10.4, 11 | Python 3（P0） | Batch |
 
 ### 共通: 翻訳の規則
 
@@ -408,7 +424,7 @@ graph TB
 | Field | Detail |
 |-------|--------|
 | Intent | OSS の入口。目的、特徴、最初のプログラム、取り込み、文書とコントリビューションへの案内 |
-| Requirements | 1.1–1.5, 2.1–2.4, 3.1–3.8, 4.1–4.5, 6.3, 6.4, 9.1, 9.2, 9.6, 12.3 |
+| Requirements | 1.1–1.5, 2.1–2.4, 3.1–3.8, 4.1–4.7, 6.3, 6.4, 9.1, 9.2, 9.6, 9.7, 12.3 |
 
 **README の構成**（この順。`##` の見出しとアンカー）:
 
@@ -422,10 +438,10 @@ graph TB
 6. `## Building and testing` — 3 つのコマンド（変えない）、Naos とネットワーク、`FETCHCONTENT_SOURCE_DIR_NAOS`、`CLARGS_BUILD_TESTS=OFF`、複数の構成を持つジェネレータ（要件 3.5、3.6）。
 7. `## Build options` — オプションの表と注意、`BUILD_SHARED_LIBS`（要件 3.7）。
 8. `## Using CLArgs in your project` — 共通の説明と、`### FetchContent`、`### add_subdirectory`、`### find_package`、`### pkg-config`、`### Running the tests of an embedded CLArgs`（要件 4）。
-   - FetchContent の例は `GIT_TAG v0.1.0` とし、直後に「最新のリリースのタグに置き換える。タグは `v<major>.<minor>.<patch>` の形で、[Releases](https://github.com/ktdevx/cargs/releases) に一覧がある。再現できるビルドにはタグかコミットのハッシュに固定する。ブランチ名も書けるが、内容が変わりうる」を置く（要件 4.2、4.3）。
-   - find_package の節のバージョンの注意は `[Version notes](docs/conventions.md#version-notes)` へリンクする（要件 9.6）。
+   - FetchContent の例は `GIT_TAG v0.1.0` とし、直後に「最新のリリースのタグに置き換える。タグは `v<SemVer>` の形（例 `v0.2.0`。プレリリースは `v0.2.0-rc.1` など）で、[Releases](https://github.com/ktdevx/cargs/releases) に一覧がある。再現できるビルドにはタグかコミットのハッシュに固定する。ブランチ名も書けるが、内容が変わりうる」を置く（要件 4.2、4.3、4.7）。タグの形の書き方は、`## Releases and changes` の節と同じにする。
+   - find_package の節のバージョンの注意は、利用者向けの互換の規則として [docs/versioning.md](docs/versioning.md)（その互換の節の見出しのアンカーがあれば、それを付ける）へリンクする（要件 4.6）。バージョンの数字がソースのどこで決まるかの開発者向けの補足として、`[Version notes](docs/conventions.md#version-notes)` へのリンクも残す（要件 9.6）。
    - pkg-config の節は `[find_package](#find_package)` へリンクする。
-9. `## Releases and changes` — 変更の記録は [CHANGELOG.md](CHANGELOG.md)、リリースは Releases のページ、タグは `v<SemVer>` の形、バージョンの番号と互換の方針は [docs/versioning.md](docs/versioning.md) にあることだけを述べる。バージョンの規則の中身は書かない。
+9. `## Releases and changes` — 変更の記録は [CHANGELOG.md](CHANGELOG.md)、リリースは Releases のページ、タグは `v<SemVer>` の形（例 `v0.2.0`、プレリリースは `v0.2.0-rc.1` など。FetchContent の後の案内と同じ書き方）、バージョンの番号と互換の方針は [docs/versioning.md](docs/versioning.md) にあることだけを述べる。バージョンの規則の中身は書かない。
 10. `## Contributing` — [CONTRIBUTING.md](CONTRIBUTING.md) への案内（1〜2 文）と、行動規範（CODE_OF_CONDUCT.md）と脆弱性の報告（SECURITY.md）へのリンク。
 11. `## License` — MIT と [LICENSE](LICENSE)。
 
@@ -433,7 +449,7 @@ graph TB
 
 - Integration: 3 つのコマンドは `ci.yml` の `quickstart` ジョブと一致させたまま変えない。CMake の例のコードは、`GIT_TAG` の行を除いて変えない。
 - Validation: `check_docs.py check` と `extract`、例のビルドと実行（Testing Strategy）。
-- Risks: `v0.1.0` は最初のリリースまで存在しない。Releases への案内で補う。
+- Risks: `v0.1.0` は最初のリリースまで存在しない。Releases への案内で補う。CHANGELOG.md と `docs/versioning.md` は release-automation により既にあるので、リンクは実装の時点で解決する。
 
 #### DocsIndex
 
@@ -442,7 +458,7 @@ graph TB
 | Intent | `docs/` の索引。読者ごとに文書を分けて示す |
 | Requirements | 6.2, 6.3 |
 
-**索引の構成**: `# CLArgs Documentation`、1 文の導入、`## Using CLArgs`（schema、parse、help、ownership、versioning の各 1 行の説明。読む順は schema → parse → help、ownership と versioning は参照用。versioning は release-automation が作る）、`## Contributing to CLArgs`（`../CONTRIBUTING.md`、`conventions.md`）、`## Maintaining CLArgs`（`releasing.md` と `../CHANGELOG.md`。どちらも release-automation が作る）。各行は、読者と内容を 1 行で示す。
+**索引の構成**: `# CLArgs Documentation`、1 文の導入、`## Using CLArgs`（schema、parse、help、ownership、versioning の各 1 行の説明。読む順は schema → parse → help、ownership と versioning は参照用。versioning は release-automation が作った既存のファイル）、`## Contributing to CLArgs`（`../CONTRIBUTING.md`、`conventions.md`）、`## Maintaining CLArgs`（`releasing.md` と `../CHANGELOG.md`。どちらも release-automation が作った既存のファイル）。各行は、読者と内容を 1 行で示す。
 
 ### 利用者向け
 
@@ -504,26 +520,32 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
 **Implementation Notes**
 
 - Integration: PR テンプレートのチェック項目（3 つのコマンド、テスト、文書、CHANGELOG、英語）と矛盾しない記述にする。PR テンプレートの URL がこのファイルを指す（要件 7.1）。
-- Risks: CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md` が未作成のことがある（要件 9.5）。
+- Risks: なし。CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md` は release-automation により実装の時点で既にある（要件 9.7）。万一ない場合は検査が `pending` として報告する（要件 9.5）。
 
 #### DevConventions
 
 | Field | Detail |
 |-------|--------|
 | Intent | `docs/conventions.md` の英語の本文と、ownership.md から移した開発者向けの記述 |
-| Requirements | 1.1–1.5, 2.1, 6.1, 8.1–8.6, 9.4 |
+| Requirements | 1.1–1.5, 2.1, 6.1, 8.1–8.8, 9.4, 9.7 |
 
 **Responsibilities & Constraints**
 
 - 今の conventions.md の節を、同じ順序で、欠かさずに訳す（要件 8.1）。C、CMake、シェルの例は、コメントと仮の値の表記だけを訳す（要件 8.6）。
-- 「ディレクトリ構成」の `docs/` の一覧に、`README.md`（索引）を足し、各ファイルの説明を英語にする。ルートの CONTRIBUTING.md は、ディレクトリ構成の外の説明（冒頭の導入）で触れる（要件 8.3）。release-automation の `releasing.md` と `versioning.md` は、その時点でリポジトリにあれば一覧に入れる。
+- 「Directory layout」の節は、このスペックが内容まで持つ。実装の時点のリポジトリにあるものを、条件を付けずにすべて載せる（要件 8.3、8.7）。
+  - `docs/`: `README.md`（索引）、schema、parse、help、ownership、conventions、`versioning.md`、`releasing.md`。各ファイルの説明を、利用者向けか開発者向けかが分かる英語にする。
+  - ルート: CHANGELOG.md（変更の記録）、CONTRIBUTING.md（コントリビューターの入口。冒頭の導入でも触れる）、そのほかの今の一覧にあるファイル。
+  - `tools/release/`（リリースのスクリプトとモジュール）、`tools/ci/`（`changes.cmake`。CI の変更の判定）。
+  - `tests/release/`（release のテストとフィクスチャ）と、`tests/CMakeLists.txt` がそれらを `release.<name>` の名前、`release` のラベルで登録していること。
+  - `.github/workflows/`: `ci.yml`、`release-pr.yml`、`release-publish.yml`。各 1 行の役割の説明。
+  - 載せる内容は、`git ls-files` の実装の時点の一覧と照らして確かめる。各ファイルの説明は、そのファイルと release-automation の文書から事実だけを取り、手順の中身は書かない。
 - `### Applying the ownership rules`（`## Implementation rules` の中、`### Allocating memory` の後）を足し、ownership.md から移す記述を、意味を変えずに英語で置く（要件 8.2）。`Global state` に重なる文は、既存の `#### Global state` に統合し、同じ見出しを 2 つ作らない。
 - 移す記述の原文は、英語化の前の `docs/ownership.md`（`git show HEAD:docs/ownership.md`）から取る。ownership.md の翻訳のタスクと同じファイルを編集しない。
 
 **Version notes の扱い**（要件 8.4、8.5）:
 
 - `## Version notes` は、英語にする時点の節の内容を、項目の数と順序を保って訳す。足さず、減らさず、例のコードを変えない。
-- release-automation がその節を既に英語で書き換えていれば、その内容を変えない。日本語のまま書き換えていれば、書き換え後の内容を訳す。
+- 実装の時点で、release-automation はその節を日本語のまま更新している。更新後の内容、すなわち既存の 3 項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）と、足されたプレリリースの内容（`CLARGS_VERSION_PRERELEASE` の書式、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`CLArgs_VERSION`、`CLArgs_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク）を、すべて忠実に訳す（要件 8.5、8.8）。万一その節が既に英語であれば、その内容を変えない。
 - 節の見出しとアンカー（`#version-notes`）は変えない。
 
 ### 検証
@@ -533,12 +555,13 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
 | Field | Detail |
 |-------|--------|
 | Intent | 人向けのファイルの言語と `.kiro` の検査、人向けの文書のリンクとアンカーの検査、文書の C の例の取り出し |
-| Requirements | 1.2, 2.1, 2.2, 3.4, 5.4, 9.1, 9.2, 9.5, 10.1, 10.3, 11.1–11.5 |
+| Requirements | 1.2, 2.1, 2.2, 3.4, 5.4, 9.1, 9.2, 9.5, 9.7, 10.1, 10.3, 10.4, 11.1–11.7 |
 
 **Responsibilities & Constraints**
 
 - Python 3 の標準ライブラリだけを使う。ファイルを変更しない（`extract` の出力先を除く）。
-- 対象の集合は 1 か所で決める: `git ls-files` の一覧から、`.kiro/` と `.claude/` で始まるパスと `CLAUDE.md` を除いたもの（要件 11.2）。人向けの文書は、そのうち `README.md`、`CONTRIBUTING.md`、`docs/**/*.md`。
+- 対象の集合は 1 か所で決める: `git ls-files` の一覧から、`.kiro/` と `.claude/` で始まるパスと `CLAUDE.md` を除いたもの（要件 11.2）。人向けの文書は、そのうち `README.md`、`CONTRIBUTING.md`、`docs/**/*.md`（release-automation の `docs/versioning.md` と `docs/releasing.md` を含む）。
+- release-automation のパスの一覧を 1 か所で持つ: `CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`、`tools/`、`tests/release/`、`.github/workflows/`。これらの中の報告は、`pending` の判定と、要約での区別（release-automation への指摘）に使う。
 - バイナリ（UTF-8 として読めないファイル）は、名前を報告して飛ばす。
 
 **Contracts**: Batch [x]
@@ -550,22 +573,24 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
   - 出力は 1 行 1 件、`<path>:<line>: <kind>: <detail>`。最後に件数の要約を出す。
   - `japanese` — 人向けのファイルの、日本語の文字を含む行。日本語の文字は U+3000–U+303F、U+3040–U+30FF、U+3400–U+4DBF、U+4E00–U+9FFF、U+F900–U+FAFF、U+FF00–U+FFEF の文字とする。罫線などのほかの ASCII 外の文字は数えない（要件 10.3）。
   - `kiro` — 人向けのファイルの、`.kiro` を含む行（大文字小文字を区別しない）。
-  - `spec-term` — 人向けの文書の、スペックの名前（build-foundation、core-runtime、command-schema、argv-parser、help-formatter、english-docs、release-automation）、`\bspecs?\b`、`steering`、`kiro` を含む行（大文字小文字を区別しない）。
+  - `spec-term` — 人向けの文書の、スペックの名前（build-foundation、core-runtime、command-schema、argv-parser、help-formatter、english-docs、release-automation）、`\bspecs?\b`、`steering`、`kiro` を含む行（大文字小文字を区別しない）。`\bspecs?\b` は語の単位で照合し、`specification`、`specifications`、`specific` には一致しない（要件 11.7）。
   - `missing-file` — 人向けの文書の、相対リンク（`http:`、`https:`、`mailto:` で始まらないもの）の指すファイルまたはディレクトリが、作業ツリーにない。
   - `missing-anchor` — 人向けの文書の、`#` 付きのリンク（同じ文書の中を含む）のアンカーが、指す先の Markdown の見出しから作られるアンカーの集合にない。アンカーの生成は GitHub の規則（小文字化、`[^\w\- ]` の除去、空白を `-`、重複に `-1`、`-2`）に従う。コードブロックの中の `#` で始まる行は見出しとして数えない。
-  - `pending` — `missing-file` のうち、指す先が release-automation のパスの一覧（`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`）にあるもの。失敗に数えない（要件 9.5）。
-  - 終了コード: `pending` 以外が 0 件なら 0、1 件以上なら 1。
+  - `pending` — `missing-file` のうち、指す先が release-automation の文書（`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`）であるもの。失敗に数えない（要件 9.5）。release-automation が先に実装されるので、通常は 0 件である。最終の確認は 0 件であることを求める（要件 9.7）。
+  - 要約は、報告を「このスペックが変更するファイル」と「release-automation のファイル」に分けて件数を出す。後者は release-automation への指摘であり、english-docs は直さない（要件 10.4、11.6）。
+  - 終了コード: `pending` 以外が 0 件なら 0、1 件以上なら 1（release-automation のファイルの報告も 1 にする。最終の確認は、それらを指摘として記録したうえで判定する）。
   - `--files <path>...` で、報告を指定したファイルに限れる（各文書のタスクの途中で使う）。アンカーの集合は、常に全文書から作る。
 - **Mode `extract <outdir>`**:
   - 人向けの文書の ```` ```c ```` のコードブロックのうち、`main(` または `wmain(` の定義を含むものを、`<outdir>/<doc>-<n>.c`（`<doc>` はパスの `/` を `_` にしたもの、`<n>` は文書の中の C のブロックの通し番号）に書き出す。
   - `<outdir>/manifest.txt` に、1 行 1 件で `<file> <entry> <source>:<line>` を書く。`<entry>` は `main` または `wmain`。
   - 終了コード 0。書き出したファイルの数を出す。
+  - release-automation の文書（`docs/versioning.md`、`docs/releasing.md`）に完全なプログラムの例があれば、それも書き出される。その例は数（このスペックの 7 つ）に含めず、ビルドや実行に失敗しても直さず、release-automation への指摘として報告する。
 - **Idempotency & recovery**: 何度実行しても同じ結果になる（要件 11.5）。`extract` は `<outdir>` の既存のファイルを上書きする。
 
 **Implementation Notes**
 
 - Integration: 各文書のタスクの完了前と、最終の確認で実行する。人向けのファイルではないので、それ自体は検査の対象外である。
-- Validation: 英語化の前の作業ツリーで `check` を実行すると、research.md の数（6 ファイルの日本語、ownership の `.kiro`）と一致する報告が出ることを、スクリプトのタスクで確かめる。
+- Validation: 英語化の前の作業ツリー（release-automation の実装の後）で `check` を実行すると、README と `docs/` の 5 ファイルの日本語と、ownership の `.kiro` が報告され、release-automation の英語のファイルからは日本語が報告されないことを、スクリプトのタスクで確かめる。`docs/conventions.md` の日本語の行の数は、release-automation が「バージョンについての注意」に足した分だけ research.md の数より多い。
 - Risks: GitHub のアンカーの規則の細部（絵文字など）は実装しない。使わない記号に限るので影響しない。
 
 ## Error Handling
@@ -578,10 +603,11 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
 |---|---|
 | `check` が `japanese`、`kiro`、`spec-term` を報告した | その行を訳すか書き換える。`spec-term` が正当な英語（例: 外部の仕様の名前）なら、言い換える |
 | `missing-anchor` | 対応表と見出しを照らし、リンクか見出しを直す。対応表を変えるなら、その見出しを指すすべてのリンクを同じ変更で直す |
-| `pending` | release-automation の成果物を待つ。完了の報告に、未解決のリンクの一覧を書く |
+| `pending` | release-automation の成果物は実装の時点で既にあるはずなので、パスの食い違い（release-automation の File Structure Plan と照らす）を調べる。パスがこちらの誤りならリンクを直す。ファイルが本当にないなら、完了の報告に未解決のリンクの一覧を書き、release-automation に報告する |
+| release-automation のファイル（`docs/versioning.md`、`docs/releasing.md`、CHANGELOG.md、`tools/`、`tests/release/`、`.github/workflows/`）に `japanese`、`kiro`、`spec-term`、`missing-file`、`missing-anchor` が報告された | 直さない（このスペックの境界の外）。ファイル名、行番号、種類を、release-automation への指摘として完了の報告に書く（要件 10.4、11.6） |
 | 例がコンパイルできない、または出力が文書と違う | 翻訳の写し間違いなら直す。元の文書の時点で違っていれば、実装に合わせて文書を直し、記録に残す（要件 1.5） |
 | ソースに日本語が見つかった | コメントと文字列だけを英訳し、ビルドとテストを通す（要件 10.2） |
-| release-automation が先に `docs/conventions.md` を変えていた | 変更後の内容を基に訳す。`Version notes` の内容は意味を変えない |
+| release-automation が `docs/conventions.md` を変えている（実装の順序により常にそうである） | 変更後の内容を基に訳す。`Version notes` の内容は意味を変えない |
 
 ## Testing Strategy
 
@@ -590,7 +616,7 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
 ### 言語とリンク（DocsChecker）
 
 1. 英語化の前の作業ツリーで `check` を実行し、6 ファイルの `japanese` と `docs/ownership.md` の `kiro` を報告することを確かめる（検査そのものの確認。要件 11.1）。
-2. 英語化の後、`check` が `pending` 以外を 0 件で終了コード 0 を返す（要件 1.2、2.1、2.2、9.1、9.2、10.1、11.3）。
+2. 英語化の後、`check` が、このスペックが変更するファイルについて 0 件を報告し、`pending` も 0 件である（要件 1.2、2.1、2.2、9.1、9.2、9.7、10.1、11.3）。release-automation のファイルについての報告があれば、直さずに release-automation への指摘として記録する（要件 10.4、11.6）。それがなければ終了コードは 0 である。
 3. `japanese` が `tests/public/command_test.c` の罫線を報告しない（要件 10.3）。
 
 ### 例のビルドと実行
@@ -603,7 +629,7 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
 ### リポジトリの確認
 
 1. README の 3 つのコマンド（`cmake -S . -B build`、`cmake --build build`、`ctest --test-dir build`）が成功する（要件 12.3）。
-2. `git diff --stat <base>` が、README.md、CONTRIBUTING.md、`docs/*.md` だけを含む（ソースに日本語がなかった場合）。CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、CODE_OF_CONDUCT.md、SECURITY.md、`.github/` を含まない（要件 1.3、9.3、12.1、12.2）。
+2. `<base>` は、このスペックの最初の実装のタスクの直前のコミットとする。その時点で release-automation のファイルは既にある。`git diff --stat <base>` が、README.md、CONTRIBUTING.md、`docs/README.md`、`docs/schema.md`、`docs/parse.md`、`docs/help.md`、`docs/ownership.md`、`docs/conventions.md` だけを含む（ソースに日本語がなかった場合）。CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、CODE_OF_CONDUCT.md、SECURITY.md、`.github/`、`tools/`、`tests/`（`tests/release/` と `tests/CMakeLists.txt` を含む）を含まない（要件 1.3、9.3、12.1、12.2、12.4）。`docs/conventions.md` の差分は、英語化、Directory layout の更新、移した記述だけである。
 3. 英語化の前後で、`docs/` のファイル名が同じである（要件 9.3）。
 
 ### 翻訳のレビュー（文書ごと）

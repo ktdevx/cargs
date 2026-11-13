@@ -103,6 +103,8 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 - **開発者向けの規約**: 今の `docs/conventions.md` が説明している内容（命名規約、ディレクトリ構成、手順、実装の規則、テストの注意、確かめ方、バージョンについての注意）。
 - **release-automation の文書**: release-automation が作る CHANGELOG.md、リリース手順書（`docs/releasing.md`）、バージョン方針の文書（`docs/versioning.md`）。
 
+このスペックは release-automation に依存する。`.kiro/steering/roadmap.md` の「実装の順序」により、release-automation を先に実装し、このスペックはそのあとに実装する。したがって、このスペックの実装を始める時点で、release-automation の成果物（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`tools/release/` と `tools/ci/changes.cmake`、`tests/release/` とその `tests/CMakeLists.txt` での登録、`.github/workflows/` の `release-pr.yml` と `release-publish.yml` と更新された `ci.yml`、プレリリースの内容を足した `docs/conventions.md` の「バージョンについての注意」（日本語のまま））が、既にリポジトリにある。
+
 背景と判断の経緯は、同じディレクトリの `brief.md` と、`.kiro/steering/roadmap.md` の「Phase 2: OSS としての公開」を参照。
 
 ## Boundary Context
@@ -118,12 +120,14 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
   - ライブラリの API と挙動の変更。文書と実装が食い違っていれば、文書を実装に合わせる。
   - CHANGELOG.md、リリース手順書、バージョン方針の文書、SemVer とプレリリースの規則の中身（release-automation が持つ）。
   - `docs/conventions.md` の「バージョンについての注意」の内容の更新（release-automation が持つ）。このスペックは、その節を意味を変えずに英語にするだけである。
+  - release-automation が作った、または変更したファイルの中身（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`tools/` の下、`tests/release/` の下、`tests/CMakeLists.txt` の登録、`.github/workflows/` の下）。このスペックはそれらを変更しない。点検でそれらに問題が見つかれば、release-automation への指摘として報告する。
   - CODE_OF_CONDUCT.md、SECURITY.md、Issue と PR のテンプレート（直接実装済み）。このスペックはそれらを変更しない。
   - ワークフローの中身と CI の挙動、CI へのジョブの追加（リンク検査などを含む）。
   - API リファレンスのサイト生成。
   - `.kiro/`、`.claude/`、CLAUDE.md の中の文書。
 - **Adjacent expectations**:
-  - release-automation は、CHANGELOG.md をリポジトリのルートに、リリース手順書（`docs/releasing.md`）とバージョン方針の文書（`docs/versioning.md`）を `docs/` の下に置く。ファイル名は両スペックの設計で合わせたものである。README と CONTRIBUTING と `docs/` の索引は、それらへリンクするだけである。
+  - release-automation は、このスペックより先に実装され、CHANGELOG.md をリポジトリのルートに、リリース手順書（`docs/releasing.md`）とバージョン方針の文書（`docs/versioning.md`、英語）を `docs/` の下に置いている。ファイル名は両スペックの設計で合わせたものである。README と CONTRIBUTING と `docs/` の索引は、それらへリンクするだけである。
+  - release-automation は、`docs/conventions.md` の「バージョンについての注意」の節だけを、日本語のまま更新している（`CLARGS_VERSION_PRERELEASE` の書式、バージョンをリリースのワークフローで上げること、パッケージでの扱い、バージョン方針の文書とリリース手順書へのリンク）。ディレクトリ構成の節は更新していない。
   - リリースのタグは `v<SemVer>` の形式である（例 `v0.1.0`、`v0.2.0-rc.1`）。
   - PR テンプレートは、ルートの CONTRIBUTING.md と CHANGELOG.md を `https://github.com/ktdevx/cargs/blob/main/...` の URL で指している。
   - CI のワークフローのファイル（`.github/workflows/ci.yml`）は、README の 3 つのコマンド（`cmake -S . -B build`、`cmake --build build`、`ctest --test-dir build`）をそのまま実行している。
@@ -180,6 +184,8 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 3. The README shall FetchContent の例の近くで、最新のリリースのタグに置き換えること、再現できるビルドのためにタグまたはコミットのハッシュに固定することを案内し、リリースの一覧への導線を示す。
 4. The README shall 今の README が取り込み方法について説明している注意（手元のチェックアウトの使い方、プロジェクトの外のソースを指すときの 2 つ目の引数、インストールの手順、標準でない場所へのインストール、インストール先の移動、`find_package` のバージョン指定とメジャー 0 の間の互換判定、`PKG_CONFIG_PATH` と実行時のライブラリの探索、組み込んだ CLArgs のテストの実行と `enable_testing()`）を、意味を変えずに説明する。
 5. The README の取り込み方法の説明 shall 今のビルドの定義（CMake のパッケージ名 `CLArgs`、ターゲット `CLArgs::clargs`、pkg-config のモジュール名 `clargs`、動的ライブラリのときの `CLARGS_SHARED`）と一致する。
+6. When README の find_package の節が、バージョンの指定と互換の判定に触れるとき, the README shall 利用者向けの互換の規則としてバージョン方針の文書（`docs/versioning.md`）へリンクする。
+7. The README shall FetchContent の例の近くで、リリースのタグが `v<SemVer>` の形（例 `v0.2.0`。プレリリースは `v0.2.0-rc.1` など）であることを示し、その説明を README のリリースと変更の記録の節のタグの説明と一致させる。
 
 ### Requirement 5: 利用者向けの API の説明
 
@@ -234,6 +240,8 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 4. The 開発者向けの規約の「バージョンについての注意」にあたる節 shall 英語にする時点でその節が持つ内容を、意味を変えず、足さず、減らさずに英語で説明する。
 5. If 英語にする時点で、release-automation がバージョンについての注意の内容を更新していれば, then the 開発者向けの規約 shall 更新後の内容を英語にする。
 6. The 開発者向けの規約の C、CMake、シェルのコード例 shall 英語にする前と同じ意味のコードであり、コメントと仮の値の表記だけを英語にする。
+7. The 開発者向けの規約のディレクトリ構成の節 shall 英語にする時点でリポジトリにあるものを、条件を付けずにすべて一覧にする。一覧は、release-automation が作った `tools/`（`tools/release/` と `tools/ci/`）、`tests/release/`、CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`.github/workflows/` の `ci.yml`、`release-pr.yml`、`release-publish.yml` と、`tests/CMakeLists.txt` が release のテストを登録していることを含む。
+8. The 開発者向けの規約の「バージョンについての注意」にあたる節 shall release-automation が足したプレリリースの内容（`CLARGS_VERSION_PRERELEASE` の書式、リリースのワークフローでバージョンを上げること、パッケージでの扱い、バージョン方針の文書とリリース手順書へのリンク）を含めて、英語にする時点の内容を英語で説明する。見出しは `Version notes`、アンカーは `#version-notes` とする。
 
 ### Requirement 9: リンクとアンカー
 
@@ -247,6 +255,7 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 4. When ソースまたはテストのコメントが、文書の節を名前で指しているとき, the 指された文書 shall その名前で見つかる英語の見出しを持つ。
 5. If release-automation の文書（CHANGELOG.md、リリース手順書、バージョン方針の文書）が、人向けの文書を英語にする時点でまだリポジトリにないとき, then the 人向けの文書 shall 両スペックで合わせたパスへのリンクを持ち、そのリンクがまだ解決しないことを、実装の結果として報告する。
 6. The README から開発者向けの規約の「バージョンについての注意」にあたる節へのリンク shall 英語にした見出しのアンカーを指す。
+7. When 英語化を終えた状態で確認を実行したとき, the 人向けの文書から release-automation の文書へのリンク shall 存在するファイルを指すリンクとして解決し、未解決のリンクとして報告されない。
 
 ### Requirement 10: ソースのコメントと文字列の言語
 
@@ -257,6 +266,7 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 1. The `include/`、`src/`、`tests/`、`cmake/`、`.github/` の下のファイルと、ルートの CMakeLists.txt shall コメントと文字列に、日本語の文字を含まない。
 2. If 点検でそれらのファイルに日本語の文字が見つかれば, then the 該当するコメントと文字列 shall 意味を変えずに英語にされ、コードの挙動とテストの期待値は変わらない。
 3. The 点検 shall 日本語でない ASCII 外の文字（罫線の文字など）を、日本語の文字として扱わない。
+4. If 点検で、release-automation が作った、または変更したファイル（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`tools/` の下、`tests/release/` の下、`.github/workflows/` の下）に日本語の文字または `.kiro` の文字列が見つかれば, then このスペック shall それらのファイルを変更せず、ファイル名と行番号とともに release-automation への指摘として報告する。この場合、要件 10.2 は適用しない。
 
 ### Requirement 11: 機械的な確認
 
@@ -269,6 +279,8 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 3. When 英語化を終えた状態で確認を実行したとき, the 確認 shall 該当する行を 1 つも報告しない。
 4. The 確認 shall 人向けの文書の、相対リンクのファイルと節のアンカーが解決するかを調べ、解決しないものを一覧にする。
 5. The 確認の手順 shall このスペックの検証の記録として残され、同じ手順を繰り返し実行して同じ結果を得られる。
+6. If 確認が、release-automation の文書（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`）または要件 10.4 のファイルの行を報告したとき, then このスペック shall それらを直さず、release-automation への指摘として記録し、要件 11.3 の判定では、このスペックが変更するファイルの報告だけを数える。
+7. The 確認 shall スペックへの言及を語の単位で数え、`specification` のように別の語の一部として `spec` を含む語を報告しない。
 
 ### Requirement 12: 変更の範囲
 
@@ -279,3 +291,4 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 1. The このスペックの変更 shall 公開ヘッダの宣言、ソースのコード、テストのコード、ビルドの定義、ワークフローの定義を変えない。変えてよいのは、要件 10 によるコメントと文字列だけである。
 2. The このスペックの変更 shall CHANGELOG.md、リリース手順書、バージョン方針の文書、CODE_OF_CONDUCT.md、SECURITY.md、Issue と PR のテンプレートの中身を変えない。
 3. When このスペックの変更を適用した後に README の 3 つのコマンドを実行したとき, the リポジトリ shall 今までどおり、構成、ビルド、テストに成功する。
+4. The このスペックの変更 shall このスペックの最初の実装のタスクの直前のコミット（以下 `<base>`）との差分で確かめられ、`<base>` に既にある release-automation のファイル（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`.github/` の下、`tools/` の下、`tests/release/` の下）を差分に含まない。`docs/conventions.md` の変更は、英語化と、ディレクトリ構成の節の更新と、要件 8.2 の移した記述だけである。
