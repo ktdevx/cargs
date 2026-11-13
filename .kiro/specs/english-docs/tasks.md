@@ -105,7 +105,7 @@
   - _Requirements: 1.1, 2.2, 6.2, 6.3, 6.4, 9.1, 9.5, 9.7_
 
 - [ ] 5. 統合と検証
-- [ ] 5.1 ソース、テスト、ビルド、ワークフローのファイルの言語を点検する
+- [x] 5.1 ソース、テスト、ビルド、ワークフローのファイルの言語を点検する
   - 検査を、`include/`、`src/`、`tests/`、`cmake/`、`.github/`、`tools/` の下のファイルと、ルートの CMakeLists.txt に限って実行する
   - release-automation のファイル（`tools/` の下、`tests/release/` の下、`.github/workflows/` の下）に日本語の文字や `.kiro` が見つかっても直さず、ファイル名と行番号を release-automation への指摘としてタスクの記録に書く
   - 日本語の文字が見つかれば、そのコメントと文字列だけを意味を変えずに英語にし、静的と動的の両方の構成でビルドしてテストを通す。コードとテストの期待値は変えない。見つからなければ、何も変えない
@@ -146,3 +146,4 @@
 - 2.4: ownership.md から除いた記述（3.2 で conventions に移す。原文は `git show ff2b83c:docs/ownership.md`）: 5–8 行（読者の一覧の開発者の項）、214–219（規則 6 の作らない形の表）、233–288（規則 7 の開発者の側の例と 3 項目）、297（規則 8 の開発者向けの文）、341–354（内部ユーティリティの表、2 つの違い、グローバル状態の段落）。設計の表にない 79–83「開発者が守ること」、136、143 は、利用者向けの保証として書き換えて残した（conventions に既に同じ規則がある）。
 - 3.1: conventions の見出しが英語になったので、README.md:263 の `#バージョンについての注意` へのリンクは 4.1 で `#version-notes` に直すまで切れている。
 - 3.2: conventions の 3 件の missing-file（`../CONTRIBUTING.md` ×2、`docs/README.md`）は 3.3 と 4.2 で解決する。5.2 で 0 件を確かめる。
+- 5.1: `python3 .kiro/specs/english-docs/check_docs.py check --files $(git ls-files include src tests cmake .github tools CMakeLists.txt)`（130 ファイル）は english-docs 0、release-automation 0、failures 0、exit 0。`LC_ALL=C.UTF-8 grep -nP` で日本語の範囲を探しても、`grep -niE` で kiro・スペック名・steering を探しても一致なし（exit 1）。ASCII 外の文字は `tests/public/command_test.c` の罫線（U+2500、U+2502、U+2514、U+251C）だけで、報告されない。変更したファイルはない。
