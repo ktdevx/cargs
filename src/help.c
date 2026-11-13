@@ -4,9 +4,11 @@
  */
 #include "help_internal.h"
 #include "help_item.h"
+#include "wrap.h"
 
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
 /* The state of one generation. It lives on the stack of the public
  * function, for the one call. */
@@ -15,6 +17,7 @@ typedef struct help_context {
     size_t width;                    /* the width in columns; 0 means no limit */
     size_t indent;                   /* the blanks before each item of a list */
     size_t max_column;               /* the last column at which the descriptions may start */
+    size_t column;                   /* the description column; set before the lists are written */
     clargs_out_t out;                /* where the text goes */
 } help_context_t;
 
@@ -34,6 +37,7 @@ static void help_context_init(help_context_t *context, const clargs_command_t *c
         context->indent = CLARGS_HELP_DEFAULT_INDENT;
         context->max_column = CLARGS_HELP_DEFAULT_MAX_COLUMN;
     }
+    context->column = 0;
     clargs_out_init(&context->out, write_fn, user_data);
 }
 
@@ -127,6 +131,13 @@ static void help_usage_item_write(clargs_out_t *out, const help_usage_item_t *it
     }
 }
 
+/* Returns a + b, or the greatest value of a size_t when the sum would be
+ * greater than it. */
+static size_t help_add(size_t a, size_t b)
+{
+    return b > (size_t)-1 - a ? (size_t)-1 : a + b;
+}
+
 /* A write function that keeps nothing: it adds length to the size_t that
  * user_data points to. The sum stops at the greatest value of a size_t
  * instead of wrapping around. */
@@ -135,23 +146,35 @@ static bool help_count_write(void *user_data, const char *text, size_t length)
     size_t *total = user_data;
 
     (void)text;
-    *total = length > (size_t)-1 - *total ? (size_t)-1 : *total + length;
+    *total = help_add(*total, length);
     return true;
 }
 
 /*
- * Returns the width of item: the number of all its bytes, also of those
- * before a newline inside a name and of the newline itself. The item is
- * written once to an output that only counts what it is given; the column
- * of an output would not do, as it starts again at 0 after a newline.
- * Inside an item no blank is remembered, so every byte reaches the count.
+ * Starts counter as an output that measures a width: *width is set to 0,
+ * and every byte that is then written to counter adds 1 to it. Nothing is
+ * kept and nothing is allocated.
+ *
+ * The width of an item of the usage line or of a heading is the number of
+ * all its bytes, also of those before a newline inside a name and of the
+ * newline itself. The column of an output would not do, as it starts again
+ * at 0 after a newline. Inside an item or a heading no blank is
+ * remembered, so every byte reaches the count.
  */
+static void help_counter_init(clargs_out_t *counter, size_t *width)
+{
+    *width = 0;
+    clargs_out_init(counter, help_count_write, width);
+}
+
+/* Returns the width of item: the number of all its bytes. The item is
+ * written once to an output that only counts; see help_counter_init(). */
 static size_t help_usage_item_width(const help_usage_item_t *item)
 {
-    size_t width = 0;
+    size_t width;
     clargs_out_t counter;
 
-    clargs_out_init(&counter, help_count_write, &width);
+    help_counter_init(&counter, &width);
     help_usage_item_write(&counter, item);
     return width;
 }
@@ -262,6 +285,259 @@ clargs_error_t clargs_help_write_usage(const clargs_command_t *command,
 
     help_context_init(&context, command, options, write_fn, user_data);
     help_write_usage_line(&context);
+
+    return help_context_result(&context);
+}
+
+/* ---- The lists ----------------------------------------------------------- */
+
+/* The kinds of the items of the lists. */
+typedef enum help_heading_kind {
+    HELP_HEADING_SUBCOMMAND, /* an item of "Commands:" */
+    HELP_HEADING_POSITIONAL  /* an item of "Arguments:" */
+} help_heading_kind_t;
+
+/* The heading of one item of a list: what stands on the left of its
+ * description. */
+typedef struct help_heading {
+    help_heading_kind_t kind;
+    const clargs_command_t *subcommand;    /* for HELP_HEADING_SUBCOMMAND */
+    const clargs_positional_t *positional; /* for HELP_HEADING_POSITIONAL */
+} help_heading_t;
+
+/* Writes heading to out: the one place that knows the text of a heading,
+ * for the output and for the measuring. The heading of a subcommand is its
+ * name. */
+static void help_heading_write(clargs_out_t *out, const help_heading_t *heading)
+{
+    switch (heading->kind) {
+    case HELP_HEADING_SUBCOMMAND:
+        clargs_help_item_string(out, clargs_command_name(heading->subcommand));
+        break;
+    case HELP_HEADING_POSITIONAL:
+        clargs_help_item_positional_heading(out, heading->positional);
+        break;
+    }
+}
+
+/* Returns the width of heading: the number of all its bytes. The heading
+ * is written once to an output that only counts; see help_counter_init(). */
+static size_t help_heading_width(const help_heading_t *heading)
+{
+    size_t width;
+    clargs_out_t counter;
+
+    help_counter_init(&counter, &width);
+    help_heading_write(&counter, heading);
+    return width;
+}
+
+/* Returns the heading of the subcommand of command at index. */
+static help_heading_t help_subcommand_heading(const clargs_command_t *command, size_t index)
+{
+    help_heading_t heading;
+
+    heading.kind = HELP_HEADING_SUBCOMMAND;
+    heading.subcommand = clargs_command_subcommand_at(command, index);
+    heading.positional = NULL;
+    return heading;
+}
+
+/* Returns the heading of the positional of command at index. */
+static help_heading_t help_positional_heading(const clargs_command_t *command, size_t index)
+{
+    help_heading_t heading;
+
+    heading.kind = HELP_HEADING_POSITIONAL;
+    heading.subcommand = NULL;
+    heading.positional = clargs_command_positional_at(command, index);
+    return heading;
+}
+
+/*
+ * Returns the description column of the help of the command of context:
+ * "the indent + the width of the widest heading + 2". The widest heading
+ * is looked for in all the lists of the help, so the descriptions of every
+ * list start at the same column.
+ */
+static size_t help_description_column(const help_context_t *context)
+{
+    const clargs_command_t *command = context->command;
+    help_heading_t heading;
+    size_t widest = 0;
+    size_t width;
+    size_t count;
+    size_t index;
+
+    count = clargs_command_subcommand_count(command);
+    for (index = 0; index < count; ++index) {
+        heading = help_subcommand_heading(command, index);
+        width = help_heading_width(&heading);
+        if (width > widest) {
+            widest = width;
+        }
+    }
+
+    count = clargs_command_positional_count(command);
+    for (index = 0; index < count; ++index) {
+        heading = help_positional_heading(command, index);
+        width = help_heading_width(&heading);
+        if (width > widest) {
+            widest = width;
+        }
+    }
+
+    /* A width is the length of strings in memory and the indent is at most
+     * CLARGS_HELP_SETTING_MAX, so the sum is not expected to go beyond a
+     * size_t; help_add() keeps it defined if it ever does. */
+    return help_add(help_add(context->indent, widest), 2);
+}
+
+/* Returns the length of text without the newlines at its end, or 0 when
+ * text is NULL: the length of a description that is written whole. 0 means
+ * that there is no description to write. */
+static size_t help_whole_length(const char *text)
+{
+    size_t length;
+
+    if (text == NULL) {
+        return 0;
+    }
+
+    length = strlen(text);
+    while (length != 0 && text[length - 1] == '\n') {
+        --length;
+    }
+    return length;
+}
+
+/* Returns the length of the part of text before its first newline, or 0
+ * when text is NULL: the length of the description of a subcommand in a
+ * list. 0 means that there is no description to write. */
+static size_t help_first_line_length(const char *text)
+{
+    const char *end;
+
+    if (text == NULL) {
+        return 0;
+    }
+
+    end = strchr(text, '\n');
+    return end != NULL ? (size_t)(end - text) : strlen(text);
+}
+
+/* Writes the description of the command of context, when it has one: an
+ * empty line, then the text from the start of the line, broken at the
+ * width. */
+static void help_write_description(help_context_t *context)
+{
+    clargs_out_t *out = &context->out;
+    const char *text = clargs_command_description(context->command);
+    size_t length = help_whole_length(text);
+
+    if (length == 0) {
+        return;
+    }
+
+    clargs_out_newline(out);
+    clargs_wrap_write(out, text, length, 0, context->width);
+    clargs_out_newline(out);
+}
+
+/* Starts a list: writes an empty line and the line of its title. */
+static void help_write_title(help_context_t *context, const char *title)
+{
+    clargs_out_t *out = &context->out;
+
+    clargs_out_newline(out);
+    clargs_out_string(out, title);
+    clargs_out_newline(out);
+}
+
+/*
+ * Writes one item of a list: the indent, heading, and the length bytes of
+ * text, its description, from the description column on, broken at the
+ * width. With the length 0 the line holds the heading only.
+ *
+ * The heading ends to the left of the description column, by 2 columns or
+ * more: the column is the indent, the widest heading and 2.
+ */
+static void help_write_item(help_context_t *context, const help_heading_t *heading,
+                            const char *text, size_t length)
+{
+    clargs_out_t *out = &context->out;
+
+    clargs_out_spaces(out, context->indent);
+    help_heading_write(out, heading);
+    if (length != 0) {
+        clargs_wrap_write(out, text, length, context->column, context->width);
+    }
+    clargs_out_newline(out);
+}
+
+/* Writes the list of the subcommands of the command of context, when it
+ * has one: the subcommands of the command itself, in the order in which
+ * they were added, each with the first line of its description. */
+static void help_write_commands(help_context_t *context)
+{
+    const clargs_command_t *command = context->command;
+    size_t count = clargs_command_subcommand_count(command);
+    size_t index;
+
+    if (count == 0) {
+        return;
+    }
+
+    help_write_title(context, "Commands:");
+    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index) {
+        help_heading_t heading = help_subcommand_heading(command, index);
+        const char *text = clargs_command_description(heading.subcommand);
+
+        help_write_item(context, &heading, text, help_first_line_length(text));
+    }
+}
+
+/* Writes the list of the positionals of the command of context, when it
+ * has one: in the order in which they were added, each with its whole
+ * description. */
+static void help_write_arguments(help_context_t *context)
+{
+    const clargs_command_t *command = context->command;
+    size_t count = clargs_command_positional_count(command);
+    size_t index;
+
+    if (count == 0) {
+        return;
+    }
+
+    help_write_title(context, "Arguments:");
+    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index) {
+        help_heading_t heading = help_positional_heading(command, index);
+        const char *text = clargs_positional_description(heading.positional);
+
+        help_write_item(context, &heading, text, help_whole_length(text));
+    }
+}
+
+clargs_error_t clargs_help_write(const clargs_command_t *command,
+                                 const clargs_help_options_t *options,
+                                 clargs_help_write_fn_t write_fn, void *user_data)
+{
+    help_context_t context;
+
+    assert(command != NULL);
+    assert(clargs_command_is_validated(command));
+    assert(write_fn != NULL);
+
+    help_context_init(&context, command, options, write_fn, user_data);
+
+    help_write_usage_line(&context);
+    help_write_description(&context);
+
+    /* One column for all the lists, from the headings of all of them. */
+    context.column = help_description_column(&context);
+    help_write_commands(&context);
+    help_write_arguments(&context);
 
     return help_context_result(&context);
 }

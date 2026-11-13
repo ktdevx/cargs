@@ -5,8 +5,9 @@
  * of a help message leaves the library: the library passes the text, part
  * by part, to a function of the caller, and the caller decides where it
  * goes. It also holds the help options, clargs_help_options_t: the
- * settings of the layout of the text, and the function that generates the
- * usage line of a command, clargs_help_write_usage().
+ * settings of the layout of the text, and the functions that generate the
+ * help of a command, clargs_help_write(), and its usage line alone,
+ * clargs_help_write_usage().
  *
  * Ownership:
  *
@@ -221,6 +222,81 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
 CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *command,
                                                   const clargs_help_options_t *options,
                                                   clargs_help_write_fn_t write_fn, void *user_data);
+
+/*
+ * Generates the help of command, such as
+ *
+ *     Usage: tool remote [COMMAND]
+ *
+ *     Manage the remote repositories.
+ *
+ *     Commands:
+ *       add     Add a remote
+ *       remove  Remove a remote
+ *
+ * and passes it to write_fn, together with user_data. command is the root
+ * or a subcommand of any level. The text ends with one '\n', its lines are
+ * separated by '\n' only, and no line ends with a blank. Its parts, in
+ * this order:
+ *
+ * - The usage line: byte by byte the text of clargs_help_write_usage() for
+ *   the same command and help options.
+ * - The description of command, from the start of the line, without the
+ *   newlines at its end.
+ * - "Commands:" and, one on each line, the subcommands of command itself,
+ *   not those of its subcommands: the name, and the description up to its
+ *   first newline.
+ * - "Arguments:" and, one on each line, the positionals of command: the
+ *   heading, written as in the usage line, and the whole description
+ *   without the newlines at its end.
+ *
+ * A part that has nothing to show is left out, together with its title: a
+ * description that is not set, a list without items. One empty line stands
+ * between two parts, and none at the start or at the end of the text. The
+ * items of a list stand in the order in which they were added.
+ *
+ * An item starts with the indent of the help options. Its description
+ * starts at the description column, which is the same for all the lists of
+ * one help: the indent, the width of the widest heading of the help and 2.
+ * The width of a heading is the number of its bytes. An item without a
+ * description is a line with its heading only. A description that is empty,
+ * or empty without the newlines at its end, counts as not set.
+ *
+ * The descriptions are broken at the blanks so that no line goes beyond
+ * the width of the help options; a word that is too long is not divided. A
+ * newline in a description ends the line, and what follows starts at the
+ * column where the description started. With the width 0 the lines end at
+ * those newlines only.
+ *
+ * The fixed words of the text are English. The strings of the schema are
+ * written as they are, byte by byte.
+ *
+ * options are the help options, or NULL for the default value of every
+ * setting. The call does not change them.
+ *
+ * The function does not change the schema and keeps no state: the same
+ * schema, command and help options give the same text every time. It may
+ * be called for the same schema and help options from several threads at
+ * the same time.
+ *
+ * Returns CLARGS_ERROR_NONE on success, and CLARGS_ERROR_WRITE_FAILED when
+ * write_fn returns false. write_fn is then not called again, and the part
+ * of the text that it took before the failure stays where it put it: the
+ * output may hold the start of the help.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ * - The schema that command belongs to is validated: see
+ *   clargs_command_is_validated(). Checked with assert.
+ * - write_fn is not NULL. Checked with assert.
+ * - options may be NULL. If not, they have not been destroyed, and no other
+ *   thread is changing them during the call. Not checked.
+ * - user_data may be NULL.
+ */
+CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
+                                            const clargs_help_options_t *options,
+                                            clargs_help_write_fn_t write_fn, void *user_data);
 
 #ifdef __cplusplus
 }
