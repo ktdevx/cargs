@@ -108,7 +108,11 @@ static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const
     case CLARGS_OPTION_NEGATABLE:
         clargs_result_record_state(result, option, on);
         break;
+    case CLARGS_OPTION_VALUE:
     default:
+        /* An option that takes a value was recorded above. A kind that a
+         * later version adds is passed over, on purpose, until the scan
+         * learns what giving it means: nothing is recorded for it. */
         break;
     }
     return CLARGS_ERROR_NONE;
@@ -137,6 +141,48 @@ static clargs_error_t scan_long(clargs_result_t *result, scan_t *scan, const cha
 }
 
 /*
+ * Reads arg, the argument that scan is at, as a bundle of short options of
+ * the current command: each character after the '-' is a short name, from
+ * the first to the last.
+ *
+ * An option that takes a value ends the bundle: the characters after its
+ * letter, whatever they are, are its value, and when it is the last letter
+ * it takes the next argument (record_option()). The options before a letter
+ * that fails stay recorded.
+ */
+static clargs_error_t scan_bundle(clargs_result_t *result, scan_t *scan, const char *arg)
+{
+    const char *letter;
+
+    for (letter = arg + 1; *letter != '\0'; letter++) {
+        const clargs_option_t *option = clargs_command_find_short(scan->command, *letter);
+        clargs_result_where_t where;
+        clargs_error_t error;
+
+        /* The argument of an error is the whole bundle; the name of its
+         * message is the letter. */
+        where.source = CLARGS_SOURCE_COMMAND_LINE;
+        where.index = scan->index;
+        where.short_name = *letter;
+        where.name_prefix = "-";
+        where.name = letter;
+        where.name_length = 1;
+
+        if (option == NULL) {
+            return fail_option(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
+        }
+        if (clargs_option_kind(option) == CLARGS_OPTION_VALUE) {
+            return record_option(result, scan, option, true, letter[1] != '\0' ? letter + 1 : NULL, &where);
+        }
+        error = record_option(result, scan, option, true, NULL, &where);
+        if (error != CLARGS_ERROR_NONE) {
+            return error;
+        }
+    }
+    return CLARGS_ERROR_NONE;
+}
+
+/*
  * Reads the arguments of result, which has count of them and root as its
  * only selected command, from the first after the name of the program.
  * Stops at the first error.
@@ -162,11 +208,19 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
             error = scan_long(result, &scan, arg);
             break;
         case CLARGS_LEX_SHORT:
+            /* An argument with the form of a negative number is a bundle
+             * only for a command that has a digit as a short name. For any
+             * other command it is an argument that is not an option, which
+             * is passed over like the ones below. */
+            if (scan.has_digit_short || !clargs_lex_is_negative_number(arg)) {
+                error = scan_bundle(result, &scan, arg);
+            }
+            break;
         case CLARGS_LEX_PLAIN:
         case CLARGS_LEX_TERMINATOR:
         default:
-            /* A bundle of short options, an argument that is not an option
-             * and the terminator are passed over. */
+            /* An argument that is not an option and the terminator are
+             * passed over. */
             break;
         }
         if (error != CLARGS_ERROR_NONE) {

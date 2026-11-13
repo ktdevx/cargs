@@ -97,9 +97,34 @@ extern "C" {
  *     --name value   an option that takes a value has the next argument as
  *                    its value, whatever that argument looks like
  *
- * An option may be given more than once: a flag stays given, a count is
- * the number of times, a negatable flag has the state that was given last,
- * and an option that takes a value has the value that was given last. Each
+ * An argument that starts with one '-' and has more characters is a bundle
+ * of short options. Each character after the '-' is compared, from the
+ * first to the last, with the short names of the options of the command;
+ * upper and lower case are different. An option that takes a value ends the
+ * bundle.
+ *
+ *     -v             a flag is given; a count is one more; a negatable
+ *                    flag is on
+ *     -abc           the same as -a -b -c; -vvv gives a count three times
+ *     -ovalue        an option that takes a value has the rest of the
+ *                    argument as its value, whatever the rest looks like:
+ *                    the value of -o=value is "=value"
+ *     -o value       an option that takes a value and is the last character
+ *                    has the next argument as its value, whatever that
+ *                    argument looks like
+ *     -abovalue      the same as -a -b -ovalue; -abo value is the same as
+ *                    -a -b -o value
+ *
+ * An argument with the form of a negative number, a '-' and a digit or a
+ * '-', a '.' and a digit, such as "-1" or "-.5", is a bundle only when the
+ * command has an option whose short name is a digit. For a command that
+ * has none, it is not an option. An argument that is taken as the value of
+ * an option is never looked at in this way.
+ *
+ * An option may be given more than once, by its short name and its long
+ * name alike: a flag stays given, a count is the number of times, a
+ * negatable flag has the state that was given last, and an option that
+ * takes a value has the value that was given last. Each
  * value is converted with the value type of its option when it is read,
  * also a value that is replaced later.
  *
