@@ -364,7 +364,10 @@ test tag or Release.
    - after the merge, that the tag `v0.2.0-rehearsal.1` and a GitHub Release
      marked as a pre-release are created;
    - that starting **Release** by hand with the same version creates nothing
-     new and reports that the tag and the Release are left as they are.
+     new and reports that the tag and the Release are left as they are;
+   - that a pull request that changes only documentation (for example a
+     Markdown file under `docs/`) skips `quickstart` and `build`, and that
+     `CI result` still succeeds and satisfies the required check.
 4. When done, delete the tags and the Releases in the fork, and reset or
    delete the fork, since its `main` now holds the test version.
 

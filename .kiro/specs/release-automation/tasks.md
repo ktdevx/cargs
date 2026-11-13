@@ -109,7 +109,7 @@
   - _Depends: 4.1, 4.2, 4.3_
   - _Requirements: 3.6, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 10.7_
 
-- [ ] 6. 統合と最終の確認
+- [x] 6. 統合と最終の確認
 - [x] 6.1 開発者向けの規約のバージョンの節を更新する
   - `docs/conventions.md` の「バージョンについての注意」の節だけに、設計の ConventionsVersionNotes の内容を足す。english-docs はこのスペックのあとに実装するので、ファイルはまだ日本語であり、日本語で書く。節の外と節の見出しは変えない（英語化後の見出し `Version notes` は README からのリンク先として固定されている）
   - 既存の最初の項目（唯一の出どころを 3 つのマクロとする文）は、節が食い違わないように `CLARGS_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改める（数字のマクロの書式の説明は残す）
@@ -118,7 +118,7 @@
   - _Depends: 5.2, 5.3_
   - _Requirements: 1.6, 10.4_
 
-- [ ] 6.2 全体を確かめる
+- [x] 6.2 全体を確かめる
   - 静的と動的、Debug と Release の構成で、すべてのテスト（`release` のラベルを含む）と consumer check が通ることを確かめる
   - 差分の基準 `<base>` は、このスペックの最初の実装タスク（1.1）のコミットの直前のコミットとする（実装の開始時に記録する）。差分による確認はすべて `git diff <base>` で行い、あとの作業の影響を受けないようにする
   - 新しいファイルと変更したファイルに、日本語の文字と `.kiro`、`Kiro` の文字列がないこと（`docs/conventions.md` はまだ日本語なので言語の確認から除く）、README.md と CONTRIBUTING.md に差分がないことを機械的に確かめる
@@ -142,3 +142,4 @@
 - 4.2: release-pr.yml は GITHUB_TOKEN で `gh pr create` するので、リポジトリの設定 "Allow GitHub Actions to create and approve pull requests" が要る（5.3 の手順書に書く）。PR 作成に失敗したらブランチを消してやり直す、CI の dispatch に失敗したら手で CI を起動する、という案内を手順書と合わせる。
 - 4.3: release-publish.yml の concurrency はジョブに置いた（ジョブが飛ばされる実行が group に入って保留中の実行を置き換えないように）。手動のやり直しは main で起動し、`gh pr list --state merged --head release/v<V>` で同じリポジトリの PR を 1 つだけ見つける。タグが別のコミットを指すと止まる（手順書 5.3 に戻し方を書く）。
 - 5.3: 正式版の前のプレリリースから変更がなくても、`Unreleased` に 1 項目が要る（要件 5.7。手順書の Making a pre-release に例を書いた）。
+- 6.2: 最終確認の結果: static/shared × Debug/Release で 746/747 件すべて合格、release ラベル 7 件、consumer check 4 構成すべて合格、言語・語・権限・actionlint の確認はすべて空または合格。GitHub 上での通し確認（フォークでのリハーサル、文書だけの PR、公開のやり直し）はメンテナーが手順書どおりに行う。
