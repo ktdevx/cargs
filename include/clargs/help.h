@@ -249,6 +249,20 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * - "Arguments:" and, one on each line, the positionals of command: the
  *   heading, written as in the usage line, and the whole description
  *   without the newlines at its end.
+ * - "Options:" and, one on each line, the options of command itself, not
+ *   those of its parent or of its subcommands: the heading, and the whole
+ *   description without the newlines at its end.
+ *
+ * The heading of an option starts with its names: "-s, --long" with both
+ * names, "-s" with a short name only, and four blanks and "--long" with a
+ * long name only, so that the long names stand one below the other. A
+ * negatable flag has its long name written as "--[no-]long". A count has
+ * "..." right behind the names. An option with a value has, behind the
+ * names, a blank and the display name of the value between "<" and ">", as
+ * in "-o, --output <FILE>"; when no display name is set, the name of the
+ * value type stands in its place. Only the options of the schema are
+ * listed: none is added, and an option that the schema defines for the
+ * help, such as "--help", is listed like every other.
  *
  * A part that has nothing to show is left out, together with its title: a
  * description that is not set, a list without items. One empty line stands

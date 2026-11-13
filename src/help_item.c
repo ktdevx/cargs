@@ -45,6 +45,66 @@ static void item_value_name(clargs_out_t *out, const clargs_option_t *option)
     clargs_out_text(out, ">", 1);
 }
 
+void clargs_help_item_option_heading(clargs_out_t *out, const clargs_option_t *option)
+{
+    const char *long_name;
+    char short_name;
+    bool negatable = false;
+    bool count = false;
+    bool value = false;
+
+    assert(out != NULL);
+    assert(option != NULL);
+
+    switch (clargs_option_kind(option)) {
+    case CLARGS_OPTION_NEGATABLE:
+        negatable = true;
+        break;
+    case CLARGS_OPTION_COUNT:
+        count = true;
+        break;
+    case CLARGS_OPTION_VALUE:
+        value = true;
+        break;
+    case CLARGS_OPTION_FLAG:
+    default:
+        /* A kind of a later version is written in the simplest form. */
+        break;
+    }
+
+    long_name = clargs_option_long_name(option);
+    short_name = clargs_option_short_name(option);
+
+    /* The blanks belong to the heading: they are written with the text,
+     * not remembered, so they count for its width. */
+    if (short_name != '\0') {
+        clargs_out_text(out, "-", 1);
+        clargs_out_text(out, &short_name, 1);
+        if (long_name != NULL) {
+            clargs_out_text(out, ", ", 2);
+        }
+    } else {
+        clargs_out_text(out, "    ", 4);
+    }
+
+    if (long_name != NULL) {
+        clargs_out_text(out, "--", 2);
+        if (negatable) {
+            clargs_out_text(out, "[no-]", 5);
+        }
+        clargs_help_item_string(out, long_name);
+    }
+
+    if (count) {
+        clargs_out_text(out, "...", 3);
+    }
+
+    if (value) {
+        clargs_out_text(out, " ", 1);
+        item_value_name(out, option);
+    }
+}
+
 void clargs_help_item_positional_heading(clargs_out_t *out, const clargs_positional_t *positional)
 {
     bool required = true;

@@ -294,7 +294,8 @@ clargs_error_t clargs_help_write_usage(const clargs_command_t *command,
 /* The kinds of the items of the lists. */
 typedef enum help_heading_kind {
     HELP_HEADING_SUBCOMMAND, /* an item of "Commands:" */
-    HELP_HEADING_POSITIONAL  /* an item of "Arguments:" */
+    HELP_HEADING_POSITIONAL, /* an item of "Arguments:" */
+    HELP_HEADING_OPTION      /* an item of "Options:" */
 } help_heading_kind_t;
 
 /* The heading of one item of a list: what stands on the left of its
@@ -303,6 +304,7 @@ typedef struct help_heading {
     help_heading_kind_t kind;
     const clargs_command_t *subcommand;    /* for HELP_HEADING_SUBCOMMAND */
     const clargs_positional_t *positional; /* for HELP_HEADING_POSITIONAL */
+    const clargs_option_t *option;         /* for HELP_HEADING_OPTION */
 } help_heading_t;
 
 /* Writes heading to out: the one place that knows the text of a heading,
@@ -316,6 +318,9 @@ static void help_heading_write(clargs_out_t *out, const help_heading_t *heading)
         break;
     case HELP_HEADING_POSITIONAL:
         clargs_help_item_positional_heading(out, heading->positional);
+        break;
+    case HELP_HEADING_OPTION:
+        clargs_help_item_option_heading(out, heading->option);
         break;
     }
 }
@@ -340,6 +345,7 @@ static help_heading_t help_subcommand_heading(const clargs_command_t *command, s
     heading.kind = HELP_HEADING_SUBCOMMAND;
     heading.subcommand = clargs_command_subcommand_at(command, index);
     heading.positional = NULL;
+    heading.option = NULL;
     return heading;
 }
 
@@ -351,6 +357,19 @@ static help_heading_t help_positional_heading(const clargs_command_t *command, s
     heading.kind = HELP_HEADING_POSITIONAL;
     heading.subcommand = NULL;
     heading.positional = clargs_command_positional_at(command, index);
+    heading.option = NULL;
+    return heading;
+}
+
+/* Returns the heading of the option of command at index. */
+static help_heading_t help_option_heading(const clargs_command_t *command, size_t index)
+{
+    help_heading_t heading;
+
+    heading.kind = HELP_HEADING_OPTION;
+    heading.subcommand = NULL;
+    heading.positional = NULL;
+    heading.option = clargs_command_option_at(command, index);
     return heading;
 }
 
@@ -381,6 +400,15 @@ static size_t help_description_column(const help_context_t *context)
     count = clargs_command_positional_count(command);
     for (index = 0; index < count; ++index) {
         heading = help_positional_heading(command, index);
+        width = help_heading_width(&heading);
+        if (width > widest) {
+            widest = width;
+        }
+    }
+
+    count = clargs_command_option_count(command);
+    for (index = 0; index < count; ++index) {
+        heading = help_option_heading(command, index);
         width = help_heading_width(&heading);
         if (width > widest) {
             widest = width;
@@ -519,6 +547,29 @@ static void help_write_arguments(help_context_t *context)
     }
 }
 
+/* Writes the list of the options of the command of context, when it has
+ * one: the options of the command itself, not those of its parent or of
+ * its subcommands, in the order in which they were added, each with its
+ * whole description. Nothing is listed that the schema does not have. */
+static void help_write_options(help_context_t *context)
+{
+    const clargs_command_t *command = context->command;
+    size_t count = clargs_command_option_count(command);
+    size_t index;
+
+    if (count == 0) {
+        return;
+    }
+
+    help_write_title(context, "Options:");
+    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index) {
+        help_heading_t heading = help_option_heading(command, index);
+        const char *text = clargs_option_description(heading.option);
+
+        help_write_item(context, &heading, text, help_whole_length(text));
+    }
+}
+
 clargs_error_t clargs_help_write(const clargs_command_t *command,
                                  const clargs_help_options_t *options,
                                  clargs_help_write_fn_t write_fn, void *user_data)
@@ -538,6 +589,7 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
     context.column = help_description_column(&context);
     help_write_commands(&context);
     help_write_arguments(&context);
+    help_write_options(&context);
 
     return help_context_result(&context);
 }

@@ -7,12 +7,16 @@
  * is given to an array of a fixed size.
  *
  * A command of a schema has subcommands or positionals, not both, so a
- * help of this file has one list at most: "Commands:" or "Arguments:".
+ * help of this file has two lists at most: "Commands:" or "Arguments:",
+ * and "Options:".
  *
- * The schemas of this file have no options, and with the default settings
- * "the indent + the width of the widest heading + 2" is at most 32 in each
- * of them; where a test sets a width, it is also at most half that width.
- * So the texts do not depend on the limit of the description column.
+ * With the default settings "the indent + the width of the widest heading
+ * + 2" is at most 32 in each schema of this file; where a test sets a
+ * width, it is also at most half that width. So the texts do not depend on
+ * the limit of the description column. No option of this file is required,
+ * has a default value, a value type with choices or an initial state that
+ * is on: the description of an option is its description text only. The
+ * headings of the options have their own tests, in help_item_test.c.
  *
  * Every test uses the test allocator ("../support/test_allocator.h"). Its
  * state and the allocator that is set are shared by all the tests of this
@@ -130,6 +134,54 @@ static void add_positional(clargs_command_t *command, const char *name, clargs_a
     if (description != NULL) {
         NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
                           CLARGS_ERROR_NONE);
+    }
+}
+
+/* Adds a flag that must succeed. short_name is '\0' and long_name is NULL
+ * for a name that the option does not have; description is its
+ * description, or NULL to set none. */
+static void add_flag(clargs_command_t *command, char short_name, const char *long_name,
+                     const char *description)
+{
+    clargs_option_t *option = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_flag(command, short_name, long_name, &option) ==
+                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(option != NULL);
+    if (description != NULL) {
+        NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+    }
+}
+
+/* Adds a count that must succeed, with the names and the description as
+ * for add_flag(). */
+static void add_count(clargs_command_t *command, char short_name, const char *long_name,
+                      const char *description)
+{
+    clargs_option_t *option = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_count(command, short_name, long_name, &option) ==
+                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(option != NULL);
+    if (description != NULL) {
+        NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+    }
+}
+
+/* Adds an option with a value of strings that must succeed, with the
+ * display name value_name. The option is not required and has no default
+ * value. */
+static void add_value(clargs_command_t *command, char short_name, const char *long_name,
+                      const char *value_name, const char *description)
+{
+    clargs_option_t *option = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, clargs_type_string(),
+                                               &option) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(option != NULL);
+    NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
+    if (description != NULL) {
+        NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
     }
 }
 
@@ -1050,6 +1102,256 @@ NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
     destroy_root(root);
 }
 
+/* ---- The list of the options ---------------------------------------------- */
+
+/* A root with a description, subcommands and options: the usage line, the
+ * description, "Commands:" and "Options:", in this order, each part behind
+ * one empty line. The descriptions of both lists start at one column. */
+NAOS_TEST(root_with_description_subcommands_and_options)
+{
+    clargs_command_t *root = create_root();
+
+    describe(root, "Manage the remote repositories.");
+    add_sub(root, "add", "Add a remote");
+    add_sub(root, "remove", "Remove a remote");
+    add_flag(root, 'v', "verbose", "Say more");
+    add_flag(root, '\0', "dry-run", "Change nothing");
+    add_value(root, 'c', "config", "FILE", "Read the settings from FILE");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "\n"
+               "Manage the remote repositories.\n"
+               "\n"
+               "Commands:\n"
+               "  add                  Add a remote\n"
+               "  remove               Remove a remote\n"
+               "\n"
+               "Options:\n"
+               "  -v, --verbose        Say more\n"
+               "      --dry-run        Change nothing\n"
+               "  -c, --config <FILE>  Read the settings from FILE\n");
+
+    destroy_root(root);
+}
+
+/* A subcommand of the second level with positionals and options: the path
+ * from the root in the usage line, the description, "Arguments:" and
+ * "Options:", in this order. */
+NAOS_TEST(second_level_subcommand_with_positionals_and_options)
+{
+    clargs_command_t *root = create_root();
+    clargs_command_t *remote = add_sub(root, "remote", "Manage the remotes");
+    clargs_command_t *add = add_sub(remote, "add", "Add a remote.");
+
+    describe(root, "The tool.");
+    add_positional(add, "name", CLARGS_ARITY_REQUIRED, "Name of the remote");
+    add_positional(add, "url", CLARGS_ARITY_OPTIONAL, "Address of the remote");
+    add_flag(add, 'f', "force", "Replace an existing remote");
+    add_value(add, 't', "track", "BRANCH", "Branch to track");
+    validate(root);
+
+    check_help(add,
+               "Usage: tool remote add [OPTIONS] <name> [url]\n"
+               "\n"
+               "Add a remote.\n"
+               "\n"
+               "Arguments:\n"
+               "  <name>                Name of the remote\n"
+               "  [url]                 Address of the remote\n"
+               "\n"
+               "Options:\n"
+               "  -f, --force           Replace an existing remote\n"
+               "  -t, --track <BRANCH>  Branch to track\n");
+
+    destroy_root(root);
+}
+
+/* A command with options only: "Options:" is the only list, behind one
+ * empty line, with and without a description of the command. */
+NAOS_TEST(command_with_options_only)
+{
+    clargs_command_t *root = create_root();
+    clargs_command_t *run = add_sub(root, "run", NULL);
+    sink_t sink;
+
+    add_flag(run, 'q', "quiet", "Say nothing");
+    validate(root);
+
+    check_help(run,
+               "Usage: tool run [OPTIONS]\n"
+               "\n"
+               "Options:\n"
+               "  -q, --quiet  Say nothing\n");
+
+    sink_init(&sink);
+    NAOS_CHECK_TRUE(clargs_help_write(run, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(count_empty_lines(sink.text, sink.length), 1);
+
+    describe(run, "Run it.");
+    validate(root);
+
+    check_help(run,
+               "Usage: tool run [OPTIONS]\n"
+               "\n"
+               "Run it.\n"
+               "\n"
+               "Options:\n"
+               "  -q, --quiet  Say nothing\n");
+
+    destroy_root(root);
+}
+
+/* Only the options of the command itself are listed: not those of its
+ * parent, not those of its subcommands. The description column follows
+ * from the headings of the command itself as well: 17 for the root, 20 for
+ * "run" and 15 for "fast". */
+NAOS_TEST(options_of_other_commands_are_not_listed)
+{
+    clargs_command_t *root = create_root();
+    clargs_command_t *run = add_sub(root, "run", "Run it");
+    clargs_command_t *fast = add_sub(run, "fast", "Run it fast");
+
+    add_flag(root, 'v', "verbose", "Say more");
+    add_flag(run, 'k', "keep-going", "Go on after a failure");
+    add_flag(fast, '\0', "turbo", "Go faster");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "\n"
+               "Commands:\n"
+               "  run            Run it\n"
+               "\n"
+               "Options:\n"
+               "  -v, --verbose  Say more\n");
+
+    check_help(run,
+               "Usage: tool run [OPTIONS] [COMMAND]\n"
+               "\n"
+               "Run it\n"
+               "\n"
+               "Commands:\n"
+               "  fast              Run it fast\n"
+               "\n"
+               "Options:\n"
+               "  -k, --keep-going  Go on after a failure\n");
+
+    check_help(fast,
+               "Usage: tool run fast [OPTIONS]\n"
+               "\n"
+               "Run it fast\n"
+               "\n"
+               "Options:\n"
+               "      --turbo  Go faster\n");
+
+    destroy_root(root);
+}
+
+/* The options stand in the order in which they were added, whatever their
+ * names and kinds are. */
+NAOS_TEST(options_come_in_definition_order)
+{
+    clargs_command_t *root = create_root();
+
+    add_flag(root, 'z', NULL, "Last letter");
+    add_count(root, '\0', "alpha", "First letter");
+    add_value(root, 'm', "middle", "N", "Middle letter");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS]\n"
+               "\n"
+               "Options:\n"
+               "  -z                Last letter\n"
+               "      --alpha...    First letter\n"
+               "  -m, --middle <N>  Middle letter\n");
+
+    destroy_root(root);
+}
+
+/* "Commands:" and "Options:" have one description column, from the widest
+ * heading of both: an option that is wider than every subcommand moves the
+ * descriptions of the subcommands, to 2 + 22 + 2, and a subcommand that is
+ * wider than every option moves the descriptions of the options, to
+ * 2 + 19 + 2. */
+NAOS_TEST(commands_and_options_share_the_description_column)
+{
+    clargs_command_t *root = create_root();
+
+    add_sub(root, "a", "First");
+    add_flag(root, '\0', "long-option-name", "Wide");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "\n"
+               "Commands:\n"
+               "  a                       First\n"
+               "\n"
+               "Options:\n"
+               "      --long-option-name  Wide\n");
+
+    destroy_root(root);
+
+    root = create_root();
+    add_sub(root, "a-long-command-name", "Wide");
+    add_flag(root, 'q', NULL, "Quiet");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "\n"
+               "Commands:\n"
+               "  a-long-command-name  Wide\n"
+               "\n"
+               "Options:\n"
+               "  -q                   Quiet\n");
+
+    destroy_root(root);
+}
+
+/* "Arguments:" and "Options:" have one description column as well: an
+ * option that is wider than every positional moves the descriptions of the
+ * positionals, to 2 + 22 + 2, and a positional that is wider than every
+ * option moves the descriptions of the options, to 2 + 25 + 2. */
+NAOS_TEST(arguments_and_options_share_the_description_column)
+{
+    clargs_command_t *root = create_root();
+
+    add_positional(root, "in", CLARGS_ARITY_REQUIRED, "Input");
+    add_flag(root, '\0', "long-option-name", "Wide");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] <in>\n"
+               "\n"
+               "Arguments:\n"
+               "  <in>                    Input\n"
+               "\n"
+               "Options:\n"
+               "      --long-option-name  Wide\n");
+
+    destroy_root(root);
+
+    root = create_root();
+    add_positional(root, "a-long-argument-name", CLARGS_ARITY_ZERO_OR_MORE, "Wide");
+    add_flag(root, 'q', NULL, "Quiet");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] [a-long-argument-name]...\n"
+               "\n"
+               "Arguments:\n"
+               "  [a-long-argument-name]...  Wide\n"
+               "\n"
+               "Options:\n"
+               "  -q                         Quiet\n");
+
+    destroy_root(root);
+}
+
 NAOS_SUITE(help,
     NAOS_ADD_TEST(root_with_description_and_subcommands),
     NAOS_ADD_TEST(second_level_subcommand_with_positionals),
@@ -1070,7 +1372,14 @@ NAOS_SUITE(help,
     NAOS_ADD_TEST(null_options_are_the_default_options),
     NAOS_ADD_TEST(usage_alone_is_the_head_of_the_help),
     NAOS_ADD_TEST(same_input_gives_same_text_and_schema_is_unchanged),
-    NAOS_ADD_TEST(write_failure_is_reported_and_stops_the_calls)
+    NAOS_ADD_TEST(write_failure_is_reported_and_stops_the_calls),
+    NAOS_ADD_TEST(root_with_description_subcommands_and_options),
+    NAOS_ADD_TEST(second_level_subcommand_with_positionals_and_options),
+    NAOS_ADD_TEST(command_with_options_only),
+    NAOS_ADD_TEST(options_of_other_commands_are_not_listed),
+    NAOS_ADD_TEST(options_come_in_definition_order),
+    NAOS_ADD_TEST(commands_and_options_share_the_description_column),
+    NAOS_ADD_TEST(arguments_and_options_share_the_description_column)
 )
 
 NAOS_MAIN(
