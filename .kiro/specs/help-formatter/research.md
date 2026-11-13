@@ -228,3 +228,12 @@ Option B の上で、「スキーマから行の並び（見出しと説明の�
 - [Potential errors passing CRT objects across DLL boundaries](https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries) — `FILE *` を DLL の境界で渡せない条件
 - `docs/conventions.md`、`docs/ownership.md` — 命名、手順、所有権の規約
 - `.kiro/steering/roadmap.md` — 境界と Future boundaries
+
+---
+
+## 追記: `FILE *` 向けの補助を外した
+
+- **Context**: タスクの生成の後、利用者の判断で、`FILE *` に出力する補助（要件の旧 10.5〜10.7、`clargs_help_print()`、`clargs_help_print_usage()`）を外した。
+- **変更**: 要件 10 は、固定長のバッファ向けの補助だけになった（旧 10.8 は 10.5 に繰り上げた）。設計から、公開ヘッダのインライン関数と `<stdio.h>` の取り込みを取り除いた。タスクの旧 8.2 を削除し、8 を 1 つのタスクにした。
+- **影響**: 上の「`FILE *` を動的ライブラリに渡すこと」の調査と、インライン関数についての決定とリスクは、採用しなかった案の記録として残す。利用者は、`fwrite()` を呼ぶ書き込み関数を自分で書く。その例を `docs/help.md` に載せる。
+- **brief.md との差**: brief.md の Scope は「バッファ・`FILE *` 向けの補助」としている。brief.md は discovery の記録なので書き換えず、差を要件の Introduction の表に記録した。

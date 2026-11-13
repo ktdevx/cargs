@@ -11,7 +11,7 @@
 ### Goals
 
 - `clargs_help_write()` 1 回の呼び出しで、usage 行、説明、サブコマンド、位置引数、オプションの一覧を、要件 1〜7 の表記と整形で出力する。
-- 出力先は、利用者の書き込み関数 1 つで表す。固定長のバッファと `FILE *` は、その上の補助にする。
+- 出力先は、利用者の書き込み関数 1 つで表す。固定長のバッファは、その上の補助にする。`FILE *` 向けの補助は持たない。
 - 整形の設定は不透明なオブジェクトで、設定関数を足していける。設定なし（`NULL`）でも生成できる。
 - 文面は、ロケール、環境、OS によらず、バイト単位で同じにする。
 - 失敗は、書き込みの失敗とメモリ確保の失敗の 2 つだけにする。
@@ -21,6 +21,7 @@
 - argv の解析、`--help` の検出、ヘルプを出して終了する動作（argv-parser、利用者のコード）
 - `--help` のようなオプションをスキーマに足すこと
 - 多言語化、色付け、端末の幅の検出、ASCII 以外の文字の表示幅
+- `FILE *` に直接出力する補助
 - man ページ、Markdown、補完スクリプト。テンプレートやセクションの差し替え
 - オプションを隠すこと、グループに分けること
 - 別の形式のための中間のデータ構造（行の並びを利用者や別のモジュールに渡すこと）
@@ -29,7 +30,7 @@
 
 ### This Spec Owns
 
-- 生成の入口 `clargs_help_write()` と `clargs_help_write_usage()`、補助 `clargs_help_format()`、`clargs_help_format_usage()`、`clargs_help_print()`、`clargs_help_print_usage()`
+- 生成の入口 `clargs_help_write()` と `clargs_help_write_usage()`、補助 `clargs_help_format()`、`clargs_help_format_usage()`
 - 書き込み関数の型 `clargs_help_write_fn_t` と、その呼び出しの契約
 - 整形の設定の型 `clargs_help_options_t` と、生成、破棄、設定関数
 - ヘルプの文面の規則: セクションの順序と名前、usage 行、見出し、注記、列の揃え、折り返し、行の形（要件 1〜7）
@@ -43,16 +44,16 @@
 - 説明文、値の表示名などの属性の保持と、名前の規則、検証の規則（command-schema）
 - 解析、解析の結果、解析エラーのメッセージ（argv-parser）。`src/parse_internal.h`、`src/message.h`、`src/lex.h` を取り込まない
 - ヘルプを出すかどうかの判断、プロセスの終了、エラーのメッセージと usage 行を並べること（利用者のコード）
-- `FILE *` を開く、閉じる、モードを変えること。改行の変換
+- `FILE *` への出力（利用者が、`fwrite()` を呼ぶ書き込み関数を書く）。改行の変換
 - アロケータ、エラーコードの仕組み、内部ユーティリティ（core-runtime）
 
 ### Allowed Dependencies
 
 - command-schema の公開関数: `<clargs/schema.h>` の読み取り（`clargs_command_*`、`clargs_option_*`、`clargs_positional_*` の読み取りと列挙、`clargs_command_is_validated()`）、`<clargs/type.h>` の `clargs_type_name()`、`clargs_type_kind()`、`clargs_type_choice_count()`、`clargs_type_choice_at()`
 - core-runtime: 内部のメモリ関数（`src/alloc_internal.h`）、`clargs_vec_t`（`src/vec.h`）、`clargs_error_t` と `CLARGS_ERROR_LIST`、`CLARGS_API`
-- C 標準ライブラリ: `<assert.h>`、`<stdbool.h>`、`<stddef.h>`、`<string.h>`。公開ヘッダのインライン関数に限り `<stdio.h>` の `fwrite()`
+- C 標準ライブラリ: `<assert.h>`、`<stdbool.h>`、`<stddef.h>`、`<string.h>`
 - テストでは、Naos とテスト用アロケータ（`tests/support/test_allocator.h`）
-- 依存してはならないもの: argv-parser のコード。command-schema の内部ヘッダ。スキーマを変更する関数と `clargs_type_convert()`。ロケールに左右される関数（`<ctype.h>`、`<locale.h>`、`printf` 系の書式化）。`getenv`。OS の API。標準の確保関数。変更可能な `static` 変数。ライブラリのソース（`src/`）からの `<stdio.h>` の関数の呼び出し（`help.h` を通して `<stdio.h>` が取り込まれるのは構わない）
+- 依存してはならないもの: argv-parser のコード。command-schema の内部ヘッダ。スキーマを変更する関数と `clargs_type_convert()`。ロケールに左右される関数（`<ctype.h>`、`<locale.h>`、`printf` 系の書式化）。`getenv`。OS の API。標準の確保関数。変更可能な `static` 変数。`<stdio.h>`（公開ヘッダでも、このスペックのソースでも取り込まない）
 
 ### Revalidation Triggers
 
@@ -62,7 +63,6 @@
 - 既定の設定の値（表示幅 80、字下げ 2、説明の列の上限 32）の変更
 - 書き込み関数の契約（戻り値の意味、長さ 0 で呼ばないこと、失敗の後は呼ばないこと）の変更
 - `clargs_help_format()` が切り詰めを成功として返す、という決定の変更
-- `clargs_help_print()` をヘッダのインライン関数にする、という決定の変更
 
 次の command-schema の変更があったら、このスペックを確かめ直す。
 
@@ -82,7 +82,7 @@
 - 既存の型: 不透明ハンドル、`clargs_error_t` を返す関数と `**out`、`destroy` の `NULL` は何もしない、前提条件は `assert`、エラーコードは一覧の末尾に足す、変更可能な `static` 変数を持たない。
 - 設定されていない属性は `NULL` で読める。空の文字列を設定した説明文は `""` で読める。
 - 名前（位置引数、値の表示名）、既定値、選択肢、利用者定義の値型の名前は、改行や空白を含みうる。
-- 公開ヘッダで `<stdio.h>` を使うのは、このスペックが初めてである。export の検査（`clargs.exports`）は、`CLARGS_API` の付いた宣言だけを集めるので、ヘッダのインライン関数は対象にならない。
+- 既存の公開ヘッダは `<stdio.h>` を取り込んでいない。このスペックも取り込まない。
 
 ### Architecture Pattern & Boundary Map
 
@@ -139,7 +139,7 @@ graph TB
 | 書き込み関数の戻り値 | `bool`。`true` が成功 | 失敗の理由は利用者の側にある。ライブラリが区別する必要があるのは、成功か失敗かだけである |
 | エラーコード | `CLARGS_ERROR_WRITE_FAILED`（"write failed"）を 1 つ足す | 12.7、12.8。メモリ確保の失敗と区別できれば足りる |
 | 設定関数の戻り値 | `void`。値は拒まず、65535 を超える値は 65535 として扱う | 3 つの設定は数だけで、確保しない。上限を置くと、桁の計算が桁あふれしない。表示幅を環境から得た値で設定する利用者に、失敗の検査を求めない |
-| `FILE *` の補助 | 公開ヘッダの `static inline` 関数にし、ライブラリの中では `fwrite()` を呼ばない | Windows では、動的ライブラリと利用者のプログラムの C ランタイムが違うと（Debug と Release の組み合わせなど）、`FILE *` を境界を越えて渡せない。インライン関数なら、`fwrite()` は利用者の側でコンパイルされる |
+| `FILE *` の補助 | 持たない（利用者の判断で、要件から外した） | 利用者は、`fwrite()` を呼ぶ数行の書き込み関数で同じことができる。公開ヘッダが `<stdio.h>` を取り込まずに済み、Windows で `FILE *` を動的ライブラリの境界を越えて渡す問題も起きない。例を `docs/help.md` に載せる |
 | バッファの補助 | 切り詰めは成功として返し、全体の長さを `*length` に入れる | 10.2〜10.4。`snprintf` と同じ使い方（長さ 0 で呼んで長さを得る）ができる |
 | 幅を数える方法 | 桁だけを数える `Out` に、見出しを 1 回書く | 見出しの組み立てを 1 か所にする |
 | 検証を済ませていないスキーマ | `assert(clargs_command_is_validated(command))` | 1.10。argv-parser と同じ |
@@ -153,8 +153,8 @@ graph TB
 
 | Layer | Choice / Version | Role in Feature | Notes |
 |-------|------------------|-----------------|-------|
-| 言語 | C99、拡張なし | 全体 | 公開ヘッダで `static inline` を使う（C99 の機能。このリポジトリでは初めて） |
-| 実行時 | C 標準ライブラリ | `<string.h>` の `strlen()`、`memcpy()`、`memchr()` | このスペックのソースは `<stdio.h>` の関数を呼ばない。`fwrite()` を呼ぶのは、公開ヘッダのインライン関数だけである |
+| 言語 | C99、拡張なし | 全体 | 既存のスペックと同じ |
+| 実行時 | C 標準ライブラリ | `<string.h>` の `strlen()`、`memcpy()`、`memchr()` | `<stdio.h>` は、公開ヘッダでも、このスペックのソースでも取り込まない |
 | 上流 | command-schema の公開関数 | スキーマの読み取り | 内部ヘッダは取り込まない |
 | メモリ | core-runtime の内部のメモリ関数、`clargs_vec_t` | 設定と、セルの文字列の領域 | 標準の確保関数を直接呼ばない |
 | テスト | Naos v0.4.0、テスト用アロケータ | 公開 API と内部関数のテスト、失敗注入 | 既存の `clargs_add_test()` で登録する |
@@ -203,7 +203,7 @@ docs/
 - `tests/CMakeLists.txt` — 上の 8 つのテストを `clargs_add_test()` で登録する。確保を伴うテストには `support/test_allocator.c` を足す。
 - `tests/public/error_test.c` — エラーコードの一覧を確かめている箇所に、新しいコードを足す。
 - `docs/ownership.md` — ヘルプへの適用を足す。設定は利用者が生成して破棄する。生成の関数は、利用者が解放するものを返さない。書き込み関数に渡す文字列は、その呼び出しの間だけ有効である。
-- `docs/conventions.md` — ディレクトリ構成の一覧に `help.h` と `docs/help.md` を足す。公開ヘッダのインライン関数の扱い（`CLARGS_API` を付けない、export の検査の対象にならない）を 1 項目足す。
+- `docs/conventions.md` — ディレクトリ構成の一覧に `help.h` と `docs/help.md` を足す。
 - `docs/parse.md` — `--help` の扱いの節から `docs/help.md` へ案内する。
 - `docs/schema.md` — 説明文、値の表示名がヘルプでどう使われるかについて、`docs/help.md` へ案内する。
 - `README.md` — 冒頭の現状の説明と例を、ヘルプまで出せる内容に改め、`docs/help.md` への案内を足す。
@@ -222,7 +222,7 @@ docs/
 | 6 | ヘルプ: 構成と見出し | `help.h`（`clargs_help_write()` を追記）、`src/help_item.c`（オプションの見出し）、`src/help.c`、`tests/public/help_test.c`、`tests/public/help_item_test.c` |
 | 7 | 注記 | `src/help_item.c`、`src/help.c`、`tests/public/help_item_test.c` |
 | 8 | 列の揃え、折り返し、設定 | `src/help.c`、`tests/public/help_layout_test.c` |
-| 9 | 補助 | `help.h`（`format` 2 つと、インラインの `print` 2 つを追記）、`src/help.c`、`tests/public/help_output_test.c` |
+| 9 | 補助 | `help.h`（`format` 2 つを追記）、`src/help.c`、`tests/public/help_output_test.c` |
 | 10 | 失敗注入のテスト、文書 | `tests/public/help_failure_test.c`（生成の失敗注入を追記）、`docs/`、`README.md` |
 
 - どの作業も `src/CMakeLists.txt` と `tests/CMakeLists.txt` に追記する。同じファイルを触るので、並行させず、表の順に行う。
@@ -352,16 +352,13 @@ flowchart TD
 | 9.3 | つなげると全体と一致 | Out | 書き込み関数の契約 |
 | 9.4 | 分け方を定めない | Out | 書き込み関数の契約 |
 | 9.5 | 失敗の後は呼ばない | Out、Help | `clargs_out_failed()`、`CLARGS_ERROR_WRITE_FAILED` |
-| 9.6 | ほかへ書き込まない | 全体 | このスペックのソースは `<stdio.h>` の関数を呼ばない |
+| 9.6 | ほかへ書き込まない | 全体 | `<stdio.h>` を取り込まない |
 | 9.7 | 中断も終了もしない | 全体 | `exit`、`abort` を呼ばない（`assert` を除く） |
 | 10.1 | バッファに書いて終端する | Help | `clargs_help_format()` |
 | 10.2 | 全体の長さを知らせる | Help | `*length` |
 | 10.3 | 切り詰めて成功 | Help | `clargs_help_format()` |
 | 10.4 | 大きさ 0 | Help | `clargs_help_format()` |
-| 10.5 | `FILE *` に書く | Help（公開ヘッダ） | `clargs_help_print()` |
-| 10.6 | ストリームの失敗 | Help（公開ヘッダ） | `fwrite()` の戻り値 |
-| 10.7 | 閉じない、付け替えない | Help（公開ヘッダ） | `fwrite()` だけを呼ぶ |
-| 10.8 | 補助でも同じ文面 | Help | 補助は `clargs_help_write()` を呼ぶだけ |
+| 10.5 | 補助でも同じ文面 | Help | 補助は `clargs_help_write()` を呼ぶだけ |
 | 11.1 | 繰り返しても同じ | 全体 | 状態を持たない |
 | 11.2 | どの環境でも同じ | 全体 | 桁はバイト、改行は `\n`、OS の API を使わない |
 | 11.3 | ロケール、環境、端末によらない | 全体 | Allowed Dependencies |
@@ -567,7 +564,6 @@ clargs_error_t clargs_help_item_positional_notes(clargs_vec_t *text,
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
 ```
 
 #### HelpOptions
@@ -609,7 +605,7 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
 | Field | Detail |
 |-------|--------|
 | Intent | 生成の入口。usage 行、セクション、説明の列を決めて、項目を順に書く |
-| Requirements | 1.1〜1.10, 2.1〜2.9, 3.8, 3.9, 4.2, 4.3, 4.4, 5.9, 6.1〜6.7, 7.9, 7.10, 8.6, 8.7, 8.8, 8.11, 10.1〜10.8, 11.1〜11.5, 12.1〜12.5, 12.8, 12.9 |
+| Requirements | 1.1〜1.10, 2.1〜2.9, 3.8, 3.9, 4.2, 4.3, 4.4, 5.9, 6.1〜6.7, 7.9, 7.10, 8.6, 8.7, 8.8, 8.11, 10.1〜10.5, 11.1〜11.5, 12.1〜12.5, 12.8, 12.9 |
 
 **Dependencies**
 
@@ -635,14 +631,6 @@ CLARGS_API clargs_error_t clargs_help_format(const clargs_command_t *command,
 CLARGS_API clargs_error_t clargs_help_format_usage(const clargs_command_t *command,
                                                    const clargs_help_options_t *options,
                                                    char *buffer, size_t size, size_t *length);
-
-/* 公開ヘッダで定義する。CLARGS_API を付けない */
-static inline bool clargs_help_file_write(void *user_data, const char *text, size_t length);
-static inline clargs_error_t clargs_help_print(const clargs_command_t *command,
-                                               const clargs_help_options_t *options, FILE *stream);
-static inline clargs_error_t clargs_help_print_usage(const clargs_command_t *command,
-                                                     const clargs_help_options_t *options,
-                                                     FILE *stream);
 ```
 
 **書き込み関数の契約**（`clargs_help_write_fn_t`）
@@ -656,7 +644,7 @@ static inline clargs_error_t clargs_help_print_usage(const clargs_command_t *com
 **Preconditions**（`assert` で検査する）
 
 - `command` は `NULL` でなく、`clargs_command_is_validated(command)` が真である。
-- `write_fn`、`stream` は `NULL` でない。
+- `write_fn` は `NULL` でない。
 - `buffer` は、`size` が 0 でなければ `NULL` でない。
 - `options` と `length` は `NULL` でよい。
 
@@ -665,7 +653,6 @@ static inline clargs_error_t clargs_help_print_usage(const clargs_command_t *com
 - `clargs_help_write()`: `command` のヘルプの文面を書き込み関数に渡し、`CLARGS_ERROR_NONE` を返す。書き込み関数が失敗を報告したら `CLARGS_ERROR_WRITE_FAILED`、確保に失敗したら `CLARGS_ERROR_OUT_OF_MEMORY` を返す。失敗のときは、それまでに渡した部分が出力先に残る。
 - `clargs_help_write_usage()`: 同じ設定での `clargs_help_write()` の usage 行（折り返した場合は複数の行。最後の `\n` まで）と、バイト単位で同じ文面を渡す。確保しないので、`CLARGS_ERROR_OUT_OF_MEMORY` を返さない。
 - `clargs_help_format()`、`clargs_help_format_usage()`: `size` が 0 でなければ、文面の先頭から最大 `size - 1` バイトを `buffer` に書き、その直後に終端のナル文字を書く。`length` が `NULL` でなければ、文面の全体の長さ（終端を除く）を `*length` に入れる。切り詰めは失敗ではない。`clargs_help_format()` は、確保に失敗すると `CLARGS_ERROR_OUT_OF_MEMORY` を返し、そのとき `size` が 0 でなければ `buffer` は空の文字列になり、`*length` は 0 になる。
-- `clargs_help_print()`、`clargs_help_print_usage()`: `clargs_help_file_write()` を書き込み関数、`stream` を `user_data` として、`clargs_help_write()`、`clargs_help_write_usage()` を呼ぶ。`clargs_help_file_write()` は、`user_data` を明示的なキャストで `FILE *` に変換し（C++ から取り込んでもコンパイルできるようにする）、`fwrite(text, 1, length, stream) == length` を返す。ストリームを、閉じず、フラッシュせず、モードを変えない。
 - どの関数も、スキーマと設定を変更せず、戻ったときに確保したメモリを残さない。
 
 **usage 行の規則**
@@ -696,8 +683,6 @@ static inline clargs_error_t clargs_help_print_usage(const clargs_command_t *com
 
 - Integration: `clargs_help_write()`、`clargs_help_write_usage()` は、設定を解決し（`options` が `NULL` なら既定の値）、`Out` を初期化して、内部の関数を呼ぶ。usage 行を書く内部の関数は、両方から同じものを呼ぶ（2.7）。
 - Integration: `clargs_help_format()` の書き込み関数は、`help.c` の `static` 関数である。`buffer`、`size`、これまでの長さを持つ構造体を `user_data` にし、収まる分だけ複写して、常に `true` を返す。
-- Validation: `static inline` の関数は、利用者が使わなくても警告にならないことを、CI のすべてのコンパイラ（GCC、Clang、MSVC の `/W4`）で確かめる。警告になる場合は、補助を別の公開ヘッダに移さず、警告の出ない書き方（MSVC での `__pragma(warning(suppress: …))` など）を `help.h` の中で選ぶ。
-- Risks: `clargs_help_print()` の出力は、ストリームがテキストモードなら、Windows で `\n` が `\r\n` になる。これは仕様どおりである（brief の制約）。バイト単位の比較は、書き込み関数かバッファの補助で行う。
 
 ### 文書
 
@@ -707,7 +692,7 @@ static inline clargs_error_t clargs_help_print_usage(const clargs_command_t *com
 - 解析の結果から `--help` を読み取ってヘルプを出し、利用者のコードで終了する例。解析エラーのメッセージに usage 行を添える例
 - 文面の規則の一覧（セクション、usage 行、見出し、注記、列、折り返し）と、出力の例
 - 設定の一覧と既定の値、65535 の上限
-- 書き込み関数の契約、バッファの補助の使い方（長さを得てから確保する例）、`FILE *` の補助がヘッダのインライン関数である理由
+- 書き込み関数の契約、バッファの補助の使い方（長さを得てから確保する例）、標準出力に出すための、`fwrite()` を呼ぶ書き込み関数の例（テキストモードのストリームでは、Windows で改行が変換されることの注意を添える）
 - 制限: 幅はバイトで数える。ASCII 以外の文字では、行が表示幅より短く折り返される。名前や値の表示名に改行を入れると、列が崩れる
 - 失敗したとき、途中までの文面が出力先に残ること
 - 公開関数ごとの前提条件
@@ -750,7 +735,6 @@ typedef struct help_context {
 | 状況 | 検出する場所 | 戻り値 | 後の状態 |
 |---|---|---|---|
 | 書き込み関数が `false` を返した | Out | `CLARGS_ERROR_WRITE_FAILED` | それまでの文面が出力先に残る。以後、書き込み関数は呼ばれない |
-| `fwrite()` が要求より少なく書いた | `clargs_help_file_write()` | `CLARGS_ERROR_WRITE_FAILED` | ストリームのエラーの状態は、利用者が `ferror()` で調べられる |
 | セルの文字列の確保に失敗した | HelpItem、Help | `CLARGS_ERROR_OUT_OF_MEMORY` | それまでの文面が出力先に残る。領域は解放済み |
 | 設定の確保に失敗した | HelpOptions | `CLARGS_ERROR_OUT_OF_MEMORY` | `*out` は `NULL` |
 | バッファに収まらない | — | `CLARGS_ERROR_NONE` | 切り詰めて終端する。`*length` が `size` 以上なら、切り詰められている |
@@ -784,10 +768,9 @@ typedef struct help_context {
   - 表示幅 0 で折り返さない（7.8、8.5）。字下げと上限の設定が効く（8.4）。設定 `NULL` と、作ったままの設定で、文面が同じになる（8.3、8.6）。1 つの設定を 2 回使える（8.8）。65535 を超える値が 65535 として働く。
   - 文面のどの行も空白で終わらず、`\r` を含まず、`\n` で終わる（7.7、7.9）。
 - **`help_output_test.c`**（要件 9、10）
-  - 書き込み関数に渡された部分をつなげると、バッファの補助の文面と一致する。`user_data` がそのまま渡る。長さ 0 の呼び出しがない（9.1〜9.3、10.8）。
+  - 書き込み関数に渡された部分をつなげると、バッファの補助の文面と一致する。`user_data` がそのまま渡る。長さ 0 の呼び出しがない（9.1〜9.3、10.5）。
   - `n` 回目に `false` を返す書き込み関数で、戻り値が `CLARGS_ERROR_WRITE_FAILED` になり、呼び出しが `n` 回で止まる（9.5、12.8）。
   - バッファ: ちょうど収まる大きさ、1 バイト足りない大きさ、大きさ 1、大きさ 0 と `NULL`。終端の位置、`*length`、領域の外（番兵のバイト）が変わらないこと（10.1〜10.4）。`length` が `NULL` でも動く。
-  - `FILE *`: テストの作業ディレクトリに `"wb+"` で開いたファイルに書き、読み戻して、バッファの補助の文面と一致する。書いた後もストリームが使える（10.5、10.7）。`"rb"` で開いたストリームに書くと `CLARGS_ERROR_WRITE_FAILED` になる（10.6）。
 - **`help_failure_test.c`**（要件 12）
   - `clargs_help_options_create()` の確保を失敗させると、`CLARGS_ERROR_OUT_OF_MEMORY` で、`*out` が `NULL` になる。`clargs_help_options_destroy(NULL)` が何もしない（12.2、12.6）。
   - 注記と長い説明を持つスキーマで、`clargs_help_write()` と `clargs_help_format()` の確保の各回を順に失敗させる。毎回 `CLARGS_ERROR_OUT_OF_MEMORY` が返り、テスト用アロケータに生きている領域が増えず、その後の生成が成功して、文面が一致する（12.2、12.3、12.5、12.11）。
@@ -808,11 +791,11 @@ typedef struct help_context {
 ### 自動のテストで確かめないもの
 
 - 複数のスレッドからの同時の生成（11.5）: C99 にスレッドの機能がない。変更可能な `static` 変数を持たないことを、レビューで確かめる。
-- ロケールと環境によらないこと（11.3、8.11）: `src/` の新しいソースが、`<ctype.h>`、`<locale.h>`、`<stdio.h>` の関数と、`getenv` を使わないことを、レビューで確かめる。
+- ロケールと環境によらないこと（11.3、8.11）: `src/` の新しいソースが、`<ctype.h>`、`<locale.h>`、`<stdio.h>`、`getenv` を使わないことを、レビューで確かめる。
 - プロセスを終了しないこと（9.7）: `exit`、`abort` を呼ばないことを、レビューで確かめる。
 
 ## Performance & Scalability
 
 - 1 回の生成は、項目の数と文面の長さに比例する時間で終わる。見出しは、幅を数える回と出力する回の 2 回、組み立てる。
 - 確保は、セルの文字列の領域の伸長だけで、回数は、最も長いセルの長さの対数に比例する。
-- 書き込み関数の呼び出しは、語や空白の単位になる。`FILE *` は標準ライブラリがバッファするので、問題にならない。呼び出しの回数を減らす必要が出たら、`Out` の中に固定長のバッファを足せる（契約は変わらない）。
+- 書き込み関数の呼び出しは、語や空白の単位になる。利用者の書き込み関数が `fwrite()` を呼ぶなら、標準ライブラリがバッファするので、問題にならない。呼び出しの回数を減らす必要が出たら、`Out` の中に固定長のバッファを足せる（契約は変わらない）。
