@@ -17,9 +17,27 @@
  * - What the functions that read a result return is valid until the result
  *   is destroyed. The caller does not free it.
  *
- * A function that only reads takes a const result, changes nothing and
- * cannot fail. Such functions may be called on one result from several
- * threads at the same time.
+ * Errors:
+ *
+ * - The two functions that parse return a clargs_error_t. A command line
+ *   that does not match the schema is CLARGS_ERROR_INVALID_COMMAND_LINE,
+ *   and then, other than with every other failure, the output is a result
+ *   and not NULL: it holds the parse error.
+ * - A function that only reads takes a const result, changes nothing,
+ *   allocates nothing and cannot fail. Such functions may be called on one
+ *   result from several threads at the same time. What a result does not
+ *   have reads as "none": false, 0, NULL or CLARGS_SOURCE_NONE.
+ * - A NULL pointer where none is allowed, a schema that is not validated,
+ *   an option or a positional of another schema or of the wrong kind, and
+ *   an index of a command that is out of range are errors of the program,
+ *   not error codes: see the preconditions of each function.
+ *
+ * Preconditions of every function that takes a result, besides those that
+ * each function lists:
+ *
+ * - The result has not been destroyed. Not checked.
+ * - The schema that the result was made from, and the value types it uses,
+ *   have not been changed or destroyed. Not checked.
  */
 #ifndef CLARGS_PARSE_H
 #define CLARGS_PARSE_H
