@@ -184,3 +184,4 @@
 ## Implementation Notes
 
 - 3.3: 値の変換の失敗（メモリ確保の失敗を除く）は、`src/result.c` の `conversion_failure()` の 1 か所で `CLARGS_ERROR_INVALID_COMMAND_LINE` を返している。3.4 は、ここを解析エラーの記録に置き換える。`tests/internal/result_test.c` の `destroy_releases_every_value_once`、`positional_values_are_kept_in_their_order`、`positional_default_value_has_the_source_default`、`failed_conversion_keeps_the_value_of_an_option` は、1 つの結果で変換の失敗を 2 回以上起こすか、失敗の後も記録を続ける。解析エラーの記録は結果 1 つにつき 1 回なので、3.4 でこれらのテストを組み替える。
+- 3.4: `clargs_result_fail()` は、結果 1 つにつき 1 回だけ呼ぶ（2 回目は `assert` で止まる）。`failure->command` は必ず渡す。出どころがコマンドラインなら、`where.index` は argc より小さい。出どころがコマンドラインでないとき（必須の不足、既定値）は、`where.index` を 0、`where.short_name` を `'\0'` にして渡す（記録はそのまま読み取りに出る。設計の「解析エラーの情報」の表を守るのは呼び出し側である）。`where.name_prefix` は `NULL` でもよい（`""` として読む）。メッセージの確保に失敗したときは、何も記録されず、`CLARGS_ERROR_OUT_OF_MEMORY` が返る。
