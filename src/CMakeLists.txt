@@ -8,6 +8,7 @@ set(CLARGS_SOURCES
     name.c
     number.c
     option.c
+    out.c
     parse.c
     positional.c
     resolve.c
