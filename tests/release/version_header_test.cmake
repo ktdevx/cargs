@@ -45,7 +45,14 @@ function(expect_render what text major minor patch prerelease)
 
     string(MAKE_C_IDENTIFIER "${what}" name)
     set(path "${CLARGS_TEST_WORK_DIR}/${name}.h")
-    file(WRITE "${path}" "${result}")
+    if(result MATCHES "\n$")
+        clargs_write_bytes("${path}" "${result}" "the header")
+    else()
+        # On Windows, a text without a line ending at its end cannot be written
+        # byte for byte, and file(WRITE) changes only its line endings there,
+        # which clargs_read_version() does not mind.
+        file(WRITE "${path}" "${result}")
+    endif()
     clargs_read_version("${path}" version read_prerelease)
     clargs_test_expect_equal("${version}" "${major}.${minor}.${patch}" "${what}: the version read back")
     clargs_test_expect_equal("${read_prerelease}" "${prerelease}"
@@ -130,7 +137,7 @@ clargs_version_header_render("${source_text}" ${source_major} ${source_minor} ${
 clargs_test_expect_equal("${source_same}" "${source_text}" "source header: its own version")
 clargs_version_header_render("${source_text}" 9 8 7 "rc.6" source_other)
 set(path "${CLARGS_TEST_WORK_DIR}/source-other.h")
-file(WRITE "${path}" "${source_other}")
+clargs_write_bytes("${path}" "${source_other}" "the header")
 clargs_read_version("${path}" version read_prerelease)
 clargs_test_expect_equal("${version}-${read_prerelease}" "9.8.7-rc.6"
     "source header: another version read back")
@@ -149,15 +156,13 @@ clargs_test_expect_equal("${written_version}-${written_prerelease}" "0.2.0-rc.1"
 # CRLF line endings stay CRLF in the file too. file(READ) drops the CR of a
 # CRLF, so the bytes are compared in hexadecimal.
 set(crlf_copy "${CLARGS_TEST_WORK_DIR}/write/crlf.h")
-file(WRITE "${crlf_copy}" "${crlf_text}")
+clargs_write_bytes("${crlf_copy}" "${crlf_text}" "the header")
 file(READ "${crlf_copy}" crlf_hex HEX)
 clargs_test_expect_contains("${crlf_hex}" "0d0a" "write CRLF: the input holds CRLF")
 clargs_version_header_write("${crlf_copy}" 0 3 0 "")
 file(READ "${crlf_copy}" written_crlf HEX)
 expected_text("${crlf_text}" 0 3 0 "" written_crlf_expected)
-set(crlf_expected_copy "${CLARGS_TEST_WORK_DIR}/write/crlf-expected.h")
-file(WRITE "${crlf_expected_copy}" "${written_crlf_expected}")
-file(READ "${crlf_expected_copy}" written_crlf_expected HEX)
+string(HEX "${written_crlf_expected}" written_crlf_expected)
 clargs_test_expect_equal("${written_crlf}" "${written_crlf_expected}" "write CRLF: the bytes of the file")
 
 # --- Failures ----------------------------------------------------------------
@@ -186,7 +191,7 @@ function(expect_rejected what text part)
     math(EXPR number "${case_number} + 1")
     set(case_number ${number} PARENT_SCOPE)
     set(header "${CLARGS_TEST_WORK_DIR}/case-${number}.h")
-    file(WRITE "${header}" "${text}")
+    clargs_write_bytes("${header}" "${text}" "the header")
     clargs_test_run_script(run "${driver}" -D "HEADER=${header}" ${ARGN})
     set(outcome "failed")
     if(run_RESULT EQUAL 0)
@@ -260,7 +265,7 @@ expect_rejected("write: a missing header" "" "does not exist"
 
 # The driver itself works, so the failures above come from the cases.
 set(header "${CLARGS_TEST_WORK_DIR}/driver-check.h")
-file(WRITE "${header}" "${fixture_text}")
+clargs_write_bytes("${header}" "${fixture_text}" "the header")
 clargs_test_run_script(run "${driver}" -D "HEADER=${header}" -D ACTION=render ${to_rc})
 clargs_test_expect_equal("${run_RESULT}" "0" "render in a child: the exit code")
 clargs_test_expect_contains("${run_OUTPUT}" "done: [/*" "render in a child: the result")

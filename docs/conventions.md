@@ -111,7 +111,7 @@ tools/                Scripts that are not part of the build
     ├── prepare.cmake             Checks a release and rewrites the version header and the changelog (Release PR)
     ├── publish.cmake             Checks a merged release commit and makes the release notes (Release)
     ├── ClargsChangelog.cmake     Reads and updates CHANGELOG.md
-    ├── ClargsReadBytes.cmake     Reads a text file byte for byte, line endings included
+    ├── ClargsReadBytes.cmake     Reads and writes a text file byte for byte, line endings included
     ├── ClargsSemver.cmake        Checks a version and compares versions by SemVer precedence
     └── ClargsVersionHeader.cmake Rewrites the version in a version header
 docs/                 Documents
@@ -128,7 +128,7 @@ docs/                 Documents
 - [CONTRIBUTING.md](../CONTRIBUTING.md) is the entry point for contributors, and [docs/README.md](README.md) is the index of the documents.
 - [CHANGELOG.md](../CHANGELOG.md) records the changes of each release. The [versioning policy](versioning.md) and the [release guide](releasing.md) describe the versions and the release procedure.
 - [`tools/release/`](../tools/release/) holds the release scripts and modules, and [`tools/ci/`](../tools/ci/) holds [`changes.cmake`](../tools/ci/changes.cmake), which CI uses to decide whether a change touches documentation only. The workflows [`ci.yml`](../.github/workflows/ci.yml), [`release-pr.yml`](../.github/workflows/release-pr.yml) and [`release-publish.yml`](../.github/workflows/release-publish.yml) in [`.github/workflows/`](../.github/workflows/) run them.
-- The tests in [`tests/release/`](../tests/release/) are registered by `tests/CMakeLists.txt` with `clargs_add_release_test(<name>)`, under the name `release.<name>` and with the label `release`. They need no build, so they are registered in both the static and the shared configuration. You can select them with `ctest -L release`.
+- The tests in [`tests/release/`](../tests/release/) are registered by `tests/CMakeLists.txt` with `clargs_add_release_test(<name>)`, under the name `release.<name>` and with the label `release`. They need no build, so they are registered in both the static and the shared configuration. You can select them with `ctest -L release`. On Windows, `file(WRITE)` turns LF into CRLF, so the release scripts and the tests write the files whose bytes matter with `clargs_write_bytes()` of `ClargsReadBytes.cmake`. To write them as on Windows on any host, run the tests with the environment variable `CLARGS_WRITE_BYTES_WITH_CONFIGURE=1`.
 - Users write only `#include <clargs/clargs.h>`. Public headers also include each other in the form `<clargs/<name>.h>`.
 - The internal headers in `src/` are included only by the sources in `src/` and by tests of internal functions, in the form `"<name>_internal.h"` (`"<name>.h"` if there is no public header of the same name). Do not include internal headers from public headers.
 - Of the scripts in `cmake/`, `ClargsCheckAllocations.cmake` (the allocation check `clargs.allocations`) and `ClargsCheckExports.cmake` (the export check `clargs.exports`) can also be run on their own with `cmake -P` ([Verifying a change](#verifying-a-change)).

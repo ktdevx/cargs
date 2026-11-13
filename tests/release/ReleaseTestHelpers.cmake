@@ -12,6 +12,14 @@
 #                         it, so every run starts from nothing. The test writes
 #                         only there.
 #
+# Including this file also includes tools/release/ClargsReadBytes.cmake, so
+# that a test writes the files whose bytes it checks with clargs_write_bytes(),
+# which keeps every byte on Windows too (file(WRITE) turns LF into CRLF there).
+# When the environment variable CLARGS_WRITE_BYTES_WITH_CONFIGURE is set to a
+# true value, the variable of that name is set, and clargs_test_run_script()
+# passes it on to the script it runs: every file is then written as on
+# Windows, on any host.
+#
 # A test includes this file, runs its checks and ends with
 # clargs_test_finish(). A failed check does not stop the test: every failure
 # is collected and printed at the end, and then the test stops with a
@@ -29,7 +37,8 @@
 #       <name> when given, and sets <out-var> to the path of the copy.
 #   clargs_test_run_script(<prefix> <script> [<argument>...])
 #       Runs "cmake <argument>... -P <script>" in a child process, from the work
-#       directory. Sets <prefix>_RESULT to its exit code and <prefix>_OUTPUT to
+#       directory (with -DCLARGS_WRITE_BYTES_WITH_CONFIGURE=ON first when that
+#       variable is true). Sets <prefix>_RESULT to its exit code and <prefix>_OUTPUT to
 #       its standard output followed by its standard error.
 #   clargs_test_finish()
 #       Prints the failures and stops with a FATAL_ERROR if there is one or if
@@ -48,6 +57,11 @@ endforeach()
 get_filename_component(CLARGS_SOURCE_ROOT "${CLARGS_SOURCE_ROOT}" ABSOLUTE)
 get_filename_component(CLARGS_TEST_WORK_DIR "${CLARGS_TEST_WORK_DIR}" ABSOLUTE)
 set(CLARGS_TEST_FIXTURE_DIR "${CLARGS_SOURCE_ROOT}/tests/release/fixtures")
+
+include("${CLARGS_SOURCE_ROOT}/tools/release/ClargsReadBytes.cmake")
+if("$ENV{CLARGS_WRITE_BYTES_WITH_CONFIGURE}")
+    set(CLARGS_WRITE_BYTES_WITH_CONFIGURE ON)
+endif()
 
 # Emptying the work directory must never remove the source tree.
 string(FIND "${CLARGS_SOURCE_ROOT}/" "${CLARGS_TEST_WORK_DIR}/" clargs_test_pos)
@@ -120,8 +134,12 @@ function(clargs_test_copy_fixture fixture out_var)
 endfunction()
 
 function(clargs_test_run_script prefix script)
+    set(options "")
+    if(CLARGS_WRITE_BYTES_WITH_CONFIGURE)
+        set(options "-DCLARGS_WRITE_BYTES_WITH_CONFIGURE=ON")
+    endif()
     execute_process(
-        COMMAND "${CMAKE_COMMAND}" ${ARGN} -P "${script}"
+        COMMAND "${CMAKE_COMMAND}" ${options} ${ARGN} -P "${script}"
         WORKING_DIRECTORY "${CLARGS_TEST_WORK_DIR}"
         RESULT_VARIABLE result
         OUTPUT_VARIABLE output

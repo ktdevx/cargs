@@ -38,8 +38,9 @@
 # heading, as clargs_changelog_notes() gives them: for a release without a
 # pre-release, a sentence that refers to the pre-releases of the same
 # <major>.<minor>.<patch> right below it follows the section. The changelog is
-# read byte for byte, so the notes keep its line endings (LF or CRLF), and
-# they end with one.
+# read and the notes are written byte for byte (ClargsReadBytes.cmake), so the
+# notes keep its line endings (LF or CRLF), on Windows too, and they end with
+# one.
 #
 # A version with a pre-release, such as 0.2.0-rc.1, gives prerelease=true; the
 # release workflow then marks the GitHub Release as a pre-release and not as
@@ -158,7 +159,7 @@ endif()
 # --- Writing -----------------------------------------------------------------------
 
 get_filename_component(_clargs_publish_notes_file "${CLARGS_RELEASE_NOTES}" ABSOLUTE)
-file(WRITE "${_clargs_publish_notes_file}" "${_clargs_publish_notes}")
+clargs_write_bytes("${_clargs_publish_notes_file}" "${_clargs_publish_notes}" "the notes")
 
 message(STATUS "Release ${_clargs_publish_tag} (pre-release: ${_clargs_publish_is_prerelease}).")
 message(STATUS "The version header and the changelog hold ${_clargs_publish_version}.")

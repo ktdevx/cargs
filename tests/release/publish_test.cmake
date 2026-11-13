@@ -60,10 +60,7 @@ endfunction()
 # Sets <out-var> to the bytes of <text> in hexadecimal, as file(READ HEX)
 # gives them, so that two texts can be compared byte for byte.
 function(text_hex text out_var)
-    set(path "${CLARGS_TEST_WORK_DIR}/hex.tmp")
-    file(WRITE "${path}" "${text}")
-    file(READ "${path}" hex HEX)
-    file(REMOVE "${path}")
+    string(HEX "${text}" hex)
     set(${out_var} "${hex}" PARENT_SCOPE)
 endfunction()
 
@@ -96,8 +93,8 @@ endfunction()
 # the root of the tree.
 function(make_tree name header changelog out_var)
     set(root "${CLARGS_TEST_WORK_DIR}/${name}")
-    file(WRITE "${root}/include/clargs/version.h" "${header}")
-    file(WRITE "${root}/CHANGELOG.md" "${changelog}")
+    clargs_write_bytes("${root}/include/clargs/version.h" "${header}" "the version header")
+    clargs_write_bytes("${root}/CHANGELOG.md" "${changelog}" "the changelog")
     set(${out_var} "${root}" PARENT_SCOPE)
 endfunction()
 

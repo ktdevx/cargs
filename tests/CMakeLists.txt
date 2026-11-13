@@ -63,6 +63,7 @@ function(clargs_add_release_test name)
     set_tests_properties(release.${name} PROPERTIES LABELS release)
 endfunction()
 
+clargs_add_release_test(write_bytes)
 clargs_add_release_test(version_read)
 clargs_add_release_test(semver)
 clargs_add_release_test(changelog)

@@ -51,8 +51,9 @@
 # script, for instance when the changelog lists a higher version), and only
 # then are the version header and the changelog written. No other file of the
 # tree is touched. The header is read back with clargs_read_version() to make
-# sure it holds the new version. Both files are read byte for byte, so their
-# line endings (LF or CRLF) are kept.
+# sure it holds the new version. Both files are read and written byte for byte
+# (ClargsReadBytes.cmake), so their line endings (LF or CRLF) are kept, on
+# Windows too.
 #
 # The script prints what it changed. Run it twice with the same input and the
 # second run stops at check 6, since the changelog lists the version then. It
@@ -248,6 +249,14 @@ endif()
 set(_clargs_prepare_changelog_change
     "${_clargs_prepare_changelog}: [Unreleased] -> [${_clargs_prepare_version}] - ${_clargs_prepare_date}")
 
+# Both new texts must be writable byte for byte on this host (on Windows, they
+# must end with a line ending), so that either both files are written or
+# neither is.
+clargs_check_write_bytes("${_clargs_prepare_header}" "${_clargs_prepare_new_header}"
+    "the version header")
+clargs_check_write_bytes("${_clargs_prepare_changelog}" "${_clargs_prepare_new_changelog}"
+    "the changelog")
+
 if(CLARGS_RELEASE_CHECK_ONLY)
     message(STATUS "Every check passed. Check only: nothing was written. A release would change")
     message(STATUS "  ${_clargs_prepare_header_change}")
@@ -257,8 +266,8 @@ endif()
 
 # --- Writing -----------------------------------------------------------------------
 
-file(WRITE "${_clargs_prepare_header}" "${_clargs_prepare_new_header}")
-file(WRITE "${_clargs_prepare_changelog}" "${_clargs_prepare_new_changelog}")
+clargs_write_bytes("${_clargs_prepare_header}" "${_clargs_prepare_new_header}" "the version header")
+clargs_write_bytes("${_clargs_prepare_changelog}" "${_clargs_prepare_new_changelog}" "the changelog")
 
 # Read the header back as the build reads it.
 clargs_read_version("${_clargs_prepare_header}" _clargs_prepare_read_core

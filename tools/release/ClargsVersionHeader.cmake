@@ -39,8 +39,12 @@
 # clargs_read_version() (cmake/ClargsVersion.cmake) and stops with a
 # FATAL_ERROR unless it gives the version just written. The file is not
 # written when the rewrite fails. A relative <header-path> is taken from
-# CMAKE_CURRENT_SOURCE_DIR. The file is read byte for byte, since file(READ)
-# drops the CR of a CRLF line ending, so its line endings are kept too.
+# CMAKE_CURRENT_SOURCE_DIR. The file is read and written byte for byte with
+# ClargsReadBytes.cmake, since file(READ) drops the CR of a CRLF line ending
+# and, on Windows, file(WRITE) turns LF into CRLF; so its line endings are
+# kept too. On Windows, a header that does not end with a line ending cannot
+# be written exactly, and stops the rewrite with a FATAL_ERROR before the file
+# is written.
 
 include_guard(GLOBAL)
 
@@ -200,7 +204,7 @@ function(clargs_version_header_write header major minor patch prerelease)
 
     clargs_read_bytes("${path}" "the version header" text)
     clargs_version_header_render("${text}" "${major}" "${minor}" "${patch}" "${prerelease}" result)
-    file(WRITE "${path}" "${result}")
+    clargs_write_bytes("${path}" "${result}" "the version header")
 
     # Read the header back as the build reads it.
     clargs_read_version("${path}" version read_prerelease)

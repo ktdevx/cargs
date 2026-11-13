@@ -58,10 +58,7 @@ endfunction()
 # Sets <out-var> to the bytes of <text> in hexadecimal, as file(READ HEX)
 # gives them, so that two texts can be compared byte for byte.
 function(text_hex text out_var)
-    set(path "${CLARGS_TEST_WORK_DIR}/hex.tmp")
-    file(WRITE "${path}" "${text}")
-    file(READ "${path}" hex HEX)
-    file(REMOVE "${path}")
+    string(HEX "${text}" hex)
     set(${out_var} "${hex}" PARENT_SCOPE)
 endfunction()
 
@@ -94,9 +91,15 @@ endfunction()
 # the script must not touch. Sets <out-var> to the root of the tree.
 function(make_tree name header changelog out_var)
     set(root "${CLARGS_TEST_WORK_DIR}/${name}")
-    file(WRITE "${root}/include/clargs/version.h" "${header}")
-    file(WRITE "${root}/CHANGELOG.md" "${changelog}")
-    file(WRITE "${root}/README.md" "# A file that a release does not change.\n")
+    clargs_write_bytes("${root}/include/clargs/version.h" "${header}" "the version header")
+    if(changelog MATCHES "\n$")
+        clargs_write_bytes("${root}/CHANGELOG.md" "${changelog}" "the changelog")
+    else()
+        # Only a changelog without a line ending at its end, which cannot be
+        # written byte for byte on Windows; the case does not need its bytes.
+        file(WRITE "${root}/CHANGELOG.md" "${changelog}")
+    endif()
+    clargs_write_bytes("${root}/README.md" "# A file that a release does not change.\n" "README.md")
     set(${out_var} "${root}" PARENT_SCOPE)
 endfunction()
 
@@ -323,6 +326,16 @@ string(REPLACE "## [Unreleased]\n" "## [Unreleased]\n\n### Fixed\n\n- A fix.\n"
     higher_changelog "${second_expected}")
 expect_failure("the changelog lists a higher version" changelog_higher "${header_0_1_0}"
     "${higher_changelog}" 0.2.0-alpha "v0.1.0\n" "is not higher than 0.2.0-rc.1")
+
+# Written as on Windows, a changelog without a line ending at its end cannot be
+# kept byte for byte: the script stops before writing either file.
+string(REGEX REPLACE "\n+$" "" no_newline_changelog "${second_changelog}")
+expect_failure("no line ending at the end, as on Windows" no_newline "${header_0_1_0}"
+    "${no_newline_changelog}" 0.2.0-rc.1 "v0.1.0\n" "ends with a line ending"
+    "-DCLARGS_WRITE_BYTES_WITH_CONFIGURE=ON")
+expect_failure("no line ending at the end, check only" no_newline_check "${header_0_1_0}"
+    "${no_newline_changelog}" 0.2.0-rc.1 "v0.1.0\n" "ends with a line ending"
+    "-DCLARGS_WRITE_BYTES_WITH_CONFIGURE=ON" "-DCLARGS_RELEASE_CHECK_ONLY=ON")
 
 # Running the script twice with the same input: the second run stops, since
 # the changelog lists the version now.
