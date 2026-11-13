@@ -34,7 +34,7 @@
   - 完了の目安: `release.changelog` が通り、最初の版と 2 つ目の版の移動の結果が、期待するファイルの全文と一致する
   - _Requirements: 3.2, 3.3, 4.3, 5.7, 6.3, 6.5, 9.2_
 
-- [ ] 2.3 バージョンヘッダの値を書き換える処理を作る
+- [x] 2.3 バージョンヘッダの値を書き換える処理を作る
   - 4 つのマクロの行の値だけを置き換え、ほかのバイトを保つ処理を作る。行がちょうど 1 回見つからなければ理由つきで失敗する
   - 設計の Testing Strategy の `release.version_header` の内容をテストとして足す。書き換えた結果を、1.1 のバージョンの読み取りで読み直して確かめる
   - 完了の目安: `release.version_header` が通り、正式版とプレリリースへの書き換えで、4 つの値の行以外の差分がない
@@ -134,3 +134,4 @@
 - 1.1: `clargs_read_version(<header> <out> [<prerelease-out>])` は 2 引数でも識別子のマクロを検査する。トップレベルの `CMakeLists.txt` はまだ 2 引数で呼ぶ（1.2 で 3 引数にする）。
 - 2.1: SemVer は `tools/release/ClargsSemver.cmake` の `clargs_semver_parse(<version> <prefix>)`（`_VALID`、`_ERROR`、`_MAJOR`、`_MINOR`、`_PATCH`、`_PRERELEASE`、`_CORE`）と `clargs_semver_compare(<a> <b> <out>)`（-1/0/1）。`CMAKE_MATCH_<n>` は前の一致の値が残ることがあるので注意する。FATAL_ERROR の文はCMake が折り返すので、子プロセスの出力を照合するときは行をつないでから比べる。
 - 2.2: CHANGELOG は `tools/release/ClargsChangelog.cmake` の `clargs_changelog_parse`、`clargs_changelog_promote(<text> <version> <date> <repo-url> <out>)`、`clargs_changelog_notes(<text> <version> <repo-url> <out>)`。notes の結果は末尾に改行がないので、3.2 でファイルに書くときに足す。promote は V が最新の版より大きくなければ止まる。フィクスチャと実際の CHANGELOG では Semantic Versioning へのリンクを `https://semver.org/` にし、`spec` の語を避ける。
+- 2.3: CMake 3.28 の `file(READ)` は CRLF を LF にする（`file(READ ... HEX)` のバイトには CR がある）。改行の形を保つ必要があるファイル（CHANGELOG.md、version.h）は、`tools/release/ClargsVersionHeader.cmake` の HEX と `string(ASCII)` による読み方（`_clargs_version_header_read_bytes`）を使うか共通化して読む。ヘッダは `clargs_version_header_write(<path> <major> <minor> <patch> <prerelease>)` が書き込みと `clargs_read_version` による読み直しまで行う（書く前の検査には `clargs_version_header_render`）。
