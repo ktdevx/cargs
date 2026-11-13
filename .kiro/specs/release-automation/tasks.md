@@ -83,7 +83,7 @@
   - _Requirements: 6.1, 6.2, 6.4, 6.6, 6.7, 6.9, 6.10, 10.1, 10.5, 10.6_
 
 - [ ] 5. CHANGELOG と英語の文書
-- [ ] 5.1 (P) CHANGELOG を作る
+- [x] 5.1 (P) CHANGELOG を作る
   - 設計の ChangelogFile の冒頭（形式の宣言、バージョン方針の文書へのリンク、記録の規則）、`Unreleased` の 0.1.0 の内容、末尾のリンクのとおりに作る。0.1.0 の項目は、今の README と `docs/` が説明する機能から確かめて書く
   - 記録の規則の文言を、PR テンプレートの CHANGELOG の項目と同じ意味にする
   - 単独の語 "spec"、"specs" と "steering" を使わない（SemVer は "Semantic Versioning" または "specification" と書く）
