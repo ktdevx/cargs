@@ -52,7 +52,7 @@
 - core-runtime: 内部のメモリ関数（`src/alloc_internal.h`）、`clargs_vec_t`（`src/vec.h`）、`clargs_error_t` と `CLARGS_ERROR_LIST`、`CLARGS_API`
 - C 標準ライブラリ: `<assert.h>`、`<stdbool.h>`、`<stddef.h>`、`<string.h>`。公開ヘッダのインライン関数に限り `<stdio.h>` の `fwrite()`
 - テストでは、Naos とテスト用アロケータ（`tests/support/test_allocator.h`）
-- 依存してはならないもの: argv-parser のコード。command-schema の内部ヘッダ。スキーマを変更する関数と `clargs_type_convert()`。ロケールに左右される関数（`<ctype.h>`、`<locale.h>`、`printf` 系の書式化）。`getenv`。OS の API。標準の確保関数。変更可能な `static` 変数。ライブラリのソース（`src/`）での `<stdio.h>`
+- 依存してはならないもの: argv-parser のコード。command-schema の内部ヘッダ。スキーマを変更する関数と `clargs_type_convert()`。ロケールに左右される関数（`<ctype.h>`、`<locale.h>`、`printf` 系の書式化）。`getenv`。OS の API。標準の確保関数。変更可能な `static` 変数。ライブラリのソース（`src/`）からの `<stdio.h>` の関数の呼び出し（`help.h` を通して `<stdio.h>` が取り込まれるのは構わない）
 
 ### Revalidation Triggers
 
@@ -154,7 +154,7 @@ graph TB
 | Layer | Choice / Version | Role in Feature | Notes |
 |-------|------------------|-----------------|-------|
 | 言語 | C99、拡張なし | 全体 | 公開ヘッダで `static inline` を使う（C99 の機能。このリポジトリでは初めて） |
-| 実行時 | C 標準ライブラリ | `<string.h>` の `strlen()`、`memcpy()`、`memchr()` | ライブラリのソースは `<stdio.h>` を取り込まない。公開ヘッダだけが `<stdio.h>` を取り込む |
+| 実行時 | C 標準ライブラリ | `<string.h>` の `strlen()`、`memcpy()`、`memchr()` | このスペックのソースは `<stdio.h>` の関数を呼ばない。`fwrite()` を呼ぶのは、公開ヘッダのインライン関数だけである |
 | 上流 | command-schema の公開関数 | スキーマの読み取り | 内部ヘッダは取り込まない |
 | メモリ | core-runtime の内部のメモリ関数、`clargs_vec_t` | 設定と、セルの文字列の領域 | 標準の確保関数を直接呼ばない |
 | テスト | Naos v0.4.0、テスト用アロケータ | 公開 API と内部関数のテスト、失敗注入 | 既存の `clargs_add_test()` で登録する |
@@ -215,18 +215,19 @@ docs/
 | 順 | 作業 | 触るファイル |
 |---|---|---|
 | 1 | エラーコード | `include/clargs/error.h`、`tests/public/error_test.c` |
-| 2 | Out | `src/out.h`、`src/out.c`、`tests/internal/out_test.c` |
+| 2 | Out | `include/clargs/help.h`（新規。`clargs_help_write_fn_t` だけ）、`clargs.h`、`src/out.h`、`src/out.c`、`tests/internal/out_test.c` |
 | 3 | Wrap | `src/wrap.h`、`src/wrap.c`、`tests/internal/wrap_test.c` |
-| 4 | HelpOptions | `include/clargs/help.h`（新規。設定の型と関数だけ）、`src/help_internal.h`、`src/help_options.c`、`clargs.h` |
-| 5 | usage 行 | `help.h`（`clargs_help_write_fn_t`、`clargs_help_write_usage()` を追記）、`src/help_item.h`、`src/help_item.c`（位置引数の見出し、usage 行の項目）、`src/help.c`、`tests/public/help_usage_test.c` |
+| 4 | HelpOptions | `help.h`（設定の型と関数を追記）、`src/help_internal.h`、`src/help_options.c`、`tests/public/help_failure_test.c`（新規。設定の生成と破棄） |
+| 5 | usage 行 | `help.h`（`clargs_help_write_usage()` を追記）、`src/help_item.h`、`src/help_item.c`（位置引数の見出し、usage 行の項目）、`src/help.c`、`tests/public/help_usage_test.c` |
 | 6 | ヘルプ: 構成と見出し | `help.h`（`clargs_help_write()` を追記）、`src/help_item.c`（オプションの見出し）、`src/help.c`、`tests/public/help_test.c`、`tests/public/help_item_test.c` |
 | 7 | 注記 | `src/help_item.c`、`src/help.c`、`tests/public/help_item_test.c` |
 | 8 | 列の揃え、折り返し、設定 | `src/help.c`、`tests/public/help_layout_test.c` |
 | 9 | 補助 | `help.h`（`format` 2 つと、インラインの `print` 2 つを追記）、`src/help.c`、`tests/public/help_output_test.c` |
-| 10 | 失敗注入のテスト、文書 | `tests/public/help_failure_test.c`、`docs/`、`README.md` |
+| 10 | 失敗注入のテスト、文書 | `tests/public/help_failure_test.c`（生成の失敗注入を追記）、`docs/`、`README.md` |
 
 - どの作業も `src/CMakeLists.txt` と `tests/CMakeLists.txt` に追記する。同じファイルを触るので、並行させず、表の順に行う。
-- 4 の時点では、設定を使う関数がまだない。設定の値は、5 以降の文面のテストで確かめる。4 では、生成と破棄、`NULL` の破棄、確保の失敗だけを `help_failure_test.c` の最初の内容として入れてよい。
+- 2 の時点の `help.h` は、書き込み関数の型だけを持つ。`out.h` がこの型を使うので、公開ヘッダを最初に作る。
+- 4 の時点では、設定を使う関数がまだない。設定の値は、5 以降の文面のテストで確かめる。4 では、生成と破棄、`NULL` の破棄、確保の失敗を `help_failure_test.c` の最初の内容として入れる。
 - 6 の時点では、説明の列は「最も広い見出しに合わせる」だけで、上限と、次の行に送る規則は 8 で入る。6 と 7 のテストは、見出しが短く、説明が 1 行に収まる内容にする。
 
 ## System Flows
@@ -351,7 +352,7 @@ flowchart TD
 | 9.3 | つなげると全体と一致 | Out | 書き込み関数の契約 |
 | 9.4 | 分け方を定めない | Out | 書き込み関数の契約 |
 | 9.5 | 失敗の後は呼ばない | Out、Help | `clargs_out_failed()`、`CLARGS_ERROR_WRITE_FAILED` |
-| 9.6 | ほかへ書き込まない | 全体 | `src/` で `<stdio.h>` を取り込まない |
+| 9.6 | ほかへ書き込まない | 全体 | このスペックのソースは `<stdio.h>` の関数を呼ばない |
 | 9.7 | 中断も終了もしない | 全体 | `exit`、`abort` を呼ばない（`assert` を除く） |
 | 10.1 | バッファに書いて終端する | Help | `clargs_help_format()` |
 | 10.2 | 全体の長さを知らせる | Help | `*length` |
@@ -664,7 +665,7 @@ static inline clargs_error_t clargs_help_print_usage(const clargs_command_t *com
 - `clargs_help_write()`: `command` のヘルプの文面を書き込み関数に渡し、`CLARGS_ERROR_NONE` を返す。書き込み関数が失敗を報告したら `CLARGS_ERROR_WRITE_FAILED`、確保に失敗したら `CLARGS_ERROR_OUT_OF_MEMORY` を返す。失敗のときは、それまでに渡した部分が出力先に残る。
 - `clargs_help_write_usage()`: 同じ設定での `clargs_help_write()` の usage 行（折り返した場合は複数の行。最後の `\n` まで）と、バイト単位で同じ文面を渡す。確保しないので、`CLARGS_ERROR_OUT_OF_MEMORY` を返さない。
 - `clargs_help_format()`、`clargs_help_format_usage()`: `size` が 0 でなければ、文面の先頭から最大 `size - 1` バイトを `buffer` に書き、その直後に終端のナル文字を書く。`length` が `NULL` でなければ、文面の全体の長さ（終端を除く）を `*length` に入れる。切り詰めは失敗ではない。`clargs_help_format()` は、確保に失敗すると `CLARGS_ERROR_OUT_OF_MEMORY` を返し、そのとき `size` が 0 でなければ `buffer` は空の文字列になり、`*length` は 0 になる。
-- `clargs_help_print()`、`clargs_help_print_usage()`: `clargs_help_file_write()` を書き込み関数、`stream` を `user_data` として、`clargs_help_write()`、`clargs_help_write_usage()` を呼ぶ。`clargs_help_file_write()` は、`fwrite(text, 1, length, stream) == length` を返す。ストリームを、閉じず、フラッシュせず、モードを変えない。
+- `clargs_help_print()`、`clargs_help_print_usage()`: `clargs_help_file_write()` を書き込み関数、`stream` を `user_data` として、`clargs_help_write()`、`clargs_help_write_usage()` を呼ぶ。`clargs_help_file_write()` は、`user_data` を明示的なキャストで `FILE *` に変換し（C++ から取り込んでもコンパイルできるようにする）、`fwrite(text, 1, length, stream) == length` を返す。ストリームを、閉じず、フラッシュせず、モードを変えない。
 - どの関数も、スキーマと設定を変更せず、戻ったときに確保したメモリを残さない。
 
 **usage 行の規則**
@@ -807,7 +808,7 @@ typedef struct help_context {
 ### 自動のテストで確かめないもの
 
 - 複数のスレッドからの同時の生成（11.5）: C99 にスレッドの機能がない。変更可能な `static` 変数を持たないことを、レビューで確かめる。
-- ロケールと環境によらないこと（11.3、8.11）: `src/` の新しいソースが、`<ctype.h>`、`<locale.h>`、`<stdio.h>`、`getenv` を使わないことを、レビューで確かめる。
+- ロケールと環境によらないこと（11.3、8.11）: `src/` の新しいソースが、`<ctype.h>`、`<locale.h>`、`<stdio.h>` の関数と、`getenv` を使わないことを、レビューで確かめる。
 - プロセスを終了しないこと（9.7）: `exit`、`abort` を呼ばないことを、レビューで確かめる。
 
 ## Performance & Scalability
