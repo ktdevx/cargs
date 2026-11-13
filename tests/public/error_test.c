@@ -137,6 +137,20 @@ NAOS_TEST(definition_messages_are_fixed)
     NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_INVALID_VALUE), "invalid value");
 }
 
+/* The code of the command line mistakes follows the definition mistakes. */
+NAOS_TEST(command_line_value_is_fixed)
+{
+    NAOS_CHECK_INT_EQ(CLARGS_ERROR_INVALID_COMMAND_LINE, 7);
+}
+
+/* The code of the command line mistakes has the message it was published
+ * with. */
+NAOS_TEST(command_line_message_is_fixed)
+{
+    NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_INVALID_COMMAND_LINE),
+                      "invalid command line");
+}
+
 /* A value that is not in the list gets the unknown message, never NULL. */
 NAOS_TEST(unknown_value_has_the_unknown_message)
 {
@@ -176,6 +190,8 @@ NAOS_SUITE(error,
     NAOS_ADD_TEST(first_messages_are_fixed),
     NAOS_ADD_TEST(definition_values_are_fixed),
     NAOS_ADD_TEST(definition_messages_are_fixed),
+    NAOS_ADD_TEST(command_line_value_is_fixed),
+    NAOS_ADD_TEST(command_line_message_is_fixed),
     NAOS_ADD_TEST(unknown_value_has_the_unknown_message),
     NAOS_ADD_TEST(message_is_the_same_on_every_call)
 )

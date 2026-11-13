@@ -3,12 +3,18 @@ set(CLARGS_SOURCES
     alloc.c
     command.c
     error.c
+    lex.c
+    message.c
     name.c
     number.c
     option.c
+    parse.c
     positional.c
+    resolve.c
+    result.c
     str.c
     type.c
+    utf8.c
     validate.c
     vec.c
     version.c

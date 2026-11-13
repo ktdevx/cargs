@@ -1,26 +1,120 @@
 # CLArgs
 
-CLArgs は、C99 で書かれたコマンドライン引数パーサーのライブラリである。現時点であるのは、ビルドと配布の基盤（公開関数は、バージョンを返す `clargs_version()` だけ）である。引数パーサーの機能は、これから追加する。
+CLArgs は、C99 で書かれたコマンドライン引数パーサーのライブラリである。プログラムが受け付けるコマンドライン（スキーマ）を関数呼び出しで定義して検証し、`main` が受け取った argv を解析して、結果から値を読むところまでができる。ヘルプと usage の文面を生成する機能は、まだない。これから追加する。
 
 - C99・コンパイラ拡張なしで書かれており、C 標準ライブラリ以外に依存しない。
 - Linux（GCC、Clang）、macOS（Clang）、Windows（MSVC）でビルドできる。
 - 静的ライブラリと動的ライブラリのどちらにもなる。
 - CMake の `FetchContent`、`add_subdirectory`、`find_package`、および pkg-config から取り込める。
+- オプション（フラグ、カウント、`--no-` で否定できるフラグ、値付き）、位置引数、サブコマンドを定義できる。値は、文字列、整数、浮動小数、選択肢、利用者定義の値型で変換して読める。
+- ライブラリは、何も出力せず、プロセスを終了させず、環境変数を読まない。引数がスキーマに合わないときは、エラーの種類と 1 行のメッセージを返す。表示するのは利用者のコードである。
 
 利用者が取り込むヘッダは `<clargs/clargs.h>` だけで、リンクするターゲットは `CLArgs::clargs` である。
 
-```c
-#include <stdio.h>
+次の例は、`greet [-h] [-l] [-n COUNT] name` という形のコマンドラインを受け付けるプログラムの全体である。スキーマを定義して検証し、argv を解析し、値を読んで、破棄する。
 
+```c
 #include <clargs/clargs.h>
 
-int main(void)
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+/* Keeps the result of a call in *error and tells whether the call failed. */
+static bool failed(clargs_error_t *error, clargs_error_t result)
 {
-    printf("CLArgs %d.%d.%d\n",
-        CLARGS_VERSION_MAJOR, CLARGS_VERSION_MINOR, CLARGS_VERSION_PATCH);
-    return clargs_version() == CLARGS_VERSION_NUMBER ? 0 : 1;
+    *error = result;
+    return result != CLARGS_ERROR_NONE;
+}
+
+int main(int argc, char **argv)
+{
+    clargs_command_t *root = NULL;
+    clargs_option_t *help = NULL;
+    clargs_option_t *loud = NULL;
+    clargs_option_t *count = NULL;
+    clargs_positional_t *name = NULL;
+    clargs_result_t *result = NULL;
+    clargs_error_t error;
+    int status = EXIT_FAILURE;
+
+    /* The schema: greet [-h] [-l] [-n COUNT] name. It is validated before
+     * it is parsed with. */
+    if (failed(&error, clargs_command_create("greet", &root)) ||
+        failed(&error, clargs_command_add_flag(root, 'h', "help", &help)) ||
+        failed(&error, clargs_command_add_flag(root, 'l', "loud", &loud)) ||
+        failed(&error, clargs_command_add_value(root, 'n', "count", clargs_type_int(), &count)) ||
+        failed(&error, clargs_option_set_default(count, "1")) ||
+        failed(&error, clargs_command_add_positional(root, "name", clargs_type_string(),
+                                                     CLARGS_ARITY_REQUIRED, &name)) ||
+        failed(&error, clargs_command_validate(root, NULL, NULL, NULL))) {
+        fprintf(stderr, "greet: cannot define the command line: %s\n", clargs_error_message(error));
+    } else {
+        /* argc and argv go in as main() received them. */
+        error = clargs_parse(root, argc, argv, &result);
+
+        if (result == NULL) {
+            /* CLARGS_ERROR_OUT_OF_MEMORY: there is no result. */
+            fprintf(stderr, "greet: %s\n", clargs_error_message(error));
+        } else if (clargs_result_flag(result, help)) {
+            /* --help first: "greet --help" leaves out the name, and that
+             * must not hide the help. */
+            printf("usage: greet [-h] [-l] [-n COUNT] name\n");
+            status = EXIT_SUCCESS;
+        } else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE) {
+            /* The message is one line with no prefix and no line break. */
+            fprintf(stderr, "greet: %s\n", clargs_result_error_message(result));
+        } else {
+            const char *text = NULL;
+            int64_t times = 0;
+            int64_t i;
+
+            /* The name is required and --count has a default value: after
+             * a parse that succeeded, both have a value. */
+            if (clargs_result_positional_string(result, name, 0, &text) &&
+                clargs_result_option_int(result, count, &times)) {
+                for (i = 0; i < times; ++i) {
+                    printf("hello, %s%s\n", text, clargs_result_flag(result, loud) ? "!" : "");
+                }
+                printf("greeted %" PRId64 " time(s)\n", times);
+                status = EXIT_SUCCESS;
+            }
+        }
+    }
+
+    /* The result first, then the schema it was made from. A parse error
+     * also leaves a result to destroy. Destroying NULL does nothing. */
+    clargs_result_destroy(result);
+    clargs_command_destroy(root);
+
+    return status;
 }
 ```
+
+実行の例（`$` の行が入力、次の行からが出力）:
+
+```
+$ greet --loud -n 2 world
+hello, world!
+hello, world!
+greeted 2 time(s)
+
+$ greet
+greet: missing required argument 'name'
+
+$ greet --count=many world
+greet: invalid value 'many' for option '--count' (expected integer)
+
+$ greet --help
+usage: greet [-h] [-l] [-n COUNT] name
+```
+
+- 解析エラー（引数がスキーマに合わない）のときも結果が渡るので、利用者が破棄する。結果は、スキーマより先に破棄する。
+- 使い方の詳しい説明は、次の文書にある。
+  - [スキーマの使い方](docs/schema.md): コマンド、オプション、位置引数、値型の定義と検証。
+  - [解析の使い方](docs/parse.md): 解析、引数の書き方の一覧、結果の読み取り、解析エラーの種類とメッセージ、`--help` の扱い、ワイド文字の argv（`wmain`）。
+  - [所有権と寿命の規約](docs/ownership.md): 誰が何を解放するか、渡したものと返されたものがいつまで有効か。
 
 - [ビルドとテスト](#ビルドとテスト)
 - [オプション](#オプション)
