@@ -48,7 +48,7 @@
   - _Requirements: 7.3, 7.4, 7.10, 9.1, 9.2_
 
 - [ ] 3. 入口のスクリプト
-- [ ] 3.1 リリース PR の前の検証と書き換えのスクリプトを作る
+- [x] 3.1 リリース PR の前の検証と書き換えのスクリプトを作る
   - 設計の PrepareScript の入力、検証の順序、出力のとおりに作る。すべての検証は書く前に行い、2 つのファイルの新しい中身を作ってから書き、ヘッダを読み直して確かめる。検証だけの指定では何も書かない
   - タグの一覧のうち、`v` に続けて正しい SemVer になるものだけを既存のリリースとして扱う。ヘッダの版と同じ版は、そのタグがないときだけ受け付ける
   - 設計の Testing Strategy の `release.prepare` の内容をテストとして足す。各失敗で終了コードが 0 でなく、理由が出力に含まれ、写したファイルが変わらないことを確かめる
@@ -136,3 +136,4 @@
 - 2.2: CHANGELOG は `tools/release/ClargsChangelog.cmake` の `clargs_changelog_parse`、`clargs_changelog_promote(<text> <version> <date> <repo-url> <out>)`、`clargs_changelog_notes(<text> <version> <repo-url> <out>)`。notes の結果は末尾に改行がないので、3.2 でファイルに書くときに足す。promote は V が最新の版より大きくなければ止まる。フィクスチャと実際の CHANGELOG では Semantic Versioning へのリンクを `https://semver.org/` にし、`spec` の語を避ける。
 - 2.3: CMake 3.28 の `file(READ)` は CRLF を LF にする（`file(READ ... HEX)` のバイトには CR がある）。改行の形を保つ必要があるファイル（CHANGELOG.md、version.h）は、`tools/release/ClargsVersionHeader.cmake` の HEX と `string(ASCII)` による読み方（`_clargs_version_header_read_bytes`）を使うか共通化して読む。ヘッダは `clargs_version_header_write(<path> <major> <minor> <patch> <prerelease>)` が書き込みと `clargs_read_version` による読み直しまで行う（書く前の検査には `clargs_version_header_render`）。
 - 2.4: `tools/ci/changes.cmake` は `-D CLARGS_CHANGED_FILES=<一覧のファイル>`、`-D CLARGS_CHANGES_OUTPUT=<出力ファイル>`（`$GITHUB_OUTPUT` をそのまま渡せる。`docs_only=<v>` を追記）。標準出力は message(STATUS) なので行頭に `-- ` が付く。終了コードは常に 0。
+- 3.1: `tools/release/prepare.cmake` の入力は `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_DATE`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_TAGS_FILE`、`CLARGS_RELEASE_OUTPUT`（任意）、`CLARGS_RELEASE_CHECK_ONLY`（任意）。出力は `version=`、`tag=`、`prerelease=`。バイト単位の読み込みは `_clargs_prepare_read_bytes` に写しがある（`ClargsVersionHeader.cmake` の private 関数と重複。3.2 で共通化を検討）。

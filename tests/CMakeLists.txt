@@ -68,6 +68,7 @@ clargs_add_release_test(semver)
 clargs_add_release_test(changelog)
 clargs_add_release_test(version_header)
 clargs_add_release_test(changes)
+clargs_add_release_test(prepare)
 
 # The check of the allocations; see cmake/ClargsCheckAllocations.cmake. The
 # library sources must not use the allocation functions of the C standard
