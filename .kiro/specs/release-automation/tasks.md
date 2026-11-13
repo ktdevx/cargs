@@ -92,7 +92,7 @@
   - _Depends: 3.1_
   - _Requirements: 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 10.7_
 
-- [ ] 5.2 (P) バージョン方針の文書を書く
+- [x] 5.2 (P) バージョン方針の文書を書く
   - 設計の VersioningDoc の節の構成どおりに、英語で書く。支援の方針は SECURITY.md へのリンクで示し、内容を繰り返さない。プレリリースと `find_package`、pkg-config の比較の注意を含める。単独の語 "spec"、"specs" と "steering" を使わない（SemVer の仕様は "specification" と書く）
   - 完了の目安: 文書が要件 1 の各項目を節として持ち、SECURITY.md の「最新の 0.x だけを支援し、プレリリースは支援しない」と食い違う記述がない
   - _Boundary: VersioningDoc_
