@@ -378,17 +378,35 @@ static help_heading_t help_option_heading(const clargs_command_t *command, size_
     return heading;
 }
 
+/* Returns "the indent + width + 2": the first column at which a
+ * description can start on the line of a heading of that width.
+ *
+ * A width is the length of strings in memory and the indent is at most
+ * CLARGS_HELP_SETTING_MAX, so the sum is not expected to go beyond a
+ * size_t; help_add() keeps it defined if it ever does. */
+static size_t help_heading_reach(const help_context_t *context, size_t width)
+{
+    return help_add(help_add(context->indent, width), 2);
+}
+
 /*
  * Returns the description column of the help of the command of context:
- * "the indent + the width of the widest heading + 2". The widest heading
- * is looked for in all the lists of the help, so the descriptions of every
- * list start at the same column.
+ * "the indent + the width of the widest heading + 2", but not more than
+ * the limit. The widest heading is looked for in all the lists of the
+ * help, so the descriptions of every list start at the same column.
+ *
+ * The limit is the maximum column of the settings or, when the width is
+ * not 0 and half of it, rounded down, is less, that half. It is never less
+ * than "the indent + 2".
  */
 static size_t help_description_column(const help_context_t *context)
 {
     const clargs_command_t *command = context->command;
     help_heading_t heading;
     size_t widest = 0;
+    size_t limit;
+    size_t lowest;
+    size_t column;
     size_t width;
     size_t count;
     size_t index;
@@ -420,10 +438,20 @@ static size_t help_description_column(const help_context_t *context)
         }
     }
 
-    /* A width is the length of strings in memory and the indent is at most
-     * CLARGS_HELP_SETTING_MAX, so the sum is not expected to go beyond a
-     * size_t; help_add() keeps it defined if it ever does. */
-    return help_add(help_add(context->indent, widest), 2);
+    column = help_heading_reach(context, widest);
+
+    limit = context->max_column;
+    if (context->width != 0 && context->width / 2 < limit) {
+        limit = context->width / 2;
+    }
+
+    /* The indent is at most CLARGS_HELP_SETTING_MAX: the sum cannot wrap. */
+    lowest = context->indent + 2;
+    if (limit < lowest) {
+        limit = lowest;
+    }
+
+    return column > limit ? limit : column;
 }
 
 /* Returns the length of text without the newlines at its end, or 0 when
@@ -492,8 +520,15 @@ static void help_write_title(help_context_t *context, const char *title)
  * text, its description, from the description column on, broken at the
  * width. With the length 0 the line holds the heading only.
  *
- * The heading ends to the left of the description column, by 2 columns or
- * more: the column is the indent, the widest heading and 2.
+ * The description starts on the line of the heading when the heading ends
+ * to the left of the description column by 2 columns or more: when "the
+ * indent + the width of the heading + 2" is not greater than the column.
+ * If not, the line ends behind the heading, and the description starts on
+ * the next line, at the description column.
+ *
+ * What decides is the width of the heading, the number of all its bytes,
+ * not the column of the output behind it: the two differ for a heading
+ * with a newline inside a name.
  */
 static void help_write_item(help_context_t *context, const help_heading_t *heading,
                             const char *text, size_t length)
@@ -503,6 +538,16 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
     clargs_out_spaces(out, context->indent);
     help_heading_write(out, heading);
     if (length != 0) {
+        if (help_heading_reach(context, help_heading_width(heading)) > context->column) {
+            clargs_out_newline(out);
+        }
+
+        /* clargs_wrap_write() needs the output to stand at the description
+         * column or to the left of it. On the line of the heading the
+         * output stands at "the indent + the width of the heading" at
+         * most, less after a newline inside a name, and that is to the
+         * left of the column by 2 or more; on a new line it stands at 0. */
+        assert(clargs_out_column(out) <= context->column);
         clargs_wrap_write(out, text, length, context->column, context->width);
     }
     clargs_out_newline(out);

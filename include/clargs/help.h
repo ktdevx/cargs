@@ -76,7 +76,9 @@ typedef bool (*clargs_help_write_fn_t)(void *user_data, const char *text, size_t
  *   before. The default is 80. 0 means that there is no limit.
  * - the indent: the blanks before each item of a list. The default is 2.
  * - the maximum column: the last column at which the descriptions of the
- *   items may start. The default is 32.
+ *   items may start. The default is 32. Half of the width, when the width
+ *   is not 0, and the indent + 2 bound it further: see
+ *   clargs_help_options_set_max_column().
  *
  * No setting is greater than 65535: a greater value is kept as 65535.
  */
@@ -119,6 +121,9 @@ CLARGS_API void clargs_help_options_destroy(clargs_help_options_t *options);
  * then broken only where it has a newline. A width greater than 65535 is
  * kept as 65535. The default is 80.
  *
+ * A width that is not 0 also limits the column at which the descriptions
+ * of the items start: see clargs_help_options_set_max_column().
+ *
  * The function allocates no memory and cannot fail.
  *
  * Preconditions:
@@ -149,6 +154,11 @@ CLARGS_API void clargs_help_options_set_indent(clargs_help_options_t *options, s
  * Sets the maximum column: the last column at which the descriptions of
  * the items of a list may start. A column greater than 65535 is kept as
  * 65535. The default is 32.
+ *
+ * The limit that a help uses is the smaller of the maximum column and,
+ * when the width is not 0, half of the width, rounded down; but it is
+ * never less than the indent + 2. clargs_help_write() tells how the limit
+ * is used.
  *
  * The function allocates no memory and cannot fail.
  *
@@ -290,11 +300,25 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  *
  * An item starts with the indent of the help options. Its description
  * starts at the description column, which is the same for all the lists of
- * one help: the indent, the width of the widest heading of the help and 2.
- * The width of a heading is the number of its bytes. An item without a
- * description and without annotations is a line with its heading only. A
- * description that is empty, or empty without the newlines at its end,
- * counts as not set.
+ * one help: the indent, the width of the widest heading of the help and 2,
+ * or the limit of the column when that is less. The limit is the smaller
+ * of the maximum column of the help options and, when the width is not 0,
+ * half of the width, rounded down; but it is never less than the indent +
+ * 2. The width of a heading is the number of its bytes.
+ *
+ * The description starts on the line of the heading when 2 blanks or more
+ * stand between the heading and the description column. Behind a heading
+ * that is too wide for that, the line ends, and the description starts on
+ * the next line, at the description column:
+ *
+ *     Options:
+ *       -v, --verbose                 Say more
+ *           --a-rather-long-name-of-option <FILE>
+ *                                     Write to FILE
+ *
+ * An item without a description and without annotations is a line with
+ * its heading only, whatever the width of the heading. A description that
+ * is empty, or empty without the newlines at its end, counts as not set.
  *
  * The descriptions are broken at the blanks so that no line goes beyond
  * the width of the help options; a word that is too long is not divided. A
