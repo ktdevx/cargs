@@ -726,3 +726,83 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
     }
     return help_context_result(&context);
 }
+
+/* ---- The buffer ---------------------------------------------------------- */
+
+/* The array of the caller that a text is put into, and how much of the
+ * text has come. It lives on the stack of the public function, for the one
+ * call. */
+typedef struct help_buffer {
+    char *buffer;  /* the array; may be NULL when size is 0 */
+    size_t size;   /* the number of bytes of the array */
+    size_t length; /* the bytes of the text so far, also those that did not fit */
+} help_buffer_t;
+
+/* The write function of the buffer functions: copies what fits of the part
+ * into the array, in front of the place of the '\0', and counts all of it.
+ * It never reports a failure, so the generation runs to its end and the
+ * count becomes the length of the whole text. The count stops at the
+ * greatest value of a size_t instead of wrapping around. */
+static bool help_buffer_write(void *user_data, const char *text, size_t length)
+{
+    help_buffer_t *target = user_data;
+
+    /* The text may fill the bytes before the index size - 1. */
+    if (target->size != 0 && target->length < target->size - 1) {
+        size_t room = target->size - 1 - target->length;
+
+        memcpy(target->buffer + target->length, text, length < room ? length : room);
+    }
+    target->length = help_add(target->length, length);
+    return true;
+}
+
+/* Ends a generation into target, which returned error: after a failure the
+ * text counts as empty. The array, when it has a byte, gets its '\0'
+ * behind the part of the text that it holds, and *length, when length is
+ * not NULL, the length of the whole text. Returns error. */
+static clargs_error_t help_buffer_finish(help_buffer_t *target, clargs_error_t error,
+                                         size_t *length)
+{
+    if (error != CLARGS_ERROR_NONE) {
+        target->length = 0;
+    }
+    if (target->size != 0) {
+        target->buffer[target->length < target->size - 1 ? target->length : target->size - 1] =
+            '\0';
+    }
+    if (length != NULL) {
+        *length = target->length;
+    }
+    return error;
+}
+
+clargs_error_t clargs_help_format(const clargs_command_t *command,
+                                  const clargs_help_options_t *options, char *buffer, size_t size,
+                                  size_t *length)
+{
+    help_buffer_t target;
+
+    assert(buffer != NULL || size == 0);
+
+    target.buffer = buffer;
+    target.size = size;
+    target.length = 0;
+    return help_buffer_finish(
+        &target, clargs_help_write(command, options, help_buffer_write, &target), length);
+}
+
+clargs_error_t clargs_help_format_usage(const clargs_command_t *command,
+                                        const clargs_help_options_t *options, char *buffer,
+                                        size_t size, size_t *length)
+{
+    help_buffer_t target;
+
+    assert(buffer != NULL || size == 0);
+
+    target.buffer = buffer;
+    target.size = size;
+    target.length = 0;
+    return help_buffer_finish(
+        &target, clargs_help_write_usage(command, options, help_buffer_write, &target), length);
+}

@@ -7,7 +7,9 @@
  * goes. It also holds the help options, clargs_help_options_t: the
  * settings of the layout of the text, and the functions that generate the
  * help of a command, clargs_help_write(), and its usage line alone,
- * clargs_help_write_usage().
+ * clargs_help_write_usage(). clargs_help_format() and
+ * clargs_help_format_usage() put the same texts into an array of the
+ * caller, as a string, so that the caller needs no write function.
  *
  * Ownership:
  *
@@ -23,6 +25,9 @@
  *   a failure, the generation stops and returns CLARGS_ERROR_WRITE_FAILED;
  *   the part of the text that was passed before stays where the write
  *   function put it.
+ * - A text that does not fit into the array of clargs_help_format() or
+ *   clargs_help_format_usage() is cut, and that is not an error: the
+ *   functions tell the length of the whole text.
  * - A NULL pointer where none is allowed and a schema that is not validated
  *   are errors of the program, not error codes: see the preconditions of
  *   each function.
@@ -367,6 +372,97 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
 CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
                                             const clargs_help_options_t *options,
                                             clargs_help_write_fn_t write_fn, void *user_data);
+
+/*
+ * Generates the help of command, the text of clargs_help_write() for the
+ * same command and help options, byte by byte, and puts it into buffer, an
+ * array of size bytes of the caller, as a string.
+ *
+ * When size is not 0, the first bytes of the text, as many as fit but
+ * size - 1 at most, are written to buffer, and a '\0' right behind them:
+ * buffer then holds a string, and nothing is written behind that '\0' or
+ * outside the array. When size is 0, nothing is written to buffer, and
+ * buffer may be NULL.
+ *
+ * When length is not NULL, *length is set to the length of the whole text,
+ * the '\0' not counted, whether the text fitted or not.
+ *
+ * A text that does not fit is cut, and the call still succeeds. The text
+ * was cut when *length is size or more; a text that is cut may end in the
+ * middle of a line. To get the whole text, call the function twice: first
+ * with the size 0, and NULL as buffer, for the length; then with an array
+ * of *length + 1 bytes.
+ *
+ * options are the help options, or NULL for the default value of every
+ * setting. The call does not change them.
+ *
+ * The function does not change the schema and keeps no state. The memory
+ * that it allocates, with the allocator that is set, is freed before it
+ * returns, whatever it returns. It may be called for the same schema and
+ * help options from several threads at the same time, each with its own
+ * buffer.
+ *
+ * Returns CLARGS_ERROR_NONE on success, also when the text was cut, and
+ * CLARGS_ERROR_OUT_OF_MEMORY when an allocation fails. When the call
+ * fails, buffer holds the empty string if size is not 0, and is not
+ * written to if size is 0; *length, when length is not NULL, is 0. The
+ * function never returns CLARGS_ERROR_WRITE_FAILED.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ * - The schema that command belongs to is validated: see
+ *   clargs_command_is_validated(). Checked with assert.
+ * - buffer is not NULL when size is not 0. Checked with assert. buffer may
+ *   be NULL when size is 0.
+ * - buffer points to an array of size bytes or more. Not checked.
+ * - options may be NULL. If not, they have not been destroyed, and no other
+ *   thread is changing them during the call. Not checked.
+ * - length may be NULL.
+ */
+CLARGS_API clargs_error_t clargs_help_format(const clargs_command_t *command,
+                                             const clargs_help_options_t *options, char *buffer,
+                                             size_t size, size_t *length);
+
+/*
+ * Generates the usage line of command, the text of
+ * clargs_help_write_usage() for the same command and help options, byte by
+ * byte, and puts it into buffer, an array of size bytes of the caller, as a
+ * string.
+ *
+ * buffer, size and length work as in clargs_help_format(): when size is
+ * not 0, the first bytes of the text, size - 1 at most, and a '\0' right
+ * behind them are written to buffer, and nothing else; when size is 0,
+ * nothing is written, and buffer may be NULL; *length, when length is not
+ * NULL, is set to the length of the whole text, the '\0' not counted. A
+ * text that does not fit is cut, and the call still succeeds: the text was
+ * cut when *length is size or more.
+ *
+ * options are the help options, or NULL for the default value of every
+ * setting. The call does not change them.
+ *
+ * The function allocates no memory, does not change the schema and may be
+ * called for the same schema and help options from several threads at the
+ * same time, each with its own buffer.
+ *
+ * Returns CLARGS_ERROR_NONE, also when the text was cut. The function
+ * cannot fail: buffer and *length are always set as told above.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ * - The schema that command belongs to is validated: see
+ *   clargs_command_is_validated(). Checked with assert.
+ * - buffer is not NULL when size is not 0. Checked with assert. buffer may
+ *   be NULL when size is 0.
+ * - buffer points to an array of size bytes or more. Not checked.
+ * - options may be NULL. If not, they have not been destroyed, and no other
+ *   thread is changing them during the call. Not checked.
+ * - length may be NULL.
+ */
+CLARGS_API clargs_error_t clargs_help_format_usage(const clargs_command_t *command,
+                                                   const clargs_help_options_t *options,
+                                                   char *buffer, size_t size, size_t *length);
 
 #ifdef __cplusplus
 }
