@@ -3,9 +3,10 @@
  * option or positional of a schema is written.
  *
  * The headings and the items of a usage line are written to a
- * clargs_out_t. The width of an item is the number of all its bytes, and the caller gets it with the same code that
- * writes the item: it writes the item once to a clargs_out_t whose write
- * function only adds up the lengths it is given. The column of an output
+ * clargs_out_t. The width of an item is the number of all its bytes, and
+ * the caller gets it with the same code that writes the item: it writes
+ * the item once to a clargs_out_t whose write function only adds up the
+ * lengths it is given. The column of an output
  * would not do: a name may hold a newline, behind which the column starts
  * again at 0. No function leaves a blank that is not yet written, so every
  * byte of an item reaches the write function.
