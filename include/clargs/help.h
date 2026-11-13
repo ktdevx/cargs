@@ -247,11 +247,11 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  *   not those of its subcommands: the name, and the description up to its
  *   first newline.
  * - "Arguments:" and, one on each line, the positionals of command: the
- *   heading, written as in the usage line, and the whole description
- *   without the newlines at its end.
+ *   heading, written as in the usage line, the whole description and the
+ *   annotations.
  * - "Options:" and, one on each line, the options of command itself, not
- *   those of its parent or of its subcommands: the heading, and the whole
- *   description without the newlines at its end.
+ *   those of its parent or of its subcommands: the heading, the whole
+ *   description and the annotations.
  *
  * The heading of an option starts with its names: "-s, --long" with both
  * names, "-s" with a short name only, and four blanks and "--long" with a
@@ -264,6 +264,25 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * listed: none is added, and an option that the schema defines for the
  * help, such as "--help", is listed like every other.
  *
+ * The annotations of an option or of a positional follow its description,
+ * in this order, each after one blank:
+ *
+ * - "[choices: a, b, c]": an option with a value or a positional whose
+ *   value type has choices. They stand in the order in which they were
+ *   defined, separated by ", ".
+ * - "[default: VALUE]": an option with a value or a positional that has a
+ *   default value; VALUE is the string that was set, as it is.
+ *   "[default: on]": a negatable flag whose initial state is on. One whose
+ *   initial state is off has no annotation.
+ * - "[required]": a required option. A positional has none: its heading
+ *   shows whether it is required.
+ *
+ * An item without a description shows its annotations in the place of the
+ * description. When the description ends with a newline, the annotations
+ * start on the next line, without the blank. The newlines at the end of a
+ * description without annotations are not written. A subcommand has no
+ * annotations.
+ *
  * A part that has nothing to show is left out, together with its title: a
  * description that is not set, a list without items. One empty line stands
  * between two parts, and none at the start or at the end of the text. The
@@ -273,14 +292,16 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * starts at the description column, which is the same for all the lists of
  * one help: the indent, the width of the widest heading of the help and 2.
  * The width of a heading is the number of its bytes. An item without a
- * description is a line with its heading only. A description that is empty,
- * or empty without the newlines at its end, counts as not set.
+ * description and without annotations is a line with its heading only. A
+ * description that is empty, or empty without the newlines at its end,
+ * counts as not set.
  *
  * The descriptions are broken at the blanks so that no line goes beyond
  * the width of the help options; a word that is too long is not divided. A
  * newline in a description ends the line, and what follows starts at the
  * column where the description started. With the width 0 the lines end at
- * those newlines only.
+ * those newlines only. The annotations are broken as a part of the
+ * description: also at the blanks inside an annotation.
  *
  * The fixed words of the text are English. The strings of the schema are
  * written as they are, byte by byte.
@@ -289,14 +310,20 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * setting. The call does not change them.
  *
  * The function does not change the schema and keeps no state: the same
- * schema, command and help options give the same text every time. It may
+ * schema, command and help options give the same text every time. The
+ * memory that it allocates, with the allocator that is set, is freed
+ * before it returns, whatever it returns. It may
  * be called for the same schema and help options from several threads at
  * the same time.
  *
- * Returns CLARGS_ERROR_NONE on success, and CLARGS_ERROR_WRITE_FAILED when
- * write_fn returns false. write_fn is then not called again, and the part
- * of the text that it took before the failure stays where it put it: the
- * output may hold the start of the help.
+ * Returns CLARGS_ERROR_NONE on success. On failure the generation stops,
+ * write_fn is not called again, and the part of the text that it took
+ * before the failure stays where it put it: the output may hold the start
+ * of the help.
+ *
+ * - CLARGS_ERROR_WRITE_FAILED: write_fn returned false.
+ * - CLARGS_ERROR_OUT_OF_MEMORY: an allocation failed. The text then ends
+ *   before the line of the option or positional that the memory was for.
  *
  * Preconditions:
  *

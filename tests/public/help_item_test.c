@@ -1,6 +1,7 @@
 /*
- * Tests of the headings of the options in the help: the "Options:" list of
- * clargs_help_write() of <clargs/help.h>.
+ * Tests of the headings of the options and of the annotations of the
+ * options and positionals in the help: the "Options:" and "Arguments:"
+ * lists of clargs_help_write() of <clargs/help.h>.
  *
  * Each test builds a schema, validates it, has the help of one of its
  * commands written and compares the text with the expected string, by its
@@ -9,10 +10,10 @@
  *
  * With the default settings "the indent + the width of the widest heading
  * + 2" is at most 32 in every schema of this file, so the texts do not
- * depend on the limit of the description column. No option of this file is
- * required, has a default value, a value type with choices or an initial
- * state that is on: the description of an option is its description text
- * only.
+ * depend on the limit of the description column. No option of the tests
+ * of the headings is required, has a default value, a value type with
+ * choices or an initial state that is on: its description is its
+ * description text only. The tests of the annotations follow them.
  *
  * Every test uses the test allocator ("../support/test_allocator.h"). Its
  * state and the allocator that is set are shared by all the tests of this
@@ -233,13 +234,15 @@ static void check_shape(const char *text, size_t length)
  * Has the help of command written with options and checks that the call
  * succeeds, that the text is exactly the string expected, that the text has
  * the shape of a help text, that no call of the write function was empty,
- * that nothing was allocated and that the schema is still validated.
+ * that the generation left nothing allocated and violated no rule of the
+ * allocator, and that the schema is still validated. The generation may
+ * allocate: for the cell text of an option or of a positional.
  */
 static void check_help_with(const clargs_command_t *command, const clargs_help_options_t *options,
                             const char *expected)
 {
     sink_t sink;
-    size_t requests = clargs_test_allocator_requests();
+    size_t live = clargs_test_allocator_live();
 
     sink_init(&sink);
 
@@ -250,7 +253,8 @@ static void check_help_with(const clargs_command_t *command, const clargs_help_o
     check_shape(sink.text, sink.length);
     check_shape(expected, strlen(expected));
     NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
     NAOS_CHECK_TRUE(clargs_command_is_validated(command));
 }
 
@@ -558,6 +562,462 @@ NAOS_TEST(option_description_is_written_whole)
     destroy_root(root);
 }
 
+/* ---- The annotations ------------------------------------------------------- */
+
+/* Adds an option with a value of type that must succeed, and returns it,
+ * so that the test can set what add_value() does not. */
+static clargs_option_t *add_value_option(clargs_command_t *command, char short_name,
+                                         const char *long_name, const clargs_type_t *type,
+                                         const char *value_name, const char *description)
+{
+    clargs_option_t *option = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
+                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(option != NULL);
+    if (value_name != NULL) {
+        NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
+    }
+    describe_option(option, description);
+    return option;
+}
+
+/* Adds a negatable flag that must succeed, with the initial state given. */
+static void add_negatable_initial(clargs_command_t *command, char short_name,
+                                  const char *long_name, bool on, const char *description)
+{
+    clargs_option_t *option = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_negatable(command, short_name, long_name, &option) ==
+                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(option != NULL);
+    NAOS_REQUIRE_TRUE(clargs_option_set_initial(option, on) == CLARGS_ERROR_NONE);
+    describe_option(option, description);
+}
+
+/* Adds a positional that must succeed, and returns it. description is its
+ * description, or NULL to set none. */
+static clargs_positional_t *add_positional(clargs_command_t *command, const char *name,
+                                           const clargs_type_t *type, clargs_arity_t arity,
+                                           const char *description)
+{
+    clargs_positional_t *positional = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, arity, &positional) ==
+                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(positional != NULL);
+    if (description != NULL) {
+        NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
+                          CLARGS_ERROR_NONE);
+    }
+    return positional;
+}
+
+/* Sets the default value of option; it must succeed. */
+static void set_option_default(clargs_option_t *option, const char *value)
+{
+    NAOS_REQUIRE_TRUE(clargs_option_set_default(option, value) == CLARGS_ERROR_NONE);
+}
+
+/* Makes option required; it must succeed. */
+static void set_option_required(clargs_option_t *option)
+{
+    NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
+}
+
+/* Creates a value type with the count choices given; it must succeed. The
+ * test destroys it after the schema that uses it. */
+static clargs_type_t *create_choice(const char *const *choices, size_t count)
+{
+    clargs_type_t *type = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_type_create_choice(choices, count, &type) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(type != NULL);
+    return type;
+}
+
+/* Destroys root and then type, and ends the test: nothing stays
+ * allocated. */
+static void destroy_root_and_type(clargs_command_t *root, clargs_type_t *type)
+{
+    clargs_command_destroy(root);
+    clargs_type_destroy(type);
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* An option whose value type has choices: "[choices: ...]" behind the
+ * description, after one blank, with the choices in the order in which
+ * they were defined, separated by ", ". An option of another type has
+ * none. */
+NAOS_TEST(option_with_choices_shows_them)
+{
+    static const char *const formats[] = {"text", "json", "xml"};
+    clargs_command_t *root = create_root();
+    clargs_type_t *format = create_choice(formats, 3);
+
+    add_value(root, 'f', "format", format, "FMT", "Output format");
+    add_value(root, 'o', "output", clargs_type_string(), "FILE", "Write to FILE");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS]\n"
+               "\n"
+               "Options:\n"
+               "  -f, --format <FMT>   Output format [choices: text, json, xml]\n"
+               "  -o, --output <FILE>  Write to FILE\n");
+
+    destroy_root_and_type(root, format);
+}
+
+/* An option with a value, a choice type and no display name: the name of
+ * the type, "choice", stands in the heading, and the choices stand in the
+ * annotation of the same line. */
+NAOS_TEST(choice_heading_without_display_name_shows_the_type_name_and_the_choices)
+{
+    static const char *const whens[] = {"auto", "always", "never"};
+    clargs_command_t *root = create_root();
+    clargs_type_t *when = create_choice(whens, 3);
+
+    add_value(root, 'c', "color", when, NULL, "When to use colors");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS]\n"
+               "\n"
+               "Options:\n"
+               "  -c, --color <choice>  When to use colors [choices: auto, always, never]\n");
+
+    destroy_root_and_type(root, when);
+}
+
+/* An option with a default value: "[default: ...]" with the string that
+ * was set, as it is: a blank inside it stays. */
+NAOS_TEST(option_with_default_shows_it)
+{
+    clargs_command_t *root = create_root();
+
+    set_option_default(add_value_option(root, 'j', "jobs", clargs_type_int(), "N", "Run N jobs"),
+                       "4");
+    set_option_default(
+        add_value_option(root, 'd', "dir", clargs_type_string(), "DIR", "Where to write"),
+        "My Files");
+    add_value(root, 'n', "name", clargs_type_string(), "NAME", "Name to use");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS]\n"
+               "\n"
+               "Options:\n"
+               "  -j, --jobs <N>     Run N jobs [default: 4]\n"
+               "  -d, --dir <DIR>    Where to write [default: My Files]\n"
+               "  -n, --name <NAME>  Name to use\n");
+
+    destroy_root(root);
+}
+
+/* A required option: "[required]". An option that was set to not required
+ * has none. */
+NAOS_TEST(required_option_shows_it)
+{
+    clargs_command_t *root = create_root();
+    clargs_option_t *user;
+
+    set_option_required(
+        add_value_option(root, 't', "token", clargs_type_string(), "TOKEN", "Access token"));
+    user = add_value_option(root, 'u', "user", clargs_type_string(), "NAME", "Who asks");
+    NAOS_REQUIRE_TRUE(clargs_option_set_required(user, false) == CLARGS_ERROR_NONE);
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] --token <TOKEN>\n"
+               "\n"
+               "Options:\n"
+               "  -t, --token <TOKEN>  Access token [required]\n"
+               "  -u, --user <NAME>    Who asks\n");
+
+    destroy_root(root);
+}
+
+/* The order of the annotations: the choices, then the default value or
+ * "[required]", each one blank behind the one before. A schema with an
+ * option that is required and has a default value does not validate, so
+ * the two never stand in one line. */
+NAOS_TEST(annotations_stand_in_their_order)
+{
+    static const char *const speeds[] = {"fast", "slow"};
+    clargs_command_t *root = create_root();
+    clargs_type_t *speed = create_choice(speeds, 2);
+
+    set_option_default(add_value_option(root, 'm', "mode", speed, "MODE", "How to run"), "fast");
+    set_option_required(add_value_option(root, 'l', "level", speed, NULL, "Pick one"));
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] --level <choice>\n"
+               "\n"
+               "Options:\n"
+               "  -m, --mode <MODE>     How to run [choices: fast, slow] [default: fast]\n"
+               "  -l, --level <choice>  Pick one [choices: fast, slow] [required]\n");
+
+    destroy_root_and_type(root, speed);
+}
+
+/* A positional whose value type has choices: the same annotation as for
+ * an option. A required positional has no "[required]": its heading shows
+ * it. */
+NAOS_TEST(positional_with_choices_shows_them_and_no_required)
+{
+    static const char *const actions[] = {"start", "stop"};
+    clargs_command_t *root = create_root();
+    clargs_type_t *action = create_choice(actions, 2);
+
+    add_positional(root, "action", action, CLARGS_ARITY_REQUIRED, "What to do");
+    add_positional(root, "name", clargs_type_string(), CLARGS_ARITY_REQUIRED, "What to act on");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool <action> <name>\n"
+               "\n"
+               "Arguments:\n"
+               "  <action>  What to do [choices: start, stop]\n"
+               "  <name>    What to act on\n");
+
+    destroy_root_and_type(root, action);
+}
+
+/* A positional with a default value: the same annotation as for an
+ * option, behind the choices when it has both. */
+NAOS_TEST(positional_with_default_shows_it)
+{
+    static const char *const units[] = {"s", "ms"};
+    clargs_command_t *root = create_root();
+    clargs_type_t *unit = create_choice(units, 2);
+
+    add_positional(root, "file", clargs_type_string(), CLARGS_ARITY_REQUIRED, "File to read");
+    NAOS_REQUIRE_TRUE(clargs_positional_set_default(
+                          add_positional(root, "count", clargs_type_int(), CLARGS_ARITY_OPTIONAL,
+                                         "How often"),
+                          "1") == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(clargs_positional_set_default(
+                          add_positional(root, "unit", unit, CLARGS_ARITY_OPTIONAL, "Time unit"),
+                          "ms") == CLARGS_ERROR_NONE);
+    validate(root);
+
+    check_help(root,
+               "Usage: tool <file> [count] [unit]\n"
+               "\n"
+               "Arguments:\n"
+               "  <file>   File to read\n"
+               "  [count]  How often [default: 1]\n"
+               "  [unit]   Time unit [choices: s, ms] [default: ms]\n");
+
+    destroy_root_and_type(root, unit);
+}
+
+/* An item without a description, or with one that is empty without the
+ * newlines at its end, and with annotations: the annotations are its
+ * description, from the description column on, with no blank before
+ * them. */
+NAOS_TEST(annotations_alone_are_the_description)
+{
+    static const char *const sizes[] = {"s", "l"};
+    clargs_command_t *root = create_root();
+    clargs_type_t *size = create_choice(sizes, 2);
+
+    set_option_default(add_value_option(root, 'n', NULL, clargs_type_int(), NULL, NULL), "3");
+    set_option_required(add_value_option(root, 'k', NULL, clargs_type_string(), "KEY", ""));
+    add_value(root, 's', NULL, size, "SIZE", "\n");
+    add_negatable_initial(root, '\0', "wrap", true, NULL);
+    add_flag(root, 'q', NULL, NULL);
+    NAOS_REQUIRE_TRUE(clargs_positional_set_default(
+                          add_positional(root, "size", size, CLARGS_ARITY_OPTIONAL, NULL), "l") ==
+                      CLARGS_ERROR_NONE);
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] -k <KEY> [size]\n"
+               "\n"
+               "Arguments:\n"
+               "  [size]           [choices: s, l] [default: l]\n"
+               "\n"
+               "Options:\n"
+               "  -n <integer>     [default: 3]\n"
+               "  -k <KEY>         [required]\n"
+               "  -s <SIZE>        [choices: s, l]\n"
+               "      --[no-]wrap  [default: on]\n"
+               "  -q\n");
+
+    destroy_root_and_type(root, size);
+}
+
+/* A negatable flag whose initial state is on: "[default: on]". One whose
+ * initial state is off, set or left as it is, has no annotation. */
+NAOS_TEST(negatable_flag_shows_default_on_only)
+{
+    clargs_command_t *root = create_root();
+
+    add_negatable_initial(root, 'c', "color", true, "Use colors");
+    add_negatable_initial(root, '\0', "pager", false, "Page the output");
+    add_negatable(root, '\0', "wrap", "Wrap the lines");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS]\n"
+               "\n"
+               "Options:\n"
+               "  -c, --[no-]color  Use colors [default: on]\n"
+               "      --[no-]pager  Page the output\n"
+               "      --[no-]wrap   Wrap the lines\n");
+
+    destroy_root(root);
+}
+
+/* A description that ends with a newline: the annotations start on the
+ * next line, at the description column, with no blank before them, and
+ * the following annotations are separated by one blank as usual. */
+NAOS_TEST(annotations_after_final_newline_start_on_the_next_line)
+{
+    static const char *const formats[] = {"text", "json"};
+    clargs_command_t *root = create_root();
+    clargs_type_t *format = create_choice(formats, 2);
+
+    set_option_default(add_value_option(root, 'f', "format", format, "FMT", "Output format\n"),
+                       "text");
+    add_negatable_initial(root, '\0', "color", true, "Use colors\nif possible\n");
+    NAOS_REQUIRE_TRUE(clargs_positional_set_default(
+                          add_positional(root, "count", clargs_type_int(), CLARGS_ARITY_OPTIONAL,
+                                         "How often\n"),
+                          "1") == CLARGS_ERROR_NONE);
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS] [count]\n"
+               "\n"
+               "Arguments:\n"
+               "  [count]             How often\n"
+               "                      [default: 1]\n"
+               "\n"
+               "Options:\n"
+               "  -f, --format <FMT>  Output format\n"
+               "                      [choices: text, json] [default: text]\n"
+               "      --[no-]color    Use colors\n"
+               "                      if possible\n"
+               "                      [default: on]\n");
+
+    destroy_root_and_type(root, format);
+}
+
+/* The annotations are a part of the description and are broken with it:
+ * at the blanks, also at those inside an annotation, and what follows
+ * starts at the description column. The first line of the option ends at
+ * the width, 80. */
+NAOS_TEST(long_annotations_are_wrapped_at_the_description_column)
+{
+    static const char *const formats[] = {"text", "json", "yaml", "html", "markdown"};
+    clargs_command_t *root = create_root();
+    clargs_type_t *format = create_choice(formats, 5);
+
+    set_option_default(add_value_option(root, 'f', "format", format, "FMT",
+                                        "Format of the report that is written"),
+                       "text");
+    validate(root);
+
+    check_help(root,
+               "Usage: tool [OPTIONS]\n"
+               "\n"
+               "Options:\n"
+               "  -f, --format <FMT>  Format of the report that is written [choices: text, json,\n"
+               "                      yaml, html, markdown] [default: text]\n");
+
+    destroy_root_and_type(root, format);
+}
+
+/* ---- The memory ------------------------------------------------------------ */
+
+/* The schema of the tests of the memory: its help allocates for the cell
+ * texts. */
+static const char *const memory_help =
+    "Usage: tool [OPTIONS] --token <TOKEN>\n"
+    "\n"
+    "Options:\n"
+    "  -t, --token <TOKEN>  Access token [required]\n"
+    "  -j, --jobs <N>       Run N jobs at the same time [default: 4]\n";
+
+static clargs_command_t *create_memory_root(void)
+{
+    clargs_command_t *root = create_root();
+
+    set_option_required(
+        add_value_option(root, 't', "token", clargs_type_string(), "TOKEN", "Access token"));
+    set_option_default(add_value_option(root, 'j', "jobs", clargs_type_int(), "N",
+                                        "Run N jobs at the same time"),
+                       "4");
+    validate(root);
+    return root;
+}
+
+/* A generation allocates for the cell texts and frees all of it before it
+ * returns: the live blocks are those of the schema, and after the schema
+ * is destroyed none is left. No rule of the allocator is violated. The
+ * usage line alone allocates nothing. */
+NAOS_TEST(generation_leaves_nothing_allocated)
+{
+    clargs_command_t *root = create_memory_root();
+    size_t live = clargs_test_allocator_live();
+    size_t requests = clargs_test_allocator_requests();
+    sink_t sink;
+
+    sink_init(&sink);
+    NAOS_CHECK_TRUE(clargs_help_write_usage(root, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+
+    check_help(root, memory_help);
+    NAOS_CHECK_TRUE(clargs_test_allocator_requests() > requests);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+
+    clargs_command_destroy(root);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+
+    clargs_test_allocator_uninstall();
+    check_clean();
+}
+
+/* An allocation of the generation fails, the first one and a later one
+ * that grows the cell text: the result is CLARGS_ERROR_OUT_OF_MEMORY,
+ * nothing of the generation stays allocated, and what was written before
+ * is the start of the help. The next generation succeeds. */
+NAOS_TEST(generation_out_of_memory_frees_the_cell_text)
+{
+    clargs_command_t *root = create_memory_root();
+    size_t live = clargs_test_allocator_live();
+    size_t step;
+
+    for (step = 1; step <= 3; ++step) {
+        sink_t sink;
+
+        sink_init(&sink);
+        clargs_test_allocator_fail_at(clargs_test_allocator_requests() + step);
+
+        NAOS_CHECK_TRUE(clargs_help_write(root, NULL, sink_write, &sink) ==
+                        CLARGS_ERROR_OUT_OF_MEMORY);
+        clargs_test_allocator_fail_at(0);
+
+        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+        NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+        NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
+        NAOS_CHECK_TRUE(sink.length < strlen(memory_help));
+        NAOS_CHECK_MEM_EQ(sink.text, sink.length, memory_help, sink.length);
+        NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+    }
+
+    check_help(root, memory_help);
+
+    destroy_root(root);
+}
+
 NAOS_SUITE(help_item,
     NAOS_ADD_TEST(flag_heading_has_three_forms_of_names),
     NAOS_ADD_TEST(long_name_alone_keeps_its_four_blanks),
@@ -569,7 +1029,20 @@ NAOS_SUITE(help_item,
     NAOS_ADD_TEST(help_flag_of_the_schema_is_listed_and_none_is_added),
     NAOS_ADD_TEST(bytes_of_the_schema_are_written_unchanged),
     NAOS_ADD_TEST(option_heading_with_newline_inside_counts_all_its_bytes),
-    NAOS_ADD_TEST(option_description_is_written_whole)
+    NAOS_ADD_TEST(option_description_is_written_whole),
+    NAOS_ADD_TEST(option_with_choices_shows_them),
+    NAOS_ADD_TEST(choice_heading_without_display_name_shows_the_type_name_and_the_choices),
+    NAOS_ADD_TEST(option_with_default_shows_it),
+    NAOS_ADD_TEST(required_option_shows_it),
+    NAOS_ADD_TEST(annotations_stand_in_their_order),
+    NAOS_ADD_TEST(positional_with_choices_shows_them_and_no_required),
+    NAOS_ADD_TEST(positional_with_default_shows_it),
+    NAOS_ADD_TEST(annotations_alone_are_the_description),
+    NAOS_ADD_TEST(negatable_flag_shows_default_on_only),
+    NAOS_ADD_TEST(annotations_after_final_newline_start_on_the_next_line),
+    NAOS_ADD_TEST(long_annotations_are_wrapped_at_the_description_column),
+    NAOS_ADD_TEST(generation_leaves_nothing_allocated),
+    NAOS_ADD_TEST(generation_out_of_memory_frees_the_cell_text)
 )
 
 NAOS_MAIN(

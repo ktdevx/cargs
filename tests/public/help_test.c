@@ -251,13 +251,15 @@ static void check_shape(const char *text, size_t length)
  * Has the help of command written with options and checks that the call
  * succeeds, that the text is exactly the string expected, that the text has
  * the shape of a help text, that no call of the write function was empty,
- * that nothing was allocated and that the schema is still validated.
+ * that the generation left nothing allocated and violated no rule of the
+ * allocator, and that the schema is still validated. The generation may
+ * allocate: for the cell text of an option or of a positional.
  */
 static void check_help_with(const clargs_command_t *command, const clargs_help_options_t *options,
                             const char *expected)
 {
     sink_t sink;
-    size_t requests = clargs_test_allocator_requests();
+    size_t live = clargs_test_allocator_live();
 
     sink_init(&sink);
 
@@ -268,7 +270,8 @@ static void check_help_with(const clargs_command_t *command, const clargs_help_o
     check_shape(sink.text, sink.length);
     check_shape(expected, strlen(expected));
     NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
     NAOS_CHECK_TRUE(clargs_command_is_validated(command));
 }
 

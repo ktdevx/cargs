@@ -4,6 +4,7 @@
  */
 #include "help_internal.h"
 #include "help_item.h"
+#include "vec.h"
 #include "wrap.h"
 
 #include <assert.h>
@@ -19,10 +20,13 @@ typedef struct help_context {
     size_t max_column;               /* the last column at which the descriptions may start */
     size_t column;                   /* the description column; set before the lists are written */
     clargs_out_t out;                /* where the text goes */
+    clargs_vec_t text;               /* the cell text of one item, as bytes; used again for the
+                                      * next item, freed before the generation returns */
 } help_context_t;
 
 /* Starts a generation for command: takes the settings from options, or
- * their default values when options is NULL, and starts the output. */
+ * their default values when options is NULL, and starts the output. The
+ * cell text is empty; nothing is allocated. */
 static void help_context_init(help_context_t *context, const clargs_command_t *command,
                               const clargs_help_options_t *options, clargs_help_write_fn_t write_fn,
                               void *user_data)
@@ -39,10 +43,11 @@ static void help_context_init(help_context_t *context, const clargs_command_t *c
     }
     context->column = 0;
     clargs_out_init(&context->out, write_fn, user_data);
+    clargs_vec_init(&context->text, 1);
 }
 
-/* The result of a generation that allocated nothing: whether the write
- * function has reported a failure. */
+/* The result of a generation in which no allocation failed: whether the
+ * write function has reported a failure. */
 static clargs_error_t help_context_result(const help_context_t *context)
 {
     return clargs_out_failed(&context->out) ? CLARGS_ERROR_WRITE_FAILED : CLARGS_ERROR_NONE;
@@ -503,6 +508,34 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
     clargs_out_newline(out);
 }
 
+/*
+ * Starts the cell text of an item: makes it empty, its memory is kept for
+ * the next item, and appends description, whole, when the item has one. A
+ * description that ends with a newline keeps it: an annotation then starts
+ * on the next line.
+ *
+ * Returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation fails.
+ */
+static clargs_error_t help_cell_start(help_context_t *context, const char *description)
+{
+    context->text.count = 0;
+    if (help_whole_length(description) == 0) {
+        return CLARGS_ERROR_NONE;
+    }
+    return clargs_help_item_text_append(&context->text, description, strlen(description));
+}
+
+/* Writes one item of a list with the cell text as its description; see
+ * help_write_item(). The newlines at the end of the cell text are not
+ * written. An empty cell text gives a line with the heading only. */
+static void help_write_cell_item(help_context_t *context, const help_heading_t *heading)
+{
+    size_t length = context->text.count;
+    const char *text = length != 0 ? clargs_vec_at(&context->text, 0) : NULL;
+
+    help_write_item(context, heading, text, length);
+}
+
 /* Writes the list of the subcommands of the command of context, when it
  * has one: the subcommands of the command itself, in the order in which
  * they were added, each with the first line of its description. */
@@ -527,47 +560,69 @@ static void help_write_commands(help_context_t *context)
 
 /* Writes the list of the positionals of the command of context, when it
  * has one: in the order in which they were added, each with its whole
- * description. */
-static void help_write_arguments(help_context_t *context)
+ * description and, behind it, its annotations.
+ *
+ * Returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation for the cell text
+ * fails; the list ends before the item that it was for. */
+static clargs_error_t help_write_arguments(help_context_t *context)
 {
     const clargs_command_t *command = context->command;
     size_t count = clargs_command_positional_count(command);
     size_t index;
 
     if (count == 0) {
-        return;
+        return CLARGS_ERROR_NONE;
     }
 
     help_write_title(context, "Arguments:");
     for (index = 0; index < count && !clargs_out_failed(&context->out); ++index) {
         help_heading_t heading = help_positional_heading(command, index);
-        const char *text = clargs_positional_description(heading.positional);
+        clargs_error_t error =
+            help_cell_start(context, clargs_positional_description(heading.positional));
 
-        help_write_item(context, &heading, text, help_whole_length(text));
+        if (error == CLARGS_ERROR_NONE) {
+            error = clargs_help_item_positional_notes(&context->text, heading.positional);
+        }
+        if (error != CLARGS_ERROR_NONE) {
+            return error;
+        }
+        help_write_cell_item(context, &heading);
     }
+    return CLARGS_ERROR_NONE;
 }
 
 /* Writes the list of the options of the command of context, when it has
  * one: the options of the command itself, not those of its parent or of
  * its subcommands, in the order in which they were added, each with its
- * whole description. Nothing is listed that the schema does not have. */
-static void help_write_options(help_context_t *context)
+ * whole description and, behind it, its annotations. Nothing is listed
+ * that the schema does not have.
+ *
+ * Returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation for the cell text
+ * fails; the list ends before the item that it was for. */
+static clargs_error_t help_write_options(help_context_t *context)
 {
     const clargs_command_t *command = context->command;
     size_t count = clargs_command_option_count(command);
     size_t index;
 
     if (count == 0) {
-        return;
+        return CLARGS_ERROR_NONE;
     }
 
     help_write_title(context, "Options:");
     for (index = 0; index < count && !clargs_out_failed(&context->out); ++index) {
         help_heading_t heading = help_option_heading(command, index);
-        const char *text = clargs_option_description(heading.option);
+        clargs_error_t error = help_cell_start(context, clargs_option_description(heading.option));
 
-        help_write_item(context, &heading, text, help_whole_length(text));
+        if (error == CLARGS_ERROR_NONE) {
+            error = clargs_help_item_option_notes(&context->text, heading.option);
+        }
+        if (error != CLARGS_ERROR_NONE) {
+            return error;
+        }
+        help_write_cell_item(context, &heading);
     }
+    return CLARGS_ERROR_NONE;
 }
 
 clargs_error_t clargs_help_write(const clargs_command_t *command,
@@ -575,6 +630,7 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
                                  clargs_help_write_fn_t write_fn, void *user_data)
 {
     help_context_t context;
+    clargs_error_t error;
 
     assert(command != NULL);
     assert(clargs_command_is_validated(command));
@@ -588,8 +644,17 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
     /* One column for all the lists, from the headings of all of them. */
     context.column = help_description_column(&context);
     help_write_commands(&context);
-    help_write_arguments(&context);
-    help_write_options(&context);
+    error = help_write_arguments(&context);
+    if (error == CLARGS_ERROR_NONE) {
+        error = help_write_options(&context);
+    }
 
+    /* The cell text is the only memory of a generation. An allocation and
+     * the write function never both fail: the first failure ends the
+     * lists. */
+    clargs_vec_destroy(&context.text);
+    if (error != CLARGS_ERROR_NONE) {
+        return error;
+    }
     return help_context_result(&context);
 }
