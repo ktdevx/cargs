@@ -320,13 +320,19 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
 
 /*
  * Parses the arguments of result, a new result of root with count
- * arguments, and writes result to *out. A result that cannot be completed
- * for a lack of memory is destroyed, and NULL is written to *out.
+ * arguments, and writes result to *out: scans the arguments and, when the
+ * scan ends without a parse error, resolves the values that were not given
+ * ("parse_internal.h"). A result that cannot be completed for a lack of
+ * memory is destroyed, and NULL is written to *out.
  */
 static clargs_error_t parse_result(clargs_result_t *result, const clargs_command_t *root, size_t count,
                                    clargs_result_t **out)
 {
-    const clargs_error_t error = scan_arguments(result, root, count);
+    clargs_error_t error = scan_arguments(result, root, count);
+
+    if (error == CLARGS_ERROR_NONE) {
+        error = clargs_resolve(result);
+    }
 
     if (error == CLARGS_ERROR_OUT_OF_MEMORY) {
         clargs_result_destroy(result);

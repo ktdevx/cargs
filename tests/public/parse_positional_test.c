@@ -1075,7 +1075,7 @@ NAOS_TEST(a_name_that_is_not_a_subcommand_of_the_current_command_is_a_parse_erro
     tool_fixture_t fixture;
     char *argv[] = { "tool", "-v", "comit", "remote" };
     char *nested[] = { "tool", "remote", "-v", "status" };
-    char *deeper[] = { "tool", "remote", "add" };
+    char *deeper[] = { "tool", "remote", "add", "origin" };
     clargs_result_t *result;
 
     set_up_tool(&fixture);
@@ -1098,7 +1098,8 @@ NAOS_TEST(a_name_that_is_not_a_subcommand_of_the_current_command_is_a_parse_erro
     NAOS_CHECK_UINT_EQ(clargs_result_count(result, fixture.remote_verbose), 1);
     clargs_result_destroy(result);
 
-    /* The same name is a subcommand one level down. */
+    /* The same name is a subcommand one level down. Its positional is
+     * required, so it is given. */
     result = parse_ok(fixture.root, ARGC(deeper), deeper);
     NAOS_CHECK_TRUE(clargs_result_command(result) == fixture.add);
     clargs_result_destroy(result);

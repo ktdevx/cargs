@@ -187,6 +187,43 @@ extern "C" {
  * value is converted with the value type of its option when it is read,
  * also a value that is replaced later.
  *
+ * When the last argument was read without a parse error, the values are
+ * resolved, for the selected commands only: the root and every subcommand
+ * that was named. A command that was not selected is neither checked nor
+ * given a default value.
+ *
+ * First, what is required must have been given: an option that takes a
+ * value and is required (clargs_option_set_required()) must have a value,
+ * and a positional of the arity CLARGS_ARITY_REQUIRED or
+ * CLARGS_ARITY_ONE_OR_MORE must have one value at least. One that is
+ * missing is a parse error. Of several, the first is reported: the
+ * commands from the root on, the options of a command before its
+ * positionals, each in the order in which they were added.
+ *
+ * Then, when nothing is missing, what was not given gets its default
+ * value:
+ *
+ *     an option that takes a value, a positional of the arity
+ *     CLARGS_ARITY_OPTIONAL
+ *                    with a default value: the default value, converted
+ *                    with its value type; its source is
+ *                    CLARGS_SOURCE_DEFAULT
+ *                    without one: no value; its source is
+ *                    CLARGS_SOURCE_NONE
+ *     a positional of the arity CLARGS_ARITY_ZERO_OR_MORE
+ *                    no value: its count is 0
+ *     a flag, a count, a negatable flag
+ *                    not given, 0, its initial state; the source is
+ *                    CLARGS_SOURCE_DEFAULT
+ *
+ * A default value that its value type does not take is a parse error. The
+ * validation of the schema checked the default values, so this happens
+ * only with a user-defined value type that does not give the same answer
+ * every time.
+ *
+ * The command line and the default values are the only sources of a value:
+ * nothing else, such as the environment, is read.
+ *
  * What is returned, and what is written to *out:
  *
  *     CLARGS_ERROR_NONE                  a result  The command line matches
@@ -201,6 +238,14 @@ extern "C" {
  *
  * A parse error is read with clargs_result_error_kind() and the functions
  * next to it.
+ *
+ * The result of a command line with a parse error, whichever it is, holds
+ * what was read before the error: the selected commands, the options that
+ * were given and the values that were converted, all with the source
+ * CLARGS_SOURCE_COMMAND_LINE. It holds no default value: an option that
+ * takes a value and a positional that were not given have no value, also
+ * those with a default value. A flag, a count and a negatable flag that
+ * were not given read as not given, 0 and the initial state.
  *
  * Ownership:
  *

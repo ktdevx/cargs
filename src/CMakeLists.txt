@@ -10,6 +10,7 @@ set(CLARGS_SOURCES
     option.c
     parse.c
     positional.c
+    resolve.c
     result.c
     str.c
     type.c
