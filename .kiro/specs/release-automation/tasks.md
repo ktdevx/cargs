@@ -19,7 +19,7 @@
   - _Requirements: 2.3, 2.4, 2.5, 2.8_
 
 - [ ] 2. コア: リリースの処理のモジュールと変更の判定
-- [ ] 2.1 SemVer の解析と優先順位の比較を作る
+- [x] 2.1 SemVer の解析と優先順位の比較を作る
   - 設計の SemverModule の契約どおり、`<major>.<minor>.<patch>[-<pre-release>]` だけを受け付け、ビルドメタデータ、先頭の 0、空の識別子、0〜255 を超える数字を理由つきで拒む解析を作る
   - SemVer 2.0.0 の優先順位の比較を作る。数字だけの識別子は桁数と文字列で比べ、数値の桁あふれを起こさない
   - 設計の Testing Strategy の `release.semver` の内容（正しい書式と各誤った書式、仕様の例の順序、長い数字の識別子）をテストとして足す
@@ -132,3 +132,4 @@
 
 - 1.1: リリースのテストの補助は `tests/release/ReleaseTestHelpers.cmake`（`clargs_test_expect_equal`、`clargs_test_expect_contains`、`clargs_test_expect_not_contains`、`clargs_test_copy_fixture`、`clargs_test_run_script`、`clargs_test_finish`）。登録は `tests/CMakeLists.txt` の `clargs_add_release_test(<name>)`（`release.<name>`、ラベル `release`、作業ディレクトリは開始時に空にされる）。テストは `cmake -D CLARGS_SOURCE_ROOT=... -D CLARGS_TEST_WORK_DIR=... -P` で動く。
 - 1.1: `clargs_read_version(<header> <out> [<prerelease-out>])` は 2 引数でも識別子のマクロを検査する。トップレベルの `CMakeLists.txt` はまだ 2 引数で呼ぶ（1.2 で 3 引数にする）。
+- 2.1: SemVer は `tools/release/ClargsSemver.cmake` の `clargs_semver_parse(<version> <prefix>)`（`_VALID`、`_ERROR`、`_MAJOR`、`_MINOR`、`_PATCH`、`_PRERELEASE`、`_CORE`）と `clargs_semver_compare(<a> <b> <out>)`（-1/0/1）。`CMAKE_MATCH_<n>` は前の一致の値が残ることがあるので注意する。FATAL_ERROR の文はCMake が折り返すので、子プロセスの出力を照合するときは行をつないでから比べる。
