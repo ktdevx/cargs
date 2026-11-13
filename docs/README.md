@@ -2,6 +2,12 @@
 
 This page lists the documents of CLArgs, grouped by reader, with a one-line description of each; the [README](../README.md) at the root of the repository is the starting point for the project.
 
+Contents:
+
+- [Using CLArgs](#using-clargs)
+- [Contributing to CLArgs](#contributing-to-clargs)
+- [Maintaining CLArgs](#maintaining-clargs)
+
 ## Using CLArgs
 
 For users of the library. Read [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md) in this order; use [Ownership and Lifetime](ownership.md) and [Versioning](versioning.md) as references.

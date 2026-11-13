@@ -115,12 +115,12 @@ tools/                Scripts that are not part of the build
     ├── ClargsSemver.cmake        Checks a version and compares versions by SemVer precedence
     └── ClargsVersionHeader.cmake Rewrites the version in a version header
 docs/                 Documents
-├── README.md         The index of the documents (for users and developers)
-├── conventions.md    This document (for developers)
+├── README.md         The index of the documents (for users, contributors and maintainers)
+├── conventions.md    This document (for contributors)
 ├── help.md           Using help (for users): examples of generating help and the usage line, text rules, options, output, limits, preconditions
 ├── ownership.md      Ownership and lifetime rules (for users): who allocates and frees, how long things stay valid, how failures are returned
 ├── parse.md          Using parsing (for users): an example from parsing to destruction, the list of argument forms, parse errors, lifetime rules, preconditions
-├── releasing.md      The release procedure (for developers who make releases): releasing a version, the repository settings it needs, recovering from failures
+├── releasing.md      The release procedure (for maintainers): releasing a version, the repository settings it needs, recovering from failures
 ├── schema.md         Using schemas (for users): an example from definition through validation to destruction, the value type contract, the order of destruction
 └── versioning.md     The versioning policy (for users and contributors): how versions are numbered, what a new version may change, checking the version
 ```
