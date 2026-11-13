@@ -1,31 +1,112 @@
 # CI of CLArgs.
 #
-# Runs on every push to a branch and on every pull request that is opened or
-# updated. A newer run on the same branch cancels the older one.
+# Runs when a pull request is opened or updated, on every push to main, and
+# when it is started by hand (from the Actions tab, or by the Release PR
+# workflow, which starts it on the head commit of the release pull request).
+# A push to any other branch does not start it.
+#
+# The job "changes" decides whether the change touches documentation only
+# (tools/ci/changes.cmake). When it does, the builds and tests are skipped. A
+# run started by hand, or a change that cannot be judged, runs every job.
+#
+# The job "CI result" always ends, with success or failure, whatever was
+# skipped. It is the one check to require on main.
+#
+# A newer run for the same pull request cancels the older one. Runs for a push
+# to main or started by hand are never cancelled.
 
 name: CI
 
 on:
+  pull_request:
   push:
     branches:
-      - "**"
-  pull_request:
+      - main
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Read access to the repository, nothing else. No job uses a secret.
 permissions:
   contents: read
 
 jobs:
+  # Decides whether the change touches documentation only, and gives the
+  # verdict as the output docs_only ("true" or "false").
+  #
+  # - Pull request: the files changed between the base of the pull request
+  #   and its head.
+  # - Push to main: the files changed between the commit before the push and
+  #   the commit pushed. When there is no commit before (a new branch), or it
+  #   cannot be found (a force push), there is no list.
+  # - Started by hand: there is no list.
+  # - When git diff fails, there is no list.
+  #
+  # With no list, the verdict is docs_only=false, so every job runs. The
+  # values from the event are passed through env:, never written into the
+  # command lines.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.decide.outputs.docs_only }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          list="$RUNNER_TEMP/changed-files.txt"
+          rm -f "$list"
+          case "$EVENT_NAME" in
+            pull_request)
+              if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
+                echo "The base or the head of the pull request is not known."
+              elif ! git -c core.quotePath=false diff --name-only "$BASE_SHA...$HEAD_SHA" > "$list"; then
+                echo "git diff failed for $BASE_SHA...$HEAD_SHA."
+                rm -f "$list"
+              fi
+              ;;
+            push)
+              if [ -z "$BEFORE_SHA" ] || [ -z "${BEFORE_SHA//0/}" ]; then
+                echo "No commit before the push."
+              elif ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+                echo "The commit before the push, $BEFORE_SHA, cannot be found."
+              elif ! git -c core.quotePath=false diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" > "$list"; then
+                echo "git diff failed for $BEFORE_SHA $GITHUB_SHA."
+                rm -f "$list"
+              fi
+              ;;
+            *)
+              echo "Started by $EVENT_NAME."
+              ;;
+          esac
+          if [ -f "$list" ]; then
+            cmake -D CLARGS_CHANGED_FILES="$list" -D CLARGS_CHANGES_OUTPUT="$GITHUB_OUTPUT" -P tools/ci/changes.cmake
+          else
+            cmake -D CLARGS_CHANGES_OUTPUT="$GITHUB_OUTPUT" -P tools/ci/changes.cmake
+          fi
+
   # The three commands of the README, alone and with no other argument: no
   # generator, no build type, no -C for ctest. Keep these steps as they are.
   # On Windows the generator is multi-config, so this job is what proves that
   # ctest with no -C runs the tests (cmake/ClargsCTestDefaults.cmake).
   quickstart:
     name: quickstart (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -57,6 +138,8 @@ jobs:
   #   name tells the environment and the shape.
   build:
     name: build (${{ matrix.environment }}, ${{ matrix.shape }})
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -123,3 +206,81 @@ jobs:
         run: ctest --test-dir build/Release -C Release --output-on-failure --no-tests=error
       - name: Consumer check (Release)
         run: cmake -D CLARGS_BUILD_DIR=build/Release -D CLARGS_CONFIG=Release -D CLARGS_SHARED=${{ matrix.shared }} -P tests/consumer/run.cmake
+
+  # The one check to require on main. It runs every time, even when a job it
+  # needs failed, was cancelled or was skipped, and passes only when:
+  #
+  # - "changes" succeeded, and
+  # - "quickstart" and "build" each succeeded, or were skipped because the
+  #   change touches documentation only (docs_only is "true").
+  #
+  # Anything else fails it: a job that failed or was cancelled, a job skipped
+  # although the change is not documentation only, or a failure of "changes".
+  # The verdict and the reason are written to the summary of the run.
+  result:
+    name: CI result
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+      - quickstart
+      - build
+    if: always()
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Decide
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
+          QUICKSTART_RESULT: ${{ needs.quickstart.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          reasons=()
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            reasons+=("The job changes ended with \"$CHANGES_RESULT\".")
+          else
+            for job in quickstart build; do
+              if [ "$job" = quickstart ]; then result="$QUICKSTART_RESULT"; else result="$BUILD_RESULT"; fi
+              if [ "$result" = success ]; then
+                continue
+              elif [ "$result" = skipped ] && [ "$DOCS_ONLY" = true ]; then
+                continue
+              elif [ "$result" = skipped ]; then
+                reasons+=("The job $job was skipped although the change is not documentation only.")
+              else
+                reasons+=("The job $job ended with \"$result\".")
+              fi
+            done
+          fi
+
+          {
+            echo "## CI result"
+            echo
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+            echo "| changes | ${CHANGES_RESULT:-none} (docs_only=${DOCS_ONLY:-none}) |"
+            echo "| quickstart | ${QUICKSTART_RESULT:-none} |"
+            echo "| build | ${BUILD_RESULT:-none} |"
+            echo
+            if [ ${#reasons[@]} -eq 0 ]; then
+              if [ "$DOCS_ONLY" = true ]; then
+                echo "CI passed: the change touches documentation only; the builds and tests were skipped or succeeded."
+              else
+                echo "CI passed: every job succeeded."
+              fi
+            else
+              echo "CI failed:"
+              echo
+              for reason in "${reasons[@]}"; do
+                echo "- $reason"
+              done
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ ${#reasons[@]} -eq 0 ]; then
+            echo "CI passed."
+            exit 0
+          fi
+          printf '%s\n' "${reasons[@]}"
+          exit 1

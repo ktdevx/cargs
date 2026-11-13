@@ -62,7 +62,7 @@
   - _Requirements: 6.3, 6.4, 6.5, 6.8, 9.1, 9.2_
 
 - [ ] 4. ワークフロー
-- [ ] 4.1 CI の起動の契機、変更の判定、集約チェックを組み込む
+- [x] 4.1 CI の起動の契機、変更の判定、集約チェックを組み込む
   - 起動の契機を PR、`main` への push、手動起動にし、concurrency を設計のとおり（PR だけ古い実行を取り消す）にする。権限は読み取りのまま
   - 設計の CIWorkflow の `changes` ジョブ（イベントごとの一覧の作り方、失敗や手動起動では一覧を作らない）を足し、2.4 のスクリプトで `docs_only` を出力する
   - `quickstart` と `build` には `needs` と `if` だけを足す。名前、matrix、steps は 1 文字も変えない
@@ -138,3 +138,4 @@
 - 2.4: `tools/ci/changes.cmake` は `-D CLARGS_CHANGED_FILES=<一覧のファイル>`、`-D CLARGS_CHANGES_OUTPUT=<出力ファイル>`（`$GITHUB_OUTPUT` をそのまま渡せる。`docs_only=<v>` を追記）。標準出力は message(STATUS) なので行頭に `-- ` が付く。終了コードは常に 0。
 - 3.1: `tools/release/prepare.cmake` の入力は `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_DATE`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_TAGS_FILE`、`CLARGS_RELEASE_OUTPUT`（任意）、`CLARGS_RELEASE_CHECK_ONLY`（任意）。出力は `version=`、`tag=`、`prerelease=`。バイト単位の読み込みは `_clargs_prepare_read_bytes` に写しがある（`ClargsVersionHeader.cmake` の private 関数と重複。3.2 で共通化を検討）。
 - 3.2: `tools/release/publish.cmake` の入力は `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_NOTES`、`CLARGS_RELEASE_OUTPUT`（任意）。出力は `prerelease=`、`title=v<V>`。バイト単位の読み込みは `tools/release/ClargsReadBytes.cmake` の `clargs_read_bytes(<path> <what> <out>)` に共通化した。
+- 4.1: actionlint 1.7.7 は scratchpad に go install で入れた（/tmp/claude-0/-home-user-cargs/5e68a7da-d27a-50a0-b960-8332b131ec92/scratchpad/gopath/bin/actionlint）。ワークフローの確認に使える。ci.yml の required check は `CI result`（ジョブ id は `result`）。
