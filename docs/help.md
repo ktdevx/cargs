@@ -1,43 +1,43 @@
-# CLArgs のヘルプの使い方
+# Help and Usage
 
-検証済みのスキーマのコマンドを 1 つ渡して、そのコマンドのヘルプ、または usage 行だけを生成する方法をまとめる。生成される文面の規則、整形の設定、出力先、失敗したときに出力先に残るものも、ここにまとめる。
+This document explains how to pass one command of a validated schema and generate the help of that command, or only its usage line. It also describes the rules of the generated text, the help options that control the layout, where the text is written, and what is left at the destination when generation fails.
 
-この文書が扱うのは、ヘルプと usage 行の生成、設定、出力先である。スキーマの定義と検証は[スキーマの使い方](schema.md)に、argv の解析と解析エラーは[解析の使い方](parse.md)にある。生成は、スキーマを読むだけで、解析の結果を必要としない。ライブラリは、文面を自分ではどこにも出力せず、プロセスを終了させず、環境変数も端末の幅も読まない。`--help` のようなオプションを、スキーマに足すこともない。
+This document covers generating the help and the usage line, the help options, and the output. Defining and validating a schema is in [Schemas](schema.md). Parsing argv and parse errors are in [Parsing](parse.md). Generation only reads the schema; it does not need a parse result. The library does not print the text anywhere by itself, does not end the process, and reads neither environment variables nor the terminal width. It does not add an option such as `--help` to the schema either.
 
-関数ごとの詳しい説明と前提条件は、公開ヘッダ `include/clargs/help.h` のコメントにある。メモリの持ち方の決まりは、[所有権と寿命の規約](ownership.md)にある。
+The detailed description and the preconditions of each function are in the comments of the public header `include/clargs/help.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
 
-この文書で使う言葉:
+Terms used in this document:
 
-| 言葉 | 意味 |
+| Term | Meaning |
 |---|---|
-| ヘルプ | 1 つのコマンドを説明する文面の全体。usage 行、コマンドの説明文、一覧からなる |
-| usage 行 | ヘルプの先頭の、`Usage: ` で始まる部分。折り返されると、複数の行になる |
-| 一覧 | `Commands:`、`Arguments:`、`Options:` のそれぞれ |
-| 項目 | 一覧に載る 1 つのサブコマンド、位置引数、オプション |
-| 見出し | 項目の左側に出る、名前の表記（`-o, --output <FILE>` など） |
-| 説明 | 項目の右側に出る文章。説明文と注記からなる |
-| 注記 | 説明文の後ろに出る、`[default: 6]` のような、定義から作られる語句 |
-| 桁 | 行の先頭から数えたバイトの数。行の先頭は 0 桁である。1 バイトを 1 桁と数える |
-| 説明の列 | 項目の説明が始まる桁 |
-| 設定 | 表示幅、字下げ、説明の列の上限を持つオブジェクト（`clargs_help_options_t`） |
-| 書き込み関数 | 生成された文面を受け取る、利用者の関数（`clargs_help_write_fn_t`） |
+| help | The whole text that describes one command. It consists of the usage line, the description of the command, and the lists |
+| usage line | The part at the start of the help that begins with `Usage: `. When it is wrapped, it spans several lines |
+| list | Each of `Commands:`, `Arguments:` and `Options:` |
+| item | One subcommand, positional or option in a list |
+| heading | The notation of the names on the left of an item (such as `-o, --output <FILE>`) |
+| description | The text on the right of an item. It consists of the description text and the annotations |
+| annotation | A phrase made from the definition, such as `[default: 6]`, that follows the description text |
+| column | The number of bytes counted from the start of the line. The start of a line is column 0. One byte counts as one column |
+| description column | The column where the descriptions of the items start |
+| help options | The object that holds the width, the indent and the maximum description column (`clargs_help_options_t`) |
+| write function | Your function that receives the generated text (`clargs_help_write_fn_t`) |
 
-目次:
+Contents:
 
-- [最小の例](#最小の例)
-- [`--help` とエラーの表示](#--help-とエラーの表示)
-- [生成の関数](#生成の関数)
-- [文面の規則](#文面の規則)
-- [設定](#設定)
-- [出力先](#出力先)
-- [制限](#制限)
-- [失敗したとき](#失敗したとき)
-- [寿命の規則](#寿命の規則)
-- [前提条件](#前提条件)
+- [A minimal example](#a-minimal-example)
+- [Printing `--help` and errors](#printing---help-and-errors)
+- [Generating functions](#generating-functions)
+- [Text layout rules](#text-layout-rules)
+- [Help options](#help-options)
+- [Output](#output)
+- [Limits](#limits)
+- [On failure](#on-failure)
+- [Lifetime rules](#lifetime-rules)
+- [Preconditions](#preconditions)
 
-## 最小の例
+## A minimal example
 
-`fetch` という架空のプログラムのヘルプを標準出力に出し、続けて usage 行だけを出す。例は 1 つの翻訳単位で、取り込むのは `<clargs/clargs.h>` と標準ヘッダだけである。取り出して、そのままコンパイルできる。
+The example prints the help of `fetch`, a made-up program, to the standard output, and then prints the usage line alone. The example is one translation unit, and it includes only `<clargs/clargs.h>` and standard headers. You can copy it out and compile it as it is.
 
 ```c
 #include <clargs/clargs.h>
@@ -110,7 +110,7 @@ int main(void)
 }
 ```
 
-出力:
+Output:
 
 ```
 Usage: fetch [OPTIONS] --output <FILE> <url>
@@ -128,20 +128,20 @@ Options:
 Usage: fetch [OPTIONS] --output <FILE> <url>
 ```
 
-例の要点:
+Points of the example:
 
-- 生成に渡すのは、検証済みのスキーマのコマンド、設定、書き込み関数、書き込み関数に渡すデータの 4 つである。設定を `NULL` にすると、既定の値で生成する。
-- ライブラリは、文面を書き込み関数に渡すだけである。どこに書くかは、書き込み関数が決める。例の `write_to_stream` は、`fwrite()` で `FILE *` に書く（[標準出力に出す](#標準出力に出す)）。
-- `clargs_help_write` がヘルプを、`clargs_help_write_usage` が usage 行だけを生成する。`----` の行は、例のプログラムが書いている。
-- usage 行だけの文面は、同じコマンドと設定のヘルプの usage 行と、バイト単位で同じである。
-- 文面は、スキーマの定義から作られる。`<integer>` は、値の表示名を設定していない `--retries` の、値型の名前である。`[required]` と `[default: 3]` は、必須と既定値の定義から作られた注記である。
-- 生成は、スキーマも設定も変更しない。生成の関数が返すもののうち、利用者が解放するものはない。
+- Generation takes four things: a command of a validated schema, the help options, a write function, and the data passed to the write function. If the help options are `NULL`, the default values are used.
+- The library only passes the text to the write function. The write function decides where it goes. The `write_to_stream` of the example writes to a `FILE *` with `fwrite()` ([Writing to standard output](#writing-to-standard-output)).
+- `clargs_help_write` generates the help, and `clargs_help_write_usage` generates the usage line alone. The `----` line is written by the example program.
+- The text of the usage line alone is byte for byte the same as the usage line of the help for the same command and help options.
+- The text is made from the definitions of the schema. `<integer>` is the name of the value type of `--retries`, which has no value name set. `[required]` and `[default: 3]` are annotations made from the required and default value definitions.
+- Generation changes neither the schema nor the help options. Nothing that the generating functions return is freed by you.
 
-## `--help` とエラーの表示
+## Printing `--help` and errors
 
-ライブラリは、`--help` を特別扱いしない。`--help` は、利用者がスキーマに定義するフラグである。指定されたかどうかを解析の結果から読み、ヘルプを生成して出力し、プログラムを終えるのは、利用者のコードである。`--help` の読み方と、解析エラーより先に確かめる理由は、[解析の使い方](parse.md#--help-の扱い)にある。
+The library does not treat `--help` specially. `--help` is a flag that you define in the schema. Your code reads from the result whether it was given, generates and prints the help, and ends the program. How to read `--help`, and why to check it before parse errors, is in [Parsing](parse.md#handling---help).
 
-次の例は、`pack` という架空のプログラムで、`--help` が指定されたらヘルプを標準出力に出し、解析エラーのときはメッセージに usage 行を添えて標準エラー出力に出す。これも、そのままコンパイルできる。
+The next example uses `pack`, a made-up program. When `--help` is given, it prints the help to the standard output. On a parse error, it prints the message with the usage line to the standard error stream. You can compile this one as it is, too.
 
 ```c
 #include <clargs/clargs.h>
@@ -309,7 +309,7 @@ int main(int argc, char **argv)
 }
 ```
 
-実行の例（`$` の行が入力、次の行からが出力）:
+Example runs (a `$` line is the input, and the lines after it are the output):
 
 ```
 $ pack --help
@@ -350,16 +350,16 @@ Usage: pack list [OPTIONS] <archive> [pattern]
 Try 'pack --help' for more information.
 ```
 
-例の要点:
+Points of the example:
 
-- `--help` は、すべてのコマンドに、利用者が定義する（`add_help`）。ライブラリが足すことはない。ヘルプの `Options:` には、スキーマにあるオプションだけが、ほかのオプションと同じ形で載る。
-- ヘルプを出すコマンドは、`clargs_result_command`（コマンドラインが最後に選んだコマンド）である。`pack create --help` は `create` のヘルプになる。
-- 解析エラーに添える usage 行のコマンドは、`clargs_result_error_command`（エラーを見つけたときの現在のコマンド）である。解析エラーの結果では、`NULL` にならない。
-- usage 行の文面は、改行で終わる。メッセージと並べるときに、改行を足さない。
-- ライブラリは、プロセスを終了させない。終了コードを決めて `main` から戻るのは、利用者のコードである。
-- 出力先は、書き込み関数に渡すデータで変えられる。例は、ヘルプを `stdout` に、usage 行を `stderr` に書いている。
+- You define `--help` on every command yourself (`add_help`). The library never adds it. The `Options:` list of the help shows only the options in the schema, and `--help` appears in the same form as the other options.
+- The command whose help is printed is `clargs_result_command` (the last command that the command line selected). `pack create --help` gives the help of `create`.
+- The command of the usage line printed with a parse error is `clargs_result_error_command` (the current command when the error was found). On a result with a parse error, it is not `NULL`.
+- The text of the usage line ends with a newline. Do not add a newline when you print it after the message.
+- The library does not end the process. Your code decides the exit status and returns from `main`.
+- You change the destination with the data passed to the write function. The example writes the help to `stdout` and the usage line to `stderr`.
 
-## 生成の関数
+## Generating functions
 
 ```
 clargs_error_t clargs_help_write(const clargs_command_t *command,
@@ -376,60 +376,60 @@ clargs_error_t clargs_help_format_usage(const clargs_command_t *command,
                                         char *buffer, size_t size, size_t *length);
 ```
 
-| 関数 | 生成するもの | 出力先 |
+| Function | Generates | Destination |
 |---|---|---|
-| `clargs_help_write` | ヘルプ | 書き込み関数 |
-| `clargs_help_write_usage` | usage 行 | 書き込み関数 |
-| `clargs_help_format` | ヘルプ | 利用者のバッファ |
-| `clargs_help_format_usage` | usage 行 | 利用者のバッファ |
+| `clargs_help_write` | The help | A write function |
+| `clargs_help_write_usage` | The usage line | A write function |
+| `clargs_help_format` | The help | Your buffer |
+| `clargs_help_format_usage` | The usage line | Your buffer |
 
-- `command` は、ルートコマンドでも、どの段のサブコマンドでもよい。そのコマンドのスキーマは、検証済みでなければならない（[前提条件](#前提条件)）。
-- `options` は設定である。`NULL` を渡すと、すべての項目が既定の値になる（[設定](#設定)）。
-- 同じコマンドと設定からは、何度生成しても、どの環境でも、バイト単位で同じ文面になる。文面は、ロケール、環境変数、端末に左右されない。
-- バッファに生成する関数の文面は、書き込み関数に生成する関数の文面と同じである（[バッファに生成する](#バッファに生成する)）。
-- 戻り値と、失敗したときに残るものは、[失敗したとき](#失敗したとき)にある。
+- `command` may be the root command or a subcommand at any depth. The schema of that command must be validated ([Preconditions](#preconditions)).
+- `options` are the help options. If you pass `NULL`, every setting has its default value ([Help options](#help-options)).
+- The same command and help options always give the same text, byte for byte, however many times you generate it and in any environment. The text does not depend on the locale, environment variables or the terminal.
+- The text of the functions that format into a buffer is the same as the text of the functions that pass it to a write function ([Formatting into a buffer](#formatting-into-a-buffer)).
+- The return values, and what is left on failure, are in [On failure](#on-failure).
 
-## 文面の規則
+## Text layout rules
 
-文面は、スキーマの定義と設定から、次の規則だけで決まる。利用者は、生成された文面を、期待する文字列とバイト単位で比べるテストを書ける。
+The text is decided by the definitions of the schema and the help options, through the following rules only. You can write tests that compare the generated text, byte for byte, with the string you expect.
 
-この節の規則は、名前（ルートコマンドの名前、位置引数の名前、値の表示名、利用者定義の値型の名前）、既定値、選択肢が、空白で始まらず、空白で終わらず、改行を含まないスキーマについて書いている。説明文は、[説明文の書き方についての注意](#説明文の書き方についての注意)にある書き方（改行や、空白だけの行で始める書き方）を避けているものとする。そうでないスキーマでは、この節の文のいくつかが成り立たない。主な違いは、[制限](#制限)と、その注意にある。
+The rules in this section are written for a schema whose names (the name of the root command, the names of the positionals, the value names, the names of user-defined value types), default values and choices do not start with a blank, do not end with a blank, and contain no newline. Descriptions are assumed to avoid the forms described in [Notes on writing descriptions](#notes-on-writing-descriptions) (starting with a newline or with a line of blanks only). For other schemas, some statements of this section do not hold. The main differences are in [Limits](#limits) and its notes.
 
-どの文面にも共通すること:
+What holds for every text:
 
-- ライブラリが足す行の区切りは `\n` だけで、`\r` を足さない。文面は `\n` で終わる。
-- ライブラリは、行末に空白を足さない。スキーマの文字列が持つ `\r` と、名前が持つ行末の空白は、そのまま出力される。ルートコマンドの名前が改行で始まるときは、`Usage: ` の空白が行末に残る（[制限](#制限)）。
-- 固定の語句（`Usage:`、`Commands:`、`[OPTIONS]`、`[default: …]` など）は英語である。
-- スキーマの文字列（名前、説明文、値の表示名、既定値、選択肢）は、文字を変換せずに出力する。大文字と小文字も変えない。名前（値型の名前を含む）と値の表示名は、バイトのまま出力する。説明文と注記（既定値と選択肢を含む）は、[折り返し](#折り返し)の規則に従うので、行末の空白と、折り返した位置の空白は出力されない。説明文の末尾の改行は、注記が続くときを除いて、出力されない（[注記](#注記)）。コマンドの説明文と、オプションと位置引数の説明文の末尾にある空白と改行の並び（最後の、空白でも改行でもないバイトの後ろ）では、空白を無視し、改行だけを残す（`"foo\n  "` は `"foo\n"` と、`"foo\n \n"` は `"foo\n\n"` と同じ文面になる）。
+- The only line separator that the library adds is `\n`. It does not add `\r`. The text ends with `\n`.
+- The library adds no blanks at the end of a line. A `\r` in a string of the schema, and trailing blanks of a name, are written as they are. When the name of the root command starts with a newline, the blank of `Usage: ` is left at the end of the line ([Limits](#limits)).
+- The fixed phrases (`Usage:`, `Commands:`, `[OPTIONS]`, `[default: …]` and so on) are in English.
+- The strings of the schema (names, descriptions, value names, default values, choices) are written without converting any characters. Upper and lower case are not changed either. Names (including the names of value types) and value names are written byte for byte. Descriptions and annotations (including default values and choices) follow the rules of [Wrapping](#wrapping), so blanks at the end of a line and blanks at the wrapping points are not written. A newline at the end of a description is not written, except when annotations follow ([Annotations](#annotations)). In the run of blanks and newlines at the end of the description of a command, an option or a positional (after the last byte that is neither a blank nor a newline), the blanks are ignored and only the newlines are kept (`"foo\n  "` gives the same text as `"foo\n"`, and `"foo\n \n"` the same as `"foo\n\n"`).
 
-### 構成
+### Structure
 
-ヘルプは、次の部分を、この順に並べたものである。
+The help consists of the following parts, in this order.
 
-| 順 | 部分 | 出る条件 | 内容 |
+| Order | Part | Appears when | Content |
 |---|---|---|---|
-| 1 | usage 行 | 常に | [usage 行](#usage-行)の規則のとおり |
-| 2 | コマンドの説明文 | 説明文が設定されている | 行の先頭から書く。末尾の改行は出力しない。表示幅で折り返す（[折り返し](#折り返し)） |
-| 3 | `Commands:` | サブコマンドが 1 つ以上ある | 直接のサブコマンドを、1 つずつ。見出しは名前、説明は説明文の最初の行（最初の改行の手前まで） |
-| 4 | `Arguments:` | 位置引数が 1 つ以上ある | 位置引数を、1 つずつ。説明は、説明文の全体と注記 |
-| 5 | `Options:` | オプションが 1 つ以上ある | オプションを、1 つずつ。説明は、説明文の全体と注記 |
+| 1 | Usage line | Always | As in the rules of [Usage line](#usage-line) |
+| 2 | Description of the command | A description is set | Written from the start of the line. A newline at the end is not written. Wrapped at the width ([Wrapping](#wrapping)) |
+| 3 | `Commands:` | There is at least one subcommand | The direct subcommands, one item each. The heading is the name, and the description is the first line of the description text (up to the first newline) |
+| 4 | `Arguments:` | There is at least one positional | The positionals, one item each. The description is the whole description text and the annotations |
+| 5 | `Options:` | There is at least one option | The options, one item each. The description is the whole description text and the annotations |
 
-- 出る条件を満たさない部分は、名前の行ごと出力しない。
-- 部分と部分の間に、空の行を 1 つ置く。文面の先頭と末尾には、空の行を置かない。改行や空白だけの行で始まる説明文は例外である（[説明文の書き方についての注意](#説明文の書き方についての注意)）。
-- 一覧は、名前だけの行（`Commands:` など）で始まり、項目が、定義した順に続く。
-- 一覧に載るのは、対象のコマンドに定義されたものだけである。親のコマンドのオプション、サブコマンドのオプションと位置引数、サブコマンドのサブコマンドは載らない。スキーマにないオプションが足されることもない。
-- 1 つのコマンドは、位置引数とサブコマンドの両方を持てない（[スキーマの使い方](schema.md#コマンド)）。だから、1 つのヘルプに出る一覧は、「`Commands:` と `Options:`」か「`Arguments:` と `Options:`」の、多くて 2 つである。
-- 空白と改行だけの説明文は、設定されていないものとして扱う（[説明文の書き方についての注意](#説明文の書き方についての注意)）。
+- A part whose condition is not met is not written, including its name line.
+- One empty line is placed between parts. There is no empty line at the start or at the end of the text. Descriptions that start with a newline or a line of blanks only are the exception ([Notes on writing descriptions](#notes-on-writing-descriptions)).
+- A list starts with a line that holds only its name (such as `Commands:`), followed by its items in the order they were defined.
+- A list shows only what is defined on the command itself. The options of the parent command, the options and positionals of subcommands, and the subcommands of subcommands are not shown. No option that is not in the schema is added.
+- A command cannot have both positionals and subcommands ([Schemas](schema.md#commands)). So one help shows at most two lists: either `Commands:` and `Options:`, or `Arguments:` and `Options:`.
+- A description that has only blanks and newlines is treated as not set ([Notes on writing descriptions](#notes-on-writing-descriptions)).
 
-`pack` のヘルプ（[`--help` とエラーの表示](#--help-とエラーの表示)の例の出力）は、usage 行、説明文、`Commands:`、`Options:` からなる。`pack create` のヘルプは、usage 行、説明文、`Arguments:`、`Options:` からなる。
+The help of `pack` (the output of the example in [Printing `--help` and errors](#printing---help-and-errors)) consists of the usage line, the description, `Commands:` and `Options:`. The help of `pack create` consists of the usage line, the description, `Arguments:` and `Options:`.
 
-説明文も、オプションも、位置引数も、サブコマンドも持たないコマンド `tool` のヘルプは、usage 行だけである。
+The help of a command `tool` that has no description, no options, no positionals and no subcommands is the usage line alone.
 
 ```
 Usage: tool
 ```
 
-サブコマンドの説明は、説明文の最初の行だけである。次は、説明文が 2 行ある `create` と、説明文のない `check` を持つコマンドのヘルプである。
+The description of a subcommand is only the first line of its description text. The next help is that of a command with `create`, whose description has two lines, and `check`, which has no description.
 
 ```
 Usage: tool [COMMAND]
@@ -439,7 +439,7 @@ Commands:
   check
 ```
 
-`create` 自身のヘルプには、説明文の全体が出る。
+The help of `create` itself shows the whole description.
 
 ```
 Usage: tool create
@@ -448,66 +448,66 @@ Create an archive.
 The files are packed in the order of the command line.
 ```
 
-### usage 行
+### Usage line
 
-usage 行は、次の項目を、この順に並べたものである。
+The usage line consists of the following items, in this order.
 
-| 順 | 項目 | 出る条件 | 表記 |
+| Order | Item | Appears when | Notation |
 |---|---|---|---|
-| 1 | コマンドの経路 | 常に | `Usage: ` に続けて、ルートから対象のコマンドまでの名前を、空白 1 つで区切って書く |
-| 2 | `[OPTIONS]` | 必須でないオプションが 1 つ以上ある | `[OPTIONS]`。フラグ、否定できるフラグ、カウント、必須でない値付きオプションが、必須でないオプションである |
-| 3 | 必須のオプション | 必須の値付きオプションごとに 1 つ。定義した順 | 長い名前があれば `--long <値の表示名>`、なければ `-s <値の表示名>` |
-| 4 | 位置引数 | 位置引数ごとに 1 つ。定義した順 | 下の表の 4 通り |
-| 5 | `[COMMAND]` | サブコマンドが 1 つ以上ある | `[COMMAND]` |
+| 1 | The command path | Always | `Usage: ` followed by the names from the root to the command, separated by one blank |
+| 2 | `[OPTIONS]` | There is at least one option that is not required | `[OPTIONS]`. Flags, negatable flags, counts and options with a value that are not required are the options that are not required |
+| 3 | Required options | One for each required option with a value, in the order they were defined | `--long <value name>` if it has a long name, otherwise `-s <value name>` |
+| 4 | Positionals | One for each positional, in the order they were defined | One of the four forms in the table below |
+| 5 | `[COMMAND]` | There is at least one subcommand | `[COMMAND]` |
 
-位置引数の表記は、個数の種類で決まる。`Arguments:` の一覧の見出しも、同じ表記である。
+The notation of a positional depends on its arity. The headings of the `Arguments:` list use the same notation.
 
-| 個数の種類 | 表記 |
+| Arity | Notation |
 |---|---|
 | `CLARGS_ARITY_REQUIRED` | `<name>` |
 | `CLARGS_ARITY_OPTIONAL` | `[name]` |
 | `CLARGS_ARITY_ZERO_OR_MORE` | `[name]...` |
 | `CLARGS_ARITY_ONE_OR_MORE` | `<name>...` |
 
-値の表示名が設定されていないときに出る名前は、[見出し](#見出し)にある。
+The name shown when no value name is set is described in [Headings](#headings).
 
-必須のオプション `--output`（値の表示名は `FILE`）と `-j`（整数。長い名前も値の表示名もない）、位置引数 `source`（必須）、`target`（任意）、`extra`（0 個以上）を持つコマンドの usage 行:
+The usage line of a command with the required options `--output` (value name `FILE`) and `-j` (an integer, with neither a long name nor a value name), and the positionals `source` (required), `target` (optional) and `extra` (zero or more):
 
 ```
 Usage: tool --output <FILE> -j <integer> <source> [target] [extra]...
 ```
 
-フラグ `-q` と、位置引数 `file`（1 個以上）を持つコマンドの usage 行:
+The usage line of a command with the flag `-q` and the positional `file` (one or more):
 
 ```
 Usage: tool [OPTIONS] <file>...
 ```
 
-`tool` のサブコマンド `remote` の、そのまたサブコマンド `add` の usage 行と、`remote` の usage 行:
+The usage line of `add`, a subcommand of `remote`, which is itself a subcommand of `tool`, and the usage line of `remote`:
 
 ```
 Usage: tool remote add [OPTIONS] <name>
 Usage: tool remote [COMMAND]
 ```
 
-折り返しの規則:
+Wrapping rules:
 
-- 2 つ目以降の項目は、前の項目との間に、空白を 1 つ置く。
-- ただし、表示幅が 0 でなく、「現在の桁 + 1 + 項目の幅」が表示幅を超えるときは、空白の代わりに、改行と空白 7 桁を置く。7 桁は `Usage: ` の幅で、続きの行は、コマンドの経路の先頭と同じ桁から始まる。
-- 項目は、途中で分けない。値の表示名に空白があっても、そこでは分けない。
-- 表示幅より広い項目は、その項目だけの行になり、表示幅を超えて出力される。
-- コマンドの経路は、表示幅を超えても、`Usage: ` の直後に続けて出力する。経路の中では折り返さない。
-- 表示幅が 0 なら、折り返さない。
-- 項目の幅は、その項目のバイト数である。
+- From the second item on, one blank is placed between an item and the one before it.
+- However, when the width is not 0 and "the current column + 1 + the width of the item" is greater than the width, a newline and 7 blanks are placed instead of the blank. 7 columns is the width of `Usage: `, so the continuation lines start at the same column as the start of the command path.
+- An item is never split. It is not split at a blank in a value name either.
+- An item wider than the width goes on a line of its own and is written past the width.
+- The command path is written right after `Usage: ` even when it is wider than the width. The path itself is never wrapped.
+- When the width is 0, the line is not wrapped.
+- The width of an item is its number of bytes.
 
-`pack create` の usage 行は、既定の表示幅（80）では 1 行である。表示幅を 40 にすると、次のようになる。`[OPTIONS]` の後ろに `--output <FILE>` を置くと 44 桁になるので、そこで折り返す。
+The usage line of `pack create` is one line at the default width (80). At the width 40, it looks as follows. Putting `--output <FILE>` after `[OPTIONS]` would reach column 44, so the line is wrapped there.
 
 ```
 Usage: pack create [OPTIONS]
        --output <FILE> <file>...
 ```
 
-表示幅を 20 にした、値の表示名が `FILE OR DIRECTORY` の必須のオプションを持つコマンドの usage 行である。2 行目の項目は 28 桁あり、表示幅を超えるが、分けずに出力される。
+The next usage line is that of a command with a required option whose value name is `FILE OR DIRECTORY`, at the width 20. The item on the second line is 28 columns wide, which is wider than the width, but it is written without being split.
 
 ```
 Usage: tool
@@ -515,30 +515,30 @@ Usage: tool
        <source>
 ```
 
-### 見出し
+### Headings
 
-サブコマンドの見出しは、名前である。位置引数の見出しは、[usage 行](#usage-行)の位置引数の表記と同じである。オプションの見出しは、名前の部分と、種類ごとの続きからなる。
+The heading of a subcommand is its name. The heading of a positional is the same as the notation of the positional in the [Usage line](#usage-line). The heading of an option consists of a names part and a continuation that depends on the kind.
 
-名前の部分:
+The names part:
 
-| オプションが持つ名前 | 表記 |
+| Names of the option | Notation |
 |---|---|
-| 短い名前と長い名前 | `-s, --long` |
-| 短い名前だけ | `-s` |
-| 長い名前だけ | 空白 4 桁と `--long`。長い名前の桁が、短い名前を持つオプションと揃う |
+| A short name and a long name | `-s, --long` |
+| A short name only | `-s` |
+| A long name only | 4 blanks and `--long`. The long name lines up with the long names of options that have a short name |
 
-種類ごとの続き:
+The continuation for each kind:
 
-| 種類 | 表記 | 例 |
+| Kind | Notation | Example |
 |---|---|---|
-| フラグ | 名前の部分だけ | `-h, --help` |
-| 否定できるフラグ | 長い名前を `--[no-]long` と書く | `--[no-]color` |
-| カウント | 名前の部分の直後に `...` | `-v, --verbose...` |
-| 値付きオプション | 名前の部分の後ろに、空白 1 つ、`<`、値の表示名、`>` | `-o, --output <FILE>` |
+| Flag | The names part only | `-h, --help` |
+| Negatable flag | The long name is written as `--[no-]long` | `--[no-]color` |
+| Count | `...` right after the names part | `-v, --verbose...` |
+| Option with a value | After the names part, one blank, `<`, the value name and `>` | `-o, --output <FILE>` |
 
-値の表示名（`clargs_option_set_value_name`）が設定されていない値付きオプションでは、値の表示名の代わりに、値型の名前が出る。組み込みの値型の名前は、`string`、`integer`、`float` である。選択肢の値型の名前は `choice` で、利用者定義の値型の名前は、値型を生成したときに渡した名前である。usage 行の必須のオプションでも、同じである。
+For an option with a value that has no value name set (`clargs_option_set_value_name`), the name of the value type is shown in place of the value name. The names of the built-in value types are `string`, `integer` and `float`. The name of a choice value type is `choice`, and the name of a user-defined value type is the name passed when the value type was created. The same applies to the required options in the usage line.
 
-すべての表記を並べたヘルプである。
+A help that shows every notation:
 
 ```
 Usage: tool [OPTIONS]
@@ -558,27 +558,27 @@ Options:
       --mode <choice>  A choice [choices: fast, small]
 ```
 
-- `--help` をフラグとして定義すると、ほかのフラグと同じ形で載る。
-- 見出しの幅は、見出しのバイト数である。
+- If you define `--help` as a flag, it appears in the same form as the other flags.
+- The width of a heading is its number of bytes.
 
-### 注記
+### Annotations
 
-注記は、オプションと位置引数の説明文の後ろに、次の順に出る。サブコマンドには、注記がない。
+Annotations follow the description of an option or a positional, in the following order. Subcommands have no annotations.
 
-| 順 | 注記 | 出る条件 |
+| Order | Annotation | Appears when |
 |---|---|---|
-| 1 | `[choices: a, b, c]` | 値付きオプションまたは位置引数で、値型が選択肢である。選択肢を、定義した順に、`, ` で区切って並べる |
-| 2 | `[default: 値]` | 値付きオプションまたは位置引数で、既定値が設定されている。値は、設定した文字列のままである。ただし、注記も折り返されるので、値の中の行末の空白と、折り返した位置の空白は出力されない |
-| 2 | `[default: on]` | 否定できるフラグで、初期の状態がオンである。オフのときは、注記がない |
-| 3 | `[required]` | 値付きオプションで、必須である。位置引数には出ない。位置引数が必須かどうかは、見出しの表記で分かる |
+| 1 | `[choices: a, b, c]` | An option with a value or a positional whose value type is a choice. The choices are listed in the order they were defined, separated by `, ` |
+| 2 | `[default: value]` | An option with a value or a positional that has a default value set. The value is the string that was set, unchanged. However, annotations are wrapped too, so blanks at the end of a line and blanks at the wrapping points inside the value are not written |
+| 2 | `[default: on]` | A negatable flag whose initial state is on. When it is off, there is no annotation |
+| 3 | `[required]` | A required option with a value. It does not appear on positionals: whether a positional is required can be seen from the notation of its heading |
 
-- 説明文と注記の間、注記と注記の間には、空白を 1 つ置く。
-- 説明文が設定されていない項目では、注記が、説明の列から始まる。
-- 説明文が改行で終わるときは、注記は、空白を置かずに、次の行の説明の列から始まる。注記を独立した行にしたいときに使える。説明文が 2 つ以上の改行で終わるときは、2 つ目からの改行が、説明文と注記の間の空の行になる。注記のない項目では、説明文の末尾の改行は出力されない。
-- 注記も、説明文と同じに折り返される。注記の中の空白でも折り返される（[折り返し](#折り返し)）。
-- 必須で、かつ既定値を持つオプションは、検証で誤りになる（[スキーマの使い方](schema.md#検証の時点の誤り)）。だから、`[default: …]` と `[required]` が同じ項目に出ることはない。
+- One blank is placed between the description and an annotation, and between annotations.
+- On an item that has no description set, the annotations start at the description column.
+- When the description ends with a newline, the annotations start at the description column of the next line, with no blank before them. You can use this to put the annotations on a line of their own. When the description ends with two or more newlines, the newlines from the second one on become empty lines between the description and the annotations. On an item with no annotations, a newline at the end of the description is not written.
+- Annotations are wrapped in the same way as descriptions. They are also wrapped at the blanks inside an annotation ([Wrapping](#wrapping)).
+- An option that is required and has a default value is an error in validation ([Schemas](schema.md#errors-found-by-validation)). So `[default: …]` and `[required]` never appear on the same item.
 
-次のヘルプの `--kind` は、説明文がない。`--title` は、説明文が改行で終わっている（`"The title of the archive.\n"`）。`--color` は初期の状態がオン、`--sort` はオフである。
+In the next help, `--kind` has no description. The description of `--title` ends with a newline (`"The title of the archive.\n"`). The initial state of `--color` is on, and that of `--sort` is off.
 
 ```
 Usage: tool [OPTIONS] --output <FILE> --kind <choice> <format> [level]
@@ -597,28 +597,28 @@ Options:
                        [default: untitled]
 ```
 
-### 説明の列
+### Description column
 
-- 項目は、字下げの桁数の空白で始まり、見出しが続く。字下げは、設定の項目である（既定は 2）。
-- 説明は、説明の列から始まる。説明の列は、1 つのヘルプに 1 つで、そのヘルプのすべての一覧に共通である。
-- 説明のない項目（説明文も注記もない項目）は、見出しだけの行になる。
+- An item starts with as many blanks as the indent, followed by the heading. The indent is a help option (2 by default).
+- The description starts at the description column. There is one description column per help, shared by all the lists of that help.
+- An item with no description (neither a description text nor annotations) is a line with only the heading.
 
-説明の列は、次のように決まる。
+The description column is decided as follows.
 
-1. 上限を決める。上限は、設定の「説明の列の上限」（既定は 32）と、表示幅の半分（端数は切り捨て）の、小さいほうである。表示幅が 0 のときは、表示幅の半分を考えない。
-2. 上限が「字下げ + 2」より小さければ、上限を「字下げ + 2」にする。
-3. 説明の列は、「字下げ + そのヘルプで最も広い見出しの幅 + 2」である。これが上限を超えるなら、説明の列は上限になる。
+1. Decide the maximum. The maximum is the smaller of the "maximum description column" help option (32 by default) and half of the width (rounded down). When the width is 0, half of the width is not considered.
+2. If the maximum is less than "indent + 2", the maximum becomes "indent + 2".
+3. The description column is "indent + the width of the widest heading in that help + 2". If this is greater than the maximum, the description column is the maximum.
 
-項目の行の形は、見出しの幅で決まる。
+The form of the line of an item depends on the width of its heading.
 
-| 条件 | 行の形 |
+| Condition | Form of the line |
 |---|---|
-| 「字下げ + 見出しの幅 + 2」が説明の列以下 | 見出しと同じ行の、説明の列から、説明が始まる。見出しと説明の間の空白は、2 桁以上になる |
-| 「字下げ + 見出しの幅 + 2」が説明の列を超える | 見出しだけの行になり、次の行の説明の列から、説明が始まる |
+| "indent + width of the heading + 2" is not greater than the description column | The description starts at the description column on the same line as the heading. There are 2 or more blanks between the heading and the description |
+| "indent + width of the heading + 2" is greater than the description column | The heading is on a line of its own, and the description starts at the description column of the next line |
 
-`pack create` のヘルプ（[`--help` とエラーの表示](#--help-とエラーの表示)の例の出力）では、最も広い見出しは `-o, --output <FILE>` と `-l, --level <LEVEL>` の 19 桁である。説明の列は 2 + 19 + 2 = 23 で、上限の 32 を超えないので、`Arguments:` と `Options:` のどちらの説明も、23 桁から始まる。
+In the help of `pack create` (the output of the example in [Printing `--help` and errors](#printing---help-and-errors)), the widest headings are `-o, --output <FILE>` and `-l, --level <LEVEL>`, 19 columns each. The description column is 2 + 19 + 2 = 23, which does not exceed the maximum 32, so the descriptions of both `Arguments:` and `Options:` start at column 23.
 
-次のヘルプは、既定の設定で、最も広い見出しが 41 桁ある。説明の列は、上限の 32 になる。`--exactly-two-blanks-fit` の見出しは 28 桁で、2 + 28 + 2 = 32 なので、説明は同じ行に出る。それより 1 桁広い `--one-blank-is-not-enough` の説明は、次の行に出る。最後のオプションは、説明がないので、見出しだけの行である。
+In the next help, with the default help options, the widest heading is 41 columns. The description column becomes the maximum, 32. The heading of `--exactly-two-blanks-fit` is 28 columns, and 2 + 28 + 2 = 32, so its description is on the same line. The description of `--one-blank-is-not-enough`, which is one column wider, is on the next line. The last option has no description, so its line holds only the heading.
 
 ```
 Usage: tool [OPTIONS]
@@ -633,7 +633,7 @@ Options:
       --a-long-name-without-a-description
 ```
 
-表示幅を 40 にすると、上限は、表示幅の半分の 20 になる。
+At the width 40, the maximum is half of the width, 20.
 
 ```
 Usage: tool [OPTIONS]
@@ -647,20 +647,20 @@ Options:
                     level.
 ```
 
-### 折り返し
+### Wrapping
 
-コマンドの説明文と、項目の説明は、表示幅を超えないように折り返される。コマンドの説明文は 0 桁から、項目の説明は説明の列から始まり、折り返した続きの行も、同じ桁から始まる。
+The description of the command and the descriptions of the items are wrapped so that they do not exceed the width. The description of the command starts at column 0, the description of an item starts at the description column, and the continuation lines start at the same column.
 
-- 語は、空白（0x20）と改行（0x0A）以外のバイトの並びである。タブなど、ほかのバイトは、語の一部として扱う。
-- 折り返すのは、語と語の間の空白の位置だけである。語の途中では折り返さない。
-- 語を置くと表示幅を超えるときに、その語の前で折り返す。折り返した位置の空白は、出力しない。
-- 行の最初の語は、表示幅を超えても、そのまま出力する。説明の列から表示幅までに収まらない語は、表示幅を超えて出力される。
-- 説明文の中の改行では、必ず行を改める。続きは、同じ桁から始まる。連続する改行は、空の行になる。
-- 行の途中の連続する空白と、改行の直後の空白は、そのままの個数で出力する。改行の直後の空白で、字下げした行を書ける。
-- 行末の空白は、出力しない。
-- 表示幅が 0 なら、説明文の中の改行の位置でだけ、行を改める。
+- A word is a run of bytes other than the blank (0x20) and the newline (0x0A). Other bytes, such as tabs, are treated as part of a word.
+- Lines are wrapped only at the blanks between words. A word is never split.
+- When placing a word would exceed the width, the line is wrapped before that word. The blanks at the wrapping point are not written.
+- The first word of a line is written as it is, even when it exceeds the width. A word that does not fit between the description column and the width is written past the width.
+- A newline in a description always starts a new line. The continuation starts at the same column. Consecutive newlines give empty lines.
+- Consecutive blanks in the middle of a line, and blanks right after a newline, are written with the same count. With blanks right after a newline, you can write indented lines.
+- Blanks at the end of a line are not written.
+- When the width is 0, lines are broken only at the newlines in the description.
 
-表示幅を 60 にしたヘルプである。コマンドの説明文には、空の行（連続する改行）がある。`--exclude` の説明文は、改行と、行の先頭の空白を含む。`--url` の説明文には、表示幅に収まらない語がある。
+A help at the width 60. The description of the command has an empty line (consecutive newlines). The description of `--exclude` contains newlines and blanks at the start of lines. The description of `--url` has a word that does not fit in the width.
 
 ```
 Usage: tool [OPTIONS] --output <FILE>
@@ -682,33 +682,33 @@ Options:
                            for more.
 ```
 
-## 設定
+## Help options
 
-設定（`clargs_help_options_t`）は、文面の整形を決める値を持つオブジェクトである。利用者が生成し、生成の関数に渡し、破棄する。
+The help options (`clargs_help_options_t`) are an object that holds the values that decide the layout of the text. You create them, pass them to the generating functions, and destroy them.
 
-| すること | 関数 | 備考 |
+| To do this | Function | Notes |
 |---|---|---|
-| 生成する | `clargs_help_options_create` | すべての項目が既定の値になる。確保に失敗すると `CLARGS_ERROR_OUT_OF_MEMORY` を返し、`*out` は `NULL` になる |
-| 破棄する | `clargs_help_options_destroy` | `NULL` は何もしない |
-| 表示幅を設定する | `clargs_help_options_set_width` | 失敗しない |
-| 字下げを設定する | `clargs_help_options_set_indent` | 失敗しない |
-| 説明の列の上限を設定する | `clargs_help_options_set_max_column` | 失敗しない |
+| Create | `clargs_help_options_create` | Every setting has its default value. When the allocation fails, it returns `CLARGS_ERROR_OUT_OF_MEMORY` and `*out` is `NULL` |
+| Destroy | `clargs_help_options_destroy` | `NULL` does nothing |
+| Set the width | `clargs_help_options_set_width` | Cannot fail |
+| Set the indent | `clargs_help_options_set_indent` | Cannot fail |
+| Set the maximum description column | `clargs_help_options_set_max_column` | Cannot fail |
 
-| 項目 | 意味 | 既定の値 |
+| Setting | Meaning | Default value |
 |---|---|---|
-| 表示幅 | 折り返しの基準になる、1 行の桁数。0 は「制限なし」を表し、折り返さない | 80 |
-| 字下げ | 一覧の項目の前に置く空白の桁数 | 2 |
-| 説明の列の上限 | 説明の列が超えない桁。ただし、表示幅が 0 でなく、表示幅の半分（端数は切り捨て）のほうが小さければ、その半分が上限になる。そのうえで、上限が「字下げ + 2」より小さければ、「字下げ + 2」が上限になる。「字下げ + 2」が優先するので、このときは、説明の列が、設定した上限や表示幅の半分を超えることがある（[説明の列](#説明の列)） | 32 |
+| Width | The number of columns of one line that wrapping is based on. 0 means "no limit", and nothing is wrapped | 80 |
+| Indent | The number of blanks placed before the items of a list | 2 |
+| Maximum description column | The column that the description column does not exceed. However, when the width is not 0 and half of the width (rounded down) is smaller, that half is the maximum. Then, if the maximum is less than "indent + 2", "indent + 2" is the maximum. Because "indent + 2" takes priority, in that case the description column can exceed the maximum you set or half of the width ([Description column](#description-column)) | 32 |
 
-- どの項目も、65535 が上限である。65535 を超える値を設定すると、65535 として扱う。設定の関数は、値を拒まない。
-- 生成の関数の `options` に `NULL` を渡すと、すべての項目が既定の値になる。生成したままの設定を渡したときと、同じ文面になる。
-- 設定は、usage 行にも効く。usage 行が使うのは、表示幅だけである。
-- 生成は、設定を変更しない。1 つの設定を、何回の生成にも、別々のスキーマの生成にも使える。
-- 変更していない設定は、複数のスレッドから同時に生成に渡せる。設定の関数と破棄の関数を呼んでいる間は、ほかのスレッドが、その設定を使ってはならない。
-- ライブラリは、端末の幅も環境変数も調べない。端末の幅に合わせたいときは、利用者が幅を調べて、表示幅に設定する。
-- 設定の中身は公開していない。後のバージョンで、項目と、その設定の関数が増えることがある。
+- The limit of every setting is 65535. A value greater than 65535 is treated as 65535. The set functions do not reject values.
+- If you pass `NULL` as the `options` of a generating function, every setting has its default value. The text is the same as with help options just created.
+- The help options also apply to the usage line. The usage line uses only the width.
+- Generation does not change the help options. You can use one help options object for any number of generations, and for generations from different schemas.
+- Help options that are not being changed can be passed to generation from several threads at the same time. While a set function or the destroy function is being called, no other thread may use those help options.
+- The library looks at neither the terminal width nor environment variables. To match the width of the terminal, find the width yourself and set it as the width.
+- The contents of the help options are not public. Later versions may add settings and their set functions.
 
-次の関数は、表示幅を 40 にして、ヘルプを標準出力に出す（`write_to_stream` は、[`--help` とエラーの表示](#--help-とエラーの表示)の例のものである）。
+The next function prints the help to the standard output at the width 40 (`write_to_stream` is the one from the example in [Printing `--help` and errors](#printing---help-and-errors)).
 
 ```c
 /* Prints the help of command to the standard output, 40 columns wide. */
@@ -735,7 +735,7 @@ static clargs_error_t print_narrow_help(const clargs_command_t *command)
 }
 ```
 
-`pack create` を渡したときの出力:
+The output when `pack create` is passed:
 
 ```
 Usage: pack create [OPTIONS]
@@ -756,32 +756,32 @@ Options:
                     level. [default: 6]
 ```
 
-表示幅の半分の 20 が説明の列の上限になり、`--output` と `--level` の説明は、次の行に出ている。
+Half of the width, 20, becomes the maximum description column, and the descriptions of `--output` and `--level` are on the next line.
 
-## 出力先
+## Output
 
-生成の関数は、文面を、書き込み関数に渡すか、利用者のバッファに書く。ライブラリは、`<stdio.h>` を使わず、利用者が指定していない場所には、何も書かない。`FILE *` に直接出力する関数はない。`FILE *` に出すには、`fwrite()` を呼ぶ書き込み関数を書く（[標準出力に出す](#標準出力に出す)）。
+The generating functions pass the text to a write function, or write it into your buffer. The library does not use `<stdio.h>`, and writes nothing anywhere you did not specify. There is no function that writes directly to a `FILE *`. To write to a `FILE *`, write a write function that calls `fwrite()` ([Writing to standard output](#writing-to-standard-output)).
 
-### 書き込み関数の契約
+### The write function contract
 
 ```
 typedef bool (*clargs_help_write_fn_t)(void *user_data, const char *text, size_t length);
 ```
 
-ライブラリは、文面を、先頭から順に、いくつかの部分に分けて、書き込み関数に渡す。
+The library passes the text to the write function from the start, in order, split into several parts.
 
-- `user_data` は、生成の関数に渡したポインタが、そのまま渡る。ライブラリは、指す先を読まない。`NULL` でもよい。
-- `text` は、文面の一部の先頭を指し、`length` は、そのバイト数である。**終端のナル文字は付かない。** ちょうど `length` バイトを読む。
-- `length` は 1 以上である。長さ 0 では呼ばれない。
-- 呼び出しは、文面の先頭から順である。渡された部分を、呼び出しの順につなげると、文面の全体になる。
-- 文面をいくつに、どこで分けるかは、決まっていない。バージョンによって変わりうる。1 つの部分が、1 行や 1 語であることを前提にしない。
-- `text` は、その呼び出しの間だけ有効である。後で使うなら、呼び出しの中で複製する。
-- 書き込めたら `true`、書き込めなかったら `false` を返す。`false` を返すと、生成はそこで止まり、書き込み関数は、その生成ではもう呼ばれない。生成の関数は `CLARGS_ERROR_WRITE_FAILED` を返す。
-- 書き込み関数の中から、生成に渡したスキーマを、変更したり破棄したりしてはならない。
+- `user_data` is the pointer passed to the generating function, passed on unchanged. The library does not read what it points to. It may be `NULL`.
+- `text` points to the start of one part of the text, and `length` is its number of bytes. **No terminating null character follows.** Read exactly `length` bytes.
+- `length` is 1 or greater. The function is never called with the length 0.
+- The calls are made in order from the start of the text. Joining the parts in the order of the calls gives the whole text.
+- How many parts the text is split into, and where, is not specified. It may change between versions. Do not assume that a part is one line or one word.
+- `text` is valid only during that call. If you use it later, copy it inside the call.
+- Return `true` if the part was written, and `false` if it could not be written. When it returns `false`, generation stops there, and the write function is not called again for that generation. The generating function returns `CLARGS_ERROR_WRITE_FAILED`.
+- Inside the write function, do not change or destroy the schema passed to the generation.
 
-### 標準出力に出す
+### Writing to standard output
 
-`FILE *` に書く書き込み関数は、`fwrite()` を呼ぶだけである。`user_data` に、ストリームを渡す。
+A write function that writes to a `FILE *` only calls `fwrite()`. Pass the stream as `user_data`.
 
 ```c
 /* The write function: writes one part of the text to the stream that
@@ -797,25 +797,25 @@ static bool write_to_stream(void *user_data, const char *text, size_t length)
 error = clargs_help_write(root, NULL, write_to_stream, stdout);
 ```
 
-- `fwrite()` が書けたバイト数が `length` より少なければ、`false` を返す。生成が止まり、`CLARGS_ERROR_WRITE_FAILED` が返る。
-- `text` は終端されていないので、`fputs()` や `printf("%s")` には渡せない。
-- 書き込み関数の呼び出しは、語や空白の単位で、回数が多い。`FILE *` は標準ライブラリがバッファするので、問題にならない。バッファしない出力先に書くときは、書き込み関数の側でまとめる。
-- **テキストモードのストリームでは、Windows で改行が変換される。** ライブラリが渡す改行は `\n` だけである。`stdout` はふつうテキストモードで、Windows では、書いた `\n` が `\r\n` になって出力される。端末に出すぶんには、これで正しい。出力をバイト単位で比べるとき、または `\n` のままファイルに残すときは、バイナリモードで開いたストリーム（`fopen()` のモードに `b` を付ける）に書く。
+- If `fwrite()` wrote fewer bytes than `length`, it returns `false`. Generation stops, and `CLARGS_ERROR_WRITE_FAILED` is returned.
+- `text` is not terminated, so it cannot be passed to `fputs()` or `printf("%s")`.
+- The write function is called many times, in units of words and blanks. A `FILE *` is buffered by the standard library, so this is not a problem. When you write to a destination that is not buffered, collect the parts in the write function.
+- **On a stream in text mode, newlines are converted on Windows.** The only newline that the library passes is `\n`. `stdout` is usually in text mode, and on Windows each `\n` written comes out as `\r\n`. For output to a terminal, this is correct. When you compare the output byte for byte, or keep `\n` as it is in a file, write to a stream opened in binary mode (add `b` to the mode of `fopen()`).
 
-### バッファに生成する
+### Formatting into a buffer
 
-`clargs_help_format` と `clargs_help_format_usage` は、文面を、利用者が用意した配列に、文字列として書く。書き込み関数は要らない。
+`clargs_help_format` and `clargs_help_format_usage` write the text as a string into an array that you provide. No write function is needed.
 
-| `size` | `buffer` に書くもの |
+| `size` | What is written into `buffer` |
 |---|---|
-| 0 | 何も書かない。`buffer` は `NULL` でもよい |
-| 1 以上 | 文面の先頭から、収まる分（多くて `size - 1` バイト）と、その直後の終端のナル文字。配列の外には書かない |
+| 0 | Nothing. `buffer` may be `NULL` |
+| 1 or greater | As much of the text from the start as fits (at most `size - 1` bytes), followed by a terminating null character. Nothing is written outside the array |
 
-- `length` が `NULL` でなければ、`*length` に、文面の全体の長さ（終端のナル文字を除く）が入る。収まったかどうかによらない。
-- 収まらない文面は、切り詰められる。**切り詰めは失敗ではなく、`CLARGS_ERROR_NONE` が返る。** `*length` が `size` 以上なら、切り詰められている。切り詰められた文面は、行の途中で終わっていることがある。
-- 文面は、同じコマンドと設定で `clargs_help_write`、`clargs_help_write_usage` が書き込み関数に渡す文面と、バイト単位で同じである。
+- If `length` is not `NULL`, `*length` receives the length of the whole text (not counting the terminating null character), whether or not it fit.
+- A text that does not fit is truncated. **Truncation is not a failure: `CLARGS_ERROR_NONE` is returned.** If `*length` is `size` or greater, the text was truncated. A truncated text may end in the middle of a line.
+- The text is byte for byte the same as the text that `clargs_help_write` and `clargs_help_write_usage` pass to a write function for the same command and help options.
 
-文面の全体を得るには、2 回呼ぶ。1 回目は、`size` を 0、`buffer` を `NULL` にして、長さを得る。2 回目は、`*length + 1` バイトの配列を渡す。
+To get the whole text, call twice. The first call passes `size` 0 and `buffer` `NULL`, and gets the length. The second call passes an array of `*length + 1` bytes.
 
 ```c
 /* Returns the help of command as a string that the caller frees with
@@ -846,7 +846,7 @@ static char *help_string(const clargs_command_t *command)
 }
 ```
 
-固定長の配列に、usage 行を受け取る例である。`clargs_help_format_usage` は失敗しないので、戻り値を確かめていない。
+The next example receives the usage line in a fixed-size array. `clargs_help_format_usage` cannot fail, so the return value is not checked.
 
 ```c
 /* Prints an error message with the usage line of command behind it. */
@@ -868,24 +868,24 @@ static void print_error(const clargs_command_t *command, const char *message)
 }
 ```
 
-## 制限
+## Limits
 
-- **幅は、バイトで数える。** 1 バイトを 1 桁と数えるので、ASCII 以外の文字（UTF-8 では 1 文字が 2 バイト以上）を含む説明文は、見た目の幅が表示幅に届く前に折り返される。ASCII 以外の文字を含む名前の見出しは、見た目より広いものとして数えられ、説明の列が右に寄る。ライブラリは、文字の表示幅を調べない。
+- **Widths are counted in bytes.** One byte counts as one column, so a description that contains non-ASCII characters (in UTF-8, one character is 2 bytes or more) is wrapped before its visible width reaches the width. A heading with a name that contains non-ASCII characters counts as wider than it looks, and the description column moves to the right. The library does not look up the display width of characters.
 
-  次は、表示幅を 50 にしたヘルプである。`--quiet` の説明は、見た目では 50 桁に収まるが、バイト数で数えると収まらないので、折り返されている。
+  The next help is at the width 50. The description of `--quiet` is in Greek, where each letter is 2 bytes in UTF-8. It fits in 50 columns visually, but it does not fit when counted in bytes, so it is wrapped.
 
   ```
   Usage: tool [OPTIONS]
 
   Options:
-    -q, --quiet    何も 出力 しない ように
-                   する
+    -q, --quiet    Μην εκτυπώνεις
+                   τίποτα
     -v, --verbose  Print more than usual
   ```
 
-- **名前に改行を入れると、列が崩れる。** 位置引数の名前、値の表示名、ルートコマンドの名前、利用者定義の値型の名前は、改行を含む文字列でも定義できる。ヘルプは、これらを変換せずに、改行ごと出力する。そのとき、見出しや usage 行の項目の幅は、改行も含めた全体のバイト数で数える。一方、出力は改行で行が改まり、続きは、次の行の先頭から始まる。そのため、説明の列までの空白と、usage 行の折り返しの位置が、見た目と合わなくなる。名前と値の表示名には、改行を入れないこと。
+- **A newline in a name breaks the columns.** The name of a positional, a value name, the name of the root command and the name of a user-defined value type can be defined with strings that contain newlines. The help writes them unconverted, newlines included. The width of a heading or of an item of the usage line is then counted as the number of bytes of the whole, newlines included. In the output, however, a newline starts a new line, and the rest starts at the start of the next line. So the blanks up to the description column and the wrapping points of the usage line no longer match what you see. Do not put newlines in names and value names.
 
-  次は、名前が `"first\nsecond"` の位置引数を持つコマンドのヘルプである。見出し `<first\nsecond>` の幅は 14 桁と数えられ、説明の列は 18 になる。出力では、`second>` が行の先頭から始まるので、説明の前の空白が足りないように見える。
+  The next help is that of a command with a positional named `"first\nsecond"`. The heading `<first\nsecond>` counts as 14 columns, and the description column is 18. In the output, `second>` starts at the start of the line, so the blanks before the description look too few.
 
   ```
   Usage: tool [OPTIONS] <first
@@ -899,16 +899,16 @@ static void print_error(const clargs_command_t *command, const char *message)
     -q, --quiet     Print nothing
   ```
 
-- **名前の空白と、文字列の中の `\r` は、そのまま出力される。** 名前の末尾の空白と、名前の中の改行の直前の空白は、そのまま出力されるので、行が空白で終わることがある（名前が `"tool "` で、オプションも位置引数もサブコマンドもないルートコマンドの usage 行は、`Usage: tool ` と空白で終わる）。ルートコマンドの名前が改行で始まるときは、`Usage: ` の空白が行末に残る（名前が `"\ntool"` なら、1 行目は `Usage: ` と空白で終わる）。スキーマの文字列（名前、説明文、値の表示名、既定値、選択肢）の中の `\r` も、そのまま出力される。
-- タブや制御文字も、1 バイトを 1 桁と数える。
-- 固定の語句は英語だけである。ほかの言語にする方法、色を付ける方法、ヘルプの部分を並べ替える方法はない。
-- オプションを一覧から隠す方法、グループに分ける方法はない。
-- サブコマンドのヘルプに、親のコマンドのオプションは載らない。
+- **Blanks in names and `\r` in strings are written as they are.** Blanks at the end of a name, and blanks right before a newline in a name, are written as they are, so a line can end with a blank (the usage line of a root command named `"tool "` with no options, positionals or subcommands is `Usage: tool `, ending with a blank). When the name of the root command starts with a newline, the blank of `Usage: ` is left at the end of the line (if the name is `"\ntool"`, the first line is `Usage: ` and ends with a blank). A `\r` in a string of the schema (names, descriptions, value names, default values, choices) is also written as it is.
+- Tabs and control characters also count as one column per byte.
+- The fixed phrases are in English only. There is no way to change their language, to add colors, or to reorder the parts of the help.
+- There is no way to hide an option from the list, or to put options into groups.
+- The help of a subcommand does not show the options of its parent command.
 
-### 説明文の書き方についての注意
+### Notes on writing descriptions
 
-- 空白（0x20）と改行（0x0A）以外のバイトを持たない説明文は、設定されていないものとして扱う。空の文字列、`"   "`、`" \n"` は、どれも「説明文なし」である。コマンドの説明文でも、オプションと位置引数の説明文でも同じである。`Commands:` の一覧のサブコマンドの説明は、説明文の最初の行だけで判断する。最初の行が空白だけなら、後ろに続きがあっても、一覧では見出しだけの行になる。
-- **説明文を、改行や、空白だけの行（空白を 1 つ以上持ち、ほかのバイトを持たない行）で始めない。** コマンドの説明文（そのコマンド自身のヘルプ）と、オプションと位置引数の説明文では、先頭の改行も、先頭の空白だけの行も、取り除かれない。そのため、文面に空の行が増えたり、説明や注記の始まる位置が変わったりすることがある。[構成](#構成)の「部分と部分の間の空の行は 1 つ」が、成り立たなくなることがある。たとえば、コマンドの説明文が `"\nPack files."` のヘルプは、次のようになる。
+- A description that has no bytes other than the blank (0x20) and the newline (0x0A) is treated as not set. The empty string, `"   "` and `" \n"` all mean "no description". This is the same for the descriptions of commands, options and positionals. For the description of a subcommand in the `Commands:` list, only the first line of its description text is considered. If the first line has only blanks, the list shows a line with only the heading, even when more lines follow.
+- **Do not start a description with a newline, or with a line of blanks only (a line that has one or more blanks and no other bytes).** In the description of a command (in the help of that command itself) and in the descriptions of options and positionals, a leading newline and a leading line of blanks only are not removed. So the text may get extra empty lines, and the position where a description or annotations start may change. "One empty line between parts" in [Structure](#structure) may no longer hold. For example, the help of a command whose description is `"\nPack files."` is the following.
 
   ```
   Usage: tool [OPTIONS]
@@ -921,71 +921,71 @@ static void print_error(const clargs_command_t *command, const char *message)
     -v, --verbose  Print more.
   ```
 
-  このような説明文の文面は、後のバージョンで変わることがある。
+  The text for such descriptions may change in later versions.
 
-## 失敗したとき
+## On failure
 
-実行時の失敗は、書き込みの失敗と、メモリ確保の失敗の 2 つである。どちらも、戻り値の `clargs_error_t` で分かる。
+There are two runtime failures: a write failure and an allocation failure. Both are reported by the returned `clargs_error_t`.
 
-| 戻り値 | 意味 | 返す関数 |
+| Return value | Meaning | Returned by |
 |---|---|---|
-| `CLARGS_ERROR_NONE` | 成功。バッファに生成する関数では、切り詰められたときも成功である | すべて |
-| `CLARGS_ERROR_WRITE_FAILED` | 書き込み関数が `false` を返した | `clargs_help_write`、`clargs_help_write_usage` |
-| `CLARGS_ERROR_OUT_OF_MEMORY` | メモリの確保に失敗した | `clargs_help_write`、`clargs_help_format`、`clargs_help_options_create` |
+| `CLARGS_ERROR_NONE` | Success. For the functions that format into a buffer, truncation is also a success | All |
+| `CLARGS_ERROR_WRITE_FAILED` | The write function returned `false` | `clargs_help_write`, `clargs_help_write_usage` |
+| `CLARGS_ERROR_OUT_OF_MEMORY` | An allocation failed | `clargs_help_write`, `clargs_help_format`, `clargs_help_options_create` |
 
-**生成が失敗したとき、失敗までに書き込み関数に渡した文面は、出力先に残る。** ライブラリは、渡した文面を取り消せない。
+**When generation fails, the text passed to the write function before the failure stays at the destination.** The library cannot take back text it has passed.
 
-| 関数 | 失敗 | 出力先に残るもの |
+| Function | Failure | What is left at the destination |
 |---|---|---|
-| `clargs_help_write`、`clargs_help_write_usage` | 書き込みの失敗 | 書き込み関数が `true` を返した呼び出しで受け取った部分。文面の先頭から、ある位置までである。行の途中で終わっていることがある |
-| `clargs_help_write` | 確保の失敗 | 文面の先頭から、確保を必要とした項目（オプションまたは位置引数）の行の手前まで。直前の行の改行で終わる |
-| `clargs_help_format` | 確保の失敗 | `size` が 0 でなければ、`buffer` は空の文字列になる。`*length` は 0 になる。`size` が 0 なら、`buffer` には何も書かない |
-| `clargs_help_options_create` | 確保の失敗 | `*out` は `NULL` になる |
+| `clargs_help_write`, `clargs_help_write_usage` | Write failure | The parts received by the calls in which the write function returned `true`. This is the text from the start up to some position. It may end in the middle of a line |
+| `clargs_help_write` | Allocation failure | The text from the start up to the line of the item (an option or a positional) that needed the allocation. It ends with the newline of the line before |
+| `clargs_help_format` | Allocation failure | If `size` is not 0, `buffer` holds the empty string. `*length` is 0. If `size` is 0, nothing is written into `buffer` |
+| `clargs_help_options_create` | Allocation failure | `*out` is `NULL` |
 
-- 書き込みの失敗の後、書き込み関数は、その生成ではもう呼ばれない。
-- `clargs_help_format` が確保に失敗したとき、`buffer` は空の文字列になるが、配列の中の、終端のナル文字より後ろのバイトの内容は決まっていない。失敗までに生成した文面の一部が残っていることがある。配列の外には書かない。
-- usage 行だけの生成（`clargs_help_write_usage`、`clargs_help_format_usage`）は、メモリを確保しない。`CLARGS_ERROR_OUT_OF_MEMORY` を返すことはない。`clargs_help_format_usage` は、失敗しない。
-- `clargs_help_format` は、`CLARGS_ERROR_WRITE_FAILED` を返さない。
-- 失敗しても、スキーマと設定は変わらない。生成のために確保したメモリは、成功でも失敗でも、関数が戻る前にすべて解放される。失敗の後に、同じスキーマと設定で、もう一度生成できる。
-- 途中までの文面を出力先に残したくないときは、`clargs_help_format` でバッファに生成し、成功を確かめてから出力する。
-- `NULL` の引数や、検証を済ませていないスキーマは、失敗ではなく、プログラムの誤りである（[前提条件](#前提条件)）。
+- After a write failure, the write function is not called again for that generation.
+- When `clargs_help_format` fails to allocate, `buffer` holds the empty string, but the contents of the bytes of the array after the terminating null character are unspecified. Part of the text generated before the failure may be left there. Nothing is written outside the array.
+- Generating the usage line alone (`clargs_help_write_usage`, `clargs_help_format_usage`) allocates no memory. It never returns `CLARGS_ERROR_OUT_OF_MEMORY`. `clargs_help_format_usage` cannot fail.
+- `clargs_help_format` does not return `CLARGS_ERROR_WRITE_FAILED`.
+- A failure changes neither the schema nor the help options. All memory allocated for the generation is freed before the function returns, on success and on failure. After a failure, you can generate again with the same schema and help options.
+- If you do not want partial text left at the destination, format into a buffer with `clargs_help_format`, check that it succeeded, and then write it out.
+- A `NULL` argument, or a schema that is not validated, is not a failure but a programming error ([Preconditions](#preconditions)).
 
-## 寿命の規則
+## Lifetime rules
 
-| もの | 所有者 | 有効な期間 |
+| Thing | Owner | Valid for |
 |---|---|---|
-| 設定（`clargs_help_options_t`） | 生成した利用者 | `clargs_help_options_destroy` で破棄するまで。スキーマとは独立で、どちらを先に破棄してもよい |
-| 書き込み関数に渡される `text` | ライブラリまたはスキーマ | その呼び出しの間だけ。利用者は、解放も変更もしない |
-| バッファ（`buffer`） | 利用者 | 生成の呼び出しの間、有効であればよい。ライブラリは、呼び出しが戻った後は参照しない |
-| スキーマと、それが使う値型 | 利用者 | 生成の呼び出しの間、変更も破棄もしない |
+| Help options (`clargs_help_options_t`) | You, who created them | Until destroyed with `clargs_help_options_destroy`. They are independent of the schema, and either may be destroyed first |
+| `text` passed to the write function | The library or the schema | Only during that call. You neither free nor change it |
+| Buffer (`buffer`) | You | It needs to be valid only during the call of the generation. The library does not refer to it after the call returns |
+| The schema and the value types it uses | You | Neither changed nor destroyed during the call of the generation |
 
-- 生成の関数は、スキーマと設定を、呼び出しの間だけ借りる。どちらも変更せず、戻った後は参照しない。
-- 生成の関数が返すもののうち、利用者が解放するものはない。ライブラリが確保した文字列を返す関数はない。
-- 生成のためのメモリは、ライブラリに設定されたアロケータ（`clargs_set_allocator`）から確保し、関数が戻る前に解放する。設定のオブジェクトも、同じアロケータから確保する。設定のオブジェクトが残っている間に、アロケータを設定し直してはならない（[所有権と寿命の規約](ownership.md#5-アロケータ)）。
-- スキーマと設定が変更されていない間は、同じスキーマと設定の生成を、複数のスレッドから同時に呼べる。バッファは、呼び出しごとに別のものを渡す。書き込み関数が同時に呼ばれても正しく動くかどうかは、利用者の書き込み関数による。
+- The generating functions borrow the schema and the help options only during the call. They change neither of them, and do not refer to them after returning.
+- Nothing that the generating functions return is freed by you. No function returns a string allocated by the library.
+- Memory for the generation is allocated from the allocator set for the library (`clargs_set_allocator`), and freed before the function returns. The help options object is also allocated from the same allocator. Do not set the allocator again while a help options object still exists ([Ownership and Lifetime](ownership.md#5-allocator)).
+- While the schema and the help options are not being changed, generation with the same schema and help options can be called from several threads at the same time. Pass a different buffer to each call. Whether the write function works correctly when called at the same time depends on your write function.
 
-## 前提条件
+## Preconditions
 
-前提条件を破るのは、プログラムの誤りである。エラーコードは返らない。検査できるものは `assert` で検査され、Debug 構成では、破るとプロセスが中断する。Release 構成では検査されず、動作は定まらない（[所有権と寿命の規約](ownership.md#実行時の失敗とプログラムの誤り)）。関数ごとの前提条件は、公開ヘッダ `include/clargs/help.h` のコメントにも `Preconditions:` として書いてある。
+Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The preconditions of each function are also written in the comments of the public header `include/clargs/help.h`, under `Preconditions:`.
 
-| 関数 | `assert` で検査する前提条件 | 検査しない前提条件 |
+| Function | Preconditions checked with `assert` | Preconditions not checked |
 |---|---|---|
-| `clargs_help_options_create` | `out` は `NULL` でない | なし |
-| `clargs_help_options_destroy` | なし | `options` は、`NULL` か、破棄されていない設定である。ほかのスレッドが、その設定を使っていない |
-| `clargs_help_options_set_width`、`clargs_help_options_set_indent`、`clargs_help_options_set_max_column` | `options` は `NULL` でない | `options` は、破棄されていない。呼び出しの間、ほかのスレッドが、その設定を使っていない |
-| `clargs_help_write`、`clargs_help_write_usage` | `command` は `NULL` でない。`command` のスキーマは検証済みである（`clargs_command_is_validated`）。`write_fn` は `NULL` でない | 生成に共通のもの。書き込み関数は、スキーマを変更も破棄もしない |
-| `clargs_help_format`、`clargs_help_format_usage` | `command` は `NULL` でない。`command` のスキーマは検証済みである（`clargs_command_is_validated`）。`size` が 0 でなければ、`buffer` は `NULL` でない | 生成に共通のもの。`buffer` は、`size` バイト以上の配列を指す |
+| `clargs_help_options_create` | `out` is not `NULL` | None |
+| `clargs_help_options_destroy` | None | `options` is `NULL` or help options that have not been destroyed. No other thread is using those help options |
+| `clargs_help_options_set_width`, `clargs_help_options_set_indent`, `clargs_help_options_set_max_column` | `options` is not `NULL` | `options` has not been destroyed. During the call, no other thread is using those help options |
+| `clargs_help_write`, `clargs_help_write_usage` | `command` is not `NULL`. The schema of `command` has been validated (`clargs_command_is_validated`). `write_fn` is not `NULL` | The ones common to generation. The write function neither changes nor destroys the schema |
+| `clargs_help_format`, `clargs_help_format_usage` | `command` is not `NULL`. The schema of `command` has been validated (`clargs_command_is_validated`). If `size` is not 0, `buffer` is not `NULL` | The ones common to generation. `buffer` points to an array of at least `size` bytes |
 
-生成に共通の、検査しない前提条件:
+The preconditions common to generation, not checked:
 
-- `options` は、`NULL` か、破棄されていない設定である。呼び出しの間、ほかのスレッドが、その設定を変更していない。
-- 呼び出しの間、スキーマと、それが使う値型は、変更も破棄もされない。
+- `options` is `NULL` or help options that have not been destroyed. During the call, no other thread is changing those help options.
+- During the call, the schema and the value types it uses are neither changed nor destroyed.
 
-`NULL` でもよい引数:
+Arguments that may be `NULL`:
 
-- 生成の関数の `options`（既定の値で生成する）。
-- `clargs_help_write`、`clargs_help_write_usage` の `user_data`。
-- `clargs_help_format`、`clargs_help_format_usage` の `length`（長さを受け取らない）と、`size` が 0 のときの `buffer`。
-- `clargs_help_options_destroy` の `options`。
+- The `options` of the generating functions (the default values are used).
+- The `user_data` of `clargs_help_write` and `clargs_help_write_usage`.
+- The `length` of `clargs_help_format` and `clargs_help_format_usage` (the length is not received), and `buffer` when `size` is 0.
+- The `options` of `clargs_help_options_destroy`.
 
-検証を済ませていないスキーマを生成に渡すのは、前提条件の違反である。スキーマに定義要素を足したり、属性を設定したりすると、スキーマは未検証に戻るので、生成の前に、もう一度検証する（[スキーマの使い方](schema.md#検証と失敗の調べ方)）。サブコマンドを渡すときも、検証するのは、そのルートである。
+Passing a schema that is not validated to generation violates a precondition. Adding a definition element to the schema or setting an attribute makes the schema unvalidated again, so validate it again before generating. When you pass a subcommand, it is still its root that you validate ([Schemas](schema.md#validation-and-finding-the-cause-of-a-failure)).

@@ -42,7 +42,7 @@
   - _Boundary: ParseGuide_
   - _Requirements: 1.1, 1.4, 1.5, 2.2, 5.1, 5.2, 5.3, 5.5, 6.4, 6.5, 9.1, 9.2_
 
-- [ ] 2.3 (P) ヘルプの文書を英語にする
+- [x] 2.3 (P) ヘルプの文書を英語にする
   - ヘルプの文書を、節、例、表、一覧の順序と数を保って英語にする。見出しは対応表の help の行に、題は `Help and Usage` にする。冒頭の用語の表は、用語の対応の英語に合わせる
   - 文面の規則の節に載る生成された文面（usage 行、見出し、注記、折り返しの例）は、ライブラリが出力するものなので、1 文字も変えない
   - 2 つの例のコードは変えず、コメントだけを訳す
@@ -142,3 +142,4 @@
 - 1.1: 英語化の前の件数は japanese README 66、conventions 254（release-automation が 7 行増やした）、help 278、ownership 174、parse 256、schema 254。kiro は ownership.md:301 の 1 件、spec-term は ownership.md の 5 件。
 - 1.2: 例の手順は `bash .kiro/specs/english-docs/build_examples.sh <repo-root> <outdir>`（テストを無効にしてビルドとインストール、例の取り出し、`-std=c99 -Wall -Wextra -Wpedantic -Werror` でのコンパイル、`wmain` はコンパイルだけ、ownership は利用者の 4 関数と一緒にリンク、直後の出力のブロックとの比較）。例の集合 7 つと README の 4 つのコマンドラインが欠けると失敗する。英語化の前の文書で 7 例、28 の確認がすべて通り、違いはなかった。テストは `python3 .kiro/specs/english-docs/test_check_docs.py`（`unittest discover` は `__pycache__` を残すので使わない）。
 - 1.2: 翻訳のときは、例のコードブロックの info（```` ```c ````）と、出力のブロック（info なし、例との間に見出しを置かない）、README の `$ ` の行を変えない。手順はこの構造に頼っている。
+- 2.3: `docs/help.md` の Limits の「幅はバイトで数える」例は、日本語の説明を使っていた。要件 1.2 のため、説明をギリシャ語（UTF-8 で 1 文字 2 バイト）に替え、出力を実際のライブラリで作り直した（同じ点を示す）。生成された文面を手で変えたのではない。
