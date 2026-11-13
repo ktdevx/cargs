@@ -2426,6 +2426,10 @@ NAOS_TEST(failed_conversion_of_a_default_value_has_no_argument)
     clargs_command_t *root = create_root();
     clargs_result_t *result;
     clargs_result_where_t where;
+    /* The result gives back the pointer it was given: each text is one
+     * object, not two string literals that a compiler may keep apart. */
+    const char *const item = "!default";
+    const char *const number = "ten";
 
     create_types(&types);
     add_value_options(root, &types);
@@ -2434,10 +2438,10 @@ NAOS_TEST(failed_conversion_of_a_default_value_has_no_argument)
     /* A default value is in no argument: the result may have none. */
     result = create_result(root, 0, NULL);
     where = in_default();
-    NAOS_CHECK_INT_EQ(clargs_result_record_option_value(result, option_of(root, V_ITEM), "!default",
+    NAOS_CHECK_INT_EQ(clargs_result_record_option_value(result, option_of(root, V_ITEM), item,
                                                         &where),
                       CLARGS_ERROR_INVALID_COMMAND_LINE);
-    check_invalid_value(result, &where, "!default", root, option_of(root, V_ITEM), NULL,
+    check_invalid_value(result, &where, item, root, option_of(root, V_ITEM), NULL,
                         "invalid default value '!default' for option '--name' (expected item)");
     NAOS_CHECK_INT_EQ(clargs_result_error_source(result), CLARGS_SOURCE_DEFAULT);
     NAOS_CHECK_UINT_EQ(clargs_result_error_index(result), 0);
@@ -2449,10 +2453,10 @@ NAOS_TEST(failed_conversion_of_a_default_value_has_no_argument)
     where.name_prefix = "";
     where.name = "num";
     where.name_length = 3;
-    NAOS_CHECK_INT_EQ(clargs_result_record_positional_value(result, positional_of(root, V_NUM), "ten",
+    NAOS_CHECK_INT_EQ(clargs_result_record_positional_value(result, positional_of(root, V_NUM), number,
                                                             &where),
                       CLARGS_ERROR_INVALID_COMMAND_LINE);
-    check_invalid_value(result, &where, "ten", root, NULL, positional_of(root, V_NUM),
+    check_invalid_value(result, &where, number, root, NULL, positional_of(root, V_NUM),
                         "invalid default value 'ten' for argument 'num' (expected integer)");
     NAOS_CHECK_TRUE(clargs_result_error_argument(result) == NULL);
     clargs_result_destroy(result);
