@@ -3,7 +3,17 @@ cmake_minimum_required(VERSION 3.21)
 # The public header include/clargs/version.h is the single source of the
 # version. Read it before project(), which takes the version as an argument.
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/ClargsVersion.cmake")
-clargs_read_version("${CMAKE_CURRENT_LIST_DIR}/include/clargs/version.h" clargs_version)
+clargs_read_version("${CMAKE_CURRENT_LIST_DIR}/include/clargs/version.h"
+    clargs_version clargs_version_prerelease)
+
+# The full version, "<major>.<minor>.<patch>[-<pre-release>]", for the package
+# files. project() takes only the numeric part, so PROJECT_VERSION, the
+# compatibility check of find_package and the SOVERSION stay numeric.
+if(clargs_version_prerelease STREQUAL "")
+    set(clargs_version_full "${clargs_version}")
+else()
+    set(clargs_version_full "${clargs_version}-${clargs_version_prerelease}")
+endif()
 
 project(CLArgs VERSION ${clargs_version} LANGUAGES C)
 

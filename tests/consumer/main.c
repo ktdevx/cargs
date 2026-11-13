@@ -4,9 +4,10 @@
  * Returns 0 if the version of the linked library equals the version of the
  * headers, and 1 otherwise. When the build passes the version that the
  * package reported (find_package, pkg-config), that version must equal the
- * version of the headers too.
+ * version of the headers too, the pre-release identifiers included.
  */
 #include <stdio.h>
+#include <string.h>
 
 #include <clargs/clargs.h>
 
@@ -32,6 +33,15 @@ int main(void)
             CLARGS_VERSION_MAJOR,
             CLARGS_VERSION_MINOR,
             CLARGS_VERSION_PATCH);
+        status = 1;
+    }
+#endif
+
+#ifdef CONSUMER_PACKAGE_VERSION_PRERELEASE
+    if (strcmp(CONSUMER_PACKAGE_VERSION_PRERELEASE, CLARGS_VERSION_PRERELEASE) != 0) {
+        printf("the package reports the pre-release identifiers \"%s\", the headers say \"%s\"\n",
+            CONSUMER_PACKAGE_VERSION_PRERELEASE,
+            CLARGS_VERSION_PRERELEASE);
         status = 1;
     }
 #endif

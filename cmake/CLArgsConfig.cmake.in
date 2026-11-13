@@ -9,6 +9,13 @@
 
 @PACKAGE_INIT@
 
+# CLArgs_VERSION, set by find_package from CLArgsConfigVersion.cmake, is the
+# numeric part of the version, "<major>.<minor>.<patch>". The full version adds
+# the pre-release identifiers, such as "0.2.0-rc.1"; for a release it equals
+# CLArgs_VERSION and CLArgs_VERSION_PRERELEASE is empty.
+set(CLArgs_VERSION_FULL "@clargs_version_full@")
+set(CLArgs_VERSION_PRERELEASE "@clargs_version_prerelease@")
+
 include("${CMAKE_CURRENT_LIST_DIR}/CLArgsTargets.cmake")
 
 # CLArgs has no components: asking for one is an error.

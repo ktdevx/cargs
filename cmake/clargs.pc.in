@@ -10,6 +10,6 @@ includedir=@clargs_pc_includedir@
 
 Name: clargs
 Description: A command-line argument parser library for C99
-Version: @PROJECT_VERSION@
+Version: @clargs_version_full@
 Cflags: -I${includedir}@clargs_pc_cflags@
 Libs: -L${libdir} -l@clargs_pc_library@
