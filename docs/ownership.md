@@ -1,106 +1,103 @@
-# CLArgs の所有権と寿命の規約
+# Ownership and Lifetime
 
-誰がメモリを確保し、誰が解放するか、渡したものと返されたものがいつまで有効かを定める。CLArgs のすべての公開関数がこの規約に従う。
+This document defines who allocates memory and who frees it, and how long the things you pass and the things you get back stay valid. Every public function of CLArgs follows these rules. It is written for you as a user of the library: it tells you what you free yourself and what you must not free.
 
-読む人は 2 種類いる。
+This document covers the rules themselves and how they apply to schemas, parsing, results and help. How to define a schema, parse argv and generate help is in [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md). The detailed description and the preconditions of each function are in the comments of the public headers under `include/clargs/`. How the library code implements these rules is in [Development Conventions](conventions.md#applying-the-ownership-rules).
 
-- **ライブラリ利用者**: 何を自分で解放し、何を解放してはいけないかを知りたい人。
-- **ライブラリ開発者**: 公開関数を設計する人。後続のスペック（command-schema、argv-parser、help-formatter）は、独自に決めず、この規約に従う。
+Contents:
 
-目次:
-
-- [規約の一覧](#規約の一覧)
-- [実行時の失敗とプログラムの誤り](#実行時の失敗とプログラムの誤り)
-- [1. 生成と破棄](#1-生成と破棄)
-- [2. 利用者が渡す文字列](#2-利用者が渡す文字列)
-- [3. ライブラリが返す文字列とオブジェクト](#3-ライブラリが返す文字列とオブジェクト)
+- [The rules at a glance](#the-rules-at-a-glance)
+- [Runtime failures and programming errors](#runtime-failures-and-programming-errors)
+- [1. Creation and destruction](#1-creation-and-destruction)
+- [2. Strings you pass](#2-strings-you-pass)
+- [3. Strings and objects the library returns](#3-strings-and-objects-the-library-returns)
 - [4. NULL](#4-null)
-- [5. アロケータ](#5-アロケータ)
-- [6. 解放するのは確保した側](#6-解放するのは確保した側)
-- [7. 失敗の返し方](#7-失敗の返し方)
-- [8. スレッド](#8-スレッド)
-- [スキーマ、argv、結果への適用](#スキーマargv結果への適用)
-- [ヘルプへの適用](#ヘルプへの適用)
-- [このスペックの関数の従い方](#このスペックの関数の従い方)
+- [5. Allocator](#5-allocator)
+- [6. Whoever allocates frees](#6-whoever-allocates-frees)
+- [7. How failures are returned](#7-how-failures-are-returned)
+- [8. Threads](#8-threads)
+- [Schemas, argv and results](#schemas-argv-and-results)
+- [Help](#help)
+- [Allocator and error functions](#allocator-and-error-functions)
 
-この文書の例のうち、`clargs_example_` で始まる名前は説明のための仮の名前であり、ライブラリにはない。オブジェクトを生成する公開関数は、後続のスペックが足す。それ以外の名前（`clargs_set_allocator`、`clargs_error_message`、`clargs_strdup` など）は実在する。
+In the examples of this document, names that start with `clargs_example_` are placeholders used for explanation; they do not exist in the library. The other names (`clargs_set_allocator`, `clargs_error_message`, `clargs_strdup` and so on) are real.
 
-## 規約の一覧
+## The rules at a glance
 
-| 番号 | 規則 | 要点 |
+| No. | Rule | Summary |
 |---|---|---|
-| 1 | 生成と破棄 | `create` で得たオブジェクトは、対応する `destroy` でだけ破棄する。破棄すると、属するものもすべて解放される |
-| 2 | 利用者が渡す文字列 | ライブラリが複製する。借りる関数は例外で、コメントに期間を書く |
-| 3 | ライブラリが返す文字列とオブジェクト | 返したオブジェクトが所有する。そのオブジェクトを破棄するまで有効。利用者は解放しない |
-| 4 | `NULL` | `destroy` の `NULL` は何もしない。それ以外は、コメントが許していない限り渡せない |
-| 5 | アロケータ | ライブラリ全体に 1 つ。オブジェクトが 1 つもないときに設定する |
-| 6 | 解放するのは確保した側 | ライブラリのメモリはライブラリが、利用者のメモリは利用者が解放する |
-| 7 | 失敗の返し方 | `clargs_error_t` を返す。失敗したら、出力先は決まった状態になり、メモリは漏れず、既存のオブジェクトは変わらない |
-| 8 | スレッド | 別々のオブジェクトは同時に使える。同じオブジェクトは利用者が同期する |
+| 1 | Creation and destruction | Destroy an object you got from `create` only with the matching `destroy`. Destroying it also frees everything that belongs to it |
+| 2 | Strings you pass | The library duplicates them. Functions that borrow are the exception, and their comments state for how long |
+| 3 | Strings and objects the library returns | The object that returned them owns them. They stay valid until that object is destroyed. You do not free them |
+| 4 | `NULL` | `NULL` passed to `destroy` does nothing. Elsewhere you cannot pass it unless the comment allows it |
+| 5 | Allocator | There is one for the whole library. Set it while no object exists |
+| 6 | Whoever allocates frees | The library frees the library's memory, and you free your memory |
+| 7 | How failures are returned | Functions return `clargs_error_t`. On failure, the outputs are left in a defined state, no memory leaks, and existing objects do not change |
+| 8 | Threads | Different objects can be used at the same time. You synchronize the use of the same object |
 
-## 実行時の失敗とプログラムの誤り
+## Runtime failures and programming errors
 
-規約は、失敗を 2 種類に分ける。どの規則も、この分け方を前提にしている。
+The rules divide failures into two kinds. Every rule assumes this division.
 
-| 種類 | 内容 | 例 | 扱い |
+| Kind | What it is | Examples | Handling |
 |---|---|---|---|
-| 実行時の失敗 | 正しいプログラムでも起こりうるもの | メモリ確保の失敗。文字列の内容と定義どうしの関係に由来する、スキーマの定義の誤り（下の表）。後続のスペックでは、利用者の入力の誤りなど | `clargs_error_t` で返す（[規則 7](#7-失敗の返し方)） |
-| プログラムの誤り | 呼び出し側のコードを直さない限り必ず起こり、実行時に対処しようがないもの | 必須の引数の `NULL`、関数の欠けたアロケータ、範囲外の添字、破棄済みのオブジェクトの使用 | 関数の前提条件とする。エラーコードを割り当てない |
+| Runtime failure | Something that can happen even in a correct program | Memory allocation failure. Schema definition errors that come from the content of strings or from the relation between definitions (the table below). Errors in the input of the user of your program, and so on | Returned as `clargs_error_t` ([rule 7](#7-how-failures-are-returned)) |
+| Programming error | Something that always happens until the calling code is fixed, and that cannot be handled at run time | `NULL` for a required argument, an allocator with a missing function, an index out of range, use of an object that was already destroyed | A precondition of the function. No error code is assigned |
 
-プログラムの誤りにエラーコードを割り当てないのは、呼び出し側が実行時に対処できず、検査するコードを書かせても意味がないためである。
+Programming errors get no error code because the caller cannot handle them at run time, and making the caller write code that checks for them would be pointless.
 
-スキーマの定義の誤りは、何に由来するかで、この 2 種類に分ける。
+Schema definition errors are divided into these two kinds by where they come from.
 
-| 誤りの由来 | 例 | 扱い |
+| Where the error comes from | Examples | Handling |
 |---|---|---|
-| 文字列の内容 | 規則に合わない名前、空の名前、値型が変換できない既定値や値 | 実行時の失敗。`clargs_error_t` で返す |
-| 定義どうしの関係 | 同じコマンドの中での名前の衝突、位置引数とサブコマンドの併用、必須と既定値の併用、位置引数の並びの矛盾、対象でない種類の定義要素への属性の設定、選択肢の一覧が空または重複 | 実行時の失敗。`clargs_error_t` で返す |
-| 引数の形 | 必須の引数の `NULL`、範囲外の添字、列挙にない値 | プログラムの誤り。前提条件のままにする |
+| The content of a string | A name that breaks the naming rules, an empty name, a default value or value that the value type cannot convert | Runtime failure. Returned as `clargs_error_t` |
+| The relation between definitions | A name conflict within the same command, positionals used together with subcommands, required used together with a default value, a contradiction in the order of positionals, setting an attribute on a kind of definition element it does not apply to, a list of choices that is empty or has duplicates | Runtime failure. Returned as `clargs_error_t` |
+| The form of an argument | `NULL` for a required argument, an index out of range, a value that is not in the enumeration | Programming error. Stays a precondition |
 
-定義の誤りも、多くは呼び出し側のコードを直して解消するものである。それでも、文字列の内容と定義どうしの関係に由来する誤りをエラーコードにするのは、次の理由による。
+Most definition errors are also fixed by fixing the calling code. Even so, the errors that come from the content of strings and from the relation between definitions are error codes, for these reasons:
 
-- 名前、既定値、選択肢の文字列は、設定ファイルやプラグインなど、実行時に決まるデータから組み立てられることがある。その場合、正しいプログラムでも起こる。
-- 呼び出し側が、ライブラリを呼ぶ前に自分で確かめようとすると、名前の規則や、それまでに足した定義との突き合わせを、ライブラリと同じように実装することになる。確かめられるのはライブラリだけである。
-- Release 構成では `assert` が検査しない。前提条件にすると、誤った定義が検出されずに残り、後の解析やヘルプの動作が定まらなくなる。エラーコードなら、どの構成でも、どの種類の誤りかを呼び出し側が受け取れる。
+- Names, default values and the strings of choices can be built from data decided at run time, such as a configuration file or a plug-in. In that case they can happen even in a correct program.
+- If the caller tried to check them before calling the library, it would have to implement the naming rules and the comparison with the definitions added so far in the same way as the library. Only the library can check them.
+- In the Release configuration, `assert` does not check anything. If these were preconditions, a wrong definition would remain undetected, and later parsing and help would behave in undefined ways. With an error code, the caller receives the kind of error in every configuration.
 
-引数の形の誤りは、これらに当たらない。ポインタが `NULL` でないこと、添字が個数より小さいこと、列挙の値が定義されたものであることは、呼び出し側のコードだけで決まり、呼び出しの場所を見れば確かめられる。だから、前提条件のままにする。
+Errors in the form of an argument are none of these. Whether a pointer is not `NULL`, whether an index is less than the count, and whether an enumeration value is a defined one are decided only by the calling code, and you can check them by looking at the call site. So they stay preconditions.
 
-前提条件の扱いは、次のとおりである。
+Preconditions are handled as follows:
 
-- 検査できる前提条件は、関数の入口で標準の `assert`（`<assert.h>`）を使って検査する。公開関数も内部関数も同じである。独自のマクロや、動作を差し替える仕組みは持たない。
-- `NDEBUG` が定義されていないビルド（CMake の Debug 構成）では、前提条件を破ると、`assert` が条件、ファイル名、行番号を標準エラー出力に書いて、プロセスを中断する。
-- `NDEBUG` が定義されたビルド（CMake の Release、RelWithDebInfo、MinSizeRel 構成）では、検査しない。前提条件を破ったときの動作は定めない。
-- 検査できない前提条件（オブジェクトが存在しないときにアロケータを設定する、など）は、コメントと文書に書くだけにする。
+- Preconditions that can be checked are checked at the entry of the function with the standard `assert` (`<assert.h>`). This is the same for public and internal functions. The library has no macro of its own and no mechanism to replace this behavior.
+- In a build where `NDEBUG` is not defined (the CMake Debug configuration), breaking a precondition makes `assert` write the condition, the file name and the line number to standard error, and abort the process.
+- In a build where `NDEBUG` is defined (the CMake Release, RelWithDebInfo and MinSizeRel configurations), nothing is checked. The behavior when a precondition is broken is undefined.
+- Preconditions that cannot be checked (such as setting the allocator only while no object exists) are only written in comments and documents.
 
-実行時の失敗では、ライブラリはプロセスを中断せず、何も出力せず、`errno` を書かない。Debug 構成での中断は、プログラムの誤りだけに起こる。
+On a runtime failure, the library does not abort the process, prints nothing, and does not set `errno`. In the Debug configuration, only programming errors cause an abort.
 
-利用者には、開発中は Debug 構成のライブラリを使うことを勧める。Release 構成では、誤りが検出されずに、クラッシュやメモリの破壊になりうる。
+During development, we recommend that you use the library built in the Debug configuration. In the Release configuration, errors go undetected and can turn into crashes or memory corruption.
 
-開発者が守ること:
+What the library guarantees:
 
-- 公開関数ごとに、前提条件をヘッダのコメントに書く。内部関数は、内部ヘッダのコメントに書く。
-- エラーコードを足す前に、それが実行時の失敗かどうかを確かめる。プログラムの誤りなら、前提条件にする。定義の誤りは、上の表の由来で分ける。
-- `assert` の式に副作用を書かない。`assert` の有無で、正しい呼び出しの動作が変わらないようにする。
+- The preconditions of each public function are written in the comment of the function in its header.
+- Error codes exist only for runtime failures. A programming error becomes a precondition. Definition errors are divided by where they come from, as in the table above.
+- The expressions in `assert` have no side effects. Whether `assert` is present does not change the behavior of a correct call.
 
-## 1. 生成と破棄
+## 1. Creation and destruction
 
-- オブジェクトを生成する関数は、次の形にする。失敗しうるので `clargs_error_t` を返し、オブジェクトは出力用の引数で返す。
-
-  ```c
-  clargs_error_t clargs_<型>_create(…, clargs_<型>_t **out);
-  ```
-
-- 破棄する関数は、次の形にする。失敗しない。
+- A function that creates an object has this form. It can fail, so it returns `clargs_error_t` and returns the object through an output argument.
 
   ```c
-  void clargs_<型>_destroy(clargs_<型>_t *object);
+  clargs_error_t clargs_<type>_create(…, clargs_<type>_t **out);
   ```
 
-- 利用者が `create` で得たオブジェクトは、対応する `destroy` でだけ破棄する。
-- 破棄すると、そのオブジェクトと、それに属するものがすべて解放される。属するものとは、ほかのオブジェクトに足した子と、複製した文字列である。
-- 子のハンドルは、親を破棄すると無効になる。子を個別に破棄する関数は持たない。利用者が破棄するのは、自分が `create` で得たオブジェクトだけである。
+- A function that destroys an object has this form. It does not fail.
 
-利用者の側の書き方（仮の名前による例）:
+  ```c
+  void clargs_<type>_destroy(clargs_<type>_t *object);
+  ```
+
+- Destroy an object you got from `create` only with the matching `destroy`.
+- Destroying an object frees the object and everything that belongs to it. What belongs to it is the children added to it and the strings it duplicated.
+- The handles of children become invalid when the parent is destroyed. There is no function to destroy a child on its own. The only objects you destroy are the ones you got from `create`.
+
+How you write it (an example with placeholder names):
 
 ```c
 clargs_example_t *example;
@@ -108,66 +105,66 @@ clargs_error_t error;
 
 error = clargs_example_create("name", &example);
 if (error != CLARGS_ERROR_NONE) {
-    /* example は NULL である。破棄するものはない。 */
+    /* example is NULL. There is nothing to destroy. */
     fprintf(stderr, "%s\n", clargs_error_message(error));
     return 1;
 }
 
-/* example を使う。 */
+/* Use example. */
 
 clargs_example_destroy(example);
 ```
 
-## 2. 利用者が渡す文字列
+## 2. Strings you pass
 
-- 呼び出しの後もライブラリが使う文字列は、ライブラリが複製する。利用者は、呼び出しが戻ったら、文字列を変更しても解放してもよい。
-- 複製せずに借りる関数は例外である。そのことと、利用者が文字列を有効に保つ期間を、関数のコメントに書く。書いていない関数は複製する。
+- When the library uses a string after the call returns, the library duplicates it. Once the call returns, you may change or free the string.
+- Functions that borrow a string without duplicating it are the exception. The comment of such a function says so, and says how long you must keep the string valid. A function whose comment does not say so duplicates.
 
-既定を複製にするのは、利用者が文字列の寿命を気にせずに済むためである。局所の配列や、後で書き換えるバッファを渡しても安全である。
+Duplicating is the default so that you do not have to think about the lifetime of strings. It is safe to pass a local array or a buffer that you overwrite later.
 
 ```c
 char name[32];
 
 snprintf(name, sizeof(name), "item-%d", 1);
-error = clargs_example_create(name, &example);   /* 仮の名前。name を複製する */
-/* ここから先、name を書き換えても example には影響しない。 */
+error = clargs_example_create(name, &example);   /* Placeholder name. Duplicates name */
+/* From here on, overwriting name does not affect example. */
 ```
 
-開発者は、文字列の複製に `clargs_strdup`（`src/str.h`）を使う。
+Inside the library, strings are duplicated with `clargs_strdup`, an internal function.
 
-## 3. ライブラリが返す文字列とオブジェクト
+## 3. Strings and objects the library returns
 
-- 返した文字列とハンドルは、返したオブジェクトが所有する。そのオブジェクトを破棄するまで有効である。利用者は解放しない。
-- 関数のコメントがより短い期間を書いている場合は、それに従う。
-- `clargs_error_message()` の文字列は、プログラムの終了まで有効である。
-- あるオブジェクトが別のオブジェクトを参照する場合（結果がスキーマを参照するなど）、参照されるほうを先に破棄しない。開発者は、関数のコメントにこの順序を書く。
+- The strings and handles that a function returns are owned by the object that returned them. They stay valid until that object is destroyed. You do not free them.
+- If the comment of a function states a shorter period, follow it.
+- The string of `clargs_error_message()` stays valid until the program ends.
+- If one object refers to another (for example, a result refers to a schema), do not destroy the referred object first. The comment of the function states this order.
 
 ```c
-const char *name = clargs_example_name(example);   /* 仮の名前。example が所有する */
+const char *name = clargs_example_name(example);   /* Placeholder name. Owned by example */
 
 clargs_example_destroy(example);
-/* ここから先、name は使えない。free(name) も書かない。 */
+/* From here on, name cannot be used. Do not write free(name) either. */
 ```
 
 ## 4. NULL
 
-- `destroy` に `NULL` を渡すと、何もしない。失敗の後始末で、生成できたかどうかを確かめずに `destroy` を呼べる。
-- `clargs_set_allocator()` の `NULL` は、既定のアロケータに戻すことを意味する。
-- それ以外の引数は、関数のコメントが「`NULL` でもよい」と書いていない限り、`NULL` を渡せない。渡すのは前提条件の違反である（[実行時の失敗とプログラムの誤り](#実行時の失敗とプログラムの誤り)）。エラーコードは返さない。
+- Passing `NULL` to `destroy` does nothing. When cleaning up after a failure, you can call `destroy` without checking whether the object was created.
+- `NULL` for `clargs_set_allocator()` means going back to the default allocator.
+- For any other argument, you cannot pass `NULL` unless the comment of the function says "may be `NULL`". Passing it breaks a precondition ([Runtime failures and programming errors](#runtime-failures-and-programming-errors)). No error code is returned.
 
-## 5. アロケータ
+## 5. Allocator
 
-- アロケータは、ライブラリ全体に 1 つである。公開関数はアロケータを引数に取らない。設定しなければ、標準の `malloc`、`realloc`、`calloc`、`free` を使う。
-- `clargs_set_allocator()` は、ライブラリのオブジェクトが 1 つも存在せず、ほかのスレッドがライブラリを呼び出していないときに呼ぶ。ふつうは、プログラムの開始時に 1 度だけ呼ぶ。
-- ライブラリは、渡された `clargs_allocator_t` を複製して持つ。利用者は、呼び出しが戻ったら構造体を破棄してよい。
-- 設定した 4 つの関数は、別のアロケータを設定し直すまで、かつ、そのアロケータで確保されたオブジェクトをすべて破棄し終えるまで有効に保つ。
+- There is one allocator for the whole library. Public functions do not take an allocator as an argument. If you do not set one, the standard `malloc`, `realloc`, `calloc` and `free` are used.
+- Call `clargs_set_allocator()` while no object of the library exists and no other thread is calling the library. Usually you call it once, at the start of the program.
+- The library keeps a copy of the `clargs_allocator_t` you pass. Once the call returns, you may discard the structure.
+- Keep the four functions you set valid until you set a different allocator, and until every object allocated with that allocator has been destroyed.
 
-設定してよい時点を限るのは、あるアロケータで確保したメモリを、別のアロケータで解放しないためである。オブジェクトが存在する間に設定を変えると、古いアロケータのメモリが新しいアロケータで解放される。ライブラリは、この誤りを検出しない。設定の変更は同期もしない。
+The time when you may set it is limited so that memory allocated with one allocator is never freed with another. If you change the setting while objects exist, memory from the old allocator is freed with the new one. The library does not detect this mistake. It does not synchronize changes to the setting either.
 
 ```c
 #include <clargs/clargs.h>
 
-/* 利用者の関数。標準の malloc、realloc、calloc、free と同じ形にする。 */
+/* Your functions. Give them the same form as the standard malloc, realloc, calloc and free. */
 void *my_malloc(size_t size);
 void *my_realloc(void *ptr, size_t size);
 void *my_calloc(size_t count, size_t size);
@@ -175,180 +172,97 @@ void my_free(void *ptr);
 
 int main(void)
 {
-    /* フィールドの順は malloc_fn、realloc_fn、calloc_fn、free_fn である。 */
+    /* The order of the fields is malloc_fn, realloc_fn, calloc_fn, free_fn. */
     clargs_allocator_t allocator = { my_malloc, my_realloc, my_calloc, my_free };
 
-    /* ライブラリのほかの関数を呼ぶ前に、1 度だけ設定する。 */
+    /* Set it once, before calling any other function of the library. */
     clargs_set_allocator(&allocator);
 
-    /* ここからライブラリを使う。生成したオブジェクトは、すべて破棄する。 */
+    /* Use the library from here. Destroy every object you create. */
 
-    /* 既定に戻すなら、オブジェクトをすべて破棄した後で NULL を渡す。 */
+    /* To go back to the default, pass NULL after destroying every object. */
     clargs_set_allocator(NULL);
     return 0;
 }
 ```
 
-4 つの関数がどれも `NULL` でないことは、`clargs_set_allocator()` の前提条件である。構造体をゼロで初期化しただけのものは渡せない。
+That none of the four functions is `NULL` is a precondition of `clargs_set_allocator()`. You cannot pass a structure that was only initialized with zeros.
 
-利用者の関数が守ること（全文は `include/clargs/alloc.h` のコメントにある）:
+What your functions must do (the full text is in the comments of `include/clargs/alloc.h`):
 
-- `malloc_fn`、`calloc_fn`、`realloc_fn` は、どの型のオブジェクトにも使える整列のメモリを返す。失敗したら `NULL` を返す。
-- `calloc_fn` は、`count * size` バイトのすべてを 0 にしたメモリを返す。
-- `realloc_fn` は、成功したら、古い大きさと新しい大きさの小さいほうまでの内容を保つ。失敗したら、元のメモリをそのまま有効に保つ。
-- 複数のスレッドからライブラリを使うなら、4 つの関数は同時に呼ばれても正しく動く。
+- `malloc_fn`, `calloc_fn` and `realloc_fn` return memory that is aligned for an object of any type. They return `NULL` when they fail.
+- `calloc_fn` returns memory with all of its `count * size` bytes set to 0.
+- `realloc_fn`, when it succeeds, keeps the content up to the smaller of the old size and the new size. When it fails, it keeps the original memory valid as it is.
+- If you use the library from several threads, the four functions work correctly when they are called at the same time.
 
-ライブラリは、これらを検査しない。ライブラリの側は、大きさ 0 や個数 0 の要求をせず、`NULL` を再確保にも解放にも渡さず、同じポインタを 2 度解放しない。
+The library does not check these. On its side, the library never requests a size of 0 or a count of 0, never passes `NULL` to reallocation or freeing, and never frees the same pointer twice.
 
-アロケータは利用者のデータ（コンテキスト）を持たない。状態が要るアロケータは、利用者が自分の側に状態を持つ。
+The allocator does not carry user data (a context). If your allocator needs state, keep that state on your side.
 
-設定は、ライブラリの中に 1 つある。静的ライブラリを複数のモジュール（実行ファイルと DLL など）にそれぞれリンクすると、モジュールごとに別の設定になる。
+There is one setting inside the library. If you link the static library into several modules (for example, an executable and a DLL) separately, each module has its own setting.
 
-## 6. 解放するのは確保した側
+## 6. Whoever allocates frees
 
-- ライブラリが確保したメモリは、ライブラリの `destroy` を通してだけ解放する。利用者が `free` や自分の解放関数を直接呼ぶ公開 API を作らない。
-- 利用者が確保したメモリを、ライブラリが解放する公開 API も作らない。
+- Memory allocated by the library is freed only through the library's `destroy`. There is no public API that makes you call `free` or your own freeing function on it directly.
+- There is also no public API in which the library frees memory that you allocated.
 
-ライブラリのメモリは、設定されたアロケータのものである。利用者の `free` がそれに対応するとは限らない。逆も同じである。
+The library's memory belongs to the allocator that is set. Your `free` does not necessarily match it. The same is true the other way around.
 
-開発者は、次の形の公開関数を作らない。
+## 7. How failures are returned
 
-| 作らない形 | 代わりの形 |
+- A public function that can fail at run time returns `clargs_error_t`, and returns its result through an output argument. Only `CLARGS_ERROR_NONE` means success.
+- A function that cannot fail at run time (`destroy`, simple getters, `clargs_set_allocator()`) returns its value directly, or returns nothing. Breaking a precondition does not count as a failure.
+- On failure, an output that receives a created object or string becomes `NULL`. Other outputs are not changed.
+  - The exception is when a parsing function (`clargs_parse`, `clargs_parse_wide`) returns a parse error. A result is written to the output, and you destroy it ([Schemas, argv and results](#schemas-argv-and-results)). A function that is an exception states in its comment what happens to the output for each return value.
+  - The other exception is when a function that generates help into a buffer (`clargs_help_format`) fails to allocate. Your buffer becomes an empty string, and the length output becomes 0 ([Help](#help)).
+- On failure, all memory allocated during that call is freed before the function returns.
+- When a function that changes an existing object fails, the object keeps the same content as before the call. A function that cannot do this at least keeps the object in a state where it can be used and destroyed, and states the remaining differences in its comment.
+
+From your side, a failure never leaves more to clean up. After a failed `create`, the output is `NULL`, and after a failed change, the target is as it was (except for the differences stated in the comment of a function that cannot keep the original content). In both cases, calling `destroy` as usual is enough.
+
+## 8. Threads
+
+- The only mutable global state of the library is the allocator that is set.
+- While the setting does not change, calls on different objects can be made at the same time without synchronization, provided that your allocator can handle calls at the same time.
+- You synchronize calls on the same object made at the same time.
+- Call `clargs_set_allocator()` while no other thread is calling the library ([rule 5](#5-allocator)).
+
+## Schemas, argv and results
+
+The following table applies the rules to common questions about schemas, argv, results, and the lifetime of value types, including the result that parsing (`clargs_parse`, `clargs_parse_wide`) gives you.
+
+| Question | How the rules apply |
 |---|---|
-| 確保した文字列を返し、利用者に `free` させる | オブジェクトが所有する文字列を返す（[規則 3](#3-ライブラリが返す文字列とオブジェクト)） |
-| 利用者が確保したバッファを受け取り、ライブラリが解放する | 複製する（[規則 2](#2-利用者が渡す文字列)）。元のバッファは利用者が解放する |
+| Does the schema duplicate strings? | Yes (the default of [rule 2](#2-strings-you-pass)) |
+| Does the result duplicate the strings of argv? | Yes (the default of [rule 2](#2-strings-you-pass)). The result keeps a duplicate of every string of argv. For a wide-character argv, it keeps them converted to UTF-8. Once the parse call returns, you may change or free both the argv array and its strings. Strings you read from the result stay valid until the result is destroyed ([rule 3](#3-strings-and-objects-the-library-returns)) |
+| May a result outlive its schema? | No. A result refers to the schema and the value types, so destroy the result first ([rule 3](#3-strings-and-objects-the-library-returns)). The order of destruction is result, schema, value types |
+| May I change the schema while a result exists? | No. A result refers to the commands, options and positionals of the schema. While even one result of that schema is left, do not add definition elements to the schema, do not set attributes, and do not destroy the schema or the value types. To change it, destroy all results first. The library does not detect this mistake |
+| What happens to the output on a parse error? | A result is written. On a parse error (`CLARGS_ERROR_INVALID_COMMAND_LINE`), a result is written to `*out`, and you destroy it with `clargs_result_destroy`. You read the kind of error, the message, and what was read up to the error from that result. This is an exception to "on failure, the output becomes `NULL`" of [rule 7](#7-how-failures-are-returned), and the comment of the function says so. On a memory allocation failure (`CLARGS_ERROR_OUT_OF_MEMORY`), as rule 7 says, `*out` is `NULL`, and no memory allocated for that parse and no converted value is left |
+| Does the schema duplicate value types? How long must a value type stay valid? | No. The schema borrows value types. Value types you create (choices, user-defined) are owned by you, and you keep them valid until every schema that uses them has been destroyed. Destroy the schema first and the value type after it ([rule 3](#3-strings-and-objects-the-library-returns)). Destroying a schema does not destroy the value types ([rule 6](#6-whoever-allocates-frees)). The user data that a user-defined value type borrows must stay valid until the value type is destroyed. The built-in value types (string, integer, floating-point) belong to the library, and you do not destroy them. The details are in [Schemas](schema.md#borrowed-value-types-and-the-order-of-destruction) |
 
-## 7. 失敗の返し方
+No function borrows (the exception of rule 2) in parsing. The details are in [Parsing](parse.md#lifetime-rules).
 
-- 実行時に失敗しうる公開関数は `clargs_error_t` を返し、結果は出力用の引数で返す。成功は `CLARGS_ERROR_NONE` だけである。
-- 実行時に失敗しえない関数（`destroy`、単純な取得、`clargs_set_allocator()`）は、値を直接返すか、何も返さない。前提条件の違反は、失敗に数えない。
-- 失敗したとき、生成したオブジェクトや文字列を受け取る出力先は `NULL` になる。それ以外の出力先は変更されない。
-  - 例外は、解析の関数（`clargs_parse`、`clargs_parse_wide`）が解析エラーを返したときである。出力先に結果が渡り、利用者が破棄する（[スキーマ、argv、結果への適用](#スキーマargv結果への適用)）。例外にする関数は、出力先がどうなるかを、戻り値ごとにコメントに書く。
-  - もう 1 つの例外は、ヘルプをバッファに生成する関数（`clargs_help_format`）が確保に失敗したときである。利用者のバッファは空の文字列になり、長さの出力先は 0 になる（[ヘルプへの適用](#ヘルプへの適用)）。
-- 失敗したとき、その呼び出しの中で確保したメモリは、すべて解放してから戻る。
-- 既存のオブジェクトを変更する関数が失敗したとき、そのオブジェクトは呼び出しの前と同じ内容を保つ。それができない関数は、少なくとも使用と破棄ができる状態を保ち、残る違いをコメントに書く。
+## Help
 
-利用者から見ると、失敗の後に片付けるものは増えない。失敗した `create` の出力先は `NULL` で、失敗した変更の対象は元のままである（元の内容を保てない関数では、コメントに書いた違いを除く）。どちらも、ふつうに `destroy` を呼べば済む。
+The rules apply to generating the help and the usage line (`clargs_help_write`, `clargs_help_write_usage`, `clargs_help_format`, `clargs_help_format_usage`) and to the help options (`clargs_help_options_t`).
 
-開発者の側の書き方（仮の名前による例。メモリ関数と `clargs_strdup` は実在する）:
-
-```c
-/*
- * 仮の名前の公開ヘッダ。<clargs/error.h> を取り込み、
- * typedef struct clargs_example clargs_example_t; と、下の 2 つの関数の宣言を持つ。
- */
-#include <clargs/example.h>
-
-#include "alloc_internal.h"
-#include "str.h"
-
-#include <assert.h>
-#include <stddef.h>
-
-struct clargs_example {
-    char *name;
-};
-
-clargs_error_t clargs_example_create(const char *name, clargs_example_t **out)
-{
-    clargs_example_t *example;
-
-    assert(name != NULL);   /* 前提条件。エラーコードにしない。 */
-    assert(out != NULL);
-
-    *out = NULL;            /* 失敗したら、出力先は NULL。 */
-
-    example = clargs_calloc(1, sizeof(*example));
-    if (example == NULL) {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
-    }
-
-    example->name = clargs_strdup(name);   /* 規則 2: 複製する。 */
-    if (example->name == NULL) {
-        clargs_free(example);              /* この呼び出しの確保を解放する。 */
-        return CLARGS_ERROR_OUT_OF_MEMORY;
-    }
-
-    *out = example;
-    return CLARGS_ERROR_NONE;
-}
-
-void clargs_example_destroy(clargs_example_t *example)
-{
-    if (example == NULL) {  /* 規則 4: NULL は何もしない。 */
-        return;
-    }
-    clargs_free(example->name);
-    clargs_free(example);
-}
-```
-
-- 内部のメモリ関数（`clargs_malloc`、`clargs_calloc`、`clargs_realloc`）と `clargs_strdup` は、失敗を `NULL` で返す。受けた関数が `CLARGS_ERROR_OUT_OF_MEMORY` に直して上へ返す。途中で握りつぶさない。
-- 再確保は、戻り値を確かめてから元のポインタを置き換える。`clargs_realloc` が `NULL` を返したとき、元のメモリは有効なままである。
-- 確保の各回を順に失敗させて、この規則を確かめるテストを書く。テスト用アロケータ（`tests/support/test_allocator.h`）を使う。
-
-## 8. スレッド
-
-- ライブラリの変更可能なグローバル状態は、設定されたアロケータだけである。
-- 設定を変えない間、別々のオブジェクトへの呼び出しは、同期なしで同時に行える。利用者のアロケータが、同時の呼び出しに耐える場合に限る。
-- 同じオブジェクトへの同時の呼び出しは、利用者が同期する。
-- `clargs_set_allocator()` は、ほかのスレッドがライブラリを呼び出していないときに呼ぶ（[規則 5](#5-アロケータ)）。
-
-開発者は、`src/` に変更可能な `static` 変数とグローバル変数を足さない。足すと、別々のオブジェクトへの呼び出しが同時にできなくなる。
-
-## スキーマ、argv、結果への適用
-
-`.kiro/steering/roadmap.md` が挙げる 3 つの問いと、値型の寿命、解析（`clargs_parse`、`clargs_parse_wide`）が渡す結果に、規約を当てはめる。
-
-| 問い | 規約の適用 |
+| Question | How the rules apply |
 |---|---|
-| スキーマは文字列を複製するか | 複製する（[規則 2](#2-利用者が渡す文字列) の既定） |
-| 結果は argv の文字列を複製するか | 複製する（[規則 2](#2-利用者が渡す文字列) の既定）。結果は、argv のすべての文字列を複製して持つ。ワイド文字の argv では、UTF-8 に変換したものを持つ。利用者は、解析の呼び出しが戻ったら、argv の配列も文字列も、変更しても解放してもよい。結果から読んだ文字列は、結果を破棄するまで有効である（[規則 3](#3-ライブラリが返す文字列とオブジェクト)） |
-| 結果はスキーマより長生きしてよいか | よくない。結果はスキーマと値型を参照するので、結果を先に破棄する（[規則 3](#3-ライブラリが返す文字列とオブジェクト)）。破棄の順序は、結果、スキーマ、値型である |
-| 結果がある間に、スキーマを変更してよいか | よくない。結果は、スキーマのコマンド、オプション、位置引数を参照する。そのスキーマの結果が 1 つでも残っている間は、スキーマに定義要素を足さず、属性を設定せず、スキーマも値型も破棄しない。変更するなら、先に結果をすべて破棄する。ライブラリは、この誤りを検出しない |
-| 解析エラーのとき、出力先はどうなるか | 結果が渡る。解析エラー（`CLARGS_ERROR_INVALID_COMMAND_LINE`）では、`*out` に結果が書かれ、利用者が `clargs_result_destroy` で破棄する。エラーの種類、メッセージ、エラーまでに読んだ分は、その結果から読む。これは、[規則 7](#7-失敗の返し方) の「失敗したら、出力先は `NULL` になる」の例外で、関数のコメントに書いてある。メモリ確保の失敗（`CLARGS_ERROR_OUT_OF_MEMORY`）では、規則 7 のとおり、`*out` は `NULL` で、その解析のために確保したメモリと変換した値は残らない |
-| スキーマは値型を複製するか。値型はいつまで有効に保つか | 複製しない。スキーマは値型を借りる。利用者が生成した値型（選択肢、利用者定義）は利用者が所有し、それを使うスキーマをすべて破棄するまで有効に保つ。スキーマを先に破棄し、値型を後で破棄する（[規則 3](#3-ライブラリが返す文字列とオブジェクト)）。スキーマの破棄は値型を破棄しない（[規則 6](#6-解放するのは確保した側)）。利用者定義の値型が借りる利用者のデータは、値型を破棄するまで有効に保つ。組み込みの値型（文字列、整数、浮動小数）はライブラリのもので、破棄しない。詳しくは[スキーマの使い方](schema.md#値型を借りる契約と破棄の順序)にある |
+| Who creates and who destroys the help options? | You create them with `clargs_help_options_create` and destroy them with `clargs_help_options_destroy` ([rule 1](#1-creation-and-destruction)). The help options do not belong to a schema. Destroying the schema does not destroy the help options. You may destroy either one first. `clargs_help_options_destroy(NULL)` does nothing ([rule 4](#4-null)) |
+| Do the generating functions return something you must free? | No. The text is passed to your write function or written to your buffer. No function returns a string allocated by the library ([rule 6](#6-whoever-allocates-frees)). Memory allocated for generation is all freed before the function returns, on success and on failure ([rule 7](#7-how-failures-are-returned)) |
+| How long are the strings passed to the write function valid? | Only during that call (the "shorter period" of [rule 3](#3-strings-and-objects-the-library-returns)). The strings are not terminated. To use one later, duplicate it inside the write function. Do not free or change them |
+| How long does generation use what you pass? | Only during the call. The schema and the help options are only borrowed and are not changed. The write function, the data passed to the write function, and the buffer are not used after the call returns either. Nothing is duplicated and kept |
+| May I change the schema during generation? | No. During a generating call, do not change or destroy the schema or the value types it uses. Do not change or destroy the schema passed to generation from inside the write function. The library does not detect this mistake |
+| What happens to the output on failure? | Text already passed to the write function cannot be taken back. What was passed before the failure stays at your destination. When `clargs_help_format` fails to allocate, if the buffer size is not 0, the buffer becomes an empty string and the length output becomes 0. This is an exception to "other outputs are not changed" of [rule 7](#7-how-failures-are-returned), and the comment of the function says so. When `clargs_help_options_create` fails, `*out` is `NULL`, as rule 7 says |
+| May I generate from several threads at the same time? | Yes ([rule 8](#8-threads)). Generation keeps no state across calls. A schema and help options that are not being changed can be passed to generation from several threads at the same time. While a function that sets or destroys the help options is running, other threads must not use those help options |
 
-結果と argv についての決まりは、argv-parser の設計で決めたものである。借りる関数（規則 2 の例外）は、解析にはない。詳しくは[解析の使い方](parse.md#寿命の規則)にある。
+No function borrows (the exception of rule 2) in help. The details are in [Help and Usage](help.md#lifetime-rules).
 
-## ヘルプへの適用
+## Allocator and error functions
 
-ヘルプと usage 行の生成（`clargs_help_write`、`clargs_help_write_usage`、`clargs_help_format`、`clargs_help_format_usage`）と、整形の設定（`clargs_help_options_t`）に、規約を当てはめる。
+The public functions for the allocator and for errors also follow these rules.
 
-| 問い | 規約の適用 |
+| Function | How it follows the rules |
 |---|---|
-| 設定は、誰が生成し、誰が破棄するか | 利用者が `clargs_help_options_create` で生成し、`clargs_help_options_destroy` で破棄する（[規則 1](#1-生成と破棄)）。設定は、スキーマに属さない。スキーマを破棄しても、設定は破棄されない。どちらを先に破棄してもよい。`clargs_help_options_destroy(NULL)` は、何もしない（[規則 4](#4-null)） |
-| 生成の関数は、利用者が解放するものを返すか | 返さない。文面は、利用者の書き込み関数に渡すか、利用者のバッファに書く。ライブラリが確保した文字列を返す関数はない（[規則 6](#6-解放するのは確保した側)）。生成のために確保したメモリは、成功でも失敗でも、関数が戻る前にすべて解放する（[規則 7](#7-失敗の返し方)） |
-| 書き込み関数に渡される文字列は、いつまで有効か | その呼び出しの間だけである（[規則 3](#3-ライブラリが返す文字列とオブジェクト) の「より短い期間」）。文字列は、終端されていない。後で使うなら、書き込み関数の中で複製する。利用者は、解放も変更もしない |
-| 生成は、渡されたものをいつまで使うか | 呼び出しの間だけである。スキーマと設定は、借りるだけで、変更しない。書き込み関数、書き込み関数に渡すデータ、バッファも、呼び出しが戻った後は使わない。複製して持つものはない |
-| 生成の間に、スキーマを変更してよいか | よくない。生成の呼び出しの間は、スキーマと、それが使う値型を、変更も破棄もしない。書き込み関数の中から、生成に渡したスキーマを変更または破棄してはならない。ライブラリは、この誤りを検出しない |
-| 失敗したとき、出力先はどうなるか | 書き込み関数に渡した文面は、取り消せない。失敗までに渡した分は、利用者の出力先に残る。`clargs_help_format` が確保に失敗したときは、バッファの大きさが 0 でなければ、バッファは空の文字列になり、長さの出力先は 0 になる。これは、[規則 7](#7-失敗の返し方) の「それ以外の出力先は変更されない」の例外で、関数のコメントに書いてある。`clargs_help_options_create` が失敗したときは、規則 7 のとおり、`*out` は `NULL` である |
-| 複数のスレッドから、同時に生成してよいか | よい（[規則 8](#8-スレッド)）。生成は、呼び出しをまたぐ状態を持たない。変更されていないスキーマと設定は、複数のスレッドから同時に生成に渡せる。設定の関数と破棄の関数を呼んでいる間は、ほかのスレッドが、その設定を使ってはならない |
-
-これらは、help-formatter の設計で決めたものである。借りる関数（規則 2 の例外）は、ヘルプにはない。詳しくは[ヘルプの使い方](help.md#寿命の規則)にある。
-
-## このスペックの関数の従い方
-
-core-runtime の公開関数と内部ユーティリティも、この規約に従う。オブジェクトを生成する公開関数は、このスペックにはない。
-
-公開関数:
-
-| 関数 | 従い方 |
-|---|---|
-| `void clargs_set_allocator(const clargs_allocator_t *allocator)` | 実行時に失敗しないので、何も返さない（規則 7）。メモリを確保しない。`NULL` は既定に戻す（規則 4）。構造体を複製する（規則 5）。4 つの関数がどれも `NULL` でないことは前提条件で、`assert` で検査する。前提条件は `include/clargs/alloc.h` のコメントにある |
-| `const char *clargs_error_message(clargs_error_t error)` | 実行時に失敗しないので、文字列を直接返す（規則 7）。文字列はプログラムの終了まで有効で、利用者は解放しない（規則 3）。メモリを確保しない。前提条件はない。一覧にない値には `"unknown error code"` を返す |
-
-内部ユーティリティ:
-
-| 関数 | 従い方 |
-|---|---|
-| `clargs_malloc`、`clargs_calloc`、`clargs_realloc`、`clargs_free`（`src/alloc_internal.h`） | 設定されたアロケータだけを呼ぶので、確保したメモリは同じアロケータで解放される（規則 5、6）。`clargs_free` の `NULL` は何もしない。`clargs_realloc` が失敗したとき、元のメモリは有効なままである（規則 7）。`errno` を書かず、出力せず、中断しない |
-| `char *clargs_strdup(const char *str)`（`src/str.h`） | 複製は呼び出し側が所有し、`clargs_free` で解放する。失敗したら `NULL` を返し、何も確保したままにしない（規則 7）。`str` の `NULL` は前提条件の違反で、`assert` で検査する（規則 4） |
-| `clargs_vec_init`、`clargs_vec_push`、`clargs_vec_at`、`clargs_vec_destroy`（`src/vec.h`） | `clargs_error_t clargs_vec_push(clargs_vec_t *vec, const void *item)` は、失敗したら `CLARGS_ERROR_OUT_OF_MEMORY` を返し、`count`、`capacity`、既存の要素は呼び出しの前のままである（規則 7）。`clargs_vec_destroy` は、配列のメモリをすべて解放する。要素の指す先は解放しない。それは呼び出し側が所有する（規則 6）。2 度呼んでもよい。`clargs_vec_at` の返すポインタは、次の `clargs_vec_push` または `clargs_vec_destroy` まで有効である（規則 3 の「より短い期間」をコメントに書いた例）。`vec` と `item` の `NULL`、範囲外の添字は前提条件の違反で、`assert` で検査する（規則 4） |
-
-公開関数の形と違う点が 2 つある。どちらも内部関数だけのことである。
-
-- `clargs_malloc`、`clargs_calloc`、`clargs_realloc`、`clargs_strdup` は、`clargs_error_t` ではなく `NULL` で失敗を返す。標準の関数と対になる内部関数は、標準と同じ形にしているためである。規則 7 の「`clargs_error_t` を返す」は、公開関数の決まりである。
-- `clargs_vec_t` は、`create` で生成するオブジェクトではない。呼び出し側の持つ構造体を `clargs_vec_init` で初期化し、`clargs_vec_destroy` で空に戻す。そのため、`clargs_vec_destroy` の `vec` は `NULL` にできない（前提条件）。規則 1 の形と、規則 4 の「`destroy` の `NULL` は何もしない」は、`create` で生成するオブジェクトの決まりである。
-
-グローバル状態（規則 8）: ライブラリの変更可能なグローバル状態は、`src/alloc.c` の、設定されたアロケータを持つ `static` 変数 1 つだけである。書き換えるのは `clargs_set_allocator()` だけで、内部のメモリ関数は読むだけである。
+| `void clargs_set_allocator(const clargs_allocator_t *allocator)` | It cannot fail at run time, so it returns nothing (rule 7). It allocates no memory. `NULL` goes back to the default (rule 4). It copies the structure (rule 5). That none of the four functions is `NULL` is a precondition, checked with `assert`. The preconditions are in the comments of `include/clargs/alloc.h` |
+| `const char *clargs_error_message(clargs_error_t error)` | It cannot fail at run time, so it returns the string directly (rule 7). The string stays valid until the program ends, and you do not free it (rule 3). It allocates no memory. It has no preconditions. For a value that is not in the list, it returns `"unknown error code"` |
