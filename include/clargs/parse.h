@@ -269,6 +269,74 @@ CLARGS_API bool clargs_result_positional_choice(const clargs_result_t *result,
 CLARGS_API const void *clargs_result_positional_value(const clargs_result_t *result,
                                                       const clargs_positional_t *positional, size_t index);
 
+/*
+ * Read the parse error of a result: what is wrong with a command line that
+ * did not match the schema, that is, when clargs_result_error() returns
+ * CLARGS_ERROR_INVALID_COMMAND_LINE. A result holds one parse error at
+ * most, the first that was found.
+ *
+ * clargs_result_error_kind() returns the kind of the error.
+ * clargs_result_error_message() returns one line of English that can be
+ * shown to the user of the program as it is: it has no line break, no
+ * prefix such as the name of the program, and no full stop.
+ * clargs_result_error_argument() returns the argument that is wrong, as a
+ * whole, such as "--level=x" or the bundle "-vx".
+ * clargs_result_error_value() returns the value that is wrong: the part of
+ * the argument that is the value, or the default value of the schema.
+ * clargs_result_error_source() and clargs_result_error_index() return where
+ * the error is: for CLARGS_SOURCE_COMMAND_LINE, the index is that of the
+ * argument in the argv that was parsed (argv[0] has the index 0); for
+ * CLARGS_SOURCE_DEFAULT, the error is in a default value of the schema and
+ * the index is 0.
+ * clargs_result_error_command() returns the command that was being read
+ * when the error was found or, for an error of a required or a default
+ * value, the command of the option or the positional.
+ * clargs_result_error_option() and clargs_result_error_positional() return
+ * the option or the positional that the error is about.
+ * clargs_result_error_short_name() returns the letter that the error is
+ * about when it is one letter of a bundle of short options, such as 'x' of
+ * "-vx".
+ *
+ * An error does not have all of these. What it does not have reads as
+ * "none": NULL for a string, an option, a positional and a command,
+ * CLARGS_SOURCE_NONE with the index 0 for an error that has no position
+ * (something required that was not given), and '\0' for the letter. Which
+ * ones an error has depends on its kind:
+ *
+ *     kind                    argument  value  option or positional
+ *     UNKNOWN_OPTION          yes       no     no
+ *     UNKNOWN_SUBCOMMAND      yes       yes    no
+ *     MISSING_VALUE           yes       no     the option
+ *     UNEXPECTED_VALUE        yes       yes    the option
+ *     INVALID_VALUE           yes (*)   yes    the one that takes the value
+ *     MISSING_OPTION          no        no     the option
+ *     MISSING_POSITIONAL      no        no     the positional
+ *     UNEXPECTED_POSITIONAL   yes       yes    no
+ *     INVALID_ENCODING        yes       yes    no
+ *
+ *     (*) Not when the value is a default value of the schema.
+ *
+ * A result that has no parse error returns "none" from all of them:
+ * CLARGS_PARSE_ERROR_NONE, NULL, CLARGS_SOURCE_NONE, 0 and '\0'.
+ *
+ * The strings are valid until result is destroyed. Do not free or modify
+ * them. The command, the option and the positional belong to the schema.
+ *
+ * Preconditions:
+ *
+ * - result is not NULL. Checked with assert.
+ */
+CLARGS_API clargs_parse_error_kind_t clargs_result_error_kind(const clargs_result_t *result);
+CLARGS_API const char *clargs_result_error_message(const clargs_result_t *result);
+CLARGS_API const char *clargs_result_error_argument(const clargs_result_t *result);
+CLARGS_API const char *clargs_result_error_value(const clargs_result_t *result);
+CLARGS_API clargs_source_t clargs_result_error_source(const clargs_result_t *result);
+CLARGS_API size_t clargs_result_error_index(const clargs_result_t *result);
+CLARGS_API const clargs_command_t *clargs_result_error_command(const clargs_result_t *result);
+CLARGS_API const clargs_option_t *clargs_result_error_option(const clargs_result_t *result);
+CLARGS_API const clargs_positional_t *clargs_result_error_positional(const clargs_result_t *result);
+CLARGS_API char clargs_result_error_short_name(const clargs_result_t *result);
+
 #ifdef __cplusplus
 }
 #endif

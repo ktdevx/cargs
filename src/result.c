@@ -1,13 +1,14 @@
 /*
  * CLArgs - the result of a parse: its creation and destruction, the copy
- * of the arguments, the selected commands, the values and the functions
- * that read it.
+ * of the arguments, the selected commands, the values, the parse error and
+ * the functions that read it.
  *
  * This is the only source that reads and writes the fields of a result.
  */
 #include "parse_internal.h"
 
 #include "alloc_internal.h"
+#include "message.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -196,6 +197,7 @@ void clargs_result_destroy(clargs_result_t *result)
         destroy_frame(frame_at(result, i));
     }
     clargs_vec_destroy(&result->frames);
+    clargs_free(result->error_message);
     clargs_free(result->args);
     clargs_free(result);
 }
@@ -520,16 +522,104 @@ static clargs_error_t convert_value(const clargs_type_t *type, const char *text,
     return CLARGS_ERROR_NONE;
 }
 
-/* What a record of a value returns for the failure error of
- * convert_value(): the lack of memory as it is, and the error of a command
- * line that does not match the schema for a value that its value type does
- * not take. */
-static clargs_error_t conversion_failure(clargs_error_t error)
+/* ---- The parse error ---------------------------------------------------- */
+
+/*
+ * Records the parse error failure in result: builds its message and, when
+ * that succeeded, writes the fields of the error. This is the one place
+ * that makes a result one of a parse error.
+ *
+ * The message is built first, so a lack of memory leaves result as it was:
+ * no part of the error is recorded, and result still reports
+ * CLARGS_ERROR_NONE.
+ *
+ * Returns CLARGS_ERROR_INVALID_COMMAND_LINE when the error was recorded
+ * and CLARGS_ERROR_OUT_OF_MEMORY when the allocation of the message fails.
+ */
+static clargs_error_t record_error(clargs_result_t *result, const clargs_result_failure_t *failure)
 {
+    const clargs_result_where_t *where = &failure->where;
+    clargs_message_parts_t parts;
+    clargs_error_t error;
+    char *message;
+
+    parts.kind = failure->kind;
+    parts.source = where->source;
+    parts.for_positional = failure->positional != NULL;
+    parts.name_prefix = where->name_prefix != NULL ? where->name_prefix : "";
+    parts.name = where->name;
+    parts.name_length = where->name_length;
+    parts.value = failure->value;
+    parts.type_name = NULL;
+    if (failure->kind == CLARGS_PARSE_ERROR_INVALID_VALUE) {
+        /* The value type is that of the option or the positional that the
+         * value is for. */
+        parts.type_name = clargs_type_name(failure->positional != NULL
+                                               ? clargs_positional_type(failure->positional)
+                                               : clargs_option_type(failure->option));
+    }
+
+    error = clargs_message_build(&parts, &message);
+    if (error != CLARGS_ERROR_NONE) {
+        return error;
+    }
+
+    result->error = CLARGS_ERROR_INVALID_COMMAND_LINE;
+    result->error_kind = failure->kind;
+    result->error_source = where->source;
+    result->error_index = where->index;
+    /* Only an error on the command line is in an argument. */
+    result->error_argument =
+        where->source == CLARGS_SOURCE_COMMAND_LINE ? clargs_result_arg(result, where->index) : NULL;
+    result->error_value = failure->value;
+    result->error_command = failure->command;
+    result->error_option = failure->option;
+    result->error_positional = failure->positional;
+    result->error_short_name = where->short_name;
+    result->error_message = message;
+    return CLARGS_ERROR_INVALID_COMMAND_LINE;
+}
+
+clargs_error_t clargs_result_fail(clargs_result_t *result, const clargs_result_failure_t *failure)
+{
+    assert(result != NULL);
+    assert(failure != NULL);
+    assert(failure->kind != CLARGS_PARSE_ERROR_NONE);
+    assert(failure->command != NULL);
+    assert(result->error == CLARGS_ERROR_NONE);
+    assert(failure->where.source != CLARGS_SOURCE_COMMAND_LINE || failure->where.index < result->arg_count);
+    assert(failure->kind != CLARGS_PARSE_ERROR_INVALID_VALUE || failure->option != NULL
+           || failure->positional != NULL);
+
+    return record_error(result, failure);
+}
+
+/*
+ * What a record of a value returns when convert_value() failed with error
+ * for text, at where: the lack of memory as it is and, for every other
+ * failure, the parse error of a value that its value type does not take,
+ * which is recorded in result as clargs_result_fail() does. option or
+ * positional is the one that the value is for; the other is NULL.
+ */
+static clargs_error_t conversion_failure(clargs_result_t *result, clargs_error_t error, const char *text,
+                                         const clargs_result_where_t *where,
+                                         const clargs_option_t *option,
+                                         const clargs_positional_t *positional)
+{
+    clargs_result_failure_t failure;
+
     if (error == CLARGS_ERROR_OUT_OF_MEMORY) {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
-    return CLARGS_ERROR_INVALID_COMMAND_LINE;
+
+    failure.kind = CLARGS_PARSE_ERROR_INVALID_VALUE;
+    failure.where = *where;
+    failure.value = text;
+    failure.command =
+        positional != NULL ? clargs_positional_command(positional) : clargs_option_command(option);
+    failure.option = option;
+    failure.positional = positional;
+    return clargs_result_fail(result, &failure);
 }
 
 clargs_error_t clargs_result_record_option_value(clargs_result_t *result, const clargs_option_t *option,
@@ -554,7 +644,7 @@ clargs_error_t clargs_result_record_option_value(clargs_result_t *result, const 
     type = clargs_option_type(option);
     error = convert_value(type, text, &value);
     if (error != CLARGS_ERROR_NONE) {
-        return conversion_failure(error);
+        return conversion_failure(result, error, text, where, option, NULL);
     }
 
     if (slot->value != NULL) {
@@ -585,7 +675,7 @@ clargs_error_t clargs_result_record_positional_value(clargs_result_t *result,
     type = clargs_positional_type(positional);
     error = convert_value(type, text, &value);
     if (error != CLARGS_ERROR_NONE) {
-        return conversion_failure(error);
+        return conversion_failure(result, error, text, where, NULL, positional);
     }
 
     error = clargs_vec_push(&slot->values, &value);
@@ -596,6 +686,55 @@ clargs_error_t clargs_result_record_positional_value(clargs_result_t *result,
     }
     slot->source = where->source;
     return CLARGS_ERROR_NONE;
+}
+
+/* Takes back the default values in the slots of frame: see
+ * clargs_result_discard_defaults(). */
+static void discard_frame_defaults(clargs_result_frame_t *frame)
+{
+    size_t i;
+    size_t k;
+
+    for (i = 0; i < frame->option_count; ++i) {
+        clargs_option_slot_t *slot = &frame->options[i];
+
+        /* A flag, a count and a negatable flag that were not given have
+         * the source of a default value too, but never a value. */
+        if (slot->source != CLARGS_SOURCE_DEFAULT || slot->value == NULL) {
+            continue;
+        }
+        destroy_value(clargs_option_type(clargs_command_option_at(frame->command, i)), slot->value);
+        slot->value = NULL;
+        slot->source = CLARGS_SOURCE_NONE;
+    }
+
+    for (i = 0; i < frame->positional_count; ++i) {
+        clargs_positional_slot_t *slot = &frame->positionals[i];
+        const clargs_type_t *type;
+
+        if (slot->source != CLARGS_SOURCE_DEFAULT) {
+            continue;
+        }
+        type = clargs_positional_type(clargs_command_positional_at(frame->command, i));
+        for (k = 0; k < slot->values.count; ++k) {
+            destroy_value(type, *(void **)clargs_vec_at(&slot->values, k));
+        }
+        /* The slot is as it was when the frame was made. */
+        clargs_vec_destroy(&slot->values);
+        clargs_vec_init(&slot->values, sizeof(void *));
+        slot->source = CLARGS_SOURCE_NONE;
+    }
+}
+
+void clargs_result_discard_defaults(clargs_result_t *result)
+{
+    size_t i;
+
+    assert(result != NULL);
+
+    for (i = 0; i < result->frames.count; ++i) {
+        discard_frame_defaults(frame_at(result, i));
+    }
 }
 
 /* Returns the area of the value of option in result, or NULL when option
@@ -858,4 +997,79 @@ const clargs_command_t *clargs_result_command(const clargs_result_t *result)
     assert(result->frames.count > 0);
 
     return frame_at(result, result->frames.count - 1)->command;
+}
+
+/* ---- The information of the parse error --------------------------------- */
+
+/* The fields below have the values of "none" until record_error() writes
+ * them, so a result without a parse error needs no case of its own. */
+
+clargs_parse_error_kind_t clargs_result_error_kind(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_kind;
+}
+
+const char *clargs_result_error_message(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_message;
+}
+
+const char *clargs_result_error_argument(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_argument;
+}
+
+const char *clargs_result_error_value(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_value;
+}
+
+clargs_source_t clargs_result_error_source(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_source;
+}
+
+size_t clargs_result_error_index(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_index;
+}
+
+const clargs_command_t *clargs_result_error_command(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_command;
+}
+
+const clargs_option_t *clargs_result_error_option(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_option;
+}
+
+const clargs_positional_t *clargs_result_error_positional(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_positional;
+}
+
+char clargs_result_error_short_name(const clargs_result_t *result)
+{
+    assert(result != NULL);
+
+    return result->error_short_name;
 }

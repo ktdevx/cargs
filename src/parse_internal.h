@@ -176,14 +176,19 @@ void clargs_result_record_flag(clargs_result_t *result, const clargs_option_t *o
 void clargs_result_record_state(clargs_result_t *result, const clargs_option_t *option, bool on);
 void clargs_result_record_count(clargs_result_t *result, const clargs_option_t *option);
 
-/* Where a value is, for the parse error of a value that its value type
- * does not take. The strings are only read during the call. */
+/* Where a parse error is: for a record of a value, where the value is,
+ * for the parse error of a value that its value type does not take. The
+ * strings are only read during the call. */
 typedef struct clargs_result_where {
-    clargs_source_t source;  /* CLARGS_SOURCE_COMMAND_LINE or CLARGS_SOURCE_DEFAULT */
-    size_t index;            /* The index of the argument that holds the value; 0 for a default value. */
-    char short_name;         /* The letter of an option with a value in a bundle; otherwise '\0'. */
-    const char *name_prefix; /* For the message: the prefix of the name as it was written. */
-    const char *name;        /* For the message: the name as it was written. */
+    clargs_source_t source;  /* CLARGS_SOURCE_COMMAND_LINE or CLARGS_SOURCE_DEFAULT for a value;
+                                CLARGS_SOURCE_NONE for an error that has no position. */
+    size_t index;            /* The index of the argument that is wrong, or that holds the value; 0 when
+                                source is not CLARGS_SOURCE_COMMAND_LINE. */
+    char short_name;         /* The letter that the error is about in a bundle; otherwise '\0'. */
+    const char *name_prefix; /* For the message: the prefix of the name as it was written, "--", "-" or
+                                "". NULL is read as "". */
+    const char *name;        /* For the message: the name as it was written. May be NULL for a kind
+                                whose message has no name ("message.h"). */
     size_t name_length;      /* The length of name, which need not end at a terminator. */
 } clargs_result_where_t;
 
@@ -202,16 +207,22 @@ typedef struct clargs_result_where {
  * - CLARGS_ERROR_OUT_OF_MEMORY: returns CLARGS_ERROR_OUT_OF_MEMORY.
  * - Anything else: records the parse error
  *   CLARGS_PARSE_ERROR_INVALID_VALUE at where, as clargs_result_fail()
- *   does, and returns what clargs_result_fail() returns.
+ *   does, and returns what clargs_result_fail() returns. The value of the
+ *   error is text, its option or positional is the one given, its command
+ *   is the command of that, and the type of the message is the name of
+ *   the value type.
  *
  * Also returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation of result
  * fails. After a failure, the values that result held are still there.
+ * After CLARGS_ERROR_OUT_OF_MEMORY, no parse error is recorded either.
  *
  * Preconditions, checked with assert:
  *
  * - result, option or positional, text and where are not NULL.
  * - option takes a value.
  * - option or positional belongs to a selected command of result.
+ * - What clargs_result_fail() requires of where, when the conversion
+ *   fails.
  */
 clargs_error_t clargs_result_record_option_value(clargs_result_t *result, const clargs_option_t *option,
                                                  const char *text, const clargs_result_where_t *where);
@@ -244,17 +255,35 @@ typedef struct clargs_result_failure {
 /*
  * Records the parse error failure in result and builds its message
  * ("message.h"). The result then reports
- * CLARGS_ERROR_INVALID_COMMAND_LINE.
+ * CLARGS_ERROR_INVALID_COMMAND_LINE, and the functions of <clargs/parse.h>
+ * that read the parse error return the fields of failure. The argument of
+ * the error is the argument of result at failure->where.index when
+ * failure->where.source is CLARGS_SOURCE_COMMAND_LINE, and NULL otherwise.
+ *
+ * The message is built from the name of failure->where and from
+ * failure->value. For CLARGS_PARSE_ERROR_INVALID_VALUE, its type is the
+ * name of the value type of failure->positional or, when that is NULL, of
+ * failure->option.
  *
  * Returns CLARGS_ERROR_INVALID_COMMAND_LINE when the error was recorded.
  * Returns CLARGS_ERROR_OUT_OF_MEMORY when the allocation of the message
- * fails.
+ * fails; nothing is recorded then: result is as it was before the call and
+ * still reports CLARGS_ERROR_NONE.
  *
- * Preconditions:
+ * Preconditions, checked with assert unless stated otherwise:
  *
- * - result and failure are not NULL. Checked with assert.
- * - failure->kind is not CLARGS_PARSE_ERROR_NONE. Checked with assert.
- * - It is called once for a result at most.
+ * - result and failure are not NULL.
+ * - failure->kind is not CLARGS_PARSE_ERROR_NONE.
+ * - failure->command is not NULL.
+ * - result has no parse error: an error is recorded once for a result at
+ *   most.
+ * - If failure->where.source is CLARGS_SOURCE_COMMAND_LINE,
+ *   failure->where.index is less than the argc that result was created
+ *   with.
+ * - For CLARGS_PARSE_ERROR_INVALID_VALUE, failure->option or
+ *   failure->positional is not NULL.
+ * - The strings that the wording of the kind uses are not NULL; see
+ *   clargs_message_build().
  */
 clargs_error_t clargs_result_fail(clargs_result_t *result, const clargs_result_failure_t *failure);
 
