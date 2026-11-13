@@ -4,6 +4,8 @@ This document collects the conventions and procedures to follow when you add pub
 
 Before you design a public function or an object that owns memory, read [Ownership and Lifetime](ownership.md) first. The pairs of creation and destruction, how strings are held, how `NULL` is handled and how failures are returned are decided there. This document covers the rules and procedures for writing those decisions in code and tests.
 
+The entry point for contributors is [CONTRIBUTING.md](../CONTRIBUTING.md) at the root of the repository. It describes how to report issues, build and test, and submit a pull request, and points to this document for the conventions.
+
 Contents:
 
 - [Naming conventions](#naming-conventions)
@@ -44,9 +46,39 @@ Contents:
 
 ## Directory layout
 
+The repository contains the following files and directories.
+
 ```
+.editorconfig         Editor settings: UTF-8, LF line endings, indentation per file type
+.gitattributes        Normalizes text files to LF line endings
+.gitignore            Files excluded from version control: build directories, local CMake settings, editor and OS files
+.github/
+├── ISSUE_TEMPLATE/
+│   ├── bug_report.yml       The issue form for bug reports
+│   ├── feature_request.yml  The issue form for feature requests
+│   └── config.yml           Disables blank issues and points security reports to private reporting
+├── pull_request_template.md The pull request template: summary, related issues and checklist
+└── workflows/
+    ├── ci.yml               CI: builds and tests pull requests and pushes to main; skips the builds and tests for documentation-only changes
+    ├── release-pr.yml       Release PR: started by hand with a version; rewrites include/clargs/version.h and CHANGELOG.md and opens a release pull request
+    └── release-publish.yml  Release: when a release pull request is merged, creates the tag and the GitHub Release
+CHANGELOG.md          The record of changes in each release (Keep a Changelog)
 CMakeLists.txt        Assembly only: reads the version, project(), options, adds each directory
+CODE_OF_CONDUCT.md    The code of conduct for everyone who takes part in the project
+CONTRIBUTING.md       The entry point for contributors
+LICENSE               The MIT License
+README.md             The entry point of the project for users: overview, building, links to the documents
+SECURITY.md           Supported versions and how to report a vulnerability privately
 cmake/                Build support files (CMake modules, scripts, templates)
+├── CLArgsConfig.cmake.in       The package file for find_package(CLArgs)
+├── ClargsCTestDefaults.cmake   The configuration ctest uses when none is given
+├── ClargsCheckAllocations.cmake The allocation check clargs.allocations
+├── ClargsCheckExports.cmake    The export check clargs.exports
+├── ClargsInstall.cmake         The install rules and the package files
+├── ClargsTargetDefaults.cmake  The compile settings shared by the targets
+├── ClargsTesting.cmake         Fetches Naos and defines clargs_add_test()
+├── ClargsVersion.cmake         Reads the version from include/clargs/version.h
+└── clargs.pc.in                The pkg-config file
 include/
 └── clargs/           Public headers. All of them go here. They are installed
     ├── clargs.h      The only entry point users include. It only includes the other public headers
@@ -63,19 +95,40 @@ src/                  Sources and internal headers. Not installed
 ├── <name>.c
 └── <name>_internal.h  Internal header. <name>.h if there is no public header of the same name
 tests/
-├── CMakeLists.txt    The clargs_add_test() calls and the registration of the allocation check and the export check
+├── CMakeLists.txt    The clargs_add_test() calls, the registration of the allocation check and the export check, and the registration of the release tests
 ├── public/           Tests of the public API. Linked to CLArgs::clargs
 ├── internal/         Tests of internal functions. Linked to clargs_internal
 ├── support/          Test support sources and headers (the test allocator). Not part of the library and not installed
-└── consumer/         Checks of using the library from a consuming project. Not part of the main build
+├── consumer/         Checks of using the library from a consuming project. Not part of the main build
+└── release/          Tests of the release scripts and modules, run with cmake -P. Need no build
+    ├── ReleaseTestHelpers.cmake  Checks and fixtures shared by the release tests
+    ├── <name>_test.cmake         One test per file
+    └── fixtures/                 Input and expected files (changelogs, a version header)
+tools/                Scripts that are not part of the build
+├── ci/
+│   └── changes.cmake Decides whether a change touches documentation only, so that CI can skip the builds and tests
+└── release/          The release scripts and the modules they include, run with cmake -P by the release workflows
+    ├── prepare.cmake             Checks a release and rewrites the version header and the changelog (Release PR)
+    ├── publish.cmake             Checks a merged release commit and makes the release notes (Release)
+    ├── ClargsChangelog.cmake     Reads and updates CHANGELOG.md
+    ├── ClargsReadBytes.cmake     Reads a text file byte for byte, line endings included
+    ├── ClargsSemver.cmake        Checks a version and compares versions by SemVer precedence
+    └── ClargsVersionHeader.cmake Rewrites the version in a version header
 docs/                 Documents
-├── conventions.md    This document
+├── README.md         The index of the documents (for users and developers)
+├── conventions.md    This document (for developers)
 ├── help.md           Using help (for users): examples of generating help and the usage line, text rules, options, output, limits, preconditions
-├── ownership.md      Ownership and lifetime conventions
+├── ownership.md      Ownership and lifetime rules (for users): who allocates and frees, how long things stay valid, how failures are returned
 ├── parse.md          Using parsing (for users): an example from parsing to destruction, the list of argument forms, parse errors, lifetime rules, preconditions
-└── schema.md         Using schemas (for users): an example from definition through validation to destruction, the value type contract, the order of destruction
+├── releasing.md      The release procedure (for developers who make releases): releasing a version, the repository settings it needs, recovering from failures
+├── schema.md         Using schemas (for users): an example from definition through validation to destruction, the value type contract, the order of destruction
+└── versioning.md     The versioning policy (for users and contributors): how versions are numbered, what a new version may change, checking the version
 ```
 
+- [CONTRIBUTING.md](../CONTRIBUTING.md) is the entry point for contributors, and [docs/README.md](README.md) is the index of the documents.
+- [CHANGELOG.md](../CHANGELOG.md) records the changes of each release. The [versioning policy](versioning.md) and the [release guide](releasing.md) describe the versions and the release procedure.
+- [`tools/release/`](../tools/release/) holds the release scripts and modules, and [`tools/ci/`](../tools/ci/) holds [`changes.cmake`](../tools/ci/changes.cmake), which CI uses to decide whether a change touches documentation only. The workflows [`ci.yml`](../.github/workflows/ci.yml), [`release-pr.yml`](../.github/workflows/release-pr.yml) and [`release-publish.yml`](../.github/workflows/release-publish.yml) in [`.github/workflows/`](../.github/workflows/) run them.
+- The tests in [`tests/release/`](../tests/release/) are registered by `tests/CMakeLists.txt` with `clargs_add_release_test(<name>)`, under the name `release.<name>` and with the label `release`. They need no build, so they are registered in both the static and the shared configuration. You can select them with `ctest -L release`.
 - Users write only `#include <clargs/clargs.h>`. Public headers also include each other in the form `<clargs/<name>.h>`.
 - The internal headers in `src/` are included only by the sources in `src/` and by tests of internal functions, in the form `"<name>_internal.h"` (`"<name>.h"` if there is no public header of the same name). Do not include internal headers from public headers.
 - Of the scripts in `cmake/`, `ClargsCheckAllocations.cmake` (the allocation check `clargs.allocations`) and `ClargsCheckExports.cmake` (the export check `clargs.exports`) can also be run on their own with `cmake -P` ([Verifying a change](#verifying-a-change)).
@@ -554,12 +607,98 @@ cmake -P cmake/ClargsCheckAllocations.cmake
 
 #### Global state
 
-The only mutable global state the library has is the allocator that is set (`current_allocator` in `src/alloc.c`).
+The only mutable global state the library has is the allocator that is set (`current_allocator` in `src/alloc.c`). Only `clargs_set_allocator()` writes it; the internal memory functions only read it.
 
 - Do not write any other mutable `static` variables or file-scope variables in `src/`. The same goes for `static` variables inside functions.
 - Tables that do not change may be written as `static const`.
-- Keep state in objects that the user creates and destroys. This rule is what lets different objects be used from different threads (rule 8 of [Ownership and Lifetime](ownership.md)).
+- Keep state in objects that the user creates and destroys. This rule is what lets different objects be used from different threads ([rule 8 of Ownership and Lifetime](ownership.md#8-threads)).
 - This is not checked automatically. Check it in review.
+
+### Applying the ownership rules
+
+Every public function follows the rules in [Ownership and Lifetime](ownership.md); do not decide ownership, lifetime or how failures are returned on your own for a new function. This section shows how the library code applies those rules.
+
+#### Forms that public functions do not take
+
+Following [rule 6](ownership.md#6-whoever-allocates-frees), do not write public functions of the following forms.
+
+| Form not to write | Form to write instead |
+|---|---|
+| Returns an allocated string and has the user `free` it | Return a string owned by an object ([rule 3](ownership.md#3-strings-and-objects-the-library-returns)) |
+| Takes a buffer allocated by the user and frees it in the library | Duplicate it ([rule 2](ownership.md#2-strings-you-pass)). The user frees the original buffer |
+
+#### Returning failures
+
+The following example shows how a function is written to follow [rule 7](ownership.md#7-how-failures-are-returned). The names are placeholders; the memory functions and `clargs_strdup` are real.
+
+```c
+/*
+ * Placeholder public header. It includes <clargs/error.h> and has
+ * typedef struct clargs_example clargs_example_t; and the declarations of the two functions below.
+ */
+#include <clargs/example.h>
+
+#include "alloc_internal.h"
+#include "str.h"
+
+#include <assert.h>
+#include <stddef.h>
+
+struct clargs_example {
+    char *name;
+};
+
+clargs_error_t clargs_example_create(const char *name, clargs_example_t **out)
+{
+    clargs_example_t *example;
+
+    assert(name != NULL);   /* Precondition. Not an error code. */
+    assert(out != NULL);
+
+    *out = NULL;            /* On failure, the output is NULL. */
+
+    example = clargs_calloc(1, sizeof(*example));
+    if (example == NULL) {
+        return CLARGS_ERROR_OUT_OF_MEMORY;
+    }
+
+    example->name = clargs_strdup(name);   /* Rule 2: duplicate it. */
+    if (example->name == NULL) {
+        clargs_free(example);              /* Free what this call allocated. */
+        return CLARGS_ERROR_OUT_OF_MEMORY;
+    }
+
+    *out = example;
+    return CLARGS_ERROR_NONE;
+}
+
+void clargs_example_destroy(clargs_example_t *example)
+{
+    if (example == NULL) {  /* Rule 4: NULL does nothing. */
+        return;
+    }
+    clargs_free(example->name);
+    clargs_free(example);
+}
+```
+
+- Handle `NULL` from the internal memory functions (`clargs_malloc`, `clargs_calloc`, `clargs_realloc`) and `clargs_strdup` as [Allocating memory](#allocating-memory) and [Return values of internal functions](#return-values-of-internal-functions) say: turn it into `CLARGS_ERROR_OUT_OF_MEMORY` and return it upward without swallowing it, and check the result of `clargs_realloc` before you replace the original pointer.
+- Write a test that makes each allocation fail in turn to check these rules. Use the test allocator (`tests/support/test_allocator.h`; see [The failure of every allocation in turn](#the-failure-of-every-allocation-in-turn)).
+
+#### How the internal utilities follow the rules
+
+| Function | How it follows the rules |
+|---|---|
+| `clargs_malloc`, `clargs_calloc`, `clargs_realloc`, `clargs_free` (`src/alloc_internal.h`) | They call only the allocator that is set, so memory they allocate is freed by the same allocator ([rules 5](ownership.md#5-allocator) and [6](ownership.md#6-whoever-allocates-frees)). `NULL` for `clargs_free` does nothing. When `clargs_realloc` fails, the original memory stays valid ([rule 7](ownership.md#7-how-failures-are-returned)). They do not write `errno`, print anything or abort |
+| `char *clargs_strdup(const char *str)` (`src/str.h`) | The caller owns the duplicate and frees it with `clargs_free`. On failure it returns `NULL` and leaves nothing allocated ([rule 7](ownership.md#7-how-failures-are-returned)). `NULL` for `str` is a precondition violation, checked with `assert` ([rule 4](ownership.md#4-null)) |
+| `clargs_vec_init`, `clargs_vec_push`, `clargs_vec_at`, `clargs_vec_destroy` (`src/vec.h`) | `clargs_error_t clargs_vec_push(clargs_vec_t *vec, const void *item)` returns `CLARGS_ERROR_OUT_OF_MEMORY` on failure, and `count`, `capacity` and the existing items stay as they were before the call ([rule 7](ownership.md#7-how-failures-are-returned)). `clargs_vec_destroy` frees all the memory of the array. It does not free what the items point to; the caller owns that ([rule 6](ownership.md#6-whoever-allocates-frees)). It may be called twice. The pointer that `clargs_vec_at` returns is valid until the next `clargs_vec_push` or `clargs_vec_destroy` (an example of the "shorter period" of [rule 3](ownership.md#3-strings-and-objects-the-library-returns), stated in the comment). `NULL` for `vec` and `item`, and an index out of range, are precondition violations, checked with `assert` ([rule 4](ownership.md#4-null)) |
+
+There are two differences from the form of public functions. Both apply only to internal functions.
+
+- `clargs_malloc`, `clargs_calloc`, `clargs_realloc` and `clargs_strdup` return failure as `NULL`, not as a `clargs_error_t`. This is because internal functions that pair with a standard function take the same form as the standard. "Returns `clargs_error_t`" in [rule 7](ownership.md#7-how-failures-are-returned) is a rule for public functions.
+- `clargs_vec_t` is not an object created with `create`. The caller initializes a structure it holds with `clargs_vec_init` and makes it empty again with `clargs_vec_destroy`. So `vec` for `clargs_vec_destroy` cannot be `NULL` (a precondition). The form of [rule 1](ownership.md#1-creation-and-destruction) and "`NULL` for `destroy` does nothing" of [rule 4](ownership.md#4-null) are rules for objects created with `create`.
+
+The only global state these functions use is the allocator that is set ([Global state](#global-state)).
 
 ### Checking preconditions
 
