@@ -3,11 +3,15 @@ set(CLARGS_SOURCES
     alloc.c
     command.c
     error.c
+    help.c
+    help_item.c
+    help_options.c
     lex.c
     message.c
     name.c
     number.c
     option.c
+    out.c
     parse.c
     positional.c
     resolve.c
@@ -18,6 +22,7 @@ set(CLARGS_SOURCES
     validate.c
     vec.c
     version.c
+    wrap.c
 )
 
 # No library type is given, so the standard BUILD_SHARED_LIBS variable chooses

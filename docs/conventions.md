@@ -51,6 +51,7 @@ include/
     ├── alloc.h       アロケータの型と clargs_set_allocator() の宣言
     ├── error.h       エラーコードの一覧 CLARGS_ERROR_LIST、clargs_error_t、clargs_error_message() の宣言
     ├── export.h      CLARGS_API
+    ├── help.h        ヘルプ: 書き込み関数の型、整形の設定 clargs_help_options_t、ヘルプと usage 行の生成の宣言
     ├── parse.h       解析: clargs_parse()、clargs_parse_wide()、結果 clargs_result_t の読み取りと破棄、解析エラーの情報の宣言
     ├── schema.h      スキーマ: コマンド、オプション、位置引数の定義、属性、検証、読み取りの宣言
     ├── type.h        値型: clargs_type_t、組み込みの値型、生成、破棄、読み取り、変換の宣言
@@ -67,6 +68,7 @@ tests/
 └── consumer/         利用側からの取り込みの確認。本体のビルドには含めない
 docs/                 文書
 ├── conventions.md    この文書
+├── help.md           ヘルプの使い方（利用者向け）: ヘルプと usage 行の生成の例、文面の規則、設定、出力先、制限、前提条件
 ├── ownership.md      所有権と寿命の規約
 ├── parse.md          解析の使い方（利用者向け）: 解析から破棄までの例、引数の書き方の一覧、解析エラー、寿命の規則、前提条件
 └── schema.md         スキーマの使い方（利用者向け）: 定義から検証、破棄までの例、値型の契約、破棄の順序
