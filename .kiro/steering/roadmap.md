@@ -100,10 +100,87 @@ C99 で書かれたコマンドライン引数パーサーライブラリを新�
     - 値の出どころは真偽値ではなく列挙型で返す（初版は「コマンドライン」と「既定値」の 2 値）。
     - 解析エラーの位置情報は、argv の位置だけに固定せず、出どころの種類を持てる形にする。
 
+## Phase 2: OSS としての公開（2026-11-13 追加）
+
+### Overview
+
+Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、リリースできる状態にする。第三者が、日本語も `.kiro/` も知らずに、ライブラリを使い、開発に参加できることが目標である。
+
+人が読む文書（README、`docs/`、CONTRIBUTING など）とソースのコメントはすべて英語にする。`.kiro/` は AI 向けの作業領域であり、人は見ない前提とする。人向けの文書は `.kiro/` やスペック駆動の手順に触れない（`.kiro/` の中の文書は日本語のままでよい）。
+
+リリースは半自動にする。メンテナーが手動起動のワークフローにバージョンを渡すとリリース PR ができ、それをマージするとタグと GitHub Release ができる。プレリリース（`-rc.1` など）も同じ流れで出す。バージョンは Semantic Versioning 2.0.0、変更履歴は Keep a Changelog 1.1.0 の形式とする。
+
+### Approach Decision
+
+- **Chosen**: 自前の GitHub Actions による「リリース PR の自動作成 → マージでタグと Release」。
+  - 手動起動（`workflow_dispatch`）のワークフローが、渡されたバージョンで `include/clargs/version.h` を書き換え、CHANGELOG の `Unreleased` を新しいバージョンの節に移し、リリース PR を開く。
+  - リリース PR のマージを検出したワークフローが、マージコミットに注釈付きタグ `v<version>` を付け、CHANGELOG の該当節から作ったノートで GitHub Release を作る。バージョンにプレリリースの識別子があれば Pre-release にする。
+  - Release に載せるのはソースだけである（GitHub が自動で付けるアーカイブとノート）。ビルド済みのバイナリは付けない。
+- **Why**:
+  - CHANGELOG を人が書く Keep a Changelog の形のまま使える。コントリビューターにコミットメッセージの規約を強いない。
+  - バージョンの唯一の出どころである `version.h` を、ワークフローがそのまま扱える。
+  - 外部のリリースツールに依存しない。
+- **Rejected alternatives**:
+  - release-please: Conventional Commits から CHANGELOG を作るので、Keep a Changelog の手書きの形と合わない。プレリリースと `version.h` の更新に追加の設定が要る。
+  - PR は手動で作り、タグの push で Release を作る方式: 自動化が少なく、依頼の「PR を作り、マージ後にタグを打つ」半自動に届かない。
+  - ビルド済みバイナリの添付: 3 OS × 静的/動的のパッケージの作成と検証が増える。C ライブラリでは FetchContent や find_package で取り込むのがふつうなので、初版では付けない。
+
+### Scope
+
+- **In**:
+  - README と `docs/` の英語化と再編（利用者向けと開発者向け）、CONTRIBUTING.md、人向け文書からの `.kiro/` への言及の除去、ソースのコメントの言語の点検
+  - SemVer の運用規則（1.0 より前の互換、プレリリースの表し方）、`version.h`・CMake・pkg-config でのプレリリースの扱い
+  - CHANGELOG.md（Keep a Changelog）
+  - リリース PR を作るワークフロー、マージ後にタグと GitHub Release を作るワークフロー、メンテナー向けのリリース手順書
+  - CI の起動タイミングの見直し（PR、main への push、手動起動。文書だけの変更では重いビルドを飛ばす）
+  - CODE_OF_CONDUCT.md、SECURITY.md、Issue と PR のテンプレート（直接実装）
+- **Out**:
+  - リポジトリ名の変更（`cargs` のまま。公開名は Naming のとおり `CLArgs` / `clargs`）
+  - vcpkg、Conan などのパッケージ管理への登録
+  - API リファレンスのサイト生成（Doxygen、GitHub Pages など）
+  - CI のジョブの追加（Sanitizer、clang-format、静的解析、リンク検査など）。今回見直すのは起動タイミングだけ
+  - ビルド済みバイナリの配布
+  - 実際の最初のリリース（v0.1.0）を出す操作。仕組みができたあとにメンテナーが行う
+
+### Constraints
+
+- **文書の言語**: 人が読むもの（README、`docs/`、CONTRIBUTING、CHANGELOG、CoC、SECURITY、テンプレート、ワークフローとソースのコメント、Release のノート）は英語のみ。`.kiro/` の中と CLAUDE.md は例外。
+- **`.kiro/` を前提にしない**: 人向けの文書は `.kiro/`、スペック、Kiro の手順に触れない。コントリビューターはそれらを知らずに開発できる。
+- **タグの形式**: `v<SemVer>`（例 `v0.2.0`、`v0.2.0-rc.1`）。両スペックが共有する決定である。
+- **バージョンの出どころ**: これまでどおり `include/clargs/version.h` だけ。プレリリースの識別子も同じヘッダに置く（形は release-automation の設計で決める）。CMake の `project(VERSION)` は数字しか受け付けない。
+- **GitHub Actions の制約**:
+  - `GITHUB_TOKEN` で作った PR や push は、`pull_request` や `push` のワークフローを起動しない。そのため、リリース PR では CI が自動では走らない。`workflow_dispatch` は例外として起動できるので、それを使うか、GitHub App のトークンを使う。どちらにするかは設計で決める。
+  - 同じ理由で、`GITHUB_TOKEN` で push したタグは別のワークフローを起動しない。タグ付けと Release の作成は同じワークフローで行う。
+  - ワークフローごと `paths-ignore` で飛ばすと、required check が Pending のまま残り、PR がマージできなくなる。文書だけの変更を飛ばすときは、ジョブの側で判定し、チェックは必ず結果を返す。
+  - リポジトリの設定（Actions に PR の作成を許す、非公開の脆弱性報告を有効にする、ブランチの保護など）は、メンテナーが手で行う。手順書に書く。
+- **秘密情報**: できるだけ追加のシークレットを要さない構成にする。要るときは、その理由と最小の権限を手順書に書く。
+
+### Boundary Strategy
+
+- **Why this split**: 「人が読む文書」と「バージョン・リリース・CI の仕組み」は、触るファイルも検証の方法も違う。互いに依存させず、並行して進める。CoC、SECURITY、テンプレートは定型の文書で、境界の設計が要らないので、直接実装に回す。
+  - english-docs: README、`docs/`、CONTRIBUTING.md の中身と構成。ソースのコメントの言語の点検。
+  - release-automation: `version.h` のプレリリースの扱い、CMake と pkg-config への反映、CHANGELOG.md、リリースと CI のワークフロー、リリース手順書。
+- **Shared seams to watch**:
+  - **リリース手順書の置き場所とリンク**: 手順書（例 `docs/releasing.md`）と CHANGELOG.md の中身は release-automation が持つ。english-docs は README と CONTRIBUTING からそれらへリンクするだけで、中身を書かない。ファイル名は両スペックの設計で合わせる。
+  - **バージョンについての記述**: `docs/conventions.md` の「バージョンについての注意」は、プレリリースの扱いが変わると古くなる。英語化は english-docs、内容の更新は release-automation が持つ。
+  - **README の取り込み例**: FetchContent の `GIT_TAG` は、`main` ではなくリリースタグ（`v<SemVer>`）の例にする。タグの形式は上の Constraints のとおり。
+  - **CI の required check の名前**: release-automation が決める。CONTRIBUTING で CI に触れる場合は、その名前に合わせる。
+  - **変更の記録の規則**: 「利用者に見える変更は PR で CHANGELOG の `Unreleased` に書く」という規則は release-automation が決め、CONTRIBUTING と PR テンプレートがそれを案内する。
+
+## Existing Spec Updates
+
+- なし。build-foundation の CI は、ジョブの中身（3 OS × 静的/動的、consumer check）を変えない。起動タイミングの見直しは release-automation が持つ。
+
+## Direct Implementation Candidates
+
+- [ ] community-health-files -- CODE_OF_CONDUCT.md（Contributor Covenant。連絡先は vabelorg@gmail.com）、SECURITY.md（GitHub の非公開の脆弱性報告で受け付ける。対応するバージョンの方針を書く）、Issue テンプレート（バグ報告、機能要望、`config.yml` で脆弱性は SECURITY へ案内）、PR テンプレート。定型の文書で境界の設計が要らないため、スペックにしない。PR テンプレートの CHANGELOG の項目は、release-automation の規則が決まってから書く。すべて英語。
+
 ## Specs (dependency order)
 
-- [ ] build-foundation -- CMake プロジェクト、静的/動的ビルド、export マクロ、インストールとパッケージ、Naos の導入、3 OS の CI。Dependencies: none
-- [ ] core-runtime -- 差し替え可能なアロケータ、エラーモデル、所有権の規約、テスト用の失敗注入アロケータ。Dependencies: build-foundation
-- [ ] command-schema -- コマンド、サブコマンド、オプション、位置引数、値型の定義 API と定義の検証。Dependencies: core-runtime
-- [ ] argv-parser -- argv の解析エンジン、ワイド文字 argv の受け付け、結果オブジェクトと参照 API、構造化された解析エラー。Dependencies: command-schema
-- [ ] help-formatter -- スキーマからヘルプと usage 文を生成する。Dependencies: command-schema
+- [x] build-foundation -- CMake プロジェクト、静的/動的ビルド、export マクロ、インストールとパッケージ、Naos の導入、3 OS の CI。Dependencies: none
+- [x] core-runtime -- 差し替え可能なアロケータ、エラーモデル、所有権の規約、テスト用の失敗注入アロケータ。Dependencies: build-foundation
+- [x] command-schema -- コマンド、サブコマンド、オプション、位置引数、値型の定義 API と定義の検証。Dependencies: core-runtime
+- [x] argv-parser -- argv の解析エンジン、ワイド文字 argv の受け付け、結果オブジェクトと参照 API、構造化された解析エラー。Dependencies: command-schema
+- [x] help-formatter -- スキーマからヘルプと usage 文を生成する。Dependencies: command-schema
+- [ ] english-docs -- README と docs/ の英語化と、利用者向け・開発者向けの再編、CONTRIBUTING.md、人向け文書からの .kiro/ への言及の除去、コメントの言語の点検。Dependencies: none
+- [ ] release-automation -- SemVer の運用とプレリリースの扱い、CHANGELOG.md（Keep a Changelog）、リリース PR の作成とマージ後のタグ・GitHub Release のワークフロー、CI の起動タイミングの見直し、リリース手順書。Dependencies: none
