@@ -155,7 +155,8 @@ of the file by hand. The **Release PR** workflow does it.
      has no entry under `Unreleased`.
 4. Otherwise the workflow opens the pull request "Release v\<version\>". It
    changes only two files:
-   - `include/clargs/version.h`: the version macros are set to the version;
+   - `include/clargs/version.h`: the version macros are set to the version
+     (unchanged when the header already holds it, as for the first release);
    - `CHANGELOG.md`: the entries under `Unreleased` move to the new section
      `[<version>] - <date>`, where the date is the day the workflow ran, in
      UTC; `Unreleased` is left empty; the links at the end are updated.
@@ -359,7 +360,9 @@ test tag or Release.
    before the pre-release: start **Release PR** with the version already in
    the header, such as `0.1.0`. Its pull request changes only `CHANGELOG.md`,
    since the header already holds that version, and merging it creates the
-   tag `v0.1.0` and its Release.
+   tag `v0.1.0` and its Release. `Unreleased` is then empty, so add an entry
+   under it with an ordinary pull request before starting the pre-release
+   (see [Making a pre-release](#making-a-pre-release)).
 3. Check:
    - that a wrong input stops the workflow without creating anything, for
      example `0.2.0+build`, `0.2`, or a run started on another branch;
