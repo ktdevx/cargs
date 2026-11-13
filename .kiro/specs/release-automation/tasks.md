@@ -61,7 +61,7 @@
   - 完了の目安: `release.publish` が通り、プレリリースは `prerelease=true`、先行するプレリリースのある正式版のノートに参照の文が入り、ヘッダか CHANGELOG が一致しない写しでは失敗する
   - _Requirements: 6.3, 6.4, 6.5, 6.8, 9.1, 9.2_
 
-- [ ] 4. ワークフロー
+- [x] 4. ワークフロー
 - [x] 4.1 CI の起動の契機、変更の判定、集約チェックを組み込む
   - 起動の契機を PR、`main` への push、手動起動にし、concurrency を設計のとおり（PR だけ古い実行を取り消す）にする。権限は読み取りのまま
   - 設計の CIWorkflow の `changes` ジョブ（イベントごとの一覧の作り方、失敗や手動起動では一覧を作らない）を足し、2.4 のスクリプトで `docs_only` を出力する
@@ -76,7 +76,7 @@
   - 完了の目安: ワークフローの YAML が構文として読め、`run:` の中に `inputs` や `github.event` の式が直接現れない。ジョブの権限が `contents: write`、`pull-requests: write`、`actions: write` だけで、最上位は空である。3.1 のスクリプトを呼ぶ行の引数が、そのスクリプトの入力の表と一致する
   - _Requirements: 4.1, 4.4, 4.5, 4.6, 4.7, 5.6, 5.8, 10.1, 10.5, 10.6_
 
-- [ ] 4.3 タグと Release を作る公開のワークフローを作る
+- [x] 4.3 タグと Release を作る公開のワークフローを作る
   - 設計の PublishWorkflow の起動（マージで閉じた PR と、やり直しの手動起動）、ジョブの条件、concurrency、権限、ステップ（バージョンとコミットの決定、checkout、3.2 のスクリプト、タグの有無と指すコミットの確認、注釈付きタグ、Release の有無の確認と作成、実行の要約）のとおりに作る
   - プレリリースでは Pre-release にし Latest にしない。資産のファイルを付けない。`pull_request_target` を使わない
   - 完了の目安: ワークフローの YAML が構文として読め、ジョブの条件にマージ済み・同じリポジトリ・`release/v` の 3 つが入り、タグと Release のそれぞれに「あれば確かめて飛ばす」分岐がある。`run:` の中にイベントの式が直接現れない
@@ -140,3 +140,4 @@
 - 3.2: `tools/release/publish.cmake` の入力は `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_NOTES`、`CLARGS_RELEASE_OUTPUT`（任意）。出力は `prerelease=`、`title=v<V>`。バイト単位の読み込みは `tools/release/ClargsReadBytes.cmake` の `clargs_read_bytes(<path> <what> <out>)` に共通化した。
 - 4.1: actionlint 1.7.7 は scratchpad に go install で入れた（/tmp/claude-0/-home-user-cargs/5e68a7da-d27a-50a0-b960-8332b131ec92/scratchpad/gopath/bin/actionlint）。ワークフローの確認に使える。ci.yml の required check は `CI result`（ジョブ id は `result`）。
 - 4.2: release-pr.yml は GITHUB_TOKEN で `gh pr create` するので、リポジトリの設定 "Allow GitHub Actions to create and approve pull requests" が要る（5.3 の手順書に書く）。PR 作成に失敗したらブランチを消してやり直す、CI の dispatch に失敗したら手で CI を起動する、という案内を手順書と合わせる。
+- 4.3: release-publish.yml の concurrency はジョブに置いた（ジョブが飛ばされる実行が group に入って保留中の実行を置き換えないように）。手動のやり直しは main で起動し、`gh pr list --state merged --head release/v<V>` で同じリポジトリの PR を 1 つだけ見つける。タグが別のコミットを指すと止まる（手順書 5.3 に戻し方を書く）。

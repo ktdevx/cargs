@@ -1,0 +1,257 @@
+# Release of CLArgs: the tag and the GitHub Release.
+#
+# Started when a pull request to main is closed. The job runs only when the
+# pull request was merged, comes from a branch of this repository (not from a
+# fork) and its branch starts with release/v, that is, for a pull request
+# opened by the Release PR workflow (release-pr.yml). Every other pull request
+# is ignored. It:
+#
+#   1. takes the version from the name of the branch release/v<version>, and
+#      the commit that the merge made on main;
+#   2. checks out that commit;
+#   3. checks that include/clargs/version.h holds the version and that the
+#      newest section of CHANGELOG.md is the version, and makes the notes of
+#      the release from that section (tools/release/publish.cmake). When they
+#      do not match, it fails with the reason and creates nothing;
+#   4. creates the annotated tag v<version> on the commit and pushes it. When
+#      the tag already exists on the same commit, it is left as is. When it
+#      exists on another commit, the workflow fails and moves nothing;
+#   5. creates the GitHub Release v<version> with the notes. A version with a
+#      pre-release, such as 0.2.0-rc.1, is marked as a pre-release and not as
+#      the latest release. No file is attached: GitHub adds only the archives
+#      of the source. When the Release already exists, it is left as is.
+#
+# To publish again after a failure, re-run the failed run, or start this
+# workflow by hand on main, from the Actions tab, with the version (without a
+# leading "v"). Started by hand, it looks up the merged pull request of the
+# branch release/v<version> and uses its merge commit. Both ways create only
+# what is missing: an existing tag or Release is checked and left as is.
+#
+# Only one run at a time for the same version: a second run waits for the
+# first one to end.
+#
+# The values of the event and the input are passed to the shell through env:,
+# never written into the command lines. The workflow runs on pull_request,
+# not pull_request_target, so it never runs with write access for a pull
+# request from a fork. It uses the token of the run (GITHUB_TOKEN) and no
+# other secret, and does not change any setting of the repository.
+
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish again, without a leading "v", such as 0.2.0 or 0.2.0-rc.1
+        required: true
+        type: string
+
+# No access by default. The job below asks for what it needs.
+permissions: {}
+
+jobs:
+  publish:
+    name: publish
+    # A merged pull request from a branch release/v... of this repository, or
+    # a start by hand.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'release/v'))
+    runs-on: ubuntu-latest
+    # One publish per version at a time, never cancelled. Set on the job, not
+    # on the workflow, so that a run whose job is skipped (a fork, another
+    # branch) does not join the group and cannot replace a pending run.
+    concurrency:
+      group: release-publish-${{ github.event_name == 'workflow_dispatch' && format('release/v{0}', inputs.version) || github.event.pull_request.head.ref }}
+      cancel-in-progress: false
+    # contents: push the tag and create the Release. pull-requests: look up
+    # the merged pull request when started by hand.
+    permissions:
+      contents: write
+      pull-requests: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # Outputs version and sha (the merge commit on main).
+      - name: Find the version and the commit
+        id: resolve
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          fail() {
+            echo "error: $1"
+            {
+              echo "## Release failed"
+              echo
+              echo "$1 No tag and no GitHub Release were created."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              fail "The workflow was started on $GITHUB_REF. Start it on main."
+            fi
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="${HEAD_REF#release/v}"
+            SHA="$MERGE_SHA"
+          fi
+          # Only the characters of a version: publish.cmake checks the rest.
+          # This keeps the value on one line of the outputs.
+          case "$VERSION" in
+            '' | *[!0-9A-Za-z.-]*)
+              fail "\"$VERSION\" is not a version." ;;
+          esac
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            # Merged pull requests of the branch from this repository, not
+            # from a fork with a branch of the same name.
+            if ! found="$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --base main --head "release/v$VERSION" --json mergeCommit,isCrossRepository --jq '[.[] | select(.isCrossRepository | not) | .mergeCommit.oid] | join(" ")')"; then
+              fail "Could not look up the merged pull request of the branch release/v$VERSION."
+            fi
+            read -r -a commits <<< "$found"
+            if [ "${#commits[@]}" -ne 1 ]; then
+              fail "Found ${#commits[@]} merged pull requests of the branch release/v$VERSION to main, not one."
+            fi
+            SHA="${commits[0]}"
+          fi
+          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            fail "The merge commit of release/v$VERSION is not known (\"$SHA\")."
+          fi
+          echo "Version $VERSION, commit $SHA."
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Release v$VERSION"
+            echo
+            echo "Commit: $SHA"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Every commit and every tag. The credentials stay for the push of the
+      # tag.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.resolve.outputs.sha }}
+          fetch-depth: 0
+
+      # Checks the version header and the changelog of the commit, and writes
+      # the notes. The outputs are prerelease and title.
+      - name: Check the release and make the notes
+        id: publish
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: |
+          log="$RUNNER_TEMP/publish.log"
+          if ! cmake -D CLARGS_RELEASE_VERSION="$VERSION" -D CLARGS_RELEASE_REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" -D CLARGS_SOURCE_DIR="$GITHUB_WORKSPACE" -D CLARGS_RELEASE_NOTES="$RUNNER_TEMP/notes.md" -D CLARGS_RELEASE_OUTPUT="$GITHUB_OUTPUT" -P tools/release/publish.cmake 2>&1 | tee "$log"; then
+            {
+              echo "## Release failed"
+              echo
+              echo "The merged commit does not match the release $VERSION. No tag and no GitHub Release were created. The output of tools/release/publish.cmake:"
+              echo
+              echo '```text'
+              cat "$log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      # Creates the annotated tag, or checks the one that exists. The tag is
+      # never moved.
+      - name: Create the tag
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          fail() {
+            echo "error: $1"
+            {
+              echo "## Release failed"
+              echo
+              echo "$1 No GitHub Release was created."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          # An annotated tag shows twice: the tag object, then (with ^{}) the
+          # commit it points to. A lightweight tag shows once, as the commit.
+          if ! refs="$(git ls-remote --tags origin "refs/tags/v$VERSION" "refs/tags/v$VERSION^{}")"; then
+            fail "git ls-remote failed while looking for the tag v$VERSION."
+          fi
+          object="$(printf '%s\n' "$refs" | awk -v ref="refs/tags/v$VERSION" '$2 == ref { print $1 }')"
+          peeled="$(printf '%s\n' "$refs" | awk -v ref="refs/tags/v$VERSION^{}" '$2 == ref { print $1 }')"
+          if [ -n "$object" ]; then
+            if [ -z "$peeled" ]; then
+              peeled="$object"
+            fi
+            if [ "$peeled" = "$SHA" ]; then
+              echo "The tag v$VERSION already exists on $SHA. It is left as is."
+              echo "- Tag \`v$VERSION\`: already on the commit, left as is." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            fail "The tag v$VERSION already exists on $peeled, not on the merged commit $SHA. It was not moved. See docs/releasing.md."
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "CLArgs v$VERSION" "$SHA"
+          # Not forced: the push fails if the tag was created meanwhile.
+          if ! git push origin "refs/tags/v$VERSION"; then
+            fail "The push of the tag v$VERSION failed. Run the workflow again."
+          fi
+          echo "Created the tag v$VERSION on $SHA."
+          echo "- Tag \`v$VERSION\`: created." >> "$GITHUB_STEP_SUMMARY"
+
+      # Creates the GitHub Release of the tag, or leaves the one that exists.
+      # No file is attached.
+      - name: Create the GitHub Release
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+          PRERELEASE: ${{ steps.publish.outputs.prerelease }}
+          TITLE: ${{ steps.publish.outputs.title }}
+        run: |
+          fail() {
+            echo "error: $1"
+            {
+              echo "- GitHub Release: failed."
+              echo
+              echo "## Release failed"
+              echo
+              echo "$1 Run the workflow again: the tag is kept and only the GitHub Release is created."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          err="$RUNNER_TEMP/release-view.err"
+          if found="$(gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json url,isPrerelease --jq '.url + " " + (.isPrerelease | tostring)' 2> "$err")"; then
+            read -r url existing <<< "$found"
+            echo "The GitHub Release v$VERSION already exists: $url. It is left as is."
+            if [ "$existing" != "$PRERELEASE" ]; then
+              echo "::warning::The GitHub Release v$VERSION exists with pre-release $existing, but the version gives $PRERELEASE. It was not changed."
+            fi
+            echo "- GitHub Release: already exists, left as is: $url" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if ! grep -qi 'not found' "$err"; then
+            cat "$err"
+            fail "gh release view failed while looking for the GitHub Release v$VERSION."
+          fi
+          args=(--repo "$GITHUB_REPOSITORY" --verify-tag --title "$TITLE" --notes-file "$RUNNER_TEMP/notes.md")
+          if [ "$PRERELEASE" = true ]; then
+            args+=(--prerelease --latest=false)
+          fi
+          if ! url="$(gh release create "v$VERSION" "${args[@]}")"; then
+            fail "The GitHub Release v$VERSION could not be created."
+          fi
+          echo "Created the GitHub Release: $url"
+          if [ "$PRERELEASE" = true ]; then
+            echo "- GitHub Release: created as a pre-release, not as the latest release: $url" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- GitHub Release: created: $url" >> "$GITHUB_STEP_SUMMARY"
+          fi
