@@ -127,3 +127,8 @@
   - GitHub の上での通し確認（フォークでの試験用のプレリリース、文書だけの PR、やり直しの dispatch）は、リリース手順書の Rehearsing の節のとおりにメンテナーが行う項目として残す
   - 完了の目安: 上の確認の結果（テストの件数と合否、検索の結果が空であること）を記録でき、すべて合格している
   - _Requirements: 2.8, 9.3, 10.1, 10.2, 10.3, 10.5, 10.6, 10.7_
+
+## Implementation Notes
+
+- 1.1: リリースのテストの補助は `tests/release/ReleaseTestHelpers.cmake`（`clargs_test_expect_equal`、`clargs_test_expect_contains`、`clargs_test_expect_not_contains`、`clargs_test_copy_fixture`、`clargs_test_run_script`、`clargs_test_finish`）。登録は `tests/CMakeLists.txt` の `clargs_add_release_test(<name>)`（`release.<name>`、ラベル `release`、作業ディレクトリは開始時に空にされる）。テストは `cmake -D CLARGS_SOURCE_ROOT=... -D CLARGS_TEST_WORK_DIR=... -P` で動く。
+- 1.1: `clargs_read_version(<header> <out> [<prerelease-out>])` は 2 引数でも識別子のマクロを検査する。トップレベルの `CMakeLists.txt` はまだ 2 引数で呼ぶ（1.2 で 3 引数にする）。
