@@ -9,7 +9,7 @@
 「英語化の前のコミット」（`<base>`）は、このスペックの最初の実装のタスク（1.1）の直前のコミットを指す。release-automation のファイルは `<base>` に既にある。原文を読むとき（特に 3.2 で ownership.md から移す記述）は、そのコミットの版（`git show <base>:<path>`）を使う。
 
 - [ ] 1. 土台: 検査スクリプト
-- [ ] 1.1 言語、AI 向けの作業領域への言及、リンク、アンカーを調べる検査を作る
+- [x] 1.1 言語、AI 向けの作業領域への言及、リンク、アンカーを調べる検査を作る
   - 設計の DocsChecker の `check` の契約どおりに、スペックのディレクトリに検査スクリプトを作る。Python 3 の標準ライブラリだけを使い、ファイルを変更しない
   - 対象の集合は、リポジトリで管理しているファイルから `.kiro/` と `.claude/` の下と CLAUDE.md を除いたもの、人向けの文書はそのうち README.md、CONTRIBUTING.md、`docs/` の下の Markdown とし、決め方を 1 か所に置く
   - `japanese`、`kiro`、`spec-term`、`missing-file`、`missing-anchor`、`pending` の 6 種を、`<path>:<line>: <kind>: <detail>` の形で報告し、件数の要約を出す。`pending` 以外が 1 件以上なら終了コード 1、なければ 0 を返す。`--files` で報告を指定のファイルに限れる
@@ -135,3 +135,8 @@
   - `docs/` の既存の 5 ファイルの名前が変わっていないこと、日本語版のファイルや節が足されていないことを確かめる
   - 完了の目安: 3 つのコマンドが成功し、差分のファイルの一覧が上の範囲に収まり、その一覧とコマンドの結果がタスクの記録にある
   - _Requirements: 1.3, 9.3, 12.1, 12.2, 12.3, 12.4_
+
+## Implementation Notes
+- 1.1: 検査は `python3 .kiro/specs/english-docs/check_docs.py check [--files ...]`。`--files` は `git ls-files` にないパスを終了コード 2 で拒む。新しく作る文書（CONTRIBUTING.md、docs/README.md）は、検査の前に `git add -N <path>` で対象に入れる。
+- 1.1: release-automation に分類するパスは要件 10.4 の一覧（設計の一覧より広い。`cmake/`、ルートの CMakeLists.txt、`tests/CMakeLists.txt`、`tests/consumer/`、`tests/public/version_test.c`、`include/clargs/version.h` を含む）。`pending` の対象は 3 文書のまま。アンカーの断片は大文字小文字を区別する。
+- 1.1: 英語化の前の件数は japanese README 66、conventions 254（release-automation が 7 行増やした）、help 278、ownership 174、parse 256、schema 254。kiro は ownership.md:301 の 1 件、spec-term は ownership.md の 5 件。
