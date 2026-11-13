@@ -121,6 +121,32 @@ extern "C" {
  * has none, it is not an option. An argument that is taken as the value of
  * an option is never looked at in this way.
  *
+ * Every other argument is not an option: one that does not start with a
+ * '-', the empty string, and a '-' alone. For a command that has no
+ * subcommand, an argument that is not an option is a value of a positional
+ * of the command. The arguments are assigned in their order to the
+ * positionals in the order in which they were added:
+ *
+ *     CLARGS_ARITY_REQUIRED, CLARGS_ARITY_OPTIONAL
+ *                    the positional has the argument as its value, and the
+ *                    next argument goes to the next positional
+ *     CLARGS_ARITY_ZERO_OR_MORE, CLARGS_ARITY_ONE_OR_MORE
+ *                    the positional has the argument as one more value, and
+ *                    so has every argument that follows
+ *
+ * An argument after every positional has its value, or for a command that
+ * has no positional, is one argument too many, a parse error. Each value is
+ * converted with the value type of its positional when it is read.
+ *
+ * Options and arguments that are not options can be mixed: an option may
+ * stand before, between and after the values of the positionals, and the
+ * assignment is the same.
+ *
+ * The argument "--" alone is the terminator of the options. It is not a
+ * value itself. Every argument after the first terminator is an argument
+ * that is not an option, whatever it looks like: "-v", "--name" and a
+ * second "--" are values then.
+ *
  * An option may be given more than once, by its short name and its long
  * name alike: a flag stays given, a count is the number of times, a
  * negatable flag has the state that was given last, and an option that

@@ -1401,24 +1401,39 @@ NAOS_TEST(a_digit_is_a_short_option_of_a_command_that_has_a_digit_as_a_short_nam
 NAOS_TEST(a_negative_number_is_not_a_bundle_of_a_command_that_has_no_digit_as_a_short_name)
 {
     short_fixture_t fixture;
-    char *argv[] = { "short", "-1", "-a" };
-    char *more[] = { "short", "-12", "-.5", "-1x", "-0", "-9a", "-v" };
+    char *argv[] = { "short", "-a", "-1", "-v" };
+    char *more[] = { "-12", "-.5", "-1x", "-0", "-9a" };
     char *no_number[] = { "short", "-.", "-a" };
     char *letter_first[] = { "short", "-a1" };
     clargs_result_t *result;
+    size_t at;
 
     set_up_short(&fixture, false);
 
-    /* Not an unknown option, and the scan goes on. */
-    result = parse_short_ok(&fixture, ARGC(argv), argv);
+    /* Not an unknown option: an argument that is not an option, which this
+     * command, one without positionals, does not take. */
+    result = parse_short_bad(&fixture, ARGC(argv), argv, CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL, 2, '\0',
+                             "unexpected argument '-1'");
     NAOS_CHECK_TRUE(clargs_result_flag(result, fixture.a));
+    NAOS_CHECK_UINT_EQ(clargs_result_count(result, fixture.verbose), 0);
     clargs_result_destroy(result);
 
     /* The letters after the digit are not read as options. */
-    result = parse_short_ok(&fixture, ARGC(more), more);
-    NAOS_CHECK_FALSE(clargs_result_flag(result, fixture.a));
-    NAOS_CHECK_UINT_EQ(clargs_result_count(result, fixture.verbose), 1);
-    clargs_result_destroy(result);
+    for (at = 0; at < sizeof(more) / sizeof(more[0]); at++) {
+        char *one[2];
+
+        one[0] = "short";
+        one[1] = more[at];
+        result = NULL;
+        NAOS_REQUIRE_TRUE(clargs_parse(fixture.root, 2, one, &result) == CLARGS_ERROR_INVALID_COMMAND_LINE);
+        NAOS_REQUIRE_TRUE(result != NULL);
+        NAOS_CHECK_INT_EQ(clargs_result_error_kind(result), CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL);
+        NAOS_CHECK_INT_EQ(clargs_result_error_short_name(result), '\0');
+        NAOS_REQUIRE_TRUE(clargs_result_error_value(result) != NULL);
+        NAOS_CHECK_STR_EQ(clargs_result_error_value(result), more[at]);
+        NAOS_CHECK_FALSE(clargs_result_flag(result, fixture.a));
+        clargs_result_destroy(result);
+    }
 
     /* What has not the form of a negative number is a bundle. */
     result = parse_short_bad(&fixture, ARGC(no_number), no_number, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, 1, '.',

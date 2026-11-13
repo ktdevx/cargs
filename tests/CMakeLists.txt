@@ -15,6 +15,7 @@ clargs_add_test(message SOURCES internal/message_test.c support/test_allocator.c
 clargs_add_test(name SOURCES internal/name_test.c INTERNAL)
 clargs_add_test(option SOURCES public/option_test.c support/test_allocator.c)
 clargs_add_test(parse_option SOURCES public/parse_option_test.c support/test_allocator.c)
+clargs_add_test(parse_positional SOURCES public/parse_positional_test.c support/test_allocator.c)
 clargs_add_test(positional SOURCES public/positional_test.c support/test_allocator.c)
 clargs_add_test(number SOURCES internal/number_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(result SOURCES internal/result_test.c support/test_allocator.c INTERNAL)

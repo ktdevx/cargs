@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 /* The state of a scan. */
 typedef struct scan {
@@ -183,6 +184,65 @@ static clargs_error_t scan_bundle(clargs_result_t *result, scan_t *scan, const c
 }
 
 /*
+ * Reads arg, the argument that scan is at, as an argument that is not an
+ * option: a value of the positional of the current command that the cursor
+ * of scan is at. A positional that takes one argument at most moves the
+ * cursor on; one that takes any number keeps it, and so takes every
+ * argument that follows. With the cursor after the last positional, also
+ * for a command that has none, arg is one argument too many.
+ *
+ * Nothing is done for a command that has subcommands: such a command has
+ * no positional, and what an argument that is not an option means for it
+ * is not read here.
+ */
+static clargs_error_t scan_plain(clargs_result_t *result, scan_t *scan, const char *arg)
+{
+    const clargs_positional_t *positional;
+    clargs_result_where_t where;
+
+    if (clargs_command_subcommand_count(scan->command) != 0) {
+        return CLARGS_ERROR_NONE;
+    }
+
+    where.source = CLARGS_SOURCE_COMMAND_LINE;
+    where.index = scan->index;
+    where.short_name = '\0';
+    where.name_prefix = "";
+    where.name = NULL;
+    where.name_length = 0;
+
+    if (scan->positional >= clargs_command_positional_count(scan->command)) {
+        clargs_result_failure_t failure;
+
+        failure.kind = CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL;
+        failure.where = where;
+        failure.value = arg;
+        failure.command = scan->command;
+        failure.option = NULL;
+        failure.positional = NULL;
+        return clargs_result_fail(result, &failure);
+    }
+
+    positional = clargs_command_positional_at(scan->command, scan->positional);
+    switch (clargs_positional_arity(positional)) {
+    case CLARGS_ARITY_ZERO_OR_MORE:
+    case CLARGS_ARITY_ONE_OR_MORE:
+        break;
+    case CLARGS_ARITY_REQUIRED:
+    case CLARGS_ARITY_OPTIONAL:
+    default:
+        scan->positional++;
+        break;
+    }
+
+    /* The name of the message of a value that the value type does not
+     * take is the name of the positional. */
+    where.name = clargs_positional_name(positional);
+    where.name_length = strlen(where.name);
+    return clargs_result_record_positional_value(result, positional, arg, &where);
+}
+
+/*
  * Reads the arguments of result, which has count of them and root as its
  * only selected command, from the first after the name of the program.
  * Stops at the first error.
@@ -203,25 +263,35 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
         const char *arg = clargs_result_arg(result, scan.index);
         clargs_error_t error = CLARGS_ERROR_NONE;
 
-        switch (clargs_lex_classify(arg)) {
-        case CLARGS_LEX_LONG:
-            error = scan_long(result, &scan, arg);
-            break;
-        case CLARGS_LEX_SHORT:
-            /* An argument with the form of a negative number is a bundle
-             * only for a command that has a digit as a short name. For any
-             * other command it is an argument that is not an option, which
-             * is passed over like the ones below. */
-            if (scan.has_digit_short || !clargs_lex_is_negative_number(arg)) {
-                error = scan_bundle(result, &scan, arg);
+        if (scan.options_ended) {
+            /* After the terminator, an argument is not classified: it is
+             * not an option, whatever it looks like, a second "--"
+             * included. */
+            error = scan_plain(result, &scan, arg);
+        } else {
+            switch (clargs_lex_classify(arg)) {
+            case CLARGS_LEX_LONG:
+                error = scan_long(result, &scan, arg);
+                break;
+            case CLARGS_LEX_SHORT:
+                /* An argument with the form of a negative number is a
+                 * bundle only for a command that has a digit as a short
+                 * name. For any other command it is not an option. */
+                if (scan.has_digit_short || !clargs_lex_is_negative_number(arg)) {
+                    error = scan_bundle(result, &scan, arg);
+                } else {
+                    error = scan_plain(result, &scan, arg);
+                }
+                break;
+            case CLARGS_LEX_TERMINATOR:
+                /* The terminator itself is not a value. */
+                scan.options_ended = true;
+                break;
+            case CLARGS_LEX_PLAIN:
+            default:
+                error = scan_plain(result, &scan, arg);
+                break;
             }
-            break;
-        case CLARGS_LEX_PLAIN:
-        case CLARGS_LEX_TERMINATOR:
-        default:
-            /* An argument that is not an option and the terminator are
-             * passed over. */
-            break;
         }
         if (error != CLARGS_ERROR_NONE) {
             return error;
