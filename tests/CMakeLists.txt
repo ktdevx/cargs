@@ -33,6 +33,7 @@ clargs_add_test(validate SOURCES public/validate_test.c support/test_allocator.c
 clargs_add_test(vec SOURCES internal/vec_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(version SOURCES public/version_test.c)
 clargs_add_test(version_internal SOURCES internal/version_internal_test.c INTERNAL)
+clargs_add_test(wrap SOURCES internal/wrap_test.c INTERNAL)
 
 # The check of the allocations; see cmake/ClargsCheckAllocations.cmake. The
 # library sources must not use the allocation functions of the C standard

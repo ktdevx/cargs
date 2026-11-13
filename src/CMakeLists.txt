@@ -19,6 +19,7 @@ set(CLARGS_SOURCES
     validate.c
     vec.c
     version.c
+    wrap.c
 )
 
 # No library type is given, so the standard BUILD_SHARED_LIBS variable chooses
