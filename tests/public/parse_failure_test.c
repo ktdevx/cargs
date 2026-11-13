@@ -52,8 +52,8 @@
                    "1234567890" "1234567890" "1234567890"
 
 /* Characters of 2, 3 and 4 bytes in UTF-8: U+00E9, U+3042 and U+1F600. */
-#define W_2 L"é"
-#define W_3 L"あ"
+#define W_2 L"\u00E9"
+#define W_3 L"\u3042"
 #define W_4 L"\U0001F600"
 #define U_2 "\xC3\xA9"
 #define U_3 "\xE3\x81\x82"
@@ -777,7 +777,7 @@ static void check_wide_invalid(const fixture_t *fixture, const clargs_result_t *
 
 NAOS_TEST(a_parse_of_wide_arguments_fails_at_every_allocation_point)
 {
-    wchar_t *argv[] = { L"tool", L"-v", L"remote", L"--name", W_2, L"add", L"--tag=" W_3, W_4, L"u1" };
+    wchar_t *argv[] = { L"tool", L"-v", L"remote", L"--name", W_2, L"add", (L"--tag=" W_3), W_4, L"u1" };
     wchar_t *invalid[] = { L"tool", L"-v", L"remote", L"--name", NULL, L"add" };
     wchar_t bad[4];
     parse_case_t parse_case;

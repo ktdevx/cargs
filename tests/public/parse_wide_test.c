@@ -44,8 +44,8 @@
  * wide ones are written as universal character names, which the compiler
  * turns into the units of its wchar_t: U+1F600 is a pair of surrogates
  * where wchar_t has 16 bits. */
-#define W_2 L"é"
-#define W_3 L"あ"
+#define W_2 L"\u00E9"
+#define W_3 L"\u3042"
 #define W_4 L"\U0001F600"
 #define U_2 "\xC3\xA9"
 #define U_3 "\xE3\x81\x82"
