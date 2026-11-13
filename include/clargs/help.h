@@ -254,8 +254,8 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * - The description of command, from the start of the line, without the
  *   newlines at its end.
  * - "Commands:" and, one on each line, the subcommands of command itself,
- *   not those of its subcommands: the name, and the description up to its
- *   first newline.
+ *   not those of its subcommands: the name, and the first line of the
+ *   description, the part before its first newline.
  * - "Arguments:" and, one on each line, the positionals of command: the
  *   heading, written as in the usage line, the whole description and the
  *   annotations.
@@ -293,6 +293,11 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * description without annotations are not written. A subcommand has no
  * annotations.
  *
+ * A description that holds no byte other than blanks and newlines counts
+ * as not set: an empty one, and one such as " \n". The description of a
+ * subcommand in the list is judged by its first line alone: when that
+ * holds nothing but blanks, the subcommand counts as having none there.
+ *
  * A part that has nothing to show is left out, together with its title: a
  * description that is not set, a list without items. One empty line stands
  * between two parts, and none at the start or at the end of the text. The
@@ -317,8 +322,8 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  *                                     Write to FILE
  *
  * An item without a description and without annotations is a line with
- * its heading only, whatever the width of the heading. A description that
- * is empty, or empty without the newlines at its end, counts as not set.
+ * its heading only, whatever the width of the heading, and no empty line
+ * follows it.
  *
  * The descriptions are broken at the blanks so that no line goes beyond
  * the width of the help options; a word that is too long is not divided. A

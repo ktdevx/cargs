@@ -454,9 +454,26 @@ static size_t help_description_column(const help_context_t *context)
     return column > limit ? limit : column;
 }
 
-/* Returns the length of text without the newlines at its end, or 0 when
- * text is NULL: the length of a description that is written whole. 0 means
- * that there is no description to write. */
+/* Returns whether the length bytes of text hold nothing to show: no byte
+ * other than blanks and newlines. A description of which that is true
+ * counts as not set; this is the one place that decides it, for the
+ * description of the command and for those of the items. */
+static bool help_is_blank(const char *text, size_t length)
+{
+    size_t index;
+
+    for (index = 0; index < length; ++index) {
+        if (text[index] != ' ' && text[index] != '\n') {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* Returns the length of text without the newlines at its end: the length
+ * of a description that is written whole. Returns 0 when text is NULL or
+ * holds nothing but blanks and newlines: 0 means that there is no
+ * description to write. */
 static size_t help_whole_length(const char *text)
 {
     size_t length;
@@ -466,30 +483,36 @@ static size_t help_whole_length(const char *text)
     }
 
     length = strlen(text);
+    if (help_is_blank(text, length)) {
+        return 0;
+    }
     while (length != 0 && text[length - 1] == '\n') {
         --length;
     }
     return length;
 }
 
-/* Returns the length of the part of text before its first newline, or 0
- * when text is NULL: the length of the description of a subcommand in a
- * list. 0 means that there is no description to write. */
+/* Returns the length of the part of text before its first newline: the
+ * length of the description of a subcommand in a list. Returns 0 when text
+ * is NULL or that part holds nothing but blanks, whatever follows the
+ * newline: 0 means that there is no description to write. */
 static size_t help_first_line_length(const char *text)
 {
     const char *end;
+    size_t length;
 
     if (text == NULL) {
         return 0;
     }
 
     end = strchr(text, '\n');
-    return end != NULL ? (size_t)(end - text) : strlen(text);
+    length = end != NULL ? (size_t)(end - text) : strlen(text);
+    return help_is_blank(text, length) ? 0 : length;
 }
 
-/* Writes the description of the command of context, when it has one: an
- * empty line, then the text from the start of the line, broken at the
- * width. */
+/* Writes the description of the command of context, when it has one that
+ * holds more than blanks and newlines: an empty line, then the text from
+ * the start of the line, broken at the width. */
 static void help_write_description(help_context_t *context)
 {
     clargs_out_t *out = &context->out;
@@ -555,9 +578,9 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
 
 /*
  * Starts the cell text of an item: makes it empty, its memory is kept for
- * the next item, and appends description, whole, when the item has one. A
- * description that ends with a newline keeps it: an annotation then starts
- * on the next line.
+ * the next item, and appends description, whole, when the item has one
+ * that holds more than blanks and newlines. A description that ends with a
+ * newline keeps it: an annotation then starts on the next line.
  *
  * Returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation fails.
  */
