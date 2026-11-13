@@ -183,5 +183,5 @@ Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、�
 - [x] command-schema -- コマンド、サブコマンド、オプション、位置引数、値型の定義 API と定義の検証。Dependencies: core-runtime
 - [x] argv-parser -- argv の解析エンジン、ワイド文字 argv の受け付け、結果オブジェクトと参照 API、構造化された解析エラー。Dependencies: command-schema
 - [x] help-formatter -- スキーマからヘルプと usage 文を生成する。Dependencies: command-schema
-- [ ] release-automation -- SemVer の運用とプレリリースの扱い、CHANGELOG.md（Keep a Changelog）、リリース PR の作成とマージ後のタグ・GitHub Release のワークフロー、CI の起動タイミングの見直し、リリース手順書。Dependencies: none
-- [ ] english-docs -- README と docs/ の英語化と、利用者向け・開発者向けの再編、CONTRIBUTING.md、人向け文書からの .kiro/ への言及の除去、コメントの言語の点検。Dependencies: release-automation
+- [x] release-automation -- SemVer の運用とプレリリースの扱い、CHANGELOG.md（Keep a Changelog）、リリース PR の作成とマージ後のタグ・GitHub Release のワークフロー、CI の起動タイミングの見直し、リリース手順書。Dependencies: none
+- [x] english-docs -- README と docs/ の英語化と、利用者向け・開発者向けの再編、CONTRIBUTING.md、人向け文書からの .kiro/ への言及の除去、コメントの言語の点検。Dependencies: release-automation
