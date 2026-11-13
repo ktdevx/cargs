@@ -42,9 +42,10 @@
 
 - [ ] 2.4 文書だけの変更を判定するスクリプトを作る
   - 設計の ChangesScript の規則（文書のパターン、一覧のファイルがない・空・判定できないときは文書だけでないとする）で判定し、結果を標準出力と出力ファイルに書くスクリプトを作る
-  - 設計の Testing Strategy の `release.changes` の内容をテストとして足す
-  - 完了の目安: `release.changes` が通り、`.github/workflows/` のファイルを含む一覧は `docs_only=false`、Markdown と `docs/` だけの一覧は `docs_only=true` になる
-  - _Requirements: 7.3, 7.4, 9.1, 9.2_
+  - `.md` を文書とみなすのは、リポジトリの根の直下、`docs/` の下、`.github/` の下だけにする。`tests/` の下の `.md`（`tests/release/fixtures/` の CHANGELOG のフィクスチャなど）は文書とみなさない
+  - 設計の Testing Strategy の `release.changes` の内容（`tests/` の下の `.md` だけの一覧の場合を含む）をテストとして足す
+  - 完了の目安: `release.changes` が通り、`.github/workflows/` のファイルを含む一覧と `tests/release/fixtures/` の `.md` だけの一覧は `docs_only=false`、根と `docs/` と `.github/` の Markdown と `docs/` だけの一覧は `docs_only=true` になる
+  - _Requirements: 7.3, 7.4, 7.10, 9.1, 9.2_
 
 - [ ] 3. 入口のスクリプト
 - [ ] 3.1 リリース PR の前の検証と書き換えのスクリプトを作る
@@ -67,7 +68,7 @@
   - `quickstart` と `build` には `needs` と `if` だけを足す。名前、matrix、steps は 1 文字も変えない
   - `CI result` の集約ジョブを、設計の判定の規則で足し、結果と理由を実行の要約に書く。冒頭のコメントを新しい起動の契機に合わせて英語で書き直す
   - 完了の目安: ワークフローの YAML が構文として読め、`git diff` で既存の 2 つのジョブの差分が `needs` と `if` の行だけである。集約ジョブの判定を、`docs_only` と各ジョブの結果の組（成功、失敗、取り消し、文書だけでの省略、文書だけでないのに省略）について、手元で同じ bash を環境変数を変えて走らせて確かめる
-  - _Requirements: 4.5, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 10.5_
+  - _Requirements: 4.5, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 10.5_
 
 - [ ] 4.2 リリース PR のワークフローを作る
   - 設計の ReleasePRWorkflow の起動、concurrency、権限、ステップ（`main` の確認、ブランチの有無、タグの一覧、3.1 のスクリプト、ブランチとコミット、ほかの変更がないことの確認、PR の作成、CI の dispatch、実行の要約）のとおりに作る
@@ -85,37 +86,44 @@
 - [ ] 5.1 (P) CHANGELOG を作る
   - 設計の ChangelogFile の冒頭（形式の宣言、バージョン方針の文書へのリンク、記録の規則）、`Unreleased` の 0.1.0 の内容、末尾のリンクのとおりに作る。0.1.0 の項目は、今の README と `docs/` が説明する機能から確かめて書く
   - 記録の規則の文言を、PR テンプレートの CHANGELOG の項目と同じ意味にする
+  - 単独の語 "spec"、"specs" と "steering" を使わない（SemVer は "Semantic Versioning" または "specification" と書く）
   - 完了の目安: リポジトリの写しで、3.1 のスクリプトを検証だけの指定、バージョン `0.1.0`、空のタグの一覧で走らせると成功する
   - _Boundary: ChangelogFile_
   - _Depends: 3.1_
-  - _Requirements: 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+  - _Requirements: 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 10.7_
 
 - [ ] 5.2 (P) バージョン方針の文書を書く
-  - 設計の VersioningDoc の節の構成どおりに、英語で書く。支援の方針は SECURITY.md へのリンクで示し、内容を繰り返さない。プレリリースと `find_package`、pkg-config の比較の注意を含める
+  - 設計の VersioningDoc の節の構成どおりに、英語で書く。支援の方針は SECURITY.md へのリンクで示し、内容を繰り返さない。プレリリースと `find_package`、pkg-config の比較の注意を含める。単独の語 "spec"、"specs" と "steering" を使わない（SemVer の仕様は "specification" と書く）
   - 完了の目安: 文書が要件 1 の各項目を節として持ち、SECURITY.md の「最新の 0.x だけを支援し、プレリリースは支援しない」と食い違う記述がない
   - _Boundary: VersioningDoc_
   - _Depends: 1.2_
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 10.7_
 
 - [ ] 5.3 (P) リリース手順書を書く
   - 設計の ReleasingDoc の 8 つの節を英語で書く。ワークフローの名前、入力、権限、required check の名前、スクリプトの引数は、4.1〜4.3 と 3.1 の実装と一致させる
-  - 完了の目安: 手順書が要件 8 の各項目を節として持ち、書かれたワークフローの名前・ジョブの権限・`CI result` の名前・スクリプトの引数が実装のファイルと一致する
+  - One-time repository setup に、Settings > Code security > Private vulnerability reporting を有効にすること（SECURITY.md と Issue テンプレートの `config.yml` が前提にしている）を足す
+  - Rehearsing の節（最初の本番のリリースの前の注意）に、README の FetchContent の例が（english-docs の改訂のあと）`GIT_TAG v0.1.0` を指すので最初の正式版が `v0.1.0` であることを確かめ、違う版で始めるならリリース PR とは別の PR で README を直すこと（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）を書く
+  - 単独の語 "spec"、"specs" と "steering" を使わない
+  - 完了の目安: 手順書が要件 8 の各項目（8.7 の非公開の脆弱性報告と 8.8 の README のタグの確認を含む）を節の中に持ち、書かれたワークフローの名前・ジョブの権限・`CI result` の名前・スクリプトの引数が実装のファイルと一致する
   - _Boundary: ReleasingDoc_
   - _Depends: 4.1, 4.2, 4.3_
-  - _Requirements: 3.6, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
+  - _Requirements: 3.6, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 10.7_
 
 - [ ] 6. 統合と最終の確認
 - [ ] 6.1 開発者向けの規約のバージョンの節を更新する
-  - `docs/conventions.md` の「バージョンについての注意」の節だけに、設計の ConventionsVersionNotes の内容を足す。そのときのファイルの言語で書く（english-docs による英語化が済んでいれば英語）。節の外と節の見出しは変えない（英語化後の見出し `Version notes` は README からのリンク先として固定されている）
+  - `docs/conventions.md` の「バージョンについての注意」の節だけに、設計の ConventionsVersionNotes の内容を足す。english-docs はこのスペックのあとに実装するので、ファイルはまだ日本語であり、日本語で書く。節の外と節の見出しは変えない（英語化後の見出し `Version notes` は README からのリンク先として固定されている）
+  - 既存の最初の項目（唯一の出どころを 3 つのマクロとする文）は、節が食い違わないように `CLARGS_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改める（数字のマクロの書式の説明は残す）
   - バージョン方針の文書とリリース手順書へは、ファイルへのリンクで案内する
-  - 完了の目安: `git diff` の差分がその節の中だけにあり、既存の 3 つの項目が残り、2 つの文書へのリンク先のファイルが存在する
+  - 完了の目安: `git diff <base>`（6.2 の定義）の差分がその節の中だけにあり、既存の 3 つの項目が（最初の項目は 4 つのマクロを挙げる形で）残り、2 つの文書へのリンク先のファイルが存在する
   - _Depends: 5.2, 5.3_
   - _Requirements: 1.6, 10.4_
 
 - [ ] 6.2 全体を確かめる
   - 静的と動的、Debug と Release の構成で、すべてのテスト（`release` のラベルを含む）と consumer check が通ることを確かめる
-  - 新しいファイルと変更したファイルに、日本語の文字と `.kiro`、`Kiro` の文字列がないこと（`docs/conventions.md` は、まだ日本語のままなら言語の確認から除く）、README.md と CONTRIBUTING.md に差分がないことを機械的に確かめる
+  - 差分の基準 `<base>` は、このスペックの最初の実装タスク（1.1）のコミットの直前のコミットとする（実装の開始時に記録する）。差分による確認はすべて `git diff <base>` で行い、あとの作業の影響を受けないようにする
+  - 新しいファイルと変更したファイルに、日本語の文字と `.kiro`、`Kiro` の文字列がないこと（`docs/conventions.md` はまだ日本語なので言語の確認から除く）、README.md と CONTRIBUTING.md に差分がないことを機械的に確かめる
+  - `CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md` に、大文字と小文字を区別しない `\bspecs?\b` と `steering` の一致がないことを機械的に確かめる（"specification" は一致しない）
   - 3 つのワークフローの YAML が構文として読め、すべてのジョブに明示的な権限があり、`ci.yml` が読み取りの権限だけであることを確かめる
   - GitHub の上での通し確認（フォークでの試験用のプレリリース、文書だけの PR、やり直しの dispatch）は、リリース手順書の Rehearsing の節のとおりにメンテナーが行う項目として残す
   - 完了の目安: 上の確認の結果（テストの件数と合否、検索の結果が空であること）を記録でき、すべて合格している
-  - _Requirements: 2.8, 9.3, 10.1, 10.2, 10.3, 10.5, 10.6_
+  - _Requirements: 2.8, 9.3, 10.1, 10.2, 10.3, 10.5, 10.6, 10.7_

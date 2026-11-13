@@ -34,6 +34,7 @@ CLArgs（ライブラリ名 `clargs`）を GitHub で OSS としてリリース�
   - コミットメッセージの規約（Conventional Commits など）
   - リポジトリの設定（ブランチの保護、required check、Actions の PR 作成の許可）をワークフローから変えること
 - **Adjacent expectations**:
+  - 実装の順序は release-automation が先、english-docs があと（english-docs は release-automation に依存する）。english-docs は、このスペックが作るファイル（`tools/`、`tests/release/`、CHANGELOG.md、ワークフロー）が既にある前提で、`docs/conventions.md` の英語化とディレクトリ構成の節を書く。
   - english-docs は、README と CONTRIBUTING から、このスペックが置く CHANGELOG、リリース手順書、バージョンの規則の文書へリンクする。それらの中身は書かない。`docs/conventions.md` の「バージョンについての注意」は、このスペックが内容を更新し、english-docs が英語にする。
   - 既存の PR テンプレートは「利用者に見える変更は CHANGELOG の `Unreleased` に項目を足す」ことを求めている。このスペックの記録の規則はこれと食い違わない。
   - 既存の SECURITY.md は「最新の 0.x のリリースだけを支援し、プレリリースは支援しない」としている。このスペックのバージョンの規則はこれと食い違わない。
@@ -143,6 +144,7 @@ CLArgs（ライブラリ名 `clargs`）を GitHub で OSS としてリリース�
 7. If 走らせたジョブのどれかが失敗した、取り消された、または飛ばすべきでないのに飛ばされた, then the CI ワークフロー shall 集約チェックを失敗させる。
 8. The CI ワークフロー shall 今あるジョブの中身（対象の環境、静的/動的、Debug/Release、consumer check）とジョブの名前を変えない。
 9. The CI ワークフロー shall 今と同じく、リポジトリの読み取り以外の権限を持たない。
+10. When 変更されたファイルに `tests/` の下の Markdown のファイル（テストのフィクスチャなど）が含まれるとき, the CI ワークフロー shall それを文書とみなさず、3 OS のビルドとテストのジョブを走らせる。
 
 ### Requirement 8: リリース手順書
 
@@ -156,6 +158,8 @@ CLArgs（ライブラリ名 `clargs`）を GitHub で OSS としてリリース�
 4. The リリース手順書 shall 失敗したときの戻し方（PR を作る前に止まった場合、リリース PR を取り下げる場合、タグや Release の作成が途中で失敗した場合、誤って出したリリースを取り消す場合）を説明する。
 5. The リリース手順書 shall リリース PR で CI の結果が示されないときに、メンテナーが CI を起動し直す方法を説明する。
 6. The リリース手順書 shall 試験用のバージョンで、本物のリポジトリにタグや Release を残さずに、仕組み全体を通して確かめる方法を説明する。
+7. The リリース手順書 shall メンテナーが手で行うリポジトリの設定として、非公開の脆弱性報告（Private vulnerability reporting）を有効にすることを説明する。既存の SECURITY.md と Issue テンプレートの案内がこの機能を前提にしているためである。
+8. The リリース手順書 shall 最初のリリースの前に、README の取り込みの例が指すタグ（`GIT_TAG v0.1.0` など）が最初に出す版と一致することを確かめ、一致しない場合は README をリリース PR とは別の PR で直すことを説明する。リリース PR はバージョンヘッダと CHANGELOG だけを変える。
 
 ### Requirement 9: リリースの仕組みの検証
 
@@ -180,3 +184,4 @@ CLArgs（ライブラリ名 `clargs`）を GitHub で OSS としてリリース�
 4. When `docs/conventions.md` の「バージョンについての注意」を更新するとき, the release-automation の作業 shall その節だけを変え、そのときのファイルの言語で書き、プレリリースの表し方とパッケージでのバージョンの扱いを説明に加える。
 5. The release-automation の成果物 shall ワークフローの各ジョブに、そのジョブに必要な最小の権限だけを与える。
 6. The release-automation の成果物 shall リポジトリの設定を変える操作をワークフローの中で行わない。
+7. The release-automation の成果物 shall CHANGELOG、リリース手順書、バージョン方針の文書の中で、開発の過程の文書を指す単独の語 "spec"、"specs" と、語 "steering" を使わない。SemVer の仕様を指すときは "specification" と書く。

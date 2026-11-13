@@ -52,6 +52,7 @@
 - required check の名前 `CI result` の変更 → 手順書、english-docs の CONTRIBUTING、メンテナーのブランチ保護の設定。
 - `docs/releasing.md`、`docs/versioning.md`、`CHANGELOG.md` の場所の変更 → english-docs のリンク、CHANGELOG の冒頭のリンク、PR テンプレートのリンク。
 - english-docs が `docs/` を再編してこの 2 つのファイルの場所を変えたい場合 → このスペックの File Structure Plan と手順書を改める。
+- 実装の順序: このスペックを先に実装し、english-docs はそのあとに実装する（english-docs が release-automation に依存する）。english-docs は、このスペックが作るファイル（`tools/`、`tests/release/`、`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`、ワークフロー）が既にある前提で、`docs/conventions.md` 全体の英語化とその「Directory layout」の節を書く。このスペックは「バージョンについての注意」の節を、まだ日本語のファイルの中で日本語で更新する。
 - CHANGELOG の見出しやリンクの書式の変更 → `ClargsChangelog.cmake` とそのテスト、PR テンプレートの案内。
 
 ## Architecture
@@ -300,12 +301,15 @@ flowchart LR
 | 7.7 | 失敗の集約 | CIWorkflow | 同上 | CI |
 | 7.8 | ジョブの中身を変えない | CIWorkflow | — | — |
 | 7.9 | 読み取りの権限だけ | CIWorkflow | `permissions` | — |
+| 7.10 | `tests/` の下の Markdown は文書でない | ChangesScript, CIWorkflow | `docs_only` | CI |
 | 8.1 | 手順 | ReleasingDoc | — | — |
 | 8.2 | リポジトリの設定 | ReleasingDoc | — | — |
 | 8.3 | 権限とシークレット | ReleasingDoc | — | — |
 | 8.4 | 戻し方 | ReleasingDoc | — | — |
 | 8.5 | CI の起動し直し | ReleasingDoc | — | — |
 | 8.6 | 試験用の通し確認 | ReleasingDoc | — | — |
+| 8.7 | 非公開の脆弱性報告を有効にする | ReleasingDoc | — | — |
+| 8.8 | README の取り込みの例のタグの確認 | ReleasingDoc | — | — |
 | 9.1 | 手元で実行できる | PrepareScript, PublishScript, ChangesScript | 入口のスクリプトの引数 | — |
 | 9.2 | 成功と失敗のテスト | ReleaseTests | — | — |
 | 9.3 | 既存の CI の中で走る | ReleaseTests | `tests/CMakeLists.txt` | CI |
@@ -316,6 +320,7 @@ flowchart LR
 | 10.4 | conventions の節だけ | ConventionsVersionNotes | — | — |
 | 10.5 | 最小の権限 | ReleasePRWorkflow, PublishWorkflow, CIWorkflow | `permissions` | — |
 | 10.6 | 設定を変えない | ReleasePRWorkflow, PublishWorkflow | — | — |
+| 10.7 | 文書で "spec"/"specs"/"steering" を使わない | ChangelogFile, VersioningDoc, ReleasingDoc | — | — |
 
 ## Components and Interfaces
 
@@ -330,14 +335,14 @@ flowchart LR
 | VersionHeaderWriter | リリースの処理 | ヘッダの値の書き換え | 4.2 | VersionReader (P0) | Service |
 | PrepareScript | リリースの処理 | PR 前の検証と書き換え | 4.2, 4.3, 4.6, 5.1–5.7, 9.1, 9.4 | 上の 3 モジュール (P0) | Batch |
 | PublishScript | リリースの処理 | マージ後の照合とノート | 6.3, 6.4, 6.5, 6.8, 9.1 | ChangelogModule, VersionReader (P0) | Batch |
-| ChangesScript | CI の起動 | 文書だけの変更の判定 | 7.3, 7.4, 9.1 | — | Batch |
+| ChangesScript | CI の起動 | 文書だけの変更の判定 | 7.3, 7.4, 7.10, 9.1 | — | Batch |
 | ReleasePRWorkflow | ワークフロー | リリース PR の作成と CI の起動 | 4.1–4.7, 5.6, 5.8, 10.5, 10.6 | PrepareScript (P0), gh (P0) | Batch |
 | PublishWorkflow | ワークフロー | タグと Release | 6.1–6.10, 10.5, 10.6 | PublishScript (P0), gh (P0) | Batch |
-| CIWorkflow | ワークフロー | 起動、判定、集約 | 4.5, 7.1–7.9, 10.5 | ChangesScript (P0) | Batch |
+| CIWorkflow | ワークフロー | 起動、判定、集約 | 4.5, 7.1–7.10, 10.5 | ChangesScript (P0) | Batch |
 | ReleaseTests | 検証 | スクリプトの自動テスト | 9.2, 9.3 | 各スクリプト (P0) | Batch |
-| ChangelogFile | 変更履歴 | CHANGELOG.md の中身 | 1.6, 3.1–3.6 | — | State |
-| VersioningDoc | 文書 | `docs/versioning.md` | 1.1–1.6 | — | — |
-| ReleasingDoc | 文書 | `docs/releasing.md` | 3.6, 8.1–8.6 | — | — |
+| ChangelogFile | 変更履歴 | CHANGELOG.md の中身 | 1.6, 3.1–3.6, 10.7 | — | State |
+| VersioningDoc | 文書 | `docs/versioning.md` | 1.1–1.6, 10.7 | — | — |
+| ReleasingDoc | 文書 | `docs/releasing.md` | 3.6, 8.1–8.8, 10.7 | — | — |
 | ConventionsVersionNotes | 文書 | `docs/conventions.md` の 1 節 | 1.6, 10.4 | VersioningDoc (P1) | — |
 
 ### バージョンの表現
@@ -541,14 +546,14 @@ flowchart LR
 | Field | Detail |
 |-------|--------|
 | Intent | 変更されたファイルの一覧から、文書だけの変更かを判定する |
-| Requirements | 7.3, 7.4, 9.1 |
+| Requirements | 7.3, 7.4, 7.10, 9.1 |
 
 **Contracts**: Batch [x]
 
 ##### Batch / Job Contract
 - Input: `CLARGS_CHANGED_FILES`（1 行に 1 つのパスのファイル。なくてもよい）、`CLARGS_CHANGES_OUTPUT`（任意）。
 - 規則: 文書のファイルは次のどれかに当たるパス。
-  - 拡張子が `.md` のファイル（どの階層でも）
+  - 拡張子が `.md` のファイルのうち、リポジトリの根の直下、`docs/` の下、`.github/` の下にあるもの（7.10。`tests/release/fixtures/*.md` などの CHANGELOG のフィクスチャはテストの入力なので文書とみなさない。ほかの階層の `.md` も文書とみなさない）
   - `docs/` の下のファイル
   - `LICENSE`
   - `.github/ISSUE_TEMPLATE/` の下のファイル
@@ -616,7 +621,7 @@ flowchart LR
 | Field | Detail |
 |-------|--------|
 | Intent | 起動の契機を絞り、文書だけの変更で重いジョブを飛ばし、集約チェックを必ず返す |
-| Requirements | 4.5, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 10.5 |
+| Requirements | 4.5, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 10.5 |
 
 **Contracts**: Batch [x]
 
@@ -656,7 +661,7 @@ flowchart LR
 | Field | Detail |
 |-------|--------|
 | Intent | Keep a Changelog 1.1.0 の CHANGELOG と記録の規則 |
-| Requirements | 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6 |
+| Requirements | 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 10.7 |
 
 - 冒頭: 題 `# Changelog`、Keep a Changelog 1.1.0 と Semantic Versioning 2.0.0 に従うこと、`docs/versioning.md` へのリンク、記録の規則（3.6）の短い説明（「Every pull request with a change visible to users adds an entry under `Unreleased`, in the matching category」）。PR テンプレートの文言と同じ意味にする。
 - `## [Unreleased]` の下に、0.1.0 に載せる内容（3.4）。分類は `### Added`。項目は最初の公開の機能（ビルダーと不透明ハンドルのスキーマ、オプション・位置引数・サブコマンド、型付き値と利用者定義の型、argv の解析とワイド文字 argv、ヘルプと usage、差し替え可能なアロケータとエラーコード、静的/動的ライブラリと 4 つの取り込み方法）。実装時に README と `docs/` の現状から確かめて書く。
@@ -667,7 +672,7 @@ flowchart LR
 | Field | Detail |
 |-------|--------|
 | Intent | 利用者と開発者のためのバージョン方針 |
-| Requirements | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6 |
+| Requirements | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 10.7 |
 
 - 節: Version numbers and tags（1.1）／Compatibility before and after 1.0（1.2。`find_package` の互換判定と SOVERSION との対応）／What counts as a breaking change（1.3）／Pre-releases（1.4。`-rc.N` など、支援しない、`find_package(CLArgs 0.2)` が `0.2.0-rc.1` も見つけること、pkg-config がプレリリースを正式版より新しいとみなすこと）／Supported versions（1.5。SECURITY.md へのリンクで支援の方針を述べ、内容を繰り返さない）／Checking the version in code（`CLARGS_VERSION_*`、`CLARGS_VERSION_PRERELEASE`、`clargs_version()`、`CLArgs_VERSION_FULL`、pkg-config の `Version`）。
 - 1.6: CHANGELOG の冒頭と `docs/conventions.md` の節からリンクする。README と CONTRIBUTING からのリンクは english-docs が張る。
@@ -677,17 +682,18 @@ flowchart LR
 | Field | Detail |
 |-------|--------|
 | Intent | メンテナー向けのリリース手順書 |
-| Requirements | 3.6, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6 |
+| Requirements | 3.6, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 10.7 |
 
 - 節:
   1. Overview — 流れの図（文章）と、使うワークフロー（`Release PR`、`Release`、`CI`）。
-  2. One-time repository setup（8.2）— Settings > Actions > General の「Allow GitHub Actions to create and approve pull requests」、`main` のブランチ保護または ruleset（PR を必須、required check `CI result`）、タグの ruleset を使う場合は GitHub Actions に作成を許すこと、Workflow permissions の既定は read のままでよいこと（各ワークフローが明示的に求める）。
+  2. One-time repository setup（8.2）— Settings > Actions > General の「Allow GitHub Actions to create and approve pull requests」、`main` のブランチ保護または ruleset（PR を必須、required check `CI result`）、タグの ruleset を使う場合は GitHub Actions に作成を許すこと、Workflow permissions の既定は read のままでよいこと（各ワークフローが明示的に求める）。Settings > Code security > Private vulnerability reporting を有効にすること（8.7。SECURITY.md と `.github/ISSUE_TEMPLATE/config.yml` がこの報告の窓口を案内しているため）。
   3. Permissions and secrets（8.3）— 各ジョブの権限の表。追加のシークレットは要らないこと。
   4. Keeping the changelog（3.6）— 記録の規則と、リリース前に `Unreleased` を整えること。
   5. Making a release / Making a pre-release（8.1）— 起動の手順、入力の例、検証で止まる条件、PR の確認、マージ、できあがるもの。
   6. When the release PR shows no CI result（8.5）— Actions のタブから `CI` を `release/v<V>` で手動起動する、または PR を閉じて開き直す。
   7. Recovering from failures（8.4）— 検証で止まった（直して起動し直す）／PR を取り下げる（PR を閉じ、ブランチを消す）／push の後で PR の作成に失敗した（ブランチを消して起動し直す）／タグや Release の作成が途中で失敗した（失敗した実行を再実行、または `Release` を `version` を渡して手動起動）／誤って出したリリース（Release を消し、タグを消し、次のパッチまたはプレリリースで出し直す。公開したタグは使い回さない）。
-  8. Rehearsing the release process（8.6）— フォークで Actions を有効にし、試験用のプレリリース（例 `0.1.0-rehearsal.1`）で全体を通す。確かめる項目: 検証の失敗の例、PR の内容、`CI result` が PR に示され required check を満たすこと、タグと Pre-release、やり直しの dispatch。終わったらフォークのタグと Release を消す。手元では `cmake -P tools/release/prepare.cmake`（`CLARGS_RELEASE_CHECK_ONLY` と作業ツリーの写し）で試せること。
+  8. Rehearsing the release process（8.6）— フォークで Actions を有効にし、試験用のプレリリース（例 `0.1.0-rehearsal.1`）で全体を通す。確かめる項目: 検証の失敗の例、PR の内容、`CI result` が PR に示され required check を満たすこと、タグと Pre-release、やり直しの dispatch。終わったらフォークのタグと Release を消す。手元では `cmake -P tools/release/prepare.cmake`（`CLARGS_RELEASE_CHECK_ONLY` と作業ツリーの写し）で試せること。最初の本番のリリースの前の注意（8.8）: README の FetchContent の例は（english-docs の改訂のあと）`GIT_TAG v0.1.0` を指すので、最初に出す正式版が `v0.1.0` であることを確かめる。別の版で始める場合は、リリース PR とは別の PR で README を先に直す（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）。
+- 語の制約（10.7）: 3 つの英語の文書（この手順書、`docs/versioning.md`、`CHANGELOG.md`）では、単独の語 "spec"、"specs" と "steering" を使わない。SemVer に触れるときは "Semantic Versioning 2.0.0" または "specification" と書く（english-docs の検査が `docs/**/*.md` で `\bspecs?\b`、`steering`、`kiro` を拒むため）。
 
 #### ConventionsVersionNotes（`docs/conventions.md` の「バージョンについての注意」）
 
@@ -696,8 +702,8 @@ flowchart LR
 | Intent | 開発者向けのバージョンの注意を、プレリリースを含めて更新する |
 | Requirements | 1.6, 10.4 |
 
-- 足す内容: 4 つ目のマクロ `CLARGS_VERSION_PRERELEASE` の書式（1 行、文字列リテラル、ハイフンなし、正式版は空）、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`CLArgs_VERSION` は数字、`CLArgs_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク。既存の 3 つの項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）は残す。
-- english-docs との順序: この節の編集は release-automation の最後のタスクにする。編集のときのファイルの言語で書く（まだ日本語なら日本語、英語化済みなら英語）。この節の外は変えない。english-docs が同時に `docs/conventions.md` を英語化している場合は、この節の編集を先にマージし、english-docs がそれを英語にする（english-docs は節の内容を変えない）。英語化済みの見出しへのリンクを張るときは、ファイルへのリンクにし、日本語の見出しのアンカーに依存しない。節の見出しは変えない（english-docs は英語化後の見出し `Version notes` とアンカー `#version-notes` を README からのリンクに使う）。
+- 足す内容: 4 つ目のマクロ `CLARGS_VERSION_PRERELEASE` の書式（1 行、文字列リテラル、ハイフンなし、正式版は空）、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`CLArgs_VERSION` は数字、`CLArgs_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク。既存の 3 つの項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）は残す。ただし最初の項目（唯一の出どころを `MAJOR`/`MINOR`/`PATCH` の 3 つのマクロとする文）は、節が食い違わないように、`CLARGS_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改めてよい（数字の 3 つのマクロの書式の説明は残す）。
+- english-docs との順序: release-automation を先に実装し、english-docs はそのあとに実装する。この節の編集は release-automation の最後のタスクにし、その時点のファイルの言語（日本語）で書く。この節の外は変えない。english-docs はあとでこの節を含むファイル全体を英語にする（english-docs は節の内容を変えない）。英語化済みの見出しへのリンクを張るときは、ファイルへのリンクにし、日本語の見出しのアンカーに依存しない。節の見出しは変えない（english-docs は英語化後の見出し `Version notes` とアンカー `#version-notes` を README からのリンクに使う）。
 
 ## Data Models
 
@@ -746,13 +752,14 @@ flowchart LR
 - **Integration Tests**（入口のスクリプトを子プロセスで）:
   - `release.prepare`: 最初のリリース（ヘッダ 0.1.0、タグなし、`0.1.0`）が成功（5.5）。通常（タグ `v0.1.0`、`0.2.0-rc.1`）が成功し、2 つのファイルだけが期待どおりに変わり、出力が `prerelease=true`（4.2、4.3、4.6）。5.1〜5.4、5.6（タグ）、5.7 の各失敗で終了コードが 0 でなく、ファイルが変わらない。`CLARGS_RELEASE_CHECK_ONLY` で何も書かない（9.4）。
   - `release.publish`: 一致する場合のノートと出力。ヘッダや CHANGELOG の不一致で失敗（6.8）。
-  - `release.changes`: 文書だけ、混在、空、一覧のファイルなし、`docs/` の下の画像、`.github/workflows/ci.yml`（文書でない）（7.3、7.4）。
+  - `release.changes`: 文書だけ、混在、空、一覧のファイルなし、`docs/` の下の画像、`.github/workflows/ci.yml`（文書でない）（7.3、7.4）。`tests/release/fixtures/CHANGELOG-valid.md` のような `tests/` の下の `.md` だけの一覧は `docs_only=false`、根の `CHANGELOG.md` と `.github/` の下の `.md` は文書（7.10）。
   - consumer check（既存の CI のステップ）: 正式版のヘッダで今と同じく合格（2.8）。プレリリースの経路は、プレリリースのリリース PR の CI で consumer check が走ることで確かめる（2.3）。
 - **E2E**（手順書の通し確認、8.6）:
   - フォークでの試験用プレリリース: PR の内容、`CI result` が PR に示されること（4.5）、マージでタグと Pre-release ができること（6.1、6.2、6.4）。
   - 文書だけの PR で `quickstart` と `build` が飛ばされ、`CI result` が成功すること（7.3、7.6）。コードの PR で全ジョブが走ること。
   - 公開のやり直しの dispatch が、既存のタグと Release を重複させないこと（6.10）。
-- **Static checks**（実装の最後の確認）: 新しいファイルと変更したファイルに日本語の文字と `.kiro`/`Kiro` の文字列がないこと（10.1、10.2）。README.md と CONTRIBUTING.md に差分がないこと（10.3）。
+- **Static checks**（実装の最後の確認）: 新しいファイルと変更したファイルに日本語の文字と `.kiro`/`Kiro` の文字列がないこと（10.1、10.2。`docs/conventions.md` はまだ日本語なので言語の確認から除く）。`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md` に、大文字と小文字を区別しない `\bspecs?\b` と `steering` の一致がないこと（10.7。"specification" は `\b` の境界で一致しないので許される）。README.md と CONTRIBUTING.md に差分がないこと（10.3）。
+- **差分の基準**: 差分による確認（README.md と CONTRIBUTING.md に差分がない、`docs/conventions.md` の差分が「バージョンについての注意」の節の中だけ、`ci.yml` の既存のジョブの差分が `needs` と `if` だけ、新しいファイルと変更したファイルの一覧）は、`git diff <base>` で行う。`<base>` は、このスペックの最初の実装タスク（1.1）のコミットの直前のコミットとし、実装の開始時に記録しておく。これにより、あとの作業（english-docs など）がこの確認に影響しない。
 
 ## Security Considerations
 - 追加のシークレットを使わない。`GITHUB_TOKEN` の権限はジョブごとに最小（`ci.yml` は `contents: read` のまま）。
