@@ -4,6 +4,7 @@
 Usage (from the repository root, or with --root):
 
     python3 .kiro/specs/english-docs/check_docs.py check [--root PATH] [--files PATH...]
+    python3 .kiro/specs/english-docs/check_docs.py extract OUTDIR [--root PATH]
 
 Mode `check` reports one finding per line as `<path>:<line>: <kind>: <detail>`
 and ends with a summary. Kinds:
@@ -21,8 +22,18 @@ and ends with a summary. Kinds:
 
 The exit status is 1 when there is at least one finding other than `pending`,
 and 0 otherwise. It is 2 when a `--files` path is not in the checked set
-(an untracked or nonexistent file). The script uses only the Python standard library and never
-modifies the repository.
+(an untracked or nonexistent file).
+
+Mode `extract` writes every ```c code block of the human-facing documents that
+defines `main` or `wmain` to `OUTDIR/<doc>-<n>.c`, where `<doc>` is the path of
+the document with `/` replaced by `_` and `<n>` is the number of the C block
+within that document (counting every C block, from 1). It writes one line per
+block to `OUTDIR/manifest.txt` as `<file> <entry> <source>:<line>`, where
+`<entry>` is `main` or `wmain` and `<line>` is the line of the opening fence.
+Existing files are overwritten; the exit status is 0.
+
+The script uses only the Python standard library and never modifies the
+repository (apart from what `extract` writes to OUTDIR).
 """
 
 import argparse
@@ -182,6 +193,49 @@ def links_of(lines):
             yield number, m.group(1)
 
 
+OPEN_FENCE_RE = re.compile(r"^(\s*)(`{3,}|~{3,})\s*([^`\s]*)")
+# A line that defines `main` or `wmain`: optional specifiers and the return
+# type before the name (or the name alone at the start of a line, when the
+# type is on the line before), then the parameters and, on the same line,
+# nothing but the opening brace and the body. A declaration (`;` after the
+# parameters), a call or a mention in a comment does not count.
+ENTRY_RE = re.compile(
+    r"^\s*(?:[A-Za-z_]\w*[\s*]+)*(w?main)\s*\([^;)]*(?:\)\s*(?:\{.*)?)?$")
+
+
+def code_blocks(lines):
+    """Yield (line of the opening fence, info word, lines) for every fenced block.
+
+    The indentation of the opening fence is removed from the lines of the
+    block, as CommonMark does for a block in a list item.
+    """
+    block = None
+    for number, line in enumerate(lines, 1):
+        if block is None:
+            m = OPEN_FENCE_RE.match(line)
+            if m:
+                block = (number, m.group(3).lower(), len(m.group(1)), m.group(2), [])
+            continue
+        start, info, indent, fence, body = block
+        m = FENCE_RE.match(line)
+        if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) \
+                and line.strip() == m.group(1):
+            yield start, info, body
+            block = None
+            continue
+        strip = len(line) - len(line.lstrip(" "))
+        body.append(line[min(indent, strip):])
+
+
+def entry_of(body):
+    """Return "main" or "wmain" if the block defines it, else None."""
+    for line in body:
+        m = ENTRY_RE.match(line)
+        if m:
+            return m.group(1)
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Checker
 # ---------------------------------------------------------------------------
@@ -333,6 +387,35 @@ def cmd_check(args):
     return 1 if failures else 0
 
 
+def cmd_extract(args):
+    checker = Checker(args.root)
+    outdir = args.outdir
+    os.makedirs(outdir, exist_ok=True)
+    manifest = []
+    for path in checker.docs:
+        lines = checker.read_lines(path)
+        if lines is None:
+            continue
+        n = 0
+        for start, info, body in code_blocks(lines):
+            if info != "c":
+                continue
+            n += 1
+            entry = entry_of(body)
+            if entry is None:
+                continue
+            name = "%s-%d.c" % (path.replace("/", "_"), n)
+            with open(os.path.join(outdir, name), "w", encoding="utf-8", newline="\n") as f:
+                f.write("\n".join(body) + "\n")
+            manifest.append("%s %s %s:%d" % (name, entry, path, start))
+    with open(os.path.join(outdir, "manifest.txt"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("".join(line + "\n" for line in manifest))
+    for line in manifest:
+        sys.stdout.write(line + "\n")
+    sys.stdout.write("extracted %d example(s) to %s\n" % (len(manifest), outdir))
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Check the human-facing files.")
     sub = parser.add_subparsers(dest="mode", required=True)
@@ -341,9 +424,14 @@ def main(argv=None):
     check.add_argument("--files", nargs="+", metavar="PATH",
                        help="limit the report to these files (relative to the root); "
                             "a path outside the checked set exits with status 2")
+    extract = sub.add_parser("extract", help="write the C examples that define main or wmain")
+    extract.add_argument("outdir", help="directory to write the examples and manifest.txt to")
+    extract.add_argument("--root", default=".", help="repository root (default: .)")
     args = parser.parse_args(argv)
     if args.mode == "check":
         return cmd_check(args)
+    if args.mode == "extract":
+        return cmd_extract(args)
     return 2
 
 

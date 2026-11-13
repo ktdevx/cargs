@@ -8,7 +8,7 @@
 
 「英語化の前のコミット」（`<base>`）は、このスペックの最初の実装のタスク（1.1）の直前のコミットを指す。release-automation のファイルは `<base>` に既にある。原文を読むとき（特に 3.2 で ownership.md から移す記述）は、そのコミットの版（`git show <base>:<path>`）を使う。
 
-- [ ] 1. 土台: 検査スクリプト
+- [x] 1. 土台: 検査スクリプト
 - [x] 1.1 言語、AI 向けの作業領域への言及、リンク、アンカーを調べる検査を作る
   - 設計の DocsChecker の `check` の契約どおりに、スペックのディレクトリに検査スクリプトを作る。Python 3 の標準ライブラリだけを使い、ファイルを変更しない
   - 対象の集合は、リポジトリで管理しているファイルから `.kiro/` と `.claude/` の下と CLAUDE.md を除いたもの、人向けの文書はそのうち README.md、CONTRIBUTING.md、`docs/` の下の Markdown とし、決め方を 1 か所に置く
@@ -18,7 +18,7 @@
   - 完了の目安: 英語化の前の作業ツリー（release-automation の実装の後）で実行すると、日本語の行を README.md と `docs/` の 5 ファイルについてだけ報告し（計画の時点の件数は README 66、conventions 247、help 278、ownership 174、parse 256、schema 254 行。conventions は release-automation が「バージョンについての注意」に足した行の分だけ多くなる）、release-automation のファイルからは日本語も `pending` も報告せず、`specification` を `spec-term` として報告しない。`kiro` を `docs/ownership.md` の 1 行だけ報告し、`tests/public/command_test.c` の罫線を報告しない。日本語の見出しへの今のアンカー付きリンクを、`missing-anchor` として報告しない（今の文書の中では解決している）
   - _Requirements: 1.2, 2.1, 2.2, 9.1, 9.2, 9.5, 10.1, 10.3, 10.4, 11.1, 11.2, 11.4, 11.5, 11.6, 11.7_
 
-- [ ] 1.2 文書の C の例を取り出す機能を足し、英語化の前の例で手順を確かめる
+- [x] 1.2 文書の C の例を取り出す機能を足し、英語化の前の例で手順を確かめる
   - 検査スクリプトに、設計の DocsChecker の `extract` の契約どおりの機能を足す。人向けの文書の C のコードブロックのうち `main` または `wmain` を定義するものを、出力先のディレクトリに 1 つずつ書き出し、入口の種類と元の位置を一覧のファイルに書く
   - スクラッチのディレクトリで、テストを無効にしてリポジトリをビルドしてインストールし、取り出した `main` の例を `-std=c99 -Wall -Wextra -Wpedantic -Werror` でコンパイルしてリンクする手順を作る。`wmain` の例はコンパイルだけを行う。ownership のアロケータの例は、利用者の 4 つの関数を定義した小さなファイルと一緒にリンクする。手順はタスクの記録に、繰り返せるコマンドとして残す
   - README の例を README の実行の例のコマンドラインで実行し、出力と終了の仕方を README と比べる。schema、parse、help の例も、それぞれの文書が示す出力と比べる
@@ -140,3 +140,5 @@
 - 1.1: 検査は `python3 .kiro/specs/english-docs/check_docs.py check [--files ...]`。`--files` は `git ls-files` にないパスを終了コード 2 で拒む。新しく作る文書（CONTRIBUTING.md、docs/README.md）は、検査の前に `git add -N <path>` で対象に入れる。
 - 1.1: release-automation に分類するパスは要件 10.4 の一覧（設計の一覧より広い。`cmake/`、ルートの CMakeLists.txt、`tests/CMakeLists.txt`、`tests/consumer/`、`tests/public/version_test.c`、`include/clargs/version.h` を含む）。`pending` の対象は 3 文書のまま。アンカーの断片は大文字小文字を区別する。
 - 1.1: 英語化の前の件数は japanese README 66、conventions 254（release-automation が 7 行増やした）、help 278、ownership 174、parse 256、schema 254。kiro は ownership.md:301 の 1 件、spec-term は ownership.md の 5 件。
+- 1.2: 例の手順は `bash .kiro/specs/english-docs/build_examples.sh <repo-root> <outdir>`（テストを無効にしてビルドとインストール、例の取り出し、`-std=c99 -Wall -Wextra -Wpedantic -Werror` でのコンパイル、`wmain` はコンパイルだけ、ownership は利用者の 4 関数と一緒にリンク、直後の出力のブロックとの比較）。例の集合 7 つと README の 4 つのコマンドラインが欠けると失敗する。英語化の前の文書で 7 例、28 の確認がすべて通り、違いはなかった。テストは `python3 .kiro/specs/english-docs/test_check_docs.py`（`unittest discover` は `__pycache__` を残すので使わない）。
+- 1.2: 翻訳のときは、例のコードブロックの info（```` ```c ````）と、出力のブロック（info なし、例との間に見出しを置かない）、README の `$ ` の行を変えない。手順はこの構造に頼っている。
