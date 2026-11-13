@@ -49,13 +49,13 @@ static void enter_command(scan_t *scan, const clargs_command_t *command)
 }
 
 /*
- * Records a parse error of an option at where, in the current command of
- * scan. value and option may be NULL. Returns what clargs_result_fail()
- * returns.
+ * Records a parse error at where, in the current command of scan. value
+ * and option may be NULL: an error of an argument that is not an option
+ * has no option. Returns what clargs_result_fail() returns.
  */
-static clargs_error_t fail_option(clargs_result_t *result, const scan_t *scan,
-                                  clargs_parse_error_kind_t kind, const clargs_result_where_t *where,
-                                  const char *value, const clargs_option_t *option)
+static clargs_error_t fail_at(clargs_result_t *result, const scan_t *scan, clargs_parse_error_kind_t kind,
+                              const clargs_result_where_t *where, const char *value,
+                              const clargs_option_t *option)
 {
     clargs_result_failure_t failure;
 
@@ -87,7 +87,7 @@ static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const
     if (kind == CLARGS_OPTION_VALUE) {
         if (value == NULL) {
             if (scan->index + 1 >= scan->count) {
-                return fail_option(result, scan, CLARGS_PARSE_ERROR_MISSING_VALUE, where, NULL, option);
+                return fail_at(result, scan, CLARGS_PARSE_ERROR_MISSING_VALUE, where, NULL, option);
             }
             scan->index++;
             where->index = scan->index;
@@ -97,7 +97,7 @@ static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const
     }
 
     if (value != NULL) {
-        return fail_option(result, scan, CLARGS_PARSE_ERROR_UNEXPECTED_VALUE, where, value, option);
+        return fail_at(result, scan, CLARGS_PARSE_ERROR_UNEXPECTED_VALUE, where, value, option);
     }
     switch (kind) {
     case CLARGS_OPTION_FLAG:
@@ -136,7 +136,7 @@ static clargs_error_t scan_long(clargs_result_t *result, scan_t *scan, const cha
 
     option = clargs_command_find_long(scan->command, where.name, where.name_length, &negated);
     if (option == NULL) {
-        return fail_option(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
+        return fail_at(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
     }
     return record_option(result, scan, option, !negated, value, &where);
 }
@@ -170,7 +170,7 @@ static clargs_error_t scan_bundle(clargs_result_t *result, scan_t *scan, const c
         where.name_length = 1;
 
         if (option == NULL) {
-            return fail_option(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
+            return fail_at(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
         }
         if (clargs_option_kind(option) == CLARGS_OPTION_VALUE) {
             return record_option(result, scan, option, true, letter[1] != '\0' ? letter + 1 : NULL, &where);
@@ -185,24 +185,28 @@ static clargs_error_t scan_bundle(clargs_result_t *result, scan_t *scan, const c
 
 /*
  * Reads arg, the argument that scan is at, as an argument that is not an
- * option: a value of the positional of the current command that the cursor
- * of scan is at. A positional that takes one argument at most moves the
- * cursor on; one that takes any number keeps it, and so takes every
- * argument that follows. With the cursor after the last positional, also
- * for a command that has none, arg is one argument too many.
+ * option.
  *
- * Nothing is done for a command that has subcommands: such a command has
- * no positional, and what an argument that is not an option means for it
- * is not read here.
+ * For a command that has subcommands, arg is the name of one of them,
+ * compared as a whole and with its case: that subcommand is added to the
+ * selected commands of result and becomes the current command of scan, so
+ * that the arguments that follow are read with its options, its
+ * positionals from the first, and its subcommands, to any depth. A name
+ * that is no subcommand of the current command is a parse error. After the
+ * terminator of the options, arg is not a name: such a command has no
+ * positional, and arg is one argument too many.
+ *
+ * For a command that has no subcommand, arg is a value of the positional
+ * of the current command that the cursor of scan is at. A positional that
+ * takes one argument at most moves the cursor on; one that takes any
+ * number keeps it, and so takes every argument that follows. With the
+ * cursor after the last positional, also for a command that has none, arg
+ * is one argument too many.
  */
 static clargs_error_t scan_plain(clargs_result_t *result, scan_t *scan, const char *arg)
 {
     const clargs_positional_t *positional;
     clargs_result_where_t where;
-
-    if (clargs_command_subcommand_count(scan->command) != 0) {
-        return CLARGS_ERROR_NONE;
-    }
 
     where.source = CLARGS_SOURCE_COMMAND_LINE;
     where.index = scan->index;
@@ -211,16 +215,27 @@ static clargs_error_t scan_plain(clargs_result_t *result, scan_t *scan, const ch
     where.name = NULL;
     where.name_length = 0;
 
-    if (scan->positional >= clargs_command_positional_count(scan->command)) {
-        clargs_result_failure_t failure;
+    if (clargs_command_subcommand_count(scan->command) != 0) {
+        const clargs_command_t *subcommand;
+        clargs_error_t error;
 
-        failure.kind = CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL;
-        failure.where = where;
-        failure.value = arg;
-        failure.command = scan->command;
-        failure.option = NULL;
-        failure.positional = NULL;
-        return clargs_result_fail(result, &failure);
+        if (scan->options_ended) {
+            return fail_at(result, scan, CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL, &where, arg, NULL);
+        }
+        subcommand = clargs_command_find_subcommand(scan->command, arg);
+        if (subcommand == NULL) {
+            return fail_at(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_SUBCOMMAND, &where, arg, NULL);
+        }
+        error = clargs_result_push_command(result, subcommand);
+        if (error != CLARGS_ERROR_NONE) {
+            return error;
+        }
+        enter_command(scan, subcommand);
+        return CLARGS_ERROR_NONE;
+    }
+
+    if (scan->positional >= clargs_command_positional_count(scan->command)) {
+        return fail_at(result, scan, CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL, &where, arg, NULL);
     }
 
     positional = clargs_command_positional_at(scan->command, scan->positional);
@@ -245,7 +260,9 @@ static clargs_error_t scan_plain(clargs_result_t *result, scan_t *scan, const ch
 /*
  * Reads the arguments of result, which has count of them and root as its
  * only selected command, from the first after the name of the program.
- * Stops at the first error.
+ * The current command is root at first and then the subcommand that was
+ * named last: an option is looked up in the current command only, never in
+ * its parent or its subcommands. Stops at the first error.
  *
  * Returns CLARGS_ERROR_NONE when all the arguments were read,
  * CLARGS_ERROR_INVALID_COMMAND_LINE when a parse error was recorded, and
@@ -266,7 +283,8 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
         if (scan.options_ended) {
             /* After the terminator, an argument is not classified: it is
              * not an option, whatever it looks like, a second "--"
-             * included. */
+             * included. The terminator stays read after a subcommand was
+             * selected. */
             error = scan_plain(result, &scan, arg);
         } else {
             switch (clargs_lex_classify(arg)) {

@@ -80,8 +80,9 @@ extern "C" {
  * argv[0] is the name of the program and is not parsed. When there is no
  * other argument, also when argc is 0, the command line is one on which
  * nothing was given. The other arguments are read once each, from the
- * first to the last, and matched with the command they are for; the scan
- * stops at the first argument that does not match the schema.
+ * first to the last, and matched with the current command: root at first,
+ * and then the subcommand that was named last (see below). The scan stops
+ * at the first argument that does not match the schema.
  *
  * An argument that starts with "--" and has more characters is a long
  * option. Its name ends before the first '=' and is compared as a whole,
@@ -122,10 +123,39 @@ extern "C" {
  * an option is never looked at in this way.
  *
  * Every other argument is not an option: one that does not start with a
- * '-', the empty string, and a '-' alone. For a command that has no
- * subcommand, an argument that is not an option is a value of a positional
- * of the command. The arguments are assigned in their order to the
- * positionals in the order in which they were added:
+ * '-', the empty string, and a '-' alone.
+ *
+ * For a command that has subcommands, an argument that is not an option is
+ * the name of a subcommand. It is compared as a whole, byte by byte, with
+ * the names of the subcommands of the current command: upper and lower case
+ * are different, and a part of a name does not match. The subcommand with
+ * that name is selected and becomes the current command: the arguments
+ * after its name are read with its options, its positionals and its
+ * subcommands, to any depth. A name that is no subcommand of the current
+ * command is a parse error.
+ *
+ *     tool remote add --force name
+ *                    selects "remote" of tool and then "add" of "remote";
+ *                    --force is an option of "add", and name a value of
+ *                    its first positional
+ *
+ * An option is looked up in the current command only, not in its parent and
+ * not in its subcommands: an option of a command is written after the name
+ * of that command and before the name of its subcommand. An option that
+ * only the parent has is an unknown option after the name of the
+ * subcommand. When a command and its subcommand have an option of the same
+ * name, each is given where its command is the current command. Whether an
+ * argument with the form of a negative number is a bundle depends on the
+ * short names of the current command as well.
+ *
+ * A command line that names no subcommand of a command that has subcommands
+ * is not a parse error: the command line ends in that command, which
+ * clargs_result_command() returns. The options and the positionals of the
+ * commands that were not selected read as not given.
+ *
+ * For a command that has no subcommand, an argument that is not an option
+ * is a value of a positional of the command. The arguments are assigned in
+ * their order to the positionals in the order in which they were added:
  *
  *     CLARGS_ARITY_REQUIRED, CLARGS_ARITY_OPTIONAL
  *                    the positional has the argument as its value, and the
@@ -145,7 +175,10 @@ extern "C" {
  * The argument "--" alone is the terminator of the options. It is not a
  * value itself. Every argument after the first terminator is an argument
  * that is not an option, whatever it looks like: "-v", "--name" and a
- * second "--" are values then.
+ * second "--" are values then. Such an argument is never the name of a
+ * subcommand: for a command that has subcommands, which has no positional,
+ * it is one argument too many, a parse error. The terminator stays in
+ * effect after a subcommand was selected.
  *
  * An option may be given more than once, by its short name and its long
  * name alike: a flag stays given, a count is the number of times, a
