@@ -180,3 +180,7 @@
   - 静的と動的、Debug と Release の 4 つの構成で、ビルドに警告がなく、すべてのテスト、確保関数の検査、export の確認（動的）が通ることを確かめる。内部関数が export されていないことを確かめる
   - 完了の目安: 4 つの構成のすべてでテストが通り、README の例がコンパイルできる
   - _Requirements: 1.6, 1.8, 13.6, 13.7, 13.8, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7_
+
+## Implementation Notes
+
+- 3.3: 値の変換の失敗（メモリ確保の失敗を除く）は、`src/result.c` の `conversion_failure()` の 1 か所で `CLARGS_ERROR_INVALID_COMMAND_LINE` を返している。3.4 は、ここを解析エラーの記録に置き換える。`tests/internal/result_test.c` の `destroy_releases_every_value_once`、`positional_values_are_kept_in_their_order`、`positional_default_value_has_the_source_default`、`failed_conversion_keeps_the_value_of_an_option` は、1 つの結果で変換の失敗を 2 回以上起こすか、失敗の後も記録を続ける。解析エラーの記録は結果 1 つにつき 1 回なので、3.4 でこれらのテストを組み替える。
