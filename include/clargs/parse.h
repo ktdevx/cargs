@@ -168,6 +168,107 @@ CLARGS_API size_t clargs_result_count(const clargs_result_t *result, const clarg
 CLARGS_API clargs_source_t clargs_result_option_source(const clargs_result_t *result,
                                                        const clargs_option_t *option);
 
+/*
+ * Read the value of an option that takes a value.
+ *
+ * clargs_result_option_string(), _int(), _float() and _choice() read the
+ * value of a value type of the kind CLARGS_TYPE_STRING, CLARGS_TYPE_INT,
+ * CLARGS_TYPE_FLOAT and CLARGS_TYPE_CHOICE. If option has a value, they
+ * write it to *out and return true. If it has none, they return false and
+ * leave *out as it was.
+ *
+ * clargs_result_option_value() works for a value type of every kind, the
+ * user-defined ones included. It returns a pointer to the area that the
+ * value type wrote the value to: an object of the type of its values (const
+ * char *, int64_t, double, size_t, or what the conversion function of a
+ * user-defined value type writes; see <clargs/type.h>). It returns NULL if
+ * option has no value.
+ *
+ * The value is the one that was given last on the command line or, when
+ * option was not given, its default value. option has no value when it was
+ * not given and has no default value, when the command line has a parse
+ * error before a default value is applied, and when option belongs to a
+ * command that the command line did not select.
+ *
+ * A string and the area are valid until result is destroyed. Do not free
+ * or modify them.
+ *
+ * Preconditions:
+ *
+ * - result, option and out are not NULL. Checked with assert.
+ * - option belongs to the schema that result was made from. Checked with
+ *   assert.
+ * - option takes a value, CLARGS_OPTION_VALUE. Checked with assert.
+ * - The value type of the option of clargs_result_option_string() is of the
+ *   kind CLARGS_TYPE_STRING, that of _int() CLARGS_TYPE_INT, that of
+ *   _float() CLARGS_TYPE_FLOAT and that of _choice() CLARGS_TYPE_CHOICE.
+ *   Checked with assert.
+ */
+CLARGS_API bool clargs_result_option_string(const clargs_result_t *result, const clargs_option_t *option,
+                                            const char **out);
+CLARGS_API bool clargs_result_option_int(const clargs_result_t *result, const clargs_option_t *option,
+                                         int64_t *out);
+CLARGS_API bool clargs_result_option_float(const clargs_result_t *result, const clargs_option_t *option,
+                                           double *out);
+CLARGS_API bool clargs_result_option_choice(const clargs_result_t *result, const clargs_option_t *option,
+                                            size_t *out);
+CLARGS_API const void *clargs_result_option_value(const clargs_result_t *result,
+                                                  const clargs_option_t *option);
+
+/*
+ * Read the values of a positional.
+ *
+ * clargs_result_positional_count() returns how many values positional has:
+ * 0 or 1 for a positional that takes one argument at most, and the number
+ * of the arguments that were assigned to it for one that takes any number.
+ * clargs_result_positional_source() returns where the values came from:
+ * CLARGS_SOURCE_COMMAND_LINE, CLARGS_SOURCE_DEFAULT for the default value,
+ * or CLARGS_SOURCE_NONE when positional has no value.
+ *
+ * The other functions read the value at index, counted from 0 in the order
+ * of the command line, as the functions of an option with a value do:
+ * clargs_result_positional_string(), _int(), _float() and _choice() write
+ * the value to *out and return true, and clargs_result_positional_value()
+ * returns a pointer to the area that holds the value, for a value type of
+ * every kind. If there is no value at index, that is, if index is not less
+ * than clargs_result_positional_count(), they return false and leave *out
+ * as it was, or return NULL. That is not a violation of a precondition.
+ *
+ * A positional of a command that the command line did not select has no
+ * value: its count is 0 and its source is CLARGS_SOURCE_NONE.
+ *
+ * A string and the area are valid until result is destroyed. Do not free
+ * or modify them.
+ *
+ * Preconditions:
+ *
+ * - result, positional and out are not NULL. Checked with assert.
+ * - positional belongs to the schema that result was made from. Checked
+ *   with assert.
+ * - The value type of the positional of clargs_result_positional_string()
+ *   is of the kind CLARGS_TYPE_STRING, that of _int() CLARGS_TYPE_INT, that
+ *   of _float() CLARGS_TYPE_FLOAT and that of _choice() CLARGS_TYPE_CHOICE.
+ *   Checked with assert.
+ */
+CLARGS_API size_t clargs_result_positional_count(const clargs_result_t *result,
+                                                 const clargs_positional_t *positional);
+CLARGS_API clargs_source_t clargs_result_positional_source(const clargs_result_t *result,
+                                                           const clargs_positional_t *positional);
+CLARGS_API bool clargs_result_positional_string(const clargs_result_t *result,
+                                                const clargs_positional_t *positional, size_t index,
+                                                const char **out);
+CLARGS_API bool clargs_result_positional_int(const clargs_result_t *result,
+                                             const clargs_positional_t *positional, size_t index,
+                                             int64_t *out);
+CLARGS_API bool clargs_result_positional_float(const clargs_result_t *result,
+                                               const clargs_positional_t *positional, size_t index,
+                                               double *out);
+CLARGS_API bool clargs_result_positional_choice(const clargs_result_t *result,
+                                                const clargs_positional_t *positional, size_t index,
+                                                size_t *out);
+CLARGS_API const void *clargs_result_positional_value(const clargs_result_t *result,
+                                                      const clargs_positional_t *positional, size_t index);
+
 #ifdef __cplusplus
 }
 #endif
