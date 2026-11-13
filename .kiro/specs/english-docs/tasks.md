@@ -112,7 +112,7 @@
   - 完了の目安: それらのファイルについて、`japanese` と `kiro` が 0 件であることを示す検査の出力がタスクの記録にある。罫線の文字のある `tests/public/command_test.c` は報告されない
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 2.1_
 
-- [ ] 5.2 人向けのファイル全体の検査を通す
+- [x] 5.2 人向けのファイル全体の検査を通す
   - 2〜4 の成果がそろった作業ツリーで、検査を対象の制限なしに実行する
   - 文書をまたぐアンカーの未解決があれば、見出しの対応表と照らして、リンクか見出しを直す。対応表を変えたときは、その見出しを指すすべてのリンクを同じ変更で直す
   - README から、どの利用者向けの文書にも開発者向けの文書にも、2 回以内のリンクの移動でたどれることを、リンクを順にたどって確かめる
@@ -147,3 +147,4 @@
 - 3.1: conventions の見出しが英語になったので、README.md:263 の `#バージョンについての注意` へのリンクは 4.1 で `#version-notes` に直すまで切れている。
 - 3.2: conventions の 3 件の missing-file（`../CONTRIBUTING.md` ×2、`docs/README.md`）は 3.3 と 4.2 で解決する。5.2 で 0 件を確かめる。
 - 5.1: `python3 .kiro/specs/english-docs/check_docs.py check --files $(git ls-files include src tests cmake .github tools CMakeLists.txt)`（130 ファイル）は english-docs 0、release-automation 0、failures 0、exit 0。`LC_ALL=C.UTF-8 grep -nP` で日本語の範囲を探しても、`grep -niE` で kiro・スペック名・steering を探しても一致なし（exit 1）。ASCII 外の文字は `tests/public/command_test.c` の罫線（U+2500、U+2502、U+2514、U+251C）だけで、報告されない。変更したファイルはない。
+- 5.2: 制限なしの `check` は english-docs 0、release-automation 0、failures 0、pending 0、exit 0。README から幅優先でたどると、schema、parse、help、ownership、versioning、docs/README、CONTRIBUTING、conventions、CHANGELOG は 1 回、releasing は 2 回のリンクで届く。release-automation への指摘はない。変更したファイルはない。
