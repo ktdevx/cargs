@@ -102,7 +102,7 @@
 - [ ] 5.3 (P) リリース手順書を書く
   - 設計の ReleasingDoc の 8 つの節を英語で書く。ワークフローの名前、入力、権限、required check の名前、スクリプトの引数は、4.1〜4.3 と 3.1 の実装と一致させる
   - One-time repository setup に、Settings > Code security > Private vulnerability reporting を有効にすること（SECURITY.md と Issue テンプレートの `config.yml` が前提にしている）を足す
-  - Rehearsing の節（最初の本番のリリースの前の注意）に、README の FetchContent の例が（english-docs の改訂のあと）`GIT_TAG v0.1.0` を指すので最初の正式版が `v0.1.0` であることを確かめ、違う版で始めるならリリース PR とは別の PR で README を直すこと（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）を書く
+  - Rehearsing の節（最初の本番のリリースの前の注意）に、最初のリリースの前に README.md の FetchContent の例がこれから作るタグを指していることを確かめ（英文はスペック名に触れず、README の今の内容に依らない形で書く）、違うならリリース PR とは別の PR で README を直すこと（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）を書く
   - 単独の語 "spec"、"specs" と "steering" を使わない
   - 完了の目安: 手順書が要件 8 の各項目（8.7 の非公開の脆弱性報告と 8.8 の README のタグの確認を含む）を節の中に持ち、書かれたワークフローの名前・ジョブの権限・`CI result` の名前・スクリプトの引数が実装のファイルと一致する
   - _Boundary: ReleasingDoc_
@@ -122,7 +122,7 @@
   - 静的と動的、Debug と Release の構成で、すべてのテスト（`release` のラベルを含む）と consumer check が通ることを確かめる
   - 差分の基準 `<base>` は、このスペックの最初の実装タスク（1.1）のコミットの直前のコミットとする（実装の開始時に記録する）。差分による確認はすべて `git diff <base>` で行い、あとの作業の影響を受けないようにする
   - 新しいファイルと変更したファイルに、日本語の文字と `.kiro`、`Kiro` の文字列がないこと（`docs/conventions.md` はまだ日本語なので言語の確認から除く）、README.md と CONTRIBUTING.md に差分がないことを機械的に確かめる
-  - `CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md` に、大文字と小文字を区別しない `\bspecs?\b` と `steering` の一致がないことを機械的に確かめる（"specification" は一致しない）
+  - `CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md` に、大文字と小文字を区別しない `\bspecs?\b` と `steering` の一致がないことを機械的に確かめる（"specification" は一致しない）。同じ 3 つのファイルに、スペック名（build-foundation、core-runtime、command-schema、argv-parser、help-formatter、english-docs、release-automation）が現れないことも確かめる
   - 3 つのワークフローの YAML が構文として読め、すべてのジョブに明示的な権限があり、`ci.yml` が読み取りの権限だけであることを確かめる
   - GitHub の上での通し確認（フォークでの試験用のプレリリース、文書だけの PR、やり直しの dispatch）は、リリース手順書の Rehearsing の節のとおりにメンテナーが行う項目として残す
   - 完了の目安: 上の確認の結果（テストの件数と合否、検索の結果が空であること）を記録でき、すべて合格している

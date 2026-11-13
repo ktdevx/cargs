@@ -49,7 +49,7 @@
 
 ### Revalidation Triggers
 - `CLARGS_VERSION_PRERELEASE` の書式、`CLArgs_VERSION_FULL`/`CLArgs_VERSION_PRERELEASE` の名前や意味の変更 → consumer check、english-docs の README の取り込みの説明を確かめ直す。
-- required check の名前 `CI result` の変更 → 手順書、english-docs の CONTRIBUTING、メンテナーのブランチ保護の設定。
+- required check の名前 `CI result` の変更 → 手順書、メンテナーのブランチ保護の設定（english-docs の CONTRIBUTING は check の名前に触れない）。
 - `docs/releasing.md`、`docs/versioning.md`、`CHANGELOG.md` の場所の変更 → english-docs のリンク、CHANGELOG の冒頭のリンク、PR テンプレートのリンク。
 - english-docs が `docs/` を再編してこの 2 つのファイルの場所を変えたい場合 → このスペックの File Structure Plan と手順書を改める。
 - 実装の順序: このスペックを先に実装し、english-docs はそのあとに実装する（english-docs が release-automation に依存する）。english-docs は、このスペックが作るファイル（`tools/`、`tests/release/`、`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`、ワークフロー）が既にある前提で、`docs/conventions.md` 全体の英語化とその「Directory layout」の節を書く。このスペックは「バージョンについての注意」の節を、まだ日本語のファイルの中で日本語で更新する。
@@ -692,7 +692,7 @@ flowchart LR
   5. Making a release / Making a pre-release（8.1）— 起動の手順、入力の例、検証で止まる条件、PR の確認、マージ、できあがるもの。
   6. When the release PR shows no CI result（8.5）— Actions のタブから `CI` を `release/v<V>` で手動起動する、または PR を閉じて開き直す。
   7. Recovering from failures（8.4）— 検証で止まった（直して起動し直す）／PR を取り下げる（PR を閉じ、ブランチを消す）／push の後で PR の作成に失敗した（ブランチを消して起動し直す）／タグや Release の作成が途中で失敗した（失敗した実行を再実行、または `Release` を `version` を渡して手動起動）／誤って出したリリース（Release を消し、タグを消し、次のパッチまたはプレリリースで出し直す。公開したタグは使い回さない）。
-  8. Rehearsing the release process（8.6）— フォークで Actions を有効にし、試験用のプレリリース（例 `0.1.0-rehearsal.1`）で全体を通す。確かめる項目: 検証の失敗の例、PR の内容、`CI result` が PR に示され required check を満たすこと、タグと Pre-release、やり直しの dispatch。終わったらフォークのタグと Release を消す。手元では `cmake -P tools/release/prepare.cmake`（`CLARGS_RELEASE_CHECK_ONLY` と作業ツリーの写し）で試せること。最初の本番のリリースの前の注意（8.8）: README の FetchContent の例は（english-docs の改訂のあと）`GIT_TAG v0.1.0` を指すので、最初に出す正式版が `v0.1.0` であることを確かめる。別の版で始める場合は、リリース PR とは別の PR で README を先に直す（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）。
+  8. Rehearsing the release process（8.6）— フォークで Actions を有効にし、試験用のプレリリース（例 `0.2.0-rehearsal.1`。ヘッダの版 0.1.0 より大きい版でなければ要件 5.4 の検証で止まる。同じ理由で、ヘッダにある版そのもののプレリリース（例 `0.1.0-rc.1`）は出せないことも手順書に書く）で全体を通す。確かめる項目: 検証の失敗の例、PR の内容、`CI result` が PR に示され required check を満たすこと、タグと Pre-release、やり直しの dispatch。終わったらフォークのタグと Release を消す。手元では `cmake -P tools/release/prepare.cmake`（`CLARGS_RELEASE_CHECK_ONLY` と作業ツリーの写し）で試せること。最初の本番のリリースの前の注意（8.8）: README.md の FetchContent の例が、これから作るタグを指していることを確かめる（手順書の英文はスペック名に触れず、README の今の内容に依らない形で書く。例: "Before the first release, check that the FetchContent example in README.md pins the tag you are about to create."）。違う場合は、リリース PR とは別の PR で README を先に直す（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）。
 - 語の制約（10.7）: 3 つの英語の文書（この手順書、`docs/versioning.md`、`CHANGELOG.md`）では、単独の語 "spec"、"specs" と "steering" を使わない。SemVer に触れるときは "Semantic Versioning 2.0.0" または "specification" と書く（english-docs の検査が `docs/**/*.md` で `\bspecs?\b`、`steering`、`kiro` を拒むため）。
 
 #### ConventionsVersionNotes（`docs/conventions.md` の「バージョンについての注意」）
@@ -702,7 +702,7 @@ flowchart LR
 | Intent | 開発者向けのバージョンの注意を、プレリリースを含めて更新する |
 | Requirements | 1.6, 10.4 |
 
-- 足す内容: 4 つ目のマクロ `CLARGS_VERSION_PRERELEASE` の書式（1 行、文字列リテラル、ハイフンなし、正式版は空）、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`CLArgs_VERSION` は数字、`CLArgs_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク。既存の 3 つの項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）は残す。ただし最初の項目（唯一の出どころを `MAJOR`/`MINOR`/`PATCH` の 3 つのマクロとする文）は、節が食い違わないように、`CLARGS_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改めてよい（数字の 3 つのマクロの書式の説明は残す）。
+- 足す内容: 4 つ目のマクロ `CLARGS_VERSION_PRERELEASE` の書式（1 行、文字列リテラル、ハイフンなし、正式版は空）、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`CLArgs_VERSION` は数字、`CLArgs_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク。既存の 3 つの項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）は残す。ただし最初の項目（唯一の出どころを `MAJOR`/`MINOR`/`PATCH` の 3 つのマクロとする文）は、節が食い違わないように、`CLARGS_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改める（数字の 3 つのマクロの書式の説明は残す）。
 - english-docs との順序: release-automation を先に実装し、english-docs はそのあとに実装する。この節の編集は release-automation の最後のタスクにし、その時点のファイルの言語（日本語）で書く。この節の外は変えない。english-docs はあとでこの節を含むファイル全体を英語にする（english-docs は節の内容を変えない）。英語化済みの見出しへのリンクを張るときは、ファイルへのリンクにし、日本語の見出しのアンカーに依存しない。節の見出しは変えない（english-docs は英語化後の見出し `Version notes` とアンカー `#version-notes` を README からのリンクに使う）。
 
 ## Data Models

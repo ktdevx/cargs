@@ -6,11 +6,11 @@ CLArgs is in its `0.x` series. Security fixes are made on `main` and shipped in
 the next release of the latest minor version. Older minor versions do not
 receive fixes; upgrade to the latest release to get them.
 
-| Version                | Supported |
-|------------------------|-----------|
-| Latest `0.x` release   | Yes       |
-| Older `0.x` releases   | No        |
-| Pre-releases (`-rc.N`) | No        |
+| Version                                    | Supported |
+|--------------------------------------------|-----------|
+| Latest `0.x` release                       | Yes       |
+| Older `0.x` releases                       | No        |
+| Pre-releases (any, for example `-rc.1`)    | No        |
 
 ## Reporting a Vulnerability
 

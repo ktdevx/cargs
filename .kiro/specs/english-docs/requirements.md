@@ -266,7 +266,7 @@ CLArgs を OSS として公開したいが、人が読む文書がすべて日�
 1. The `include/`、`src/`、`tests/`、`cmake/`、`.github/` の下のファイルと、ルートの CMakeLists.txt shall コメントと文字列に、日本語の文字を含まない。
 2. If 点検でそれらのファイルに日本語の文字が見つかれば, then the 該当するコメントと文字列 shall 意味を変えずに英語にされ、コードの挙動とテストの期待値は変わらない。
 3. The 点検 shall 日本語でない ASCII 外の文字（罫線の文字など）を、日本語の文字として扱わない。
-4. If 点検で、release-automation が作った、または変更したファイル（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`tools/` の下、`tests/release/` の下、`.github/workflows/` の下）に日本語の文字または `.kiro` の文字列が見つかれば, then このスペック shall それらのファイルを変更せず、ファイル名と行番号とともに release-automation への指摘として報告する。この場合、要件 10.2 は適用しない。
+4. If 点検で、release-automation が作った、または変更したファイル（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`tools/` の下、`tests/release/` の下、`.github/workflows/` の下、`include/clargs/version.h`、`cmake/` の下、`CMakeLists.txt`、`tests/CMakeLists.txt`、`tests/consumer/` の下、`tests/public/version_test.c`）に日本語の文字または `.kiro` の文字列が見つかれば, then このスペック shall それらのファイルを変更せず、ファイル名と行番号とともに release-automation への指摘として報告する。この場合、要件 10.2 は適用しない。
 
 ### Requirement 11: 機械的な確認
 
