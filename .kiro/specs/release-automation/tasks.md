@@ -82,7 +82,7 @@
   - 完了の目安: ワークフローの YAML が構文として読め、ジョブの条件にマージ済み・同じリポジトリ・`release/v` の 3 つが入り、タグと Release のそれぞれに「あれば確かめて飛ばす」分岐がある。`run:` の中にイベントの式が直接現れない
   - _Requirements: 6.1, 6.2, 6.4, 6.6, 6.7, 6.9, 6.10, 10.1, 10.5, 10.6_
 
-- [ ] 5. CHANGELOG と英語の文書
+- [x] 5. CHANGELOG と英語の文書
 - [x] 5.1 (P) CHANGELOG を作る
   - 設計の ChangelogFile の冒頭（形式の宣言、バージョン方針の文書へのリンク、記録の規則）、`Unreleased` の 0.1.0 の内容、末尾のリンクのとおりに作る。0.1.0 の項目は、今の README と `docs/` が説明する機能から確かめて書く
   - 記録の規則の文言を、PR テンプレートの CHANGELOG の項目と同じ意味にする
@@ -99,7 +99,7 @@
   - _Depends: 1.2_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 10.7_
 
-- [ ] 5.3 (P) リリース手順書を書く
+- [x] 5.3 (P) リリース手順書を書く
   - 設計の ReleasingDoc の 8 つの節を英語で書く。ワークフローの名前、入力、権限、required check の名前、スクリプトの引数は、4.1〜4.3 と 3.1 の実装と一致させる
   - One-time repository setup に、Settings > Code security > Private vulnerability reporting を有効にすること（SECURITY.md と Issue テンプレートの `config.yml` が前提にしている）を足す
   - Rehearsing の節（最初の本番のリリースの前の注意）に、最初のリリースの前に README.md の FetchContent の例がこれから作るタグを指していることを確かめ（英文はスペック名に触れず、README の今の内容に依らない形で書く）、違うならリリース PR とは別の PR で README を直すこと（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）を書く
@@ -141,3 +141,4 @@
 - 4.1: actionlint 1.7.7 は scratchpad に go install で入れた（/tmp/claude-0/-home-user-cargs/5e68a7da-d27a-50a0-b960-8332b131ec92/scratchpad/gopath/bin/actionlint）。ワークフローの確認に使える。ci.yml の required check は `CI result`（ジョブ id は `result`）。
 - 4.2: release-pr.yml は GITHUB_TOKEN で `gh pr create` するので、リポジトリの設定 "Allow GitHub Actions to create and approve pull requests" が要る（5.3 の手順書に書く）。PR 作成に失敗したらブランチを消してやり直す、CI の dispatch に失敗したら手で CI を起動する、という案内を手順書と合わせる。
 - 4.3: release-publish.yml の concurrency はジョブに置いた（ジョブが飛ばされる実行が group に入って保留中の実行を置き換えないように）。手動のやり直しは main で起動し、`gh pr list --state merged --head release/v<V>` で同じリポジトリの PR を 1 つだけ見つける。タグが別のコミットを指すと止まる（手順書 5.3 に戻し方を書く）。
+- 5.3: 正式版の前のプレリリースから変更がなくても、`Unreleased` に 1 項目が要る（要件 5.7。手順書の Making a pre-release に例を書いた）。
