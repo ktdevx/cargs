@@ -18,7 +18,7 @@
   - 完了の目安: 正式版のヘッダで、静的と動的の Debug と Release の consumer check の 4 つの経路が今と同じく通る。識別子を一時的に `rc.1` にした作業ツリーの写しで構成とインストールをすると、`clargs.pc` の `Version` と完全なバージョンの変数が `0.1.0-rc.1`、`CLArgs_VERSION` が `0.1.0` になり、その写しで consumer check が通る（確認後、写しは捨てる）
   - _Requirements: 2.3, 2.4, 2.5, 2.8_
 
-- [ ] 2. コア: リリースの処理のモジュールと変更の判定
+- [x] 2. コア: リリースの処理のモジュールと変更の判定
 - [x] 2.1 SemVer の解析と優先順位の比較を作る
   - 設計の SemverModule の契約どおり、`<major>.<minor>.<patch>[-<pre-release>]` だけを受け付け、ビルドメタデータ、先頭の 0、空の識別子、0〜255 を超える数字を理由つきで拒む解析を作る
   - SemVer 2.0.0 の優先順位の比較を作る。数字だけの識別子は桁数と文字列で比べ、数値の桁あふれを起こさない
@@ -40,7 +40,7 @@
   - 完了の目安: `release.version_header` が通り、正式版とプレリリースへの書き換えで、4 つの値の行以外の差分がない
   - _Requirements: 4.2, 9.2_
 
-- [ ] 2.4 文書だけの変更を判定するスクリプトを作る
+- [x] 2.4 文書だけの変更を判定するスクリプトを作る
   - 設計の ChangesScript の規則（文書のパターン、一覧のファイルがない・空・判定できないときは文書だけでないとする）で判定し、結果を標準出力と出力ファイルに書くスクリプトを作る
   - `.md` を文書とみなすのは、リポジトリの根の直下、`docs/` の下、`.github/` の下だけにする。`tests/` の下の `.md`（`tests/release/fixtures/` の CHANGELOG のフィクスチャなど）は文書とみなさない
   - 設計の Testing Strategy の `release.changes` の内容（`tests/` の下の `.md` だけの一覧の場合を含む）をテストとして足す
@@ -135,3 +135,4 @@
 - 2.1: SemVer は `tools/release/ClargsSemver.cmake` の `clargs_semver_parse(<version> <prefix>)`（`_VALID`、`_ERROR`、`_MAJOR`、`_MINOR`、`_PATCH`、`_PRERELEASE`、`_CORE`）と `clargs_semver_compare(<a> <b> <out>)`（-1/0/1）。`CMAKE_MATCH_<n>` は前の一致の値が残ることがあるので注意する。FATAL_ERROR の文はCMake が折り返すので、子プロセスの出力を照合するときは行をつないでから比べる。
 - 2.2: CHANGELOG は `tools/release/ClargsChangelog.cmake` の `clargs_changelog_parse`、`clargs_changelog_promote(<text> <version> <date> <repo-url> <out>)`、`clargs_changelog_notes(<text> <version> <repo-url> <out>)`。notes の結果は末尾に改行がないので、3.2 でファイルに書くときに足す。promote は V が最新の版より大きくなければ止まる。フィクスチャと実際の CHANGELOG では Semantic Versioning へのリンクを `https://semver.org/` にし、`spec` の語を避ける。
 - 2.3: CMake 3.28 の `file(READ)` は CRLF を LF にする（`file(READ ... HEX)` のバイトには CR がある）。改行の形を保つ必要があるファイル（CHANGELOG.md、version.h）は、`tools/release/ClargsVersionHeader.cmake` の HEX と `string(ASCII)` による読み方（`_clargs_version_header_read_bytes`）を使うか共通化して読む。ヘッダは `clargs_version_header_write(<path> <major> <minor> <patch> <prerelease>)` が書き込みと `clargs_read_version` による読み直しまで行う（書く前の検査には `clargs_version_header_render`）。
+- 2.4: `tools/ci/changes.cmake` は `-D CLARGS_CHANGED_FILES=<一覧のファイル>`、`-D CLARGS_CHANGES_OUTPUT=<出力ファイル>`（`$GITHUB_OUTPUT` をそのまま渡せる。`docs_only=<v>` を追記）。標準出力は message(STATUS) なので行頭に `-- ` が付く。終了コードは常に 0。
