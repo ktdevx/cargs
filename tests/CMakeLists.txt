@@ -18,6 +18,7 @@ clargs_add_test(parse_error SOURCES public/parse_error_test.c support/test_alloc
 clargs_add_test(parse_option SOURCES public/parse_option_test.c support/test_allocator.c)
 clargs_add_test(parse_positional SOURCES public/parse_positional_test.c support/test_allocator.c)
 clargs_add_test(parse_value SOURCES public/parse_value_test.c support/test_allocator.c)
+clargs_add_test(parse_wide SOURCES public/parse_wide_test.c support/test_allocator.c)
 clargs_add_test(positional SOURCES public/positional_test.c support/test_allocator.c)
 clargs_add_test(number SOURCES internal/number_test.c support/test_allocator.c INTERNAL)
 clargs_add_test(result SOURCES internal/result_test.c support/test_allocator.c INTERNAL)

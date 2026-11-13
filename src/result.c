@@ -9,6 +9,7 @@
 
 #include "alloc_internal.h"
 #include "message.h"
+#include "utf8.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -81,6 +82,71 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
     return CLARGS_ERROR_NONE;
 }
 
+/*
+ * The same for the count wide strings of argv, which are converted to
+ * UTF-8 ("utf8.h"): each unit that cannot be converted becomes U+FFFD.
+ * *first_invalid is set to the index of the first string after argv[0]
+ * that has such a unit, or to 0 when there is none; a unit of argv[0] that
+ * cannot be converted is replaced and not reported.
+ *
+ * The length of one string in UTF-8 is not checked against size_t: a wide
+ * string takes two bytes or more for each unit, and a unit gives four bytes
+ * at most where it has four itself and three where it has two, so the
+ * count stays below the size of an object that exists. The sum over the
+ * strings is checked as in copy_args().
+ */
+static clargs_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***out, size_t *first_invalid)
+{
+    size_t size;
+    char **args;
+    char *next;
+    size_t i;
+
+    *out = NULL;
+    *first_invalid = 0;
+    if (count == 0) {
+        return CLARGS_ERROR_NONE;
+    }
+
+    if (count > SIZE_MAX / sizeof(char *)) {
+        return CLARGS_ERROR_OUT_OF_MEMORY;
+    }
+    size = count * sizeof(char *);
+    for (i = 0; i < count; ++i) {
+        size_t length;
+        bool valid;
+
+        assert(argv[i] != NULL);
+
+        length = clargs_utf8_length(argv[i], &valid);
+        if (!valid && i != 0 && *first_invalid == 0) {
+            *first_invalid = i;
+        }
+        if (length > SIZE_MAX - size) {
+            return CLARGS_ERROR_OUT_OF_MEMORY;
+        }
+        size += length;
+        if (size == SIZE_MAX) {
+            return CLARGS_ERROR_OUT_OF_MEMORY;
+        }
+        size += 1;
+    }
+
+    args = (char **)clargs_malloc(size);
+    if (args == NULL) {
+        return CLARGS_ERROR_OUT_OF_MEMORY;
+    }
+
+    next = (char *)args + count * sizeof(char *);
+    for (i = 0; i < count; ++i) {
+        args[i] = next;
+        next += clargs_utf8_write(argv[i], next) + 1;
+    }
+
+    *out = args;
+    return CLARGS_ERROR_NONE;
+}
+
 /* ---- Creation and destruction ------------------------------------------- */
 
 /*
@@ -116,6 +182,29 @@ static clargs_error_t new_result(const clargs_command_t *root, clargs_result_t *
     return CLARGS_ERROR_NONE;
 }
 
+/*
+ * Ends the creation of result, whose copy of count arguments was made with
+ * the outcome error: selects root and writes result to *out. When the copy
+ * failed, or root cannot be selected, result is destroyed as a whole and
+ * *out stays NULL. The two functions that create a result differ in the
+ * copy of the arguments only.
+ */
+static clargs_error_t finish_result(clargs_result_t *result, clargs_error_t error, size_t count,
+                                    clargs_result_t **out)
+{
+    if (error == CLARGS_ERROR_NONE) {
+        result->arg_count = count;
+        error = clargs_result_push_command(result, result->root);
+    }
+    if (error != CLARGS_ERROR_NONE) {
+        clargs_result_destroy(result);
+        return error;
+    }
+
+    *out = result;
+    return CLARGS_ERROR_NONE;
+}
+
 clargs_error_t clargs_result_create(const clargs_command_t *root, int argc, char *const *argv,
                                     clargs_result_t **out)
 {
@@ -134,20 +223,30 @@ clargs_error_t clargs_result_create(const clargs_command_t *root, int argc, char
     if (error != CLARGS_ERROR_NONE) {
         return error;
     }
-
-    /* From here on the result is destroyed as a whole when a step fails. */
     error = copy_args((size_t)argc, argv, &result->args);
-    if (error == CLARGS_ERROR_NONE) {
-        result->arg_count = (size_t)argc;
-        error = clargs_result_push_command(result, root);
-    }
+    return finish_result(result, error, (size_t)argc, out);
+}
+
+clargs_error_t clargs_result_create_wide(const clargs_command_t *root, int argc, wchar_t *const *argv,
+                                         clargs_result_t **out)
+{
+    clargs_result_t *result;
+    clargs_error_t error;
+
+    assert(root != NULL);
+    assert(out != NULL);
+    assert(clargs_command_parent(root) == NULL);
+    assert(argc >= 0);
+    assert(argc == 0 || argv != NULL);
+
+    *out = NULL;
+
+    error = new_result(root, &result);
     if (error != CLARGS_ERROR_NONE) {
-        clargs_result_destroy(result);
         return error;
     }
-
-    *out = result;
-    return CLARGS_ERROR_NONE;
+    error = copy_args_wide((size_t)argc, argv, &result->args, &result->first_invalid_arg);
+    return finish_result(result, error, (size_t)argc, out);
 }
 
 /* Cleans up the value of type in the area value, and frees the area. This
