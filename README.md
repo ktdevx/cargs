@@ -1,18 +1,25 @@
 # CLArgs
 
-CLArgs は、C99 で書かれたコマンドライン引数パーサーのライブラリである。プログラムが受け付けるコマンドライン（スキーマ）を関数呼び出しで定義して検証し、`main` が受け取った argv を解析して、結果から値を読める。スキーマから、ヘルプと usage 行の文面も生成できる。
+[![CI](https://github.com/ktdevx/cargs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ktdevx/cargs/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-- C99・コンパイラ拡張なしで書かれており、C 標準ライブラリ以外に依存しない。
-- Linux（GCC、Clang）、macOS（Clang）、Windows（MSVC）でビルドできる。
-- 静的ライブラリと動的ライブラリのどちらにもなる。
-- CMake の `FetchContent`、`add_subdirectory`、`find_package`、および pkg-config から取り込める。
-- オプション（フラグ、カウント、`--no-` で否定できるフラグ、値付き）、位置引数、サブコマンドを定義できる。値は、文字列、整数、浮動小数、選択肢、利用者定義の値型で変換して読める。
-- ヘルプと usage 行の文面は、スキーマの定義から作る。文面は、利用者が渡す書き込み関数、または利用者のバッファに出る。
-- ライブラリは、何も出力せず、プロセスを終了させず、環境変数を読まない。引数がスキーマに合わないときは、エラーの種類と 1 行のメッセージを返す。表示するのは利用者のコードである。`--help` も、利用者がスキーマに定義し、利用者のコードがヘルプを出す。
+CLArgs is a command-line argument parser library written in C99. You define the command line that your program accepts (the schema) with function calls and validate it, parse the argv that `main` received, and read the values from the result. From the schema, CLArgs can also generate the help text and the usage line.
 
-利用者が取り込むヘッダは `<clargs/clargs.h>` だけで、リンクするターゲットは `CLArgs::clargs` である。
+## Features
 
-次の例は、`greet [-h] [-l] [-n COUNT] name` という形のコマンドラインを受け付けるプログラムの全体である。スキーマを定義して検証し、argv を解析し、`--help` が指定されていればヘルプを出し、そうでなければ値を読んで、破棄する。
+- Written in C99 without compiler extensions. It depends on nothing but the C standard library.
+- Builds on Linux (GCC, Clang), macOS (Clang) and Windows (MSVC).
+- Can be built as a static library or as a shared library.
+- Can be used from CMake with `FetchContent`, `add_subdirectory` or `find_package`, and with pkg-config.
+- You can define options (flags, counts, flags that can be negated with `--no-`, and options with a value), positionals and subcommands. Values can be converted and read as strings, integers, floating-point numbers, choices, or with a user-defined value type.
+- The text of the help and the usage line is made from the definitions in the schema. The text goes to a write function that you pass, or into your buffer.
+- The library prints nothing, never exits the process, and does not read environment variables. When the arguments do not match the schema, it returns the kind of error and a one-line message. Printing them is up to your code. `--help` is also defined in the schema by you, and your code prints the help.
+
+The only header you include is `<clargs/clargs.h>`, and the only target you link to is `CLArgs::clargs`.
+
+## Example
+
+The following example is a complete program that accepts a command line of the form `greet [-h] [-l] [-n COUNT] name`. It defines and validates the schema, parses argv, prints the help if `--help` was given, and otherwise reads the values. Finally it destroys what it created.
 
 ```c
 #include <clargs/clargs.h>
@@ -107,7 +114,7 @@ int main(int argc, char **argv)
 }
 ```
 
-実行の例（`$` の行が入力、次の行からが出力）:
+Example run (lines starting with `$` are input, the lines after them are output):
 
 ```
 $ greet --loud -n 2 world
@@ -135,24 +142,29 @@ Options:
   -n, --count <COUNT>  How often to greet. [default: 1]
 ```
 
-- ヘルプの文面は、スキーマの定義（名前、説明文、値の表示名、既定値）から作られる。プログラムの中に、ヘルプの文面を書く必要はない。
-- ヘルプを出すのは、利用者のコードである。ライブラリは、`--help` をスキーマに足さず、ヘルプを出して終了することもない。
-- 解析エラー（引数がスキーマに合わない）のときも結果が渡るので、利用者が破棄する。結果は、スキーマより先に破棄する。
-- 使い方の詳しい説明は、次の文書にある。
-  - [スキーマの使い方](docs/schema.md): コマンド、オプション、位置引数、値型の定義と検証。
-  - [解析の使い方](docs/parse.md): 解析、引数の書き方の一覧、結果の読み取り、解析エラーの種類とメッセージ、`--help` の扱い、ワイド文字の argv（`wmain`）。
-  - [ヘルプの使い方](docs/help.md): ヘルプと usage 行の生成、文面の規則、表示幅などの設定、出力先（書き込み関数とバッファ）、解析エラーに usage 行を添える例。
-  - [所有権と寿命の規約](docs/ownership.md): 誰が何を解放するか、渡したものと返されたものがいつまで有効か。
+- The help text is made from the definitions in the schema (names, descriptions, value names, default values). You do not need to write the help text in your program.
+- Printing the help is up to your code. The library does not add `--help` to the schema, and it does not print the help and exit.
+- On a parse error (the arguments do not match the schema), you still get a result, and you destroy it. Destroy the result before the schema.
+- The detailed usage is described in the documents listed in [Documentation](#documentation).
 
-- [ビルドとテスト](#ビルドとテスト)
-- [オプション](#オプション)
-- [取り込み方法](#取り込み方法)
-- [開発に参加する](#開発に参加する)
-- [ライセンス](#ライセンス)
+## Documentation
 
-## ビルドとテスト
+For users of the library:
 
-必要なものは、CMake 3.21 以上と C99 のコンパイラである。リポジトリのルートで、次の 3 つのコマンドを実行する。
+- [Schemas](docs/schema.md): defining and validating commands, options, positionals and value types.
+- [Parsing](docs/parse.md): parsing, the command-line syntax, reading the result, the kinds and messages of parse errors, handling `--help`, and wide-character argv (`wmain`).
+- [Help and Usage](docs/help.md): generating the help and the usage line, the text layout rules, settings such as the width, the output (write functions and buffers), and an example that adds the usage line to a parse error.
+- [Ownership and Lifetime](docs/ownership.md): who frees what, and how long what you pass and what you get back stay valid.
+- [Documentation index](docs/README.md): all documents, grouped by reader, with a one-line description of each.
+
+For contributors:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md): how to report problems, set up a development environment, and submit a pull request.
+- [Development Conventions](docs/conventions.md): naming conventions, the directory layout, and the procedures for adding public functions, headers, sources and tests. Read it before you change the code.
+
+## Building and testing
+
+You need CMake 3.21 or later and a C99 compiler. Run the following three commands in the root of the repository.
 
 ```sh
 cmake -S . -B build
@@ -160,47 +172,47 @@ cmake --build build
 ctest --test-dir build
 ```
 
-- テストは、テストフレームワーク [Naos](https://github.com/vabelorg/naos) で書かれている。テストを有効にした構成（リポジトリを直接ビルドするときの既定）は、**構成のときに Naos を GitHub から取得するので、ネットワークが要る**。
-- 手元に Naos のコピーがあれば、その場所を渡すとネットワークなしで構成できる。一度構成したビルドディレクトリの `_deps/naos-src` も、コピーとして使える。
+- The tests are written with the test framework [Naos](https://github.com/vabelorg/naos). A configuration with the tests enabled (the default when you build the repository directly) **fetches Naos from GitHub at configure time, so it needs the network**.
+- If you have a local copy of Naos, pass its location to configure without the network. The `_deps/naos-src` directory of a build directory that was configured once can also be used as the copy.
 
   ```sh
-  cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_NAOS=<Naos のコピーのパス>
+  cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_NAOS=<path-to-naos>
   ```
 
-- テストが要らなければ、無効にする。Naos は取得されず、ネットワークも要らない。
+- If you do not need the tests, disable them. Naos is then not fetched, and no network is needed.
 
   ```sh
   cmake -S . -B build -DCLARGS_BUILD_TESTS=OFF
   cmake --build build
   ```
 
-- Visual Studio のように 1 つのビルドディレクトリが複数の構成を持つジェネレータでは、構成を指定しない `cmake --build` と `ctest` は Debug を使う。ほかの構成は `cmake --build build --config Release` と `ctest --test-dir build -C Release` のように指定する。
+- With a generator where one build directory holds several configurations, such as Visual Studio, `cmake --build` and `ctest` use Debug when no configuration is given. Give other configurations explicitly, as in `cmake --build build --config Release` and `ctest --test-dir build -C Release`.
 
-## オプション
+## Build options
 
-| オプション | 内容 | 直接ビルドするときの既定 | 組み込まれたときの既定 |
+| Option | Description | Default when built directly | Default when embedded |
 |---|---|---|---|
-| `CLARGS_BUILD_TESTS` | テストをビルドし、CTest に登録する（Naos を取得する） | `ON` | `OFF` |
-| `CLARGS_INSTALL` | インストール規則と、`find_package` および pkg-config 用のパッケージ情報を作る | `ON` | `OFF` |
-| `CLARGS_WARNINGS_AS_ERRORS` | CLArgs のターゲットで、コンパイラの警告をエラーにする | `ON` | `OFF` |
+| `CLARGS_BUILD_TESTS` | Builds the tests and registers them with CTest (fetches Naos) | `ON` | `OFF` |
+| `CLARGS_INSTALL` | Creates the install rules and the package files for `find_package` and pkg-config | `ON` | `OFF` |
+| `CLARGS_WARNINGS_AS_ERRORS` | Turns compiler warnings into errors for the CLArgs targets | `ON` | `OFF` |
 
-- 「組み込まれたとき」とは、ほかのプロジェクトが `FetchContent` または `add_subdirectory` で CLArgs を取り込んだときである。既定では、親のプロジェクトにテスト、インストール規則、警告のエラー化を足さない。
-- オプションは `-D<オプション>=ON` または `-D<オプション>=OFF` で指定する。組み込む側は、CLArgs を取り込む前に `set(<オプション> ON)` と書いてもよい。
-- 静的ライブラリか動的ライブラリかは、CMake 標準の `BUILD_SHARED_LIBS` で選ぶ。指定しなければ静的ライブラリになる。
+- "Embedded" means that another project brought CLArgs in with `FetchContent` or `add_subdirectory`. By default, CLArgs adds no tests, no install rules and no warnings-as-errors to the parent project.
+- Set an option with `-D<option>=ON` or `-D<option>=OFF`. A project that embeds CLArgs can also write `set(<option> ON)` before it brings CLArgs in.
+- Choose between a static and a shared library with the standard CMake variable `BUILD_SHARED_LIBS`. If you do not set it, you get a static library.
 
   ```sh
   cmake -S . -B build -DBUILD_SHARED_LIBS=ON
   ```
 
-## 取り込み方法
+## Using CLArgs in your project
 
-どの方法でも、ソースには `#include <clargs/clargs.h>` と書く。CMake では `CLArgs::clargs` にリンクする（pkg-config を CMake から使うときだけ `PkgConfig::CLARGS`）。取り込みパスと、動的ライブラリのときに必要な定義（`CLARGS_SHARED`）は、リンクすると自動で付く。静的ライブラリのときは、定義は要らない。
+Whichever way you choose, write `#include <clargs/clargs.h>` in your sources. In CMake, link to `CLArgs::clargs` (only when you use pkg-config from CMake, link to `PkgConfig::CLARGS`). Linking adds the include path and, for a shared library, the required definition (`CLARGS_SHARED`) automatically. A static library needs no definition.
 
-以下の例は、冒頭のプログラムを `main.c` として、実行ファイル `app` を作る `CMakeLists.txt` の全体である。
+Each example below is a complete `CMakeLists.txt` that builds the executable `app` from the program in [Example](#example), saved as `main.c`.
 
 ### FetchContent
 
-構成のときに、CLArgs のソースを取得して一緒にビルドする。
+Fetches the sources of CLArgs at configure time and builds them together with your project.
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -209,7 +221,7 @@ project(app LANGUAGES C)
 include(FetchContent)
 FetchContent_Declare(CLArgs
     GIT_REPOSITORY https://github.com/ktdevx/cargs.git
-    GIT_TAG main
+    GIT_TAG v0.1.0
 )
 FetchContent_MakeAvailable(CLArgs)
 
@@ -217,12 +229,13 @@ add_executable(app main.c)
 target_link_libraries(app PRIVATE CLArgs::clargs)
 ```
 
-- `GIT_TAG` には、ブランチ名、タグ、コミットのハッシュを書ける。同じ内容を再現してビルドしたいときは、`main` の代わりにコミットのハッシュを書く。
-- 手元のチェックアウトを使うときは、構成のときに `-DFETCHCONTENT_SOURCE_DIR_CLARGS=<チェックアウトのパス>` を渡す。ネットワークは要らない。
+- Replace `v0.1.0` with the latest release tag. Release tags have the form `v<SemVer>`, such as `v0.2.0`; pre-releases look like `v0.2.0-rc.1`. All releases are listed on the [Releases](https://github.com/ktdevx/cargs/releases) page.
+- `GIT_TAG` accepts a tag, a commit hash or a branch name. For a reproducible build, pin it to a tag or a commit hash. A branch name also works, but its contents can change.
+- To use a local checkout, pass `-DFETCHCONTENT_SOURCE_DIR_CLARGS=<path-to-checkout>` at configure time. No network is needed.
 
 ### add_subdirectory
 
-CLArgs のソースを自分のプロジェクトの中（サブモジュールやコピー）に置き、一緒にビルドする。次の例は、`third_party/clargs` に置いた場合である。
+Put the sources of CLArgs inside your project (as a submodule or a copy) and build them together. The following example assumes they are in `third_party/clargs`.
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -234,19 +247,19 @@ add_executable(app main.c)
 target_link_libraries(app PRIVATE CLArgs::clargs)
 ```
 
-- プロジェクトの外にあるソースを指すときは、`add_subdirectory(<チェックアウトのパス> clargs)` のように、2 つ目の引数でビルド用のディレクトリ名を与える。
+- When the sources are outside your project, give a name for the build directory as the second argument, as in `add_subdirectory(<path-to-checkout> clargs)`.
 
 ### find_package
 
-インストール済みの CLArgs を使う。先に、CLArgs をビルドしてインストールする。
+Uses an installed CLArgs. Build and install CLArgs first.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCLARGS_BUILD_TESTS=OFF
 cmake --build build --config Release
-cmake --install build --config Release --prefix <インストール先>
+cmake --install build --config Release --prefix <install-prefix>
 ```
 
-利用側は、次のように書く。
+Then write the following in your project.
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -258,21 +271,21 @@ add_executable(app main.c)
 target_link_libraries(app PRIVATE CLArgs::clargs)
 ```
 
-- 標準でない場所へインストールした場合は、利用側の構成のときに `-DCMAKE_PREFIX_PATH=<インストール先>` を渡す。
-- インストールした場所は、あとからディレクトリごと移動してもよい。
-- バージョンを指定するときは、`find_package(CLArgs <メジャー>.<マイナー> CONFIG REQUIRED)` のように書く。メジャーバージョンが 0 の間は、マイナーバージョンが同じものだけが互換と判定されるので、マイナーまで書く。メジャーだけの指定や範囲の指定では見つからない（[バージョンについての注意](docs/conventions.md#バージョンについての注意)）。
+- If you installed to a non-standard location, pass `-DCMAKE_PREFIX_PATH=<install-prefix>` when you configure your project.
+- You may later move the installed directory as a whole.
+- To request a version, write `find_package(CLArgs <major>.<minor> CONFIG REQUIRED)`. While the major version is 0, only versions with the same minor version are treated as compatible, so write the version down to the minor version. A request with only the major version, or a version range, finds nothing. The compatibility rules are described in [Compatibility before and after 1.0](docs/versioning.md#compatibility-before-and-after-10) in the versioning policy. For contributors, [Version notes](docs/conventions.md#version-notes) in the development conventions describes where the version is defined.
 
 ### pkg-config
 
-インストール済みの CLArgs を、pkg-config で使う（Linux と macOS）。インストールの手順は [find_package](#find_package) と同じで、モジュール名は `clargs` である。
+Uses an installed CLArgs with pkg-config (Linux and macOS). Install CLArgs as described in [find_package](#find_package). The module name is `clargs`.
 
-CMake を使わない場合は、コンパイラに pkg-config の出力を渡す。
+Without CMake, pass the output of pkg-config to the compiler.
 
 ```sh
 cc main.c -o app $(pkg-config --cflags --libs clargs)
 ```
 
-CMake から使う場合は、次のように書く。
+From CMake, write the following.
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -285,13 +298,13 @@ add_executable(app main.c)
 target_link_libraries(app PRIVATE PkgConfig::CLARGS)
 ```
 
-- 標準でない場所へインストールした場合は、環境変数 `PKG_CONFIG_PATH` に `<インストール先>/lib/pkgconfig` を入れる（ライブラリのディレクトリが `lib64` などの環境では、そのディレクトリの `pkgconfig`）。CMake から使う場合は、`-DCMAKE_PREFIX_PATH=<インストール先>` でもよい。
-- 書き方は、静的ライブラリでも動的ライブラリでも同じである。
-- 動的ライブラリを標準でない場所へインストールし、CMake を使わずにビルドした場合は、実行するときにライブラリを見つけられるようにする（Linux では `LD_LIBRARY_PATH=<インストール先>/lib` など）。
+- If you installed to a non-standard location, add `<install-prefix>/lib/pkgconfig` to the environment variable `PKG_CONFIG_PATH` (on systems where the library directory is `lib64` or similar, the `pkgconfig` directory inside it). From CMake, `-DCMAKE_PREFIX_PATH=<install-prefix>` also works.
+- The usage is the same for a static and a shared library.
+- If you installed a shared library to a non-standard location and built without CMake, make sure the library can be found when the program runs (on Linux, for example, with `LD_LIBRARY_PATH=<install-prefix>/lib`).
 
-### 組み込んだ CLArgs のテストを実行する
+### Running the tests of an embedded CLArgs
 
-`FetchContent` または `add_subdirectory` で組み込んだ CLArgs のテストは、既定では作られない。親のプロジェクトから実行したいときは、CLArgs を取り込む前に `CLARGS_BUILD_TESTS` を ON にし、**親のトップレベルの `CMakeLists.txt` で `enable_testing()` を呼ぶ**。呼ばないと、親のビルドディレクトリで実行した `ctest` は CLArgs のテストを見つけない（CTest の仕様による）。
+When CLArgs is embedded with `FetchContent` or `add_subdirectory`, its tests are not built by default. To run them from the parent project, set `CLARGS_BUILD_TESTS` to ON before you bring CLArgs in, and **call `enable_testing()` in the top-level `CMakeLists.txt` of the parent project**. Otherwise `ctest` run in the parent's build directory does not find the tests of CLArgs (this is how CTest works).
 
 ```cmake
 enable_testing()
@@ -300,12 +313,19 @@ set(CLARGS_BUILD_TESTS ON)
 add_subdirectory(third_party/clargs)
 ```
 
-この場合も、構成のときに Naos を取得する（[ビルドとテスト](#ビルドとテスト)）。
+In this case too, Naos is fetched at configure time (see [Building and testing](#building-and-testing)).
 
-## 開発に参加する
+## Releases and changes
 
-命名規約、ディレクトリ構成、公開関数・ヘッダ・ソース・テストを足す手順は、[CLArgs の規約と手順](docs/conventions.md)にまとめてある。変更する前に読むこと。
+- Changes in each version are recorded in [CHANGELOG.md](CHANGELOG.md).
+- Releases are published on the [Releases](https://github.com/ktdevx/cargs/releases) page.
+- Release tags have the form `v<SemVer>`, such as `v0.2.0`; pre-releases look like `v0.2.0-rc.1`.
+- How versions are numbered and what stays compatible is described in the [versioning policy](docs/versioning.md).
 
-## ライセンス
+## Contributing
 
-MIT License で配布する。全文は [LICENSE](LICENSE) にある。
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before you open an issue or a pull request: it explains the development environment, how to build and test, and how to submit changes. Everyone who takes part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Report security vulnerabilities as described in [SECURITY.md](SECURITY.md), not in a public issue.
+
+## License
+
+CLArgs is distributed under the MIT License. The full text is in [LICENSE](LICENSE).
