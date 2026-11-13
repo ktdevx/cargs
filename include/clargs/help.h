@@ -25,6 +25,11 @@
  *   a failure, the generation stops and returns CLARGS_ERROR_WRITE_FAILED;
  *   the part of the text that was passed before stays where the write
  *   function put it.
+ * - When an allocation fails, clargs_help_write() and clargs_help_format()
+ *   return CLARGS_ERROR_OUT_OF_MEMORY. What clargs_help_write() passed
+ *   before stays where the write function put it; the array of
+ *   clargs_help_format() then holds the empty string. The usage line alone
+ *   is generated without memory.
  * - A text that does not fit into the array of clargs_help_format() or
  *   clargs_help_format_usage() is cut, and that is not an error: the
  *   functions tell the length of the whole text.
@@ -182,7 +187,7 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
  *     Usage: tool remote add [OPTIONS] --output <FILE> <input> [extra]...
  *
  * and passes it to write_fn, together with user_data. The text ends with
- * one '\n'. Its items, in this order:
+ * a '\n'. Its items, in this order:
  *
  * - "Usage: " and the path of command: the names of the commands from the
  *   root down to command, separated by one blank each.
@@ -202,15 +207,25 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
  * Two items are separated by one blank. When the item would then go beyond
  * the width of the help options, a newline and 7 blanks, the width of
  * "Usage: ", stand in the place of that blank: the usage line is broken
- * into several lines, and no line ends with a blank. An item is never
- * divided, also not at a blank inside it: an item that is wider than the
- * width is written as it is, on a line of its own, and the first item
- * always starts the text. The width of an item is the number of its bytes.
- * With the width 0 the items are all on one line.
+ * into several lines, and the library adds no blank at the end of a line.
+ * An item is never divided, also not at a blank inside it: an item that is
+ * wider than the width is written as it is, on a line of its own, and the
+ * first item always starts the text. The width of an item is the number of
+ * its bytes. With the width 0 the items are all on one line.
+ *
+ * This holds for names without a newline. A newline inside the name of a
+ * positional, a display name, the name of a user-defined value type or the
+ * name of the root is written as it is, so the item itself takes more than
+ * one line; it still counts with all its bytes as one item, while the
+ * column of the output starts again behind the newline. The usage line can
+ * so be broken in front of such an item although the part before its
+ * newline would fit. When the name of the root starts with a newline, the
+ * blank of "Usage: " ends the first line. Keep newlines out of names.
  *
  * Only what command itself has is shown: not the options of its parent,
- * and nothing of its subcommands. The strings of the schema are written as
- * they are, byte by byte.
+ * and nothing of its subcommands. The usage line shows no strings of the
+ * schema other than names, the display names and the names of the value
+ * types among them; they are written as they are, byte by byte.
  *
  * options are the help options, or NULL for the default value of every
  * setting. The call does not change them.
@@ -232,6 +247,8 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
  * - write_fn is not NULL. Checked with assert.
  * - options may be NULL. If not, they have not been destroyed, and no other
  *   thread is changing them during the call. Not checked.
+ * - The schema is not changed or destroyed during the call, also not by
+ *   write_fn. Not checked.
  * - user_data may be NULL.
  */
 CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *command,
@@ -250,9 +267,12 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  *       remove  Remove a remote
  *
  * and passes it to write_fn, together with user_data. command is the root
- * or a subcommand of any level. The text ends with one '\n', its lines are
- * separated by '\n' only, and no line ends with a blank. Its parts, in
- * this order:
+ * or a subcommand of any level. The text ends with a '\n', its lines are
+ * separated by '\n' only, and the library adds no '\r' and no blank at the
+ * end of a line; a '\r' in a string of the schema, a blank at the end of a
+ * name and a blank in front of a newline inside a name are written as they
+ * are, and when the name of the root starts with a newline, the blank of
+ * "Usage: " ends the first line. Its parts, in this order:
  *
  * - The usage line: byte by byte the text of clargs_help_write_usage() for
  *   the same command and help options.
@@ -286,7 +306,8 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  *   value type has choices. They stand in the order in which they were
  *   defined, separated by ", ".
  * - "[default: VALUE]": an option with a value or a positional that has a
- *   default value; VALUE is the string that was set, as it is.
+ *   default value; VALUE is the string that was set, not converted, and
+ *   broken as a part of the description: see below.
  *   "[default: on]": a negatable flag whose initial state is on. One whose
  *   initial state is off has no annotation.
  * - "[required]": a required option. A positional has none: its heading
@@ -294,7 +315,8 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  *
  * An item without a description shows its annotations in the place of the
  * description. When the description ends with a newline, the annotations
- * start on the next line, without the blank. The newlines at the end of a
+ * start on the next line, without the blank; each further newline at its
+ * end puts an empty line in front of them. The newlines at the end of a
  * description without annotations are not written. A subcommand has no
  * annotations.
  *
@@ -305,8 +327,12 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  *
  * A part that has nothing to show is left out, together with its title: a
  * description that is not set, a list without items. One empty line stands
- * between two parts, and none at the start or at the end of the text. The
- * items of a list stand in the order in which they were added.
+ * between two parts, and none at the start or at the end of the text. A
+ * description that starts with a newline or with a line of blanks only,
+ * or that has a line of blanks only behind a line with content, keeps that
+ * newline or that line: this can add empty lines to the text, or move the
+ * description or the annotations. The items of a list stand in the order
+ * in which they were added.
  *
  * An item starts with the indent of the help options. Its description
  * starts at the description column, which is the same for all the lists of
@@ -337,8 +363,19 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * those newlines only. The annotations are broken as a part of the
  * description: also at the blanks inside an annotation.
  *
+ * All this is told for names without a newline. A newline inside the name
+ * of a positional, a display name, the name of a user-defined value type
+ * or the name of the root is written as it is, while a heading still
+ * counts with all its bytes: what is told here about the columns and the
+ * empty lines then need not hold. Keep newlines out of names.
+ *
  * The fixed words of the text are English. The strings of the schema are
- * written as they are, byte by byte.
+ * not converted. The names, the display names and the names of the value
+ * types among them, are written as they are, byte by byte. A description
+ * and its annotations, the default value and the choices among them, are
+ * broken as told above, so the blanks at the end of their lines, those in
+ * front of a newline inside them and those where they are broken, are not
+ * written.
  *
  * options are the help options, or NULL for the default value of every
  * setting. The call does not change them.
@@ -367,6 +404,8 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * - write_fn is not NULL. Checked with assert.
  * - options may be NULL. If not, they have not been destroyed, and no other
  *   thread is changing them during the call. Not checked.
+ * - The schema is not changed or destroyed during the call, also not by
+ *   write_fn. Not checked.
  * - user_data may be NULL.
  */
 CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
@@ -380,9 +419,9 @@ CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
  *
  * When size is not 0, the first bytes of the text, as many as fit but
  * size - 1 at most, are written to buffer, and a '\0' right behind them:
- * buffer then holds a string, and nothing is written behind that '\0' or
- * outside the array. When size is 0, nothing is written to buffer, and
- * buffer may be NULL.
+ * buffer then holds a string. When the call succeeds, nothing is written
+ * behind that '\0'. Nothing is ever written outside the array. When size
+ * is 0, nothing is written to buffer, and buffer may be NULL.
  *
  * When length is not NULL, *length is set to the length of the whole text,
  * the '\0' not counted, whether the text fitted or not.
@@ -406,7 +445,9 @@ CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
  * CLARGS_ERROR_OUT_OF_MEMORY when an allocation fails. When the call
  * fails, buffer holds the empty string if size is not 0, and is not
  * written to if size is 0; *length, when length is not NULL, is 0. The
- * function never returns CLARGS_ERROR_WRITE_FAILED.
+ * bytes of the array behind the '\0' of that empty string are then not
+ * specified: they may hold a part of the text that was generated before
+ * the failure. The function never returns CLARGS_ERROR_WRITE_FAILED.
  *
  * Preconditions:
  *
@@ -418,6 +459,7 @@ CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
  * - buffer points to an array of size bytes or more. Not checked.
  * - options may be NULL. If not, they have not been destroyed, and no other
  *   thread is changing them during the call. Not checked.
+ * - The schema is not changed or destroyed during the call. Not checked.
  * - length may be NULL.
  */
 CLARGS_API clargs_error_t clargs_help_format(const clargs_command_t *command,
@@ -458,6 +500,7 @@ CLARGS_API clargs_error_t clargs_help_format(const clargs_command_t *command,
  * - buffer points to an array of size bytes or more. Not checked.
  * - options may be NULL. If not, they have not been destroyed, and no other
  *   thread is changing them during the call. Not checked.
+ * - The schema is not changed or destroyed during the call. Not checked.
  * - length may be NULL.
  */
 CLARGS_API clargs_error_t clargs_help_format_usage(const clargs_command_t *command,

@@ -1,17 +1,18 @@
 # CLArgs
 
-CLArgs は、C99 で書かれたコマンドライン引数パーサーのライブラリである。プログラムが受け付けるコマンドライン（スキーマ）を関数呼び出しで定義して検証し、`main` が受け取った argv を解析して、結果から値を読むところまでができる。ヘルプと usage の文面を生成する機能は、まだない。これから追加する。
+CLArgs は、C99 で書かれたコマンドライン引数パーサーのライブラリである。プログラムが受け付けるコマンドライン（スキーマ）を関数呼び出しで定義して検証し、`main` が受け取った argv を解析して、結果から値を読める。スキーマから、ヘルプと usage 行の文面も生成できる。
 
 - C99・コンパイラ拡張なしで書かれており、C 標準ライブラリ以外に依存しない。
 - Linux（GCC、Clang）、macOS（Clang）、Windows（MSVC）でビルドできる。
 - 静的ライブラリと動的ライブラリのどちらにもなる。
 - CMake の `FetchContent`、`add_subdirectory`、`find_package`、および pkg-config から取り込める。
 - オプション（フラグ、カウント、`--no-` で否定できるフラグ、値付き）、位置引数、サブコマンドを定義できる。値は、文字列、整数、浮動小数、選択肢、利用者定義の値型で変換して読める。
-- ライブラリは、何も出力せず、プロセスを終了させず、環境変数を読まない。引数がスキーマに合わないときは、エラーの種類と 1 行のメッセージを返す。表示するのは利用者のコードである。
+- ヘルプと usage 行の文面は、スキーマの定義から作る。文面は、利用者が渡す書き込み関数、または利用者のバッファに出る。
+- ライブラリは、何も出力せず、プロセスを終了させず、環境変数を読まない。引数がスキーマに合わないときは、エラーの種類と 1 行のメッセージを返す。表示するのは利用者のコードである。`--help` も、利用者がスキーマに定義し、利用者のコードがヘルプを出す。
 
 利用者が取り込むヘッダは `<clargs/clargs.h>` だけで、リンクするターゲットは `CLArgs::clargs` である。
 
-次の例は、`greet [-h] [-l] [-n COUNT] name` という形のコマンドラインを受け付けるプログラムの全体である。スキーマを定義して検証し、argv を解析し、値を読んで、破棄する。
+次の例は、`greet [-h] [-l] [-n COUNT] name` という形のコマンドラインを受け付けるプログラムの全体である。スキーマを定義して検証し、argv を解析し、`--help` が指定されていればヘルプを出し、そうでなければ値を読んで、破棄する。
 
 ```c
 #include <clargs/clargs.h>
@@ -28,6 +29,13 @@ static bool failed(clargs_error_t *error, clargs_error_t result)
     return result != CLARGS_ERROR_NONE;
 }
 
+/* The write function: the library passes the text of the help to it, part
+ * by part. This one writes each part to the stream in user_data. */
+static bool write_to_stream(void *user_data, const char *text, size_t length)
+{
+    return fwrite(text, 1, length, (FILE *)user_data) == length;
+}
+
 int main(int argc, char **argv)
 {
     clargs_command_t *root = NULL;
@@ -39,15 +47,21 @@ int main(int argc, char **argv)
     clargs_error_t error;
     int status = EXIT_FAILURE;
 
-    /* The schema: greet [-h] [-l] [-n COUNT] name. It is validated before
-     * it is parsed with. */
+    /* The schema: greet [-h] [-l] [-n COUNT] name. The descriptions are
+     * for the help. The schema is validated before it is parsed with. */
     if (failed(&error, clargs_command_create("greet", &root)) ||
+        failed(&error, clargs_command_set_description(root, "Greet somebody.")) ||
         failed(&error, clargs_command_add_flag(root, 'h', "help", &help)) ||
+        failed(&error, clargs_option_set_description(help, "Print this help.")) ||
         failed(&error, clargs_command_add_flag(root, 'l', "loud", &loud)) ||
+        failed(&error, clargs_option_set_description(loud, "Add an exclamation mark.")) ||
         failed(&error, clargs_command_add_value(root, 'n', "count", clargs_type_int(), &count)) ||
+        failed(&error, clargs_option_set_description(count, "How often to greet.")) ||
+        failed(&error, clargs_option_set_value_name(count, "COUNT")) ||
         failed(&error, clargs_option_set_default(count, "1")) ||
         failed(&error, clargs_command_add_positional(root, "name", clargs_type_string(),
                                                      CLARGS_ARITY_REQUIRED, &name)) ||
+        failed(&error, clargs_positional_set_description(name, "Whom to greet.")) ||
         failed(&error, clargs_command_validate(root, NULL, NULL, NULL))) {
         fprintf(stderr, "greet: cannot define the command line: %s\n", clargs_error_message(error));
     } else {
@@ -59,9 +73,10 @@ int main(int argc, char **argv)
             fprintf(stderr, "greet: %s\n", clargs_error_message(error));
         } else if (clargs_result_flag(result, help)) {
             /* --help first: "greet --help" leaves out the name, and that
-             * must not hide the help. */
-            printf("usage: greet [-h] [-l] [-n COUNT] name\n");
-            status = EXIT_SUCCESS;
+             * must not hide the help. The text is made from the schema. */
+            if (clargs_help_write(root, NULL, write_to_stream, stdout) == CLARGS_ERROR_NONE) {
+                status = EXIT_SUCCESS;
+            }
         } else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE) {
             /* The message is one line with no prefix and no line break. */
             fprintf(stderr, "greet: %s\n", clargs_result_error_message(result));
@@ -107,13 +122,26 @@ $ greet --count=many world
 greet: invalid value 'many' for option '--count' (expected integer)
 
 $ greet --help
-usage: greet [-h] [-l] [-n COUNT] name
+Usage: greet [OPTIONS] <name>
+
+Greet somebody.
+
+Arguments:
+  <name>               Whom to greet.
+
+Options:
+  -h, --help           Print this help.
+  -l, --loud           Add an exclamation mark.
+  -n, --count <COUNT>  How often to greet. [default: 1]
 ```
 
+- ヘルプの文面は、スキーマの定義（名前、説明文、値の表示名、既定値）から作られる。プログラムの中に、ヘルプの文面を書く必要はない。
+- ヘルプを出すのは、利用者のコードである。ライブラリは、`--help` をスキーマに足さず、ヘルプを出して終了することもない。
 - 解析エラー（引数がスキーマに合わない）のときも結果が渡るので、利用者が破棄する。結果は、スキーマより先に破棄する。
 - 使い方の詳しい説明は、次の文書にある。
   - [スキーマの使い方](docs/schema.md): コマンド、オプション、位置引数、値型の定義と検証。
   - [解析の使い方](docs/parse.md): 解析、引数の書き方の一覧、結果の読み取り、解析エラーの種類とメッセージ、`--help` の扱い、ワイド文字の argv（`wmain`）。
+  - [ヘルプの使い方](docs/help.md): ヘルプと usage 行の生成、文面の規則、表示幅などの設定、出力先（書き込み関数とバッファ）、解析エラーに usage 行を添える例。
   - [所有権と寿命の規約](docs/ownership.md): 誰が何を解放するか、渡したものと返されたものがいつまで有効か。
 
 - [ビルドとテスト](#ビルドとテスト)
