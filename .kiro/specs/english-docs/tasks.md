@@ -104,7 +104,7 @@
   - _Boundary: DocsIndex_
   - _Requirements: 1.1, 2.2, 6.2, 6.3, 6.4, 9.1, 9.5, 9.7_
 
-- [ ] 5. 統合と検証
+- [x] 5. 統合と検証
 - [x] 5.1 ソース、テスト、ビルド、ワークフローのファイルの言語を点検する
   - 検査を、`include/`、`src/`、`tests/`、`cmake/`、`.github/`、`tools/` の下のファイルと、ルートの CMakeLists.txt に限って実行する
   - release-automation のファイル（`tools/` の下、`tests/release/` の下、`.github/workflows/` の下）に日本語の文字や `.kiro` が見つかっても直さず、ファイル名と行番号を release-automation への指摘としてタスクの記録に書く
@@ -129,7 +129,7 @@
   - _Depends: 1.2, 5.2_
   - _Requirements: 3.4, 5.3, 5.4_
 
-- [ ] 5.4 リポジトリのビルドと、変更の範囲を確かめる
+- [x] 5.4 リポジトリのビルドと、変更の範囲を確かめる
   - README の 3 つのコマンド（`cmake -S . -B build`、`cmake --build build`、`ctest --test-dir build`）を新しいビルドディレクトリで実行する。構成のときに Naos を GitHub から取得するので、ネットワークが要る。取得できない環境なら、そのことと、`FETCHCONTENT_SOURCE_DIR_NAOS` で手元のコピーを渡した場合の結果を記録する
   - `<base>`（このスペックの最初の実装のタスクの直前のコミット。release-automation のファイルは既にある）との差分のファイルの一覧を取り、README.md、CONTRIBUTING.md、`docs/README.md`、`docs/schema.md`、`docs/parse.md`、`docs/help.md`、`docs/ownership.md`、`docs/conventions.md`（5.1 で直したものがあればそのファイル）だけであることを確かめる。CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、CODE_OF_CONDUCT.md、SECURITY.md、`.github/` の下、`tools/` の下、`include/`、`src/`、`tests/`（`tests/release/` と `tests/CMakeLists.txt` を含む）、`cmake/`、CMakeLists.txt が含まれないことを確かめる。`docs/conventions.md` の差分が、英語化、ディレクトリ構成の節の更新、3.2 で移した記述だけであることを確かめる
   - `docs/` の既存の 5 ファイルの名前が変わっていないこと、日本語版のファイルや節が足されていないことを確かめる
@@ -149,3 +149,4 @@
 - 5.1: `python3 .kiro/specs/english-docs/check_docs.py check --files $(git ls-files include src tests cmake .github tools CMakeLists.txt)`（130 ファイル）は english-docs 0、release-automation 0、failures 0、exit 0。`LC_ALL=C.UTF-8 grep -nP` で日本語の範囲を探しても、`grep -niE` で kiro・スペック名・steering を探しても一致なし（exit 1）。ASCII 外の文字は `tests/public/command_test.c` の罫線（U+2500、U+2502、U+2514、U+251C）だけで、報告されない。変更したファイルはない。
 - 5.2: 制限なしの `check` は english-docs 0、release-automation 0、failures 0、pending 0、exit 0。README から幅優先でたどると、schema、parse、help、ownership、versioning、docs/README、CONTRIBUTING、conventions、CHANGELOG は 1 回、releasing は 2 回のリンクで届く。release-automation への指摘はない。変更したファイルはない。
 - 5.3: 英語にした文書で `bash .kiro/specs/english-docs/build_examples.sh /home/user/cargs <outdir>` は exit 0。7 例（README 1、schema 1、parse 2 のうち wmain 1、help 2、ownership 1）を取り出し、28 の確認がすべて通った。README の 4 つのコマンドライン、schema の `the schema of pack is valid`、parse と help の出力、ownership の終了コード 0 が文書のとおり。1.2 の時点からの違いはない。
+- 5.4: 新しいビルドディレクトリで README の 3 つのコマンド（`cmake -S . -B <dir>`、`cmake --build <dir>`、`ctest --test-dir <dir>`）を、Naos を GitHub から取得して実行し、746/746 が通った。`git diff --name-status ff2b83c HEAD`（`.kiro/` を除く）は A CONTRIBUTING.md、M README.md、A docs/README.md、M docs/{conventions,help,ownership,parse,schema}.md だけで、CHANGELOG.md、docs/releasing.md、docs/versioning.md、CODE_OF_CONDUCT.md、SECURITY.md、.github/、tools/、include/、src/、tests/、cmake/、CMakeLists.txt は含まない。`docs/` の既存 5 ファイルの名前は変わらず、日本語版のファイルはない。
