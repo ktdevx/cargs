@@ -26,7 +26,7 @@
   - 完了の目安: `release.semver` が通り、仕様の例の 8 つの版が期待どおりの順に並ぶ
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 9.1, 9.2_
 
-- [ ] 2.2 CHANGELOG の解析、`Unreleased` の移動、ノートの取り出しを作る
+- [x] 2.2 CHANGELOG の解析、`Unreleased` の移動、ノートの取り出しを作る
   - 設計の Data Models の「CHANGELOG の受け付ける形」に従う解析を作る。版の一覧（ファイルの順）、`Unreleased` の項目の数、無効なときの理由を返す
   - `Unreleased` の本文を新しい版の節に移し、`Unreleased` を空にし、比較リンクを更新する処理を作る。最初の版はタグのページ、2 つ目以降は直下の版との比較、`Unreleased` は新しい版からの比較にする。改行の形を保つ
   - 版の節の本文をノートとして取り出し、正式版の直下に同じ数字の部分のプレリリースが続く場合は、設計の文面でそれらへの参照を足す処理を作る
@@ -133,3 +133,4 @@
 - 1.1: リリースのテストの補助は `tests/release/ReleaseTestHelpers.cmake`（`clargs_test_expect_equal`、`clargs_test_expect_contains`、`clargs_test_expect_not_contains`、`clargs_test_copy_fixture`、`clargs_test_run_script`、`clargs_test_finish`）。登録は `tests/CMakeLists.txt` の `clargs_add_release_test(<name>)`（`release.<name>`、ラベル `release`、作業ディレクトリは開始時に空にされる）。テストは `cmake -D CLARGS_SOURCE_ROOT=... -D CLARGS_TEST_WORK_DIR=... -P` で動く。
 - 1.1: `clargs_read_version(<header> <out> [<prerelease-out>])` は 2 引数でも識別子のマクロを検査する。トップレベルの `CMakeLists.txt` はまだ 2 引数で呼ぶ（1.2 で 3 引数にする）。
 - 2.1: SemVer は `tools/release/ClargsSemver.cmake` の `clargs_semver_parse(<version> <prefix>)`（`_VALID`、`_ERROR`、`_MAJOR`、`_MINOR`、`_PATCH`、`_PRERELEASE`、`_CORE`）と `clargs_semver_compare(<a> <b> <out>)`（-1/0/1）。`CMAKE_MATCH_<n>` は前の一致の値が残ることがあるので注意する。FATAL_ERROR の文はCMake が折り返すので、子プロセスの出力を照合するときは行をつないでから比べる。
+- 2.2: CHANGELOG は `tools/release/ClargsChangelog.cmake` の `clargs_changelog_parse`、`clargs_changelog_promote(<text> <version> <date> <repo-url> <out>)`、`clargs_changelog_notes(<text> <version> <repo-url> <out>)`。notes の結果は末尾に改行がないので、3.2 でファイルに書くときに足す。promote は V が最新の版より大きくなければ止まる。フィクスチャと実際の CHANGELOG では Semantic Versioning へのリンクを `https://semver.org/` にし、`spec` の語を避ける。
