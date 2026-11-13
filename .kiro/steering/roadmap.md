@@ -157,7 +157,8 @@ Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、�
 
 ### Boundary Strategy
 
-- **Why this split**: 「人が読む文書」と「バージョン・リリース・CI の仕組み」は、触るファイルも検証の方法も違う。互いに依存させず、並行して進める。CoC、SECURITY、テンプレートは定型の文書で、境界の設計が要らないので、直接実装に回す。
+- **Why this split**: 「人が読む文書」と「バージョン・リリース・CI の仕組み」は、触るファイルも検証の方法も違う。
+- **実装の順序**: release-automation を先に実装し、english-docs はそのあとに行う。理由: 両スペックが `docs/conventions.md` を編集し（release-automation は「Version notes」の節の内容、english-docs は全体の英語化と「Directory layout」の節）、english-docs の再編と最終確認が release-automation の作るファイル（`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`、`tools/`、`tests/release/`、ワークフロー）の存在を前提にすると、リンクとディレクトリ構成の記述を一度で正しく書けるため。CoC、SECURITY、テンプレートは定型の文書で、境界の設計が要らないので、直接実装に回す。
   - english-docs: README、`docs/`、CONTRIBUTING.md の中身と構成。ソースのコメントの言語の点検。
   - release-automation: `version.h` のプレリリースの扱い、CMake と pkg-config への反映、CHANGELOG.md、リリースと CI のワークフロー、リリース手順書。
 - **Shared seams to watch**:
@@ -182,5 +183,5 @@ Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、�
 - [x] command-schema -- コマンド、サブコマンド、オプション、位置引数、値型の定義 API と定義の検証。Dependencies: core-runtime
 - [x] argv-parser -- argv の解析エンジン、ワイド文字 argv の受け付け、結果オブジェクトと参照 API、構造化された解析エラー。Dependencies: command-schema
 - [x] help-formatter -- スキーマからヘルプと usage 文を生成する。Dependencies: command-schema
-- [ ] english-docs -- README と docs/ の英語化と、利用者向け・開発者向けの再編、CONTRIBUTING.md、人向け文書からの .kiro/ への言及の除去、コメントの言語の点検。Dependencies: none
 - [ ] release-automation -- SemVer の運用とプレリリースの扱い、CHANGELOG.md（Keep a Changelog）、リリース PR の作成とマージ後のタグ・GitHub Release のワークフロー、CI の起動タイミングの見直し、リリース手順書。Dependencies: none
+- [ ] english-docs -- README と docs/ の英語化と、利用者向け・開発者向けの再編、CONTRIBUTING.md、人向け文書からの .kiro/ への言及の除去、コメントの言語の点検。Dependencies: release-automation
