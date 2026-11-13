@@ -470,14 +470,22 @@ static bool help_is_blank(const char *text, size_t length)
     return true;
 }
 
-/* Returns the length of text without the newlines at its end: the length
- * of a description that is written whole. Returns 0 when text is NULL or
- * holds nothing but blanks and newlines: 0 means that there is no
- * description to write. */
-static size_t help_whole_length(const char *text)
+/*
+ * Returns the length of the part of text that a description writes: text
+ * up to and with its last byte that is neither a blank nor a newline. The
+ * run of blanks and newlines behind that byte, the trailing run, is not
+ * part of it: its blanks are ignored, and the number of its newlines is
+ * stored in *newlines. So "foo\n  " gives what "foo\n" gives, and
+ * "foo\n \n" what "foo\n\n" gives.
+ *
+ * Returns 0, and stores 0, when text is NULL or holds nothing but blanks
+ * and newlines: 0 means that there is no description to write.
+ */
+static size_t help_whole_length(const char *text, size_t *newlines)
 {
     size_t length;
 
+    *newlines = 0;
     if (text == NULL) {
         return 0;
     }
@@ -486,7 +494,10 @@ static size_t help_whole_length(const char *text)
     if (help_is_blank(text, length)) {
         return 0;
     }
-    while (length != 0 && text[length - 1] == '\n') {
+    while (text[length - 1] == ' ' || text[length - 1] == '\n') {
+        if (text[length - 1] == '\n') {
+            ++*newlines;
+        }
         --length;
     }
     return length;
@@ -511,13 +522,14 @@ static size_t help_first_line_length(const char *text)
 }
 
 /* Writes the description of the command of context, when it has one that
- * holds more than blanks and newlines: an empty line, then the text from
- * the start of the line, broken at the width. */
+ * holds more than blanks and newlines: an empty line, then the text up to
+ * its trailing run, from the start of the line, broken at the width. */
 static void help_write_description(help_context_t *context)
 {
     clargs_out_t *out = &context->out;
     const char *text = clargs_command_description(context->command);
-    size_t length = help_whole_length(text);
+    size_t newlines;
+    size_t length = help_whole_length(text, &newlines);
 
     if (length == 0) {
         return;
@@ -578,19 +590,30 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
 
 /*
  * Starts the cell text of an item: makes it empty, its memory is kept for
- * the next item, and appends description, whole, when the item has one
- * that holds more than blanks and newlines. A description that ends with a
- * newline keeps it: an annotation then starts on the next line.
+ * the next item, and appends description when the item has one that holds
+ * more than blanks and newlines: its part up to its trailing run, then the
+ * newlines of that run, without its blanks (see help_whole_length()). A
+ * description that ends with a newline keeps it: an annotation then starts
+ * on the next line.
  *
  * Returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation fails.
  */
 static clargs_error_t help_cell_start(help_context_t *context, const char *description)
 {
+    size_t newlines;
+    size_t length = help_whole_length(description, &newlines);
+    clargs_error_t error;
+
     context->text.count = 0;
-    if (help_whole_length(description) == 0) {
+    if (length == 0) {
         return CLARGS_ERROR_NONE;
     }
-    return clargs_help_item_text_append(&context->text, description, strlen(description));
+    error = clargs_help_item_text_append(&context->text, description, length);
+    while (error == CLARGS_ERROR_NONE && newlines != 0) {
+        error = clargs_help_item_text_append(&context->text, "\n", 1);
+        --newlines;
+    }
+    return error;
 }
 
 /* Writes one item of a list with the cell text as its description; see

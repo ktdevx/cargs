@@ -25,6 +25,8 @@
  *   description starts at C, or at 0 for the description of the command.
  * - A description that holds nothing but blanks and newlines counts as not
  *   set; the one of a subcommand is judged by its first line.
+ * - In the trailing run of a description, the blanks and newlines behind
+ *   its last other byte, the blanks are ignored and the newlines are kept.
  * - A setting above 65535 works as 65535.
  *
  * A command of a schema has subcommands or positionals, not both, so a
@@ -1521,6 +1523,247 @@ NAOS_TEST(blank_description_leaves_the_annotations_alone)
     destroy_root(root);
 }
 
+/* ---- The blanks of the trailing run of a description ----------------- */
+
+/* Builds the items of a test of the trailing run, each with the
+ * description given, on root. */
+typedef void (*trailing_build_t)(clargs_command_t *root, const char *description);
+
+/* The command has the description, and nothing else. */
+static void build_command_alone(clargs_command_t *root, const char *description)
+{
+    describe(root, description);
+}
+
+/* The command has the description, and a flag follows it. */
+static void build_command_and_option(clargs_command_t *root, const char *description)
+{
+    describe(root, description);
+    add_flag(root, 'v', NULL, "Say more");
+}
+
+/* A flag with a heading that fits, then the last, one that is too wide. */
+static void build_flags_long_last(clargs_command_t *root, const char *description)
+{
+    add_flag(root, 'q', "quiet", description);
+    add_flag(root, '\0', "a-flag-with-a-long-name", description);
+}
+
+/* The same flags, the one with the heading that fits last. */
+static void build_flags_short_last(clargs_command_t *root, const char *description)
+{
+    add_flag(root, '\0', "a-flag-with-a-long-name", description);
+    add_flag(root, 'q', "quiet", description);
+}
+
+/* Options with a default value: a heading that fits, then one too wide. */
+static void build_defaults_long_last(clargs_command_t *root, const char *description)
+{
+    add_value(root, 'n', "num", "N", "1", description);
+    add_value(root, '\0', "a-long-name-of-option", "FILE", "f", description);
+}
+
+/* The same options, the one with the heading that fits last. */
+static void build_defaults_short_last(clargs_command_t *root, const char *description)
+{
+    add_value(root, '\0', "a-long-name-of-option", "FILE", "f", description);
+    add_value(root, 'n', "num", "N", "1", description);
+}
+
+/* Positionals: a heading that fits, then one too wide. */
+static void build_arguments_long_last(clargs_command_t *root, const char *description)
+{
+    add_positional(root, "input", CLARGS_ARITY_REQUIRED, description);
+    add_positional(root, "another-long-positional", CLARGS_ARITY_REQUIRED, description);
+}
+
+/* The same positionals, the one with the heading that fits last. */
+static void build_arguments_short_last(clargs_command_t *root, const char *description)
+{
+    add_positional(root, "another-long-positional", CLARGS_ARITY_REQUIRED, description);
+    add_positional(root, "input", CLARGS_ARITY_REQUIRED, description);
+}
+
+/* Optional positionals with a default value: a heading that fits, then
+ * one too wide. */
+static void build_argument_defaults(clargs_command_t *root, const char *description)
+{
+    add_positional_default(root, "out", "o", description);
+    add_positional_default(root, "a-long-optional-name", "x", description);
+}
+
+/* Builds a root with build and description, and has its help written with
+ * the width 80, the indent 2 and the maximum column 20 to sink, as
+ * generate() does: which checks the shape of the text. */
+static void generate_trailing(trailing_build_t build, const char *description, sink_t *sink)
+{
+    clargs_command_t *root = create_root();
+    clargs_help_options_t *options = create_options(80, 2, 20);
+
+    build(root, description);
+    validate(root);
+    generate(root, options, sink);
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
+/* Checks that the help built with build and description is the text of
+ * the one built with build and reduced, byte for byte. */
+static void check_same_text(trailing_build_t build, const char *description, const char *reduced)
+{
+    char buffer[SINK_SIZE];
+    char reduced_buffer[SINK_SIZE];
+    sink_t sink;
+    sink_t reduced_sink;
+
+    sink_init(&sink, buffer, sizeof buffer);
+    sink_init(&reduced_sink, reduced_buffer, sizeof reduced_buffer);
+    generate_trailing(build, description, &sink);
+    generate_trailing(build, reduced, &reduced_sink);
+
+    NAOS_CHECK_UINT_EQ(sink.length, reduced_sink.length);
+    NAOS_CHECK_MEM_EQ(sink.text, sink.length, reduced_sink.text, reduced_sink.length);
+}
+
+/* Checks that the help built with build and description is expected. */
+static void check_trailing(trailing_build_t build, const char *description, const char *expected)
+{
+    clargs_command_t *root = create_root();
+
+    build(root, description);
+    validate(root);
+    check_layout(root, 80, 2, 20, expected);
+    destroy_root(root);
+}
+
+/*
+ * In the trailing run of a description, the blanks and newlines behind its
+ * last other byte, the blanks are ignored and the newlines are kept: each
+ * description gives the text of the one without those blanks, for the
+ * description of the command and for those of the options and of the
+ * positionals, behind a heading that fits and behind one that is too wide,
+ * with annotations and without, and on the last item of the text.
+ */
+NAOS_TEST(blanks_of_the_trailing_run_are_ignored)
+{
+    static const trailing_build_t builds[] = {
+        build_command_alone,      build_command_and_option,  build_flags_long_last,
+        build_flags_short_last,   build_defaults_long_last,  build_defaults_short_last,
+        build_arguments_long_last, build_arguments_short_last, build_argument_defaults,
+    };
+    static const char *const descriptions[][2] = {
+        {"foo\n  ", "foo\n"},
+        {"foo\n \n", "foo\n\n"},
+        {"foo  ", "foo"},
+        {"foo \n ", "foo\n"},
+        {"foo\n  \n\n", "foo\n\n\n"},
+        {"foo\n  \nbar \n  \n", "foo\n  \nbar\n\n"},
+    };
+    size_t build;
+    size_t index;
+
+    for (build = 0; build < sizeof builds / sizeof builds[0]; ++build) {
+        for (index = 0; index < sizeof descriptions / sizeof descriptions[0]; ++index) {
+            check_same_text(builds[build], descriptions[index][0], descriptions[index][1]);
+        }
+    }
+}
+
+/* The description of the command with blanks in its trailing run: the
+ * text ends with the line of the description, or the list follows it
+ * behind one empty line. */
+NAOS_TEST(blanks_behind_the_description_of_the_command)
+{
+    check_trailing(build_command_alone, "foo\n  ", "Usage: tool\n\nfoo\n");
+    check_trailing(build_command_alone, "foo\n \n", "Usage: tool\n\nfoo\n");
+    check_trailing(build_command_and_option, "foo \n ",
+                   "Usage: tool [OPTIONS]\n"
+                   "\n"
+                   "foo\n"
+                   "\n"
+                   "Options:\n"
+                   "  -v  Say more\n");
+}
+
+/* Items without annotations: no empty line follows an item whose
+ * description has blanks in its trailing run, also not the last one. */
+NAOS_TEST(blanks_behind_the_description_of_an_item)
+{
+    check_trailing(build_flags_long_last, "foo\n  ",
+                   "Usage: tool [OPTIONS]\n"
+                   "\n"
+                   "Options:\n"
+                   "  -q, --quiet       foo\n"
+                   "      --a-flag-with-a-long-name\n"
+                   "                    foo\n");
+    check_trailing(build_flags_short_last, "foo\n \n",
+                   "Usage: tool [OPTIONS]\n"
+                   "\n"
+                   "Options:\n"
+                   "      --a-flag-with-a-long-name\n"
+                   "                    foo\n"
+                   "  -q, --quiet       foo\n");
+    check_trailing(build_arguments_short_last, "foo \n ",
+                   "Usage: tool <another-long-positional> <input>\n"
+                   "\n"
+                   "Arguments:\n"
+                   "  <another-long-positional>\n"
+                   "                    foo\n"
+                   "  <input>           foo\n");
+}
+
+/*
+ * Items with a default value: the trailing run keeps its newlines. The
+ * annotation starts on the line behind the description, at the
+ * description column, and each newline of the run beyond the first puts
+ * an empty line before it; blanks alone put the annotation on the line of
+ * the description.
+ */
+NAOS_TEST(blanks_behind_a_description_with_annotations)
+{
+    check_trailing(build_defaults_long_last, "foo\n  ",
+                   "Usage: tool [OPTIONS]\n"
+                   "\n"
+                   "Options:\n"
+                   "  -n, --num <N>     foo\n"
+                   "                    [default: 1]\n"
+                   "      --a-long-name-of-option <FILE>\n"
+                   "                    foo\n"
+                   "                    [default: f]\n");
+    check_trailing(build_defaults_short_last, "foo\n \n",
+                   "Usage: tool [OPTIONS]\n"
+                   "\n"
+                   "Options:\n"
+                   "      --a-long-name-of-option <FILE>\n"
+                   "                    foo\n"
+                   "\n"
+                   "                    [default: f]\n"
+                   "  -n, --num <N>     foo\n"
+                   "\n"
+                   "                    [default: 1]\n");
+    check_trailing(build_defaults_long_last, "foo\n  \n\n",
+                   "Usage: tool [OPTIONS]\n"
+                   "\n"
+                   "Options:\n"
+                   "  -n, --num <N>     foo\n"
+                   "\n"
+                   "\n"
+                   "                    [default: 1]\n"
+                   "      --a-long-name-of-option <FILE>\n"
+                   "                    foo\n"
+                   "\n"
+                   "\n"
+                   "                    [default: f]\n");
+    check_trailing(build_argument_defaults, "foo  ",
+                   "Usage: tool [out] [a-long-optional-name]\n"
+                   "\n"
+                   "Arguments:\n"
+                   "  [out]             foo [default: o]\n"
+                   "  [a-long-optional-name]\n"
+                   "                    foo [default: x]\n");
+}
+
 NAOS_SUITE(help_layout,
     NAOS_ADD_TEST(heading_beyond_the_limit_goes_to_its_own_line),
     NAOS_ADD_TEST(default_limit_is_the_column_32),
@@ -1554,7 +1797,11 @@ NAOS_SUITE(help_layout,
     NAOS_ADD_TEST(blank_description_of_an_option_is_heading_only),
     NAOS_ADD_TEST(blank_description_of_an_argument_is_heading_only),
     NAOS_ADD_TEST(blank_first_line_of_a_subcommand_is_heading_only),
-    NAOS_ADD_TEST(blank_description_leaves_the_annotations_alone)
+    NAOS_ADD_TEST(blank_description_leaves_the_annotations_alone),
+    NAOS_ADD_TEST(blanks_of_the_trailing_run_are_ignored),
+    NAOS_ADD_TEST(blanks_behind_the_description_of_the_command),
+    NAOS_ADD_TEST(blanks_behind_the_description_of_an_item),
+    NAOS_ADD_TEST(blanks_behind_a_description_with_annotations)
 )
 
 NAOS_MAIN(

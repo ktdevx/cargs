@@ -317,8 +317,10 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * description. When the description ends with a newline, the annotations
  * start on the next line, without the blank; each further newline at its
  * end puts an empty line in front of them. The newlines at the end of a
- * description without annotations are not written. A subcommand has no
- * annotations.
+ * description without annotations are not written. In the run of blanks
+ * and newlines at the end of a description, behind its last other byte,
+ * the blanks are ignored and the newlines are kept: "foo\n  " gives what
+ * "foo\n" gives. A subcommand has no annotations.
  *
  * A description that holds no byte other than blanks and newlines counts
  * as not set: an empty one, and one such as " \n". The description of a
@@ -328,11 +330,10 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * A part that has nothing to show is left out, together with its title: a
  * description that is not set, a list without items. One empty line stands
  * between two parts, and none at the start or at the end of the text. A
- * description that starts with a newline or with a line of blanks only,
- * or that has a line of blanks only behind a line with content, keeps that
- * newline or that line: this can add empty lines to the text, or move the
- * description or the annotations. The items of a list stand in the order
- * in which they were added.
+ * description that starts with a newline or with a line of blanks only
+ * keeps that newline or that line: this can add empty lines to the text,
+ * or move the description or the annotations. The items of a list stand
+ * in the order in which they were added.
  *
  * An item starts with the indent of the help options. Its description
  * starts at the description column, which is the same for all the lists of
