@@ -130,11 +130,37 @@ static void validate(clargs_command_t *root)
     NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
 }
 
+/* Creates help options with the width given; the other settings keep their
+ * default values. */
+static clargs_help_options_t *create_options(size_t width)
+{
+    clargs_help_options_t *options = NULL;
+
+    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(options != NULL);
+    clargs_help_options_set_width(options, width);
+    return options;
+}
+
+/* Returns whether a line of the length bytes of text ends with a blank: a
+ * blank before a newline, or at the end of the text. */
+static bool has_blank_at_line_end(const char *text, size_t length)
+{
+    size_t index;
+
+    for (index = 0; index < length; ++index) {
+        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n')) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /*
  * Has the usage line of command written with options and checks that the
- * call succeeds, that the text is exactly the string expected, that no call
- * of the write function was empty, that nothing was allocated and that the
- * schema is still validated.
+ * call succeeds, that the text is exactly the string expected, that no line
+ * of it ends with a blank, that no call of the write function was empty,
+ * that nothing was allocated and that the schema is still validated.
  */
 static void check_usage_with(const clargs_command_t *command, const clargs_help_options_t *options,
                              const char *expected)
@@ -149,6 +175,8 @@ static void check_usage_with(const clargs_command_t *command, const clargs_help_
 
     NAOS_CHECK_UINT_EQ(sink.length, strlen(expected));
     NAOS_CHECK_MEM_EQ(sink.text, sink.length, expected, strlen(expected));
+    NAOS_CHECK_TRUE(!has_blank_at_line_end(sink.text, sink.length));
+    NAOS_CHECK_TRUE(!has_blank_at_line_end(expected, strlen(expected)));
     NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
     NAOS_CHECK_TRUE(clargs_command_is_validated(command));
@@ -296,8 +324,9 @@ NAOS_TEST(required_option_without_value_name_uses_type_name)
     add_value(root, '\0', "format", choice, NULL, true);
     add_value(root, 'p', "port", port, NULL, true);
     validate(root);
-    check_usage(root, "Usage: tool --name <string> -n <integer> --ratio <float> --format <choice> "
-                      "--port <Port number>\n");
+    /* The last option would end at the column 95: it starts a new line. */
+    check_usage(root, "Usage: tool --name <string> -n <integer> --ratio <float> --format <choice>\n"
+                      "       --port <Port number>\n");
 
     clargs_command_destroy(root);
     clargs_type_destroy(choice);
@@ -498,6 +527,312 @@ NAOS_TEST(null_options_are_the_default_options)
     destroy_root(root);
 }
 
+/* ---- The width ------------------------------------------------------------ */
+
+/* Adds what the tests of the width share: with every item on one line,
+ *
+ *     Usage: tool [OPTIONS] --output <FILE> <input> [extra]...
+ *
+ * whose items end at the columns 11, 21, 37, 45 and 56. */
+static void add_all_kinds_of_items(clargs_command_t *root)
+{
+    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
+    add_value(root, 'o', "output", clargs_type_string(), "FILE", true);
+    add_positional(root, "input", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "extra", CLARGS_ARITY_ZERO_OR_MORE);
+}
+
+/* A line that does not fit the width is broken between two items, and each
+ * line after the first starts with 7 blanks, the width of "Usage: ". An
+ * item that still fits stays on the line: at the width 30, "<input>" ends
+ * at the column 30. */
+NAOS_TEST(narrow_width_breaks_between_items_with_indent_of_seven)
+{
+    clargs_help_options_t *options;
+    clargs_command_t *root = create_root();
+
+    add_all_kinds_of_items(root);
+    validate(root);
+
+    options = create_options(30);
+    check_usage_with(root, options,
+                     "Usage: tool [OPTIONS]\n"
+                     "       --output <FILE> <input>\n"
+                     "       [extra]...\n");
+
+    /* One column less, and "<input>" no longer fits behind the option. */
+    clargs_help_options_set_width(options, 29);
+    check_usage_with(root, options,
+                     "Usage: tool [OPTIONS]\n"
+                     "       --output <FILE>\n"
+                     "       <input> [extra]...\n");
+
+    /* Wide enough for everything: one line, as without a limit. */
+    clargs_help_options_set_width(options, 56);
+    check_usage_with(root, options, "Usage: tool [OPTIONS] --output <FILE> <input> [extra]...\n");
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
+/* "[COMMAND]" is an item like the others: it stays on the line when it
+ * fits and starts a new line when it does not. The whole line has 43
+ * bytes. */
+NAOS_TEST(command_marker_moves_to_next_line_when_it_does_not_fit)
+{
+    clargs_help_options_t *options;
+    clargs_command_t *root = create_root();
+
+    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
+    add_value(root, '\0', "key", clargs_type_string(), "KEY", true);
+    add_sub(root, "build");
+    validate(root);
+
+    options = create_options(43);
+    check_usage_with(root, options, "Usage: tool [OPTIONS] --key <KEY> [COMMAND]\n");
+
+    clargs_help_options_set_width(options, 42);
+    check_usage_with(root, options,
+                     "Usage: tool [OPTIONS] --key <KEY>\n"
+                     "       [COMMAND]\n");
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
+/* The boundary: an item whose last byte is at the column of the width
+ * stays on the line; with a width one column smaller, it starts the next
+ * line. "Usage: tool <source>" has 20 bytes and the whole line 29. */
+NAOS_TEST(item_that_just_fits_stays_and_one_column_less_breaks)
+{
+    clargs_help_options_t *options;
+    clargs_command_t *root = create_root();
+
+    add_positional(root, "source", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "target", CLARGS_ARITY_REQUIRED);
+    validate(root);
+
+    options = create_options(29);
+    check_usage_with(root, options, "Usage: tool <source> <target>\n");
+
+    clargs_help_options_set_width(options, 28);
+    check_usage_with(root, options, "Usage: tool <source>\n"
+                                    "       <target>\n");
+
+    clargs_help_options_set_width(options, 20);
+    check_usage_with(root, options, "Usage: tool <source>\n"
+                                    "       <target>\n");
+
+    clargs_help_options_set_width(options, 19);
+    check_usage_with(root, options, "Usage: tool\n"
+                                    "       <source>\n"
+                                    "       <target>\n");
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
+/* An item is not divided at a blank inside it: not the path, not a
+ * required option between its name and its value, and not inside a display
+ * name or a name that holds a blank. At the width 30, "Usage: My Tool
+ * --output" and "--output <File Name> <In" would fit. */
+NAOS_TEST(item_with_blank_inside_is_not_divided)
+{
+    clargs_help_options_t *options;
+    clargs_command_t *root = NULL;
+
+    clargs_test_allocator_install();
+    NAOS_REQUIRE_TRUE(clargs_command_create("My Tool", &root) == CLARGS_ERROR_NONE);
+
+    add_value(root, 'o', "output", clargs_type_string(), "File Name", true);
+    add_positional(root, "In Put", CLARGS_ARITY_REQUIRED);
+    validate(root);
+
+    options = create_options(30);
+    check_usage_with(root, options,
+                     "Usage: My Tool\n"
+                     "       --output <File Name>\n"
+                     "       <In Put>\n");
+
+    /* The whole line has 44 bytes. */
+    clargs_help_options_set_width(options, 44);
+    check_usage_with(root, options, "Usage: My Tool --output <File Name> <In Put>\n");
+
+    clargs_help_options_set_width(options, 43);
+    check_usage_with(root, options,
+                     "Usage: My Tool --output <File Name>\n"
+                     "       <In Put>\n");
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
+/* An item that is wider than the width is written as it is, on a line of
+ * its own: the path of a subcommand, which is one item with "Usage: ", and
+ * every other kind of item. */
+NAOS_TEST(item_wider_than_width_is_written_as_it_is)
+{
+    clargs_help_options_t *options;
+    clargs_command_t *root;
+    clargs_command_t *remote;
+    clargs_command_t *add;
+
+    /* No line can hold two items; nothing comes before the first item. */
+    root = create_root();
+    add_all_kinds_of_items(root);
+    validate(root);
+
+    options = create_options(1);
+    check_usage_with(root, options,
+                     "Usage: tool\n"
+                     "       [OPTIONS]\n"
+                     "       --output <FILE>\n"
+                     "       <input>\n"
+                     "       [extra]...\n");
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+
+    root = create_root();
+    remote = add_sub(root, "remote");
+    add = add_sub(remote, "add");
+    add_value(add, 'c', "configuration", clargs_type_string(), "FILE", true);
+    add_positional(add, "name", CLARGS_ARITY_REQUIRED);
+    validate(root);
+
+    options = create_options(1);
+    check_usage_with(remote, options,
+                     "Usage: tool remote\n"
+                     "       [COMMAND]\n");
+
+    /* The path, 22 bytes, and the option, 29 bytes with the indent, are
+     * wider than 20; "<name>" would fit behind neither. */
+    clargs_help_options_set_width(options, 20);
+    check_usage_with(add, options,
+                     "Usage: tool remote add\n"
+                     "       --configuration <FILE>\n"
+                     "       <name>\n");
+
+    /* An item that is too wide does not push the next one down when that
+     * one still fits behind it. */
+    clargs_help_options_set_width(options, 36);
+    check_usage_with(add, options,
+                     "Usage: tool remote add\n"
+                     "       --configuration <FILE> <name>\n");
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
+/* Adds seven positionals. With every item on one line,
+ *
+ *     Usage: tool <argument-1> ... <argument-5> <x> <argument-7>
+ *
+ * "<x>" ends at the column 80 and the whole line has 93 bytes. */
+static void add_positionals_beyond_80_columns(clargs_command_t *root)
+{
+    add_positional(root, "argument-1", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "argument-2", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "argument-3", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "argument-4", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "argument-5", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "x", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "argument-7", CLARGS_ARITY_REQUIRED);
+}
+
+/* The width 0 means no limit: the usage line is one line, however long. */
+NAOS_TEST(width_zero_gives_one_line)
+{
+    clargs_help_options_t *options;
+    clargs_command_t *root = create_root();
+
+    add_positionals_beyond_80_columns(root);
+    validate(root);
+
+    options = create_options(0);
+    check_usage_with(root, options,
+                     "Usage: tool <argument-1> <argument-2> <argument-3> <argument-4> "
+                     "<argument-5> <x> <argument-7>\n");
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
+/* Without help options (NULL) the width is the default, 80, as with help
+ * options that were just created: a line of exactly 80 bytes stays whole
+ * and the next item starts a new line. A width that is set takes effect. */
+NAOS_TEST(default_width_of_80_applies_without_options)
+{
+    static const char expected[] =
+        "Usage: tool <argument-1> <argument-2> <argument-3> <argument-4> <argument-5> <x>\n"
+        "       <argument-7>\n";
+    clargs_help_options_t *options = NULL;
+    clargs_command_t *root = create_root();
+
+    /* The first line of the expected text has 80 bytes. */
+    NAOS_REQUIRE_TRUE(strchr(expected, '\n') == expected + 80);
+
+    add_positionals_beyond_80_columns(root);
+    validate(root);
+
+    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+
+    check_usage_with(root, NULL, expected);
+    check_usage_with(root, options, expected);
+
+    clargs_help_options_set_width(options, 80);
+    check_usage_with(root, options, expected);
+
+    clargs_help_options_set_width(options, 79);
+    check_usage_with(root, options,
+                     "Usage: tool <argument-1> <argument-2> <argument-3> <argument-4> "
+                     "<argument-5>\n"
+                     "       <x> <argument-7>\n");
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
+/* The width of an item is the number of all its bytes, also when a name in
+ * it holds a newline: "--mode <two\nlines>" counts as 18 columns, not as
+ * the 6 of "lines>". The column that the next item is measured from is the
+ * one of the output: after that item it counts from the newline inside the
+ * name. */
+NAOS_TEST(item_with_newline_inside_counts_all_its_bytes)
+{
+    clargs_help_options_t *options;
+    clargs_command_t *root = create_root();
+
+    add_value(root, 'm', "mode", clargs_type_string(), "two\nlines", true);
+    add_positional(root, "input", CLARGS_ARITY_REQUIRED);
+    validate(root);
+
+    /* 11 + 1 + 18 is 30: the option just fits. */
+    options = create_options(30);
+    check_usage_with(root, options, "Usage: tool --mode <two\nlines> <input>\n");
+
+    /* One column less, and the option starts a new line. "<input>" stays
+     * behind it: "lines>" ends at the column 6. */
+    clargs_help_options_set_width(options, 29);
+    check_usage_with(root, options,
+                     "Usage: tool\n"
+                     "       --mode <two\nlines> <input>\n");
+
+    /* "lines> <input>" has 14 bytes. */
+    clargs_help_options_set_width(options, 14);
+    check_usage_with(root, options,
+                     "Usage: tool\n"
+                     "       --mode <two\nlines> <input>\n");
+
+    clargs_help_options_set_width(options, 13);
+    check_usage_with(root, options,
+                     "Usage: tool\n"
+                     "       --mode <two\nlines>\n"
+                     "       <input>\n");
+
+    clargs_help_options_destroy(options);
+    destroy_root(root);
+}
+
 /* ---- The write function -------------------------------------------------- */
 
 /* When the write function reports a failure, the call returns
@@ -556,6 +891,14 @@ NAOS_SUITE(help_usage,
     NAOS_ADD_TEST(subcommand_usage_has_path_from_root),
     NAOS_ADD_TEST(schema_strings_are_written_unchanged),
     NAOS_ADD_TEST(null_options_are_the_default_options),
+    NAOS_ADD_TEST(narrow_width_breaks_between_items_with_indent_of_seven),
+    NAOS_ADD_TEST(command_marker_moves_to_next_line_when_it_does_not_fit),
+    NAOS_ADD_TEST(item_that_just_fits_stays_and_one_column_less_breaks),
+    NAOS_ADD_TEST(item_with_blank_inside_is_not_divided),
+    NAOS_ADD_TEST(item_wider_than_width_is_written_as_it_is),
+    NAOS_ADD_TEST(width_zero_gives_one_line),
+    NAOS_ADD_TEST(default_width_of_80_applies_without_options),
+    NAOS_ADD_TEST(item_with_newline_inside_counts_all_its_bytes),
     NAOS_ADD_TEST(write_failure_is_reported_and_stops_the_calls)
 )
 

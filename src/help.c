@@ -88,55 +88,163 @@ static bool help_has_optional_option(const clargs_command_t *command)
     return false;
 }
 
-/* Separates the next item of the usage line from the one before it. */
-static void help_usage_separate(help_context_t *context)
+/* The blanks that start each line of the usage line after the first: the
+ * width of "Usage: ". */
+#define HELP_USAGE_INDENT ((size_t)7)
+
+/* The kinds of the items of the usage line that follow the path. */
+typedef enum help_usage_kind {
+    HELP_USAGE_OPTIONS,    /* "[OPTIONS]" */
+    HELP_USAGE_OPTION,     /* a required option */
+    HELP_USAGE_POSITIONAL, /* a positional */
+    HELP_USAGE_COMMAND     /* "[COMMAND]" */
+} help_usage_kind_t;
+
+/* One item of the usage line: a text that is never divided. */
+typedef struct help_usage_item {
+    help_usage_kind_t kind;
+    const clargs_option_t *option;         /* for HELP_USAGE_OPTION */
+    const clargs_positional_t *positional; /* for HELP_USAGE_POSITIONAL */
+} help_usage_item_t;
+
+/* Writes item to out: the one place that knows the text of an item, for
+ * the output and for the measuring. */
+static void help_usage_item_write(clargs_out_t *out, const help_usage_item_t *item)
 {
-    clargs_out_spaces(&context->out, 1);
+    switch (item->kind) {
+    case HELP_USAGE_OPTIONS:
+        clargs_out_string(out, "[OPTIONS]");
+        break;
+    case HELP_USAGE_OPTION:
+        clargs_help_item_usage_option(out, item->option);
+        break;
+    case HELP_USAGE_POSITIONAL:
+        clargs_help_item_positional_heading(out, item->positional);
+        break;
+    case HELP_USAGE_COMMAND:
+        clargs_out_string(out, "[COMMAND]");
+        break;
+    }
+}
+
+/* A write function that keeps nothing: it adds length to the size_t that
+ * user_data points to. The sum stops at the greatest value of a size_t
+ * instead of wrapping around. */
+static bool help_count_write(void *user_data, const char *text, size_t length)
+{
+    size_t *total = user_data;
+
+    (void)text;
+    *total = length > (size_t)-1 - *total ? (size_t)-1 : *total + length;
+    return true;
+}
+
+/*
+ * Returns the width of item: the number of all its bytes, also of those
+ * before a newline inside a name and of the newline itself. The item is
+ * written once to an output that only counts what it is given; the column
+ * of an output would not do, as it starts again at 0 after a newline.
+ * Inside an item no blank is remembered, so every byte reaches the count.
+ */
+static size_t help_usage_item_width(const help_usage_item_t *item)
+{
+    size_t width = 0;
+    clargs_out_t counter;
+
+    clargs_out_init(&counter, help_count_write, &width);
+    help_usage_item_write(&counter, item);
+    return width;
+}
+
+/*
+ * Separates item, the next item of the usage line, from the one before it:
+ * with one blank, or, when the width is not 0 and "the current column + 1 +
+ * the width of the item" is greater than it, with a newline and the indent
+ * of the usage line. An item that is wider than the width is so written as
+ * it is, on a line of its own.
+ *
+ * The current column is the one of the output. After an item with a
+ * newline inside a name it counts from that newline: it is the length of
+ * the last line of what was written, not the width of the item before.
+ */
+static void help_usage_separate(help_context_t *context, const help_usage_item_t *item)
+{
+    clargs_out_t *out = &context->out;
+
+    if (context->width != 0) {
+        size_t item_width = help_usage_item_width(item);
+
+        /* "column + 1 + item_width > width", written without a sum that
+         * could wrap around: the subtraction is done only when item_width
+         * is less than the width. */
+        if (item_width >= context->width ||
+            clargs_out_column(out) >= context->width - item_width) {
+            clargs_out_newline(out);
+            clargs_out_spaces(out, HELP_USAGE_INDENT);
+            return;
+        }
+    }
+
+    clargs_out_spaces(out, 1);
+}
+
+/* Writes item, an item of the usage line after the first, behind what
+ * separates it from the item before. */
+static void help_usage_add(help_context_t *context, const help_usage_item_t *item)
+{
+    help_usage_separate(context, item);
+    help_usage_item_write(&context->out, item);
 }
 
 /*
  * Writes the usage line of the command of context, with the newline that
  * ends it. The items, in their order: "Usage: " and the path of the
  * command, "[OPTIONS]", the required options, the positionals and
- * "[COMMAND]".
+ * "[COMMAND]". The line is broken between two items where it would go
+ * beyond the width; no item is divided.
  */
 static void help_write_usage_line(help_context_t *context)
 {
     const clargs_command_t *command = context->command;
     clargs_out_t *out = &context->out;
+    help_usage_item_t item;
     size_t count;
     size_t index;
 
-    /* The blank is part of the first item: it is written even when the
-     * name of the root starts with a newline. */
+    /* The first item: nothing separates it from anything, and it is not
+     * measured. The blank is part of it: it is written even when the name
+     * of the root starts with a newline. */
     clargs_out_text(out, "Usage: ", 7);
     help_write_path(out, command);
 
+    item.option = NULL;
+    item.positional = NULL;
+
     if (help_has_optional_option(command)) {
-        help_usage_separate(context);
-        clargs_out_string(out, "[OPTIONS]");
+        item.kind = HELP_USAGE_OPTIONS;
+        help_usage_add(context, &item);
     }
 
     /* Only an option that takes a value can be required. */
+    item.kind = HELP_USAGE_OPTION;
     count = clargs_command_option_count(command);
     for (index = 0; index < count; ++index) {
-        const clargs_option_t *option = clargs_command_option_at(command, index);
-
-        if (clargs_option_is_required(option)) {
-            help_usage_separate(context);
-            clargs_help_item_usage_option(out, option);
+        item.option = clargs_command_option_at(command, index);
+        if (clargs_option_is_required(item.option)) {
+            help_usage_add(context, &item);
         }
     }
 
+    item.kind = HELP_USAGE_POSITIONAL;
     count = clargs_command_positional_count(command);
     for (index = 0; index < count; ++index) {
-        help_usage_separate(context);
-        clargs_help_item_positional_heading(out, clargs_command_positional_at(command, index));
+        item.positional = clargs_command_positional_at(command, index);
+        help_usage_add(context, &item);
     }
 
     if (clargs_command_subcommand_count(command) != 0) {
-        help_usage_separate(context);
-        clargs_out_string(out, "[COMMAND]");
+        item.kind = HELP_USAGE_COMMAND;
+        help_usage_add(context, &item);
     }
 
     clargs_out_newline(out);

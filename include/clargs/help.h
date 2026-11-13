@@ -166,7 +166,7 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
  *     Usage: tool remote add [OPTIONS] --output <FILE> <input> [extra]...
  *
  * and passes it to write_fn, together with user_data. The text ends with
- * one '\n'. Its items are separated by one blank each, in this order:
+ * one '\n'. Its items, in this order:
  *
  * - "Usage: " and the path of command: the names of the commands from the
  *   root down to command, separated by one blank each.
@@ -182,6 +182,15 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
  *   added: "<name>" for one that takes exactly one argument, "[name]" for
  *   none or one, "[name]..." for none or more, "<name>..." for one or more.
  * - "[COMMAND]", when command has a subcommand.
+ *
+ * Two items are separated by one blank. When the item would then go beyond
+ * the width of the help options, a newline and 7 blanks, the width of
+ * "Usage: ", stand in the place of that blank: the usage line is broken
+ * into several lines, and no line ends with a blank. An item is never
+ * divided, also not at a blank inside it: an item that is wider than the
+ * width is written as it is, on a line of its own, and the first item
+ * always starts the text. The width of an item is the number of its bytes.
+ * With the width 0 the items are all on one line.
  *
  * Only what command itself has is shown: not the options of its parent,
  * and nothing of its subcommands. The strings of the schema are written as
