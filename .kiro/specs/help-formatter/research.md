@@ -130,3 +130,101 @@ Option B の上で、「スキーマから行の並び（見出しと説明の�
   - 説明文が改行で終わるときの注記の位置。
 - **Research Needed**:
   - Windows で、DLL の境界を越えて `FILE *` を渡すときの条件（C ランタイムの一致）と、文書での書き方。
+
+---
+
+# Research & Design Decisions: help-formatter
+
+## Summary
+
+- **Feature**: `help-formatter`
+- **Discovery Scope**: Extension（既存の層の上に、新しいモジュールを足す。外部の依存はない）
+- **Key Findings**:
+  - command-schema の公開の読み取りだけで、文面の材料がすべて揃う。上流の変更は要らない。
+  - 注記は複数の部品からなり、語が部品をまたぐ（`json` と `,`）。折り返しを単純に保つには、項目ごとに連続した文字列にする必要があり、ここだけがメモリを確保する。
+  - Windows では、動的ライブラリと利用者のプログラムの C ランタイムが違うと、`FILE *` を境界を越えて渡せない。`FILE *` の補助は、公開ヘッダのインライン関数にする。
+- **参照した手引き**: このスキルの `rules/design-principles.md`、`rules/design-discovery-light.md`、`rules/design-synthesis.md`、`rules/design-review-gate.md`。リポジトリの `docs/conventions.md`、`docs/ownership.md`。既存の設計（argv-parser）の構成に合わせた。UI やアクセシビリティの手引きは、対象が端末の文面なので使っていない。
+
+## Research Log
+
+### 折り返しと注記
+- **Context**: 説明文と注記を 1 つの流れとして折り返す（5.9）。確保なしで書けるかを調べた。
+- **Sources Consulted**: `requirements.md` の要件 5、7。`src/vec.h`。
+- **Findings**:
+  - 説明文は連続した 1 つの文字列なので、そのまま折り返せる。
+  - 注記は、固定の語句とスキーマの文字列を交互に並べたもので、`a` と `,`、`x` と `]` のように、語が部品の境目をまたぐ。部品ごとに折り返しを判断すると、語の長さが分からず、幅を 1〜2 桁超える行ができる。
+  - 選択肢の数に上限がないので、スタックの固定長の領域には置けない。
+- **Implications**: 項目ごとに、説明文と注記を 1 つの領域に足してから折り返す。領域は `clargs_vec_t` を使い回す。`Wrap` は、連続した 1 つの文字列だけを受け取る純粋な関数になり、単独でテストできる。
+
+### `FILE *` を動的ライブラリに渡すこと
+- **Context**: ギャップ分析の Research Needed。
+- **Sources Consulted**: Microsoft Learn「Potential errors passing CRT objects across DLL boundaries」（https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries）。この文書の内容は、設計の時点で取得し直しておらず、記憶に基づく。
+- **Findings**:
+  - `FILE *` などの C ランタイムのオブジェクトは、それを作った C ランタイムの実体の中でしか使えない。DLL と実行ファイルが別の実体を使う（片方が静的リンク、または Debug と Release の組み合わせ）と、未定義の動作になる。
+  - 利用者が Debug 構成で、Release 構成の `clargs.dll` を使うのは、ふつうにある組み合わせである。
+- **Implications**: ライブラリの中で `fwrite()` を呼ばない。`clargs_help_print()` を公開ヘッダの `static inline` 関数にすれば、`fwrite()` は利用者の側でコンパイルされ、境界を越えるのは書き込み関数のポインタと `void *` だけになる。
+
+### 既存の検査との関係
+- **Context**: 公開ヘッダにインライン関数を置くのは初めてである。
+- **Sources Consulted**: `cmake/ClargsCheckExports.cmake`、`tests/CMakeLists.txt`、`docs/conventions.md`。
+- **Findings**: export の検査は、`CLARGS_API` の付いた宣言を集める。`static inline` の定義は対象にならない。利用者のプログラムのビルドの検査（`tests/consumer`）は、`clargs.h` を取り込むので、ヘッダのインライン関数がすべてのコンパイラでコンパイルされることも確かめられる。
+- **Implications**: 検査の変更は要らない。`docs/conventions.md` に、インライン関数の扱いを 1 項目足す。
+
+## Architecture Pattern Evaluation
+
+| Option | Description | Strengths | Risks / Limitations | Notes |
+|--------|-------------|-----------|---------------------|-------|
+| 逐次の書き出し | 先頭から順に書き込み関数へ渡す。項目のセルだけを領域に作る | 確保が少ない。部品が小さく、単独でテストできる | 失敗のとき、途中までの文面が出力先に残る | 採用。12.4 が認めている |
+| 全体を組み立てる | 文面の全体を領域に作り、最後に 1 回で渡す | 途中までの出力がない | 確保が文面の長さに比例する。usage 行だけの生成も確保する | 不採用 |
+| 2 層（行の並びを作る層と、書き出す層） | 中間のデータ構造を持つ | 別の形式に使い回せる | 使い道が初版にない。確保と失敗の経路が増える | 不採用。別の形式は別スペック（brief） |
+
+## Design Decisions
+
+### Decision: 見出しの幅を、桁だけを数える出口で数える
+- **Context**: 説明の列を決めるには、出力の前に、すべての見出しの幅が要る（6.3）。
+- **Alternatives Considered**:
+  1. 幅を計算する関数と、出力する関数を別に書く
+  2. 見出しを領域に作って、長さを得る
+  3. 出口（`Out`）に「数えるだけ」の動作を持たせ、同じ関数を 2 回呼ぶ
+- **Selected Approach**: 3。
+- **Rationale**: 表記の規則が 1 か所になり、幅と文面がずれない。確保しない。
+- **Trade-offs**: 見出しを 2 回組み立てる。項目は数十個の想定で、問題にならない。
+- **Follow-up**: `help_layout_test.c` で、列が見出しの幅と合うことを、種類ごとに確かめる。
+
+### Decision: 設定関数は失敗せず、値を 65535 で打ち切る
+- **Context**: 8.4、8.5。字下げや表示幅に極端な値を渡されると、桁の計算が桁あふれする。
+- **Alternatives Considered**:
+  1. エラーコードを返して拒む（新しいエラーコードが要る）
+  2. `assert` の前提条件にする
+  3. 上限で打ち切る
+- **Selected Approach**: 3。
+- **Rationale**: 表示幅は、利用者が環境変数や端末から得た値を渡すことがあり、プログラムの誤りとは言えない。拒んでも、利用者にできることは値を小さくすることだけである。65535 桁を超える設定に実用上の意味はない。
+- **Trade-offs**: 8.4 の「その値を使う」に、上限という但し書きが付く。文書に書く。
+- **Follow-up**: 上限を超える値のテストを `help_layout_test.c` に入れる。
+
+### Decision: 要件が定めていなかった 3 点
+- **Context**: ギャップ分析で見つかった、見出しに入る改行、空の説明文、改行で終わる説明文と注記。
+- **Selected Approach**:
+  - 見出しになる文字列は、変換せずにそのまま出す。幅は全体のバイト数で数える。
+  - 末尾の改行を除いて空になる説明文は、設定されていないものとして扱う。
+  - 説明文が改行で終わるときは、注記を、空白を置かずに次の行から始める。セルの末尾の改行は出さない。
+- **Rationale**: どれも、既存の要件（4.5、1.5、6.7、7.7）と矛盾しない、いちばん単純な扱いである。要件の変更は要らないと判断した。
+- **Trade-offs**: 位置引数の名前や値の表示名に改行を入れると、列が崩れる。文書に制限として書く。
+- **Follow-up**: 要件のレビューで、利用者がこの扱いを変えたい場合は、要件に基準を足して設計を直す。
+
+### Synthesis の結果
+- **Generalization**: 説明文の折り返し（1.9）と、セルの折り返し（5.9、6.8）は、開始の桁が違うだけの同じ処理である。`clargs_wrap_write()` 1 つにした。usage 行の折り返し（2.8）は、単位が項目で、項目の中の空白で分けないので、別の処理として `Help` に置いた。
+- **Build vs. Adopt**: 実行時の依存は C 標準ライブラリだけ、という制約があるので、外部のライブラリは採用しない。`printf` 系の書式化は、ロケールの影響を避けるために使わない。伸びる領域は、既存の `clargs_vec_t` を使い、新しい部品を作らない。
+- **Simplification**: 設定の読み取りの関数（getter）は、要件にないので作らない。`Out` の内部のバッファは持たない。`FILE *` の補助のためのソースは作らず、ヘッダの数行にした。
+
+## Risks & Mitigations
+
+- `static inline` の関数が、使わない利用者のビルドで警告になる（MSVC の `/W4` など）— CI のすべてのコンパイラで `tests/consumer` と既存のテストをビルドして確かめる。警告になる場合は、`help.h` の中で抑止する。
+- 文面の規則の細部（空白 1 つ）の違いが、利用者のテストを壊す — 規則を `docs/help.md` に書き、文面の全体を比べるテストを持つ。
+- テキストモードの `FILE *` で、Windows の文面が `\r\n` になる — 仕様どおりである。バイト単位のテストは、書き込み関数とバッファで行い、`FILE *` のテストは `"wb+"` で開く。
+
+## References
+
+- [Potential errors passing CRT objects across DLL boundaries](https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries) — `FILE *` を DLL の境界で渡せない条件
+- `docs/conventions.md`、`docs/ownership.md` — 命名、手順、所有権の規約
+- `.kiro/steering/roadmap.md` — 境界と Future boundaries
