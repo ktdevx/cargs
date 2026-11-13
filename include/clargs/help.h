@@ -5,23 +5,33 @@
  * of a help message leaves the library: the library passes the text, part
  * by part, to a function of the caller, and the caller decides where it
  * goes. It also holds the help options, clargs_help_options_t: the
- * settings of the layout of the text.
+ * settings of the layout of the text, and the function that generates the
+ * usage line of a command, clargs_help_write_usage().
  *
  * Ownership:
  *
  * - The caller creates the help options and destroys them with
  *   clargs_help_options_destroy(). They are independent of every schema.
+ * - A generation borrows the schema and the help options for the call. It
+ *   changes neither, keeps nothing allocated when it returns, and returns
+ *   nothing that the caller has to free.
  *
  * Errors:
  *
- * - A NULL pointer where none is allowed is an error of the program, not
- *   an error code: see the preconditions of each function.
+ * - A generation returns a clargs_error_t. When the write function reports
+ *   a failure, the generation stops and returns CLARGS_ERROR_WRITE_FAILED;
+ *   the part of the text that was passed before stays where the write
+ *   function put it.
+ * - A NULL pointer where none is allowed and a schema that is not validated
+ *   are errors of the program, not error codes: see the preconditions of
+ *   each function.
  */
 #ifndef CLARGS_HELP_H
 #define CLARGS_HELP_H
 
 #include <clargs/error.h>
 #include <clargs/export.h>
+#include <clargs/schema.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -149,6 +159,59 @@ CLARGS_API void clargs_help_options_set_indent(clargs_help_options_t *options, s
  *   several threads at the same time.
  */
 CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *options, size_t column);
+
+/*
+ * Generates the usage line of command, such as
+ *
+ *     Usage: tool remote add [OPTIONS] --output <FILE> <input> [extra]...
+ *
+ * and passes it to write_fn, together with user_data. The text ends with
+ * one '\n'. Its items are separated by one blank each, in this order:
+ *
+ * - "Usage: " and the path of command: the names of the commands from the
+ *   root down to command, separated by one blank each.
+ * - "[OPTIONS]", when command has an option that is not required: a flag,
+ *   a negatable flag, a count, or an option with a value that is not
+ *   required.
+ * - Each required option of command, in the order in which the options
+ *   were added: "--" and the long name, or "-" and the short name when the
+ *   option has no long name, then a blank and the display name of the value
+ *   between "<" and ">". When no display name is set, the name of the value
+ *   type stands in its place.
+ * - Each positional of command, in the order in which the positionals were
+ *   added: "<name>" for one that takes exactly one argument, "[name]" for
+ *   none or one, "[name]..." for none or more, "<name>..." for one or more.
+ * - "[COMMAND]", when command has a subcommand.
+ *
+ * Only what command itself has is shown: not the options of its parent,
+ * and nothing of its subcommands. The strings of the schema are written as
+ * they are, byte by byte.
+ *
+ * options are the help options, or NULL for the default value of every
+ * setting. The call does not change them.
+ *
+ * The function allocates no memory, does not change the schema and may be
+ * called for the same schema and help options from several threads at the
+ * same time.
+ *
+ * Returns CLARGS_ERROR_NONE on success, and CLARGS_ERROR_WRITE_FAILED when
+ * write_fn returns false. write_fn is then not called again, and the part
+ * of the text that it took before the failure stays where it put it: the
+ * output may hold the start of the usage line.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ * - The schema that command belongs to is validated: see
+ *   clargs_command_is_validated(). Checked with assert.
+ * - write_fn is not NULL. Checked with assert.
+ * - options may be NULL. If not, they have not been destroyed, and no other
+ *   thread is changing them during the call. Not checked.
+ * - user_data may be NULL.
+ */
+CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *command,
+                                                  const clargs_help_options_t *options,
+                                                  clargs_help_write_fn_t write_fn, void *user_data);
 
 #ifdef __cplusplus
 }
