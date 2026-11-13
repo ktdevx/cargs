@@ -674,7 +674,9 @@ ctest --test-dir build-shared --output-on-failure
 
 ## バージョンについての注意
 
-- バージョンの唯一の出どころは `include/clargs/version.h` の `CLARGS_VERSION_MAJOR`、`CLARGS_VERSION_MINOR`、`CLARGS_VERSION_PATCH` である。ビルドがこのヘッダを文字列として読むので、3 つのマクロは 1 行ずつ、`#define CLARGS_VERSION_<PART> <整数>` の形で、先頭にゼロを付けない 10 進の 0〜255 で書く。ほかの場所にバージョンの数字を書かない。
+- バージョンの唯一の出どころは `include/clargs/version.h` の `CLARGS_VERSION_MAJOR`、`CLARGS_VERSION_MINOR`、`CLARGS_VERSION_PATCH`、`CLARGS_VERSION_PRERELEASE` の 4 つのマクロである。ビルドがこのヘッダを文字列として読むので、4 つのマクロは 1 行ずつ書く。数字の 3 つのマクロは `#define CLARGS_VERSION_<PART> <整数>` の形で、先頭にゼロを付けない 10 進の 0〜255 で書く。ほかの場所にバージョンの数字を書かない。
+- `CLARGS_VERSION_PRERELEASE` は `#define CLARGS_VERSION_PRERELEASE "<識別子>"` の形で、1 つの文字列リテラルとして書く。中身は SemVer 2.0.0 のプレリリースの識別子で、先頭のハイフンを付けない（例 `"rc.1"`）。識別子は `.` で区切り、それぞれを `[0-9A-Za-z-]` の文字で書く。数字だけの識別子は先頭にゼロを付けない。正式版では空の文字列 `""` にする。形が違うと構成が失敗する。
+- バージョンは手で上げない。リリースのワークフロー **Release PR** が `include/clargs/version.h` と `CHANGELOG.md` を一緒に書き換え、リリース PR を作る。手順は[リリース手順書](releasing.md)に、バージョンの上げ方の方針は[バージョン方針](versioning.md)にある。
 - `CLARGS_VERSION_NUMBER` と `CLARGS_MAKE_VERSION()` は `(unsigned long)` のキャストを含むので、`#if` では使えない。`#if` では `CLARGS_VERSION_MAJOR` などを個別に比べる。
 
   ```c
@@ -682,3 +684,8 @@ ctest --test-dir build-shared --output-on-failure
   ```
 
 - メジャーが 0 の間、`find_package` の互換判定は「同じマイナー」である。`find_package(CLArgs 0)` や範囲指定（`0.1...1`）では見つからない。バージョンを指定するなら、`find_package(CLArgs 0.1)` のようにマイナーまで書く。メジャーが 1 以上になると「同じメジャー」になる。
+- パッケージでは、数字の部分と完全なバージョンを分けて扱う。`project()` には数字の部分だけを渡すので、`PROJECT_VERSION`、`find_package` の互換判定、SOVERSION は数字だけである。
+  - `find_package(CLArgs)` が設定する `CLArgs_VERSION` は数字の部分（例 `0.2.0`）である。
+  - `CLArgs_VERSION_FULL` は完全なバージョン（例 `0.2.0-rc.1`）である。`CLArgs_VERSION_PRERELEASE` はプレリリースの識別子（例 `rc.1`）である。正式版では `CLArgs_VERSION_FULL` は `CLArgs_VERSION` と同じで、`CLArgs_VERSION_PRERELEASE` は空である。
+  - pkg-config の `clargs.pc` の `Version` は完全なバージョンである。
+  - `find_package` は数字の部分だけを比べるので、`0.2.0-rc.1` も `find_package(CLArgs 0.2)` で見つかる。pkg-config は `0.2.0-rc.1` を `0.2.0` より新しいとみなす。詳しくは[バージョン方針](versioning.md)にある。
