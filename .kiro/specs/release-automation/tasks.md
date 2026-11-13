@@ -70,7 +70,7 @@
   - 完了の目安: ワークフローの YAML が構文として読め、`git diff` で既存の 2 つのジョブの差分が `needs` と `if` の行だけである。集約ジョブの判定を、`docs_only` と各ジョブの結果の組（成功、失敗、取り消し、文書だけでの省略、文書だけでないのに省略）について、手元で同じ bash を環境変数を変えて走らせて確かめる
   - _Requirements: 4.5, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 10.5_
 
-- [ ] 4.2 リリース PR のワークフローを作る
+- [x] 4.2 リリース PR のワークフローを作る
   - 設計の ReleasePRWorkflow の起動、concurrency、権限、ステップ（`main` の確認、ブランチの有無、タグの一覧、3.1 のスクリプト、ブランチとコミット、ほかの変更がないことの確認、PR の作成、CI の dispatch、実行の要約）のとおりに作る
   - 入力は `env:` で渡し、`run:` に式で直接埋め込まない。PR の本文は設計の雛形どおり英語で書き、リリース手順書へリンクする
   - 完了の目安: ワークフローの YAML が構文として読め、`run:` の中に `inputs` や `github.event` の式が直接現れない。ジョブの権限が `contents: write`、`pull-requests: write`、`actions: write` だけで、最上位は空である。3.1 のスクリプトを呼ぶ行の引数が、そのスクリプトの入力の表と一致する
@@ -139,3 +139,4 @@
 - 3.1: `tools/release/prepare.cmake` の入力は `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_DATE`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_TAGS_FILE`、`CLARGS_RELEASE_OUTPUT`（任意）、`CLARGS_RELEASE_CHECK_ONLY`（任意）。出力は `version=`、`tag=`、`prerelease=`。バイト単位の読み込みは `_clargs_prepare_read_bytes` に写しがある（`ClargsVersionHeader.cmake` の private 関数と重複。3.2 で共通化を検討）。
 - 3.2: `tools/release/publish.cmake` の入力は `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_NOTES`、`CLARGS_RELEASE_OUTPUT`（任意）。出力は `prerelease=`、`title=v<V>`。バイト単位の読み込みは `tools/release/ClargsReadBytes.cmake` の `clargs_read_bytes(<path> <what> <out>)` に共通化した。
 - 4.1: actionlint 1.7.7 は scratchpad に go install で入れた（/tmp/claude-0/-home-user-cargs/5e68a7da-d27a-50a0-b960-8332b131ec92/scratchpad/gopath/bin/actionlint）。ワークフローの確認に使える。ci.yml の required check は `CI result`（ジョブ id は `result`）。
+- 4.2: release-pr.yml は GITHUB_TOKEN で `gh pr create` するので、リポジトリの設定 "Allow GitHub Actions to create and approve pull requests" が要る（5.3 の手順書に書く）。PR 作成に失敗したらブランチを消してやり直す、CI の dispatch に失敗したら手で CI を起動する、という案内を手順書と合わせる。
