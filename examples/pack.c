@@ -15,7 +15,7 @@
  *   6. reads the values and where they came from;
  *   7. destroys the result, the schema and the value types, in this order.
  *
- * docs/guides/guide.md walks through this program step by step, and the API
+ * docs/guides/tutorial.md walks through this program step by step, and the API
  * pages in docs/references/ (schema.md, types.md, parse.md and help.md) are
  * the reference for each function it calls.
  *

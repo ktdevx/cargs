@@ -140,7 +140,7 @@ error = argx_help_write(root, NULL, write_to_stream, stdout);
 - `*length`, if `length` is not `NULL`, receives the length of the whole text.
 - **Truncation is not a failure.** The text was cut when `*length >= size`, possibly mid-line.
 
-To get the whole text, call with `size` 0 for the length, then with `*length + 1` bytes ([Guide](../guides/guide.md#getting-the-help-as-a-string)).
+To get the whole text, call with `size` 0 for the length, then with `*length + 1` bytes ([How-to](../guides/how-to.md#getting-the-help-as-a-string)).
 
 ## On failure
 

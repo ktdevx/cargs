@@ -9,8 +9,9 @@ This page lists the documents of ArgX, with a one-line description of each. The 
 
 ## Guides
 
-- [Guide](guides/guide.md): the concepts, then a walk through the complete program [examples/pack.c](../examples/pack.c) step by step: value types, the schema, validation, parsing and `--help`, printing the help and parse errors, reading the values and destroying, with recipes.
-- [FAQ](guides/faq.md): short answers to common questions about command lines, values, the help and building.
+- [Tutorial](guides/tutorial.md): the concepts, then a walk through the complete program [examples/pack.c](../examples/pack.c) step by step, from value types to destroying the result.
+- [How-to](guides/how-to.md): recipes for specific tasks: the help as a string, a parse error with the usage line from a fixed buffer, and wide-character argv with `wmain`.
+- [FAQ](guides/faq.md): short answers to common questions about command lines, values, the help and debugging.
 - [Design](guides/design.md): why the library works the way it does, one decision at a time.
 
 ## References

@@ -62,7 +62,7 @@ argx_error_t argx_type_create(const char *name, size_t value_size,
 | `release_fn` | `void (*)(void *value, void *context)`, or `NULL` if values need no release |
 | `context` | User data for both functions, or `NULL` |
 
-An example is in the [Guide](../guides/guide.md#1-create-the-value-types).
+An example is in the [Tutorial](../guides/tutorial.md#1-create-the-value-types).
 
 ### The conversion function
 

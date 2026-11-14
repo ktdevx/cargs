@@ -7,7 +7,7 @@ Why ArgX works the way it does. Each section gives a decision, its reason and it
 Parsing and help generation print nothing, never end the process and read no environment variables. The help is handed to a write function of the program or written into its buffer.
 
 - **Why:** a library cannot know how a program reports errors or what its exit statuses mean. Results and help also depend only on the schema and argv, so tests can compare them exactly.
-- **Cost:** even the simplest program writes a few lines to print the help and the parse error ([Guide](guide.md#5-print-the-help-or-the-parse-error)), and the layout of the help cannot change beyond the help options.
+- **Cost:** even the simplest program writes a few lines to print the help and the parse error ([Tutorial](tutorial.md#5-print-the-help-or-the-parse-error)), and the layout of the help cannot change beyond the help options.
 - **Rules:** [Parsing](../references/parse.md), [Help and Usage](../references/help.md), [Help Text Layout](../references/help-layout.md).
 
 ## `--help` is an ordinary option

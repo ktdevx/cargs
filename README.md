@@ -179,7 +179,7 @@ The tests fetch Naos from GitHub; to build offline, see [Building and testing](d
 
 ## Documentation
 
-Start with the [Guide](docs/guides/guide.md), then the [FAQ](docs/guides/faq.md). Every document is listed in the [documentation index](docs/README.md).
+Start with the [Tutorial](docs/guides/tutorial.md), then the [How-to](docs/guides/how-to.md) and the [FAQ](docs/guides/faq.md). Every document is listed in the [documentation index](docs/README.md).
 
 ## Contributing
 

@@ -8,7 +8,7 @@ An option is recognized only on the command that defines it, and the library add
 
 ### Why does `pack create --help` report a missing required option?
 
-It is a parse error, but the result still holds `--help`. Check `--help` before the parse error ([Guide](guide.md#4-parse-argv-and-check---help-first)).
+It is a parse error, but the result still holds `--help`. Check `--help` before the parse error ([Tutorial](tutorial.md#4-parse-argv-and-check---help-first)).
 
 ### How do I require a subcommand?
 

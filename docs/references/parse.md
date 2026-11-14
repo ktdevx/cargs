@@ -139,7 +139,7 @@ The result holds what was read before the error, with the source `COMMAND_LINE`:
 
 ## Wide-character argv
 
-`argx_parse_wide`, available on every platform, converts each element to UTF-8 and parses it as `argx_parse` would. On Windows, it receives non-ASCII arguments from `wmain` without code-page loss ([Guide](../guides/guide.md#wide-character-argv-with-wmain)).
+`argx_parse_wide`, available on every platform, converts each element to UTF-8 and parses it as `argx_parse` would. On Windows, it receives non-ASCII arguments from `wmain` without code-page loss ([How-to](../guides/how-to.md#wide-character-argv-with-wmain)).
 
 | Width of `wchar_t` | Example | Read as |
 | --- | --- | --- |
