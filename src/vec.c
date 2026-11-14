@@ -22,7 +22,7 @@
  * Makes room for at least one more item in a full array. On failure the
  * array is unchanged.
  */
-static argx_error_t argx_vec_grow(argx_vec_t *vec)
+static argx_error_t grow(argx_vec_t *vec)
 {
     size_t new_capacity;
     void *new_items;
@@ -80,7 +80,7 @@ argx_error_t argx_vec_push(argx_vec_t *vec, const void *item)
 
     if (vec->count == vec->capacity)
     {
-        argx_error_t error = argx_vec_grow(vec);
+        argx_error_t error = grow(vec);
 
         if (error != ARGX_ERROR_NONE)
         {
