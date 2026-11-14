@@ -216,12 +216,4 @@ The rules of the text itself are in [Help Text Layout](../references/help-layout
 
 ## Tests
 
-| Directory | What it tests |
-| --- | --- |
-| `tests/public/` | The public API, one or more files for each part |
-| `tests/internal/` | The utilities and the internal functions of the result |
-| `tests/support/` | Not tests: the test allocator and the code shared by the tests |
-| `tests/consumer/` | Using an installed package from another project |
-| `tests/release/` | The release scripts in `tools/` |
-
-How to add each kind of test is in [Development Procedures](procedures.md).
+The tests are in `tests/`, apart from the example programs in `examples/`. The kinds of tests and where each one is are in [Testing](testing.md#kinds-of-tests).

@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to ArgX. Everyone who takes part in this project, including in issues, pull requests and discussions, is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-This document is the entry point for contributors. It covers how to report problems, set up a development environment, build and test, and submit a pull request. It does not repeat the rules for writing code or the steps for common changes: those are in [Development Conventions](docs/development/conventions.md) and [Development Procedures](docs/development/procedures.md). How to use the library is described in the [README](README.md) and the documents it links to.
+This document is the entry point for contributors. It covers how to report problems, set up a development environment, build and test, and submit a pull request. It does not repeat the rules for writing code, the steps for common changes or the rules for tests: those are in [Development Conventions](docs/development/conventions.md), [Development Procedures](docs/development/procedures.md) and [Testing](docs/development/testing.md). How to use the library is described in the [README](README.md) and the documents it links to.
 
 ## Reporting bugs and requesting features
 
@@ -56,7 +56,7 @@ These runs include the allocation check and, in the shared configuration, the ex
 
 ## Coding conventions
 
-To find where a change belongs, read [Architecture](docs/development/architecture.md). Before you change the code, read [Development Conventions](docs/development/conventions.md). It describes the naming conventions, where files go, the implementation rules and the rules for writing tests. Follow it instead of choosing names or locations on your own. The steps for adding public functions, headers, sources, tests and error codes are in [Development Procedures](docs/development/procedures.md).
+To find where a change belongs, read [Architecture](docs/development/architecture.md). Before you change the code, read [Development Conventions](docs/development/conventions.md). It describes the naming conventions, where files go and the implementation rules. Follow it instead of choosing names or locations on your own. The steps for adding public functions, headers, sources and error codes are in [Development Procedures](docs/development/procedures.md). How to run, write and add tests is in [Testing](docs/development/testing.md).
 
 The rules for ownership, lifetime, `NULL`, allocators, failures and threads that every public function follows are in [Ownership and Lifetime](docs/references/ownership.md). How the library's own code applies them is described in [Applying the ownership rules](docs/development/conventions.md#applying-the-ownership-rules).
 
@@ -70,7 +70,7 @@ When a change affects behavior or the API, update the documentation in the same 
 
 1. Fork the repository and create a branch for your change from `main`.
 2. Make the change, following [Development Conventions](docs/development/conventions.md) and [Development Procedures](docs/development/procedures.md).
-3. Add or update tests for the change. The procedures are in [Adding a test of the public API](docs/development/procedures.md#adding-a-test-of-the-public-api) and [Adding a test of an internal function](docs/development/procedures.md#adding-a-test-of-an-internal-function). If no test is needed, explain why in the pull request.
+3. Add or update tests for the change. The procedures are in [Adding a test of the public API](docs/development/testing.md#adding-a-test-of-the-public-api) and [Adding a test of an internal function](docs/development/testing.md#adding-a-test-of-an-internal-function). If no test is needed, explain why in the pull request.
 4. Build and run the tests locally, as described in [Building and testing](#building-and-testing).
 5. Update the documentation and record the change, as described in [Documentation and comments](#documentation-and-comments) and [Recording changes](#recording-changes).
 6. Open a pull request against `main`. Fill in the pull request template: describe the change and why it is needed, link the related issues, and go through the checklist.

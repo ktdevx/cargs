@@ -1,6 +1,6 @@
 # Development Procedures
 
-The steps for common changes to ArgX. The rules they follow are in [Development Conventions](conventions.md).
+The steps for common changes to ArgX. The rules they follow are in [Development Conventions](conventions.md). Adding and writing tests is in [Testing](testing.md).
 
 ## Procedures
 
@@ -10,7 +10,7 @@ The steps for common changes to ArgX. The rules they follow are in [Development 
 | [Add a public header](#adding-a-public-header) | Put it in `include/argx/`, include it from `argx.h`, and add an API page |
 | [Add a source file](#adding-a-source-file) | Put it in `src/` and add it to `ARGX_SOURCES` in `src/CMakeLists.txt` |
 | [Add an internal function](#adding-an-internal-function) | Declare it without `ARGX_API` in an internal header in `src/` |
-| [Add a test](#adding-a-test-of-the-public-api) | Put it in `tests/public/` or `tests/internal/` and add `argx_add_test()` to `tests/CMakeLists.txt` |
+| [Add a test](testing.md#adding-a-test-of-the-public-api) | Put it in `tests/public/` or `tests/internal/` and add `argx_add_test()` to `tests/CMakeLists.txt` |
 | Add a CMake module | Put it in `cmake/ArgX<Name>.cmake` and `include("${CMAKE_CURRENT_LIST_DIR}/cmake/ArgX<Name>.cmake")` |
 | [Add an error code](#adding-an-error-code) | Add a line at the end of `ARGX_ERROR_LIST` and a row to [Error Codes](../references/errors.md) |
 
@@ -91,44 +91,6 @@ int argx_example_twice(int value);
 #endif /* ARGX_EXAMPLE_INTERNAL_H */
 ```
 
-### Adding a test of the public API
-
-Create `tests/public/example_test.c`, including only public headers.
-
-```c
-/*
- * Tests of the public example API: <argx/example.h>.
- */
-#include <argx/argx.h>
-
-#include <naos/naos.h>
-
-NAOS_TEST(adds_two_numbers)
-{
-    NAOS_CHECK_INT_EQ(argx_example_add(1, 2), 3);
-}
-
-NAOS_SUITE(example,
-    NAOS_ADD_TEST(adds_two_numbers)
-)
-
-NAOS_MAIN(
-    NAOS_ADD_SUITE(example)
-)
-```
-
-```cmake
-argx_add_test(example SOURCES public/example_test.c)
-```
-
-### Adding a test of an internal function
-
-Create `tests/internal/example_internal_test.c`, named after the internal header, and include `"example_internal.h"`. The test is written like a public one.
-
-```cmake
-argx_add_test(example_internal SOURCES internal/example_internal_test.c INTERNAL)
-```
-
 ### Adding an error code
 
 Add `X(name, description)` at the **end** of `ARGX_ERROR_LIST` in `include/argx/error.h`, and a row to [Error Codes](../references/errors.md). `argx_error_t`, `argx_error_message()` and their test are generated from the list.
@@ -144,48 +106,6 @@ Add `X(name, description)` at the **end** of `ARGX_ERROR_LIST` in `include/argx/
 - **Name** it `ARGX_ERROR_<WHAT>`, with a short, unique, lowercase description (`"out of memory"`).
 - **Only runtime failures become error codes.** A programming error of the caller (`NULL`, an index out of range, a value outside an enumeration) is a [precondition](conventions.md#checking-preconditions). Schema definitions whose strings or combinations are invalid are runtime failures ([Design](../guides/design.md#runtime-failures-are-error-codes-programming-errors-are-preconditions)).
 - An error code tells only the kind of failure, not its position or target.
-
-### Using the test allocator
-
-The test allocator fails the request you choose and counts requests, live blocks and contract violations. Add `support/test_allocator.c` to the `SOURCES` of `argx_add_test()` and include `"../support/test_allocator.h"`. It works in both public and internal tests.
-
-| Function | What it does |
-| --- | --- |
-| `argx_test_allocator_install()` | Resets the counts and sets the test allocator |
-| `argx_test_allocator_uninstall()` | Sets the default allocator back. The counts are kept |
-| `argx_test_allocator_reset()` | Sets the counts to 0 and clears the request to fail |
-| `argx_test_allocator_fail_at(n)` | Fails only the `n`-th request (from 1) after `reset`. 0 fails none |
-| `argx_test_allocator_requests()` | Requests (`malloc_fn`, `calloc_fn`, `realloc_fn`) since `reset`, failed ones included |
-| `argx_test_allocator_live()` | Blocks not yet freed |
-| `argx_test_allocator_violations()` | Calls the library must not make: size 0, reallocating or freeing `NULL` |
-| `argx_test_allocator_get()` | The four functions, to pass to `argx_set_allocator()` yourself |
-
-- **Pair `install` with `uninstall`.** The state is shared by all tests of one executable.
-- **Call `reset` only while nothing is allocated.**
-- **End every test by checking that `live` and `violations` are 0.**
-
-To see the kind or size of each request instead, use the wrap allocator (`tests/support/wrap_allocator.h`). It forwards to the standard functions and counts the calls.
-
-#### The failure of every allocation in turn
-
-A test of an operation that allocates fails its first, second, … allocation in turn, without knowing how many there are:
-
-```
-install
-for n = 1, 2, … up to a limit
-    reset, fail_at(n)
-    run the operation
-    if it succeeded and requests < n: every point has failed once; destroy and stop
-    check the error code and that the failure changed nothing
-    destroy, and check that live and violations are 0
-check that the loop stopped before the limit
-uninstall
-```
-
-Copy `fails_at_every_allocation_point` in `tests/internal/vec_test.c`.
-
-- **Stop only when it succeeded *and* `requests < n`.** Success with `requests >= n` means the failure was swallowed.
-- **After a failure, check [rule 7](../references/ownership.md#7-how-failures-are-returned):** the error code, nothing leaked, and existing objects unchanged and still usable.
 
 ## Verifying a change
 
@@ -203,4 +123,5 @@ ctest --test-dir build-shared --output-on-failure
 
 - `ctest` also runs the [allocation check](conventions.md#the-allocation-check-argxallocations), and in the shared configuration the export check `argx.exports`, which compares the exported names with the `ARGX_API` declarations. To run it on its own: `cmake -DARGX_LIBRARY=<shared-library> -P cmake/ArgXCheckExports.cmake`.
 - When you change an `assert`, also build with `-DCMAKE_BUILD_TYPE=Release` ([Checking preconditions](conventions.md#checking-preconditions)).
+- To run only some of the tests, see [Running tests](testing.md#running-tests).
 - Configuring fetches Naos from GitHub. To work offline, pass `-DFETCHCONTENT_SOURCE_DIR_NAOS=<build-directory>/_deps/naos-src`.

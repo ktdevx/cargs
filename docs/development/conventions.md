@@ -1,6 +1,6 @@
 # Development Conventions
 
-The rules to follow when you change ArgX. The steps for common changes are in [Development Procedures](procedures.md). Before you design a public function or an object that owns memory, read [Ownership and Lifetime](../references/ownership.md).
+The rules to follow when you change ArgX. The steps for common changes are in [Development Procedures](procedures.md), and the rules for tests are in [Testing](testing.md). Before you design a public function or an object that owns memory, read [Ownership and Lifetime](../references/ownership.md).
 
 ## Naming conventions
 
@@ -180,7 +180,7 @@ void argx_example_destroy(argx_example_t *example)
 }
 ```
 
-Test these with the test allocator by making each allocation fail in turn ([The failure of every allocation in turn](procedures.md#the-failure-of-every-allocation-in-turn)).
+Test these with the test allocator by making each allocation fail in turn ([The failure of every allocation in turn](testing.md#the-failure-of-every-allocation-in-turn)).
 
 ### Checking preconditions
 
@@ -200,49 +200,6 @@ A programming error of the caller, such as `NULL` for a required argument, is no
 | Cannot fail | The natural type, or `void` | `argx_vec_at` |
 
 Report failure only through the return value: never `errno`, output or global variables.
-
-## Writing tests
-
-Tests use [Naos](https://github.com/vabelorg/naos) v0.4.0, are C99 without extensions, and are compiled with warnings as errors (`-Wall -Wextra -Wpedantic`, `/W4`).
-
-### Naos
-
-- Each executable has exactly one `NAOS_MAIN`; each suite has at least one test.
-- Each test runs at least one assertion; use `NAOS_PASS()` in a test that only checks that something runs.
-- No comma after the last element of `NAOS_SUITE` and `NAOS_MAIN`, and no `;` after `NAOS_TEST`, `NAOS_SUITE` or `NAOS_MAIN`.
-- Use the assertion that matches the type (`NAOS_CHECK_UINT_EQ`, `NAOS_CHECK_INT_EQ`).
-- Write nothing but `break;` after `NAOS_FAIL` and `NAOS_SKIP` (MSVC C4702).
-
-### Avoiding compiler warnings
-
-| Do not write | Warning | Write instead |
-| --- | --- | --- |
-| `NAOS_CHECK_NOT_NULL` on memory not yet written | GCC `-Wmaybe-uninitialized` | `NAOS_CHECK_TRUE(pointer != NULL)` |
-| A function pointer in `NAOS_CHECK_NULL` and the like | `-Wpedantic` | `NAOS_CHECK_TRUE(function != NULL)` |
-| A `const` object without an initializer | MSVC C4132 | `= { 0 }` |
-| `(char)0x80` | MSVC C4310 | `'\x80'` |
-| The address of a standard function such as `malloc` | MSVC C4204, C4232 | A `static` wrapper function (`wrap_malloc` in `tests/support/wrap_allocator.c`) |
-
-### Allocators in tests
-
-- **Restore the default allocator before the test ends** ([Using the test allocator](procedures.md#using-the-test-allocator)).
-- **Never pass huge sizes to the standard allocation functions;** ASan and valgrind abort. Use an allocator that records its arguments and returns `NULL`.
-- **Check both sides of an overflow check.** For the side that just fits, use `argx_test_allocator_fail_at(1)` and check that exactly one request reached the allocator.
-
-### Rules of `argx_add_test()`
-
-```cmake
-argx_add_test(<name> SOURCES <source>... [INTERNAL])
-```
-
-- `<name>` uses letters, digits and underscores, and is unique across all tests. For a test of internal functions, it is the name of the internal header.
-- Without `INTERNAL`, the test links to `ArgX::argx`; with it, to `argx_internal`.
-- `<source>` is relative to `tests/`, including files from `tests/support/`.
-- Tests are registered as `<name>.<suite>.<test>` with the label `public` or `internal`.
-
-### Release tests
-
-The tests in `tests/release/` run with `cmake -P`, need no build, and have the label `release`. On Windows, `file(WRITE)` turns LF into CRLF, so files whose bytes matter are written with `argx_write_bytes()` (`tools/release/ArgXReadBytes.cmake`). Set `ARGX_WRITE_BYTES_WITH_CONFIGURE=1` to write them as on Windows on any host.
 
 ## Version notes
 

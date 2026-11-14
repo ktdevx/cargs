@@ -40,7 +40,8 @@ For contributors who change the code, the tests or the documentation, and for ma
 
 - [Contributing to ArgX](../CONTRIBUTING.md): the entry point for contributors; covers reporting problems, setting up a development environment, building and testing, and submitting a pull request.
 - [Architecture](development/architecture.md): how the sources are divided into parts, which source owns which structure, and how parsing and help generation run.
-- [Development Conventions](development/conventions.md): the rules for naming, the directory layout, writing code and tests, and the version.
-- [Development Procedures](development/procedures.md): the steps for adding public functions, headers, sources, tests and error codes, using the test allocator, and verifying a change.
+- [Development Conventions](development/conventions.md): the rules for naming, the directory layout, writing code, and the version.
+- [Development Procedures](development/procedures.md): the steps for adding public functions, headers, sources and error codes, and verifying a change.
+- [Testing](development/testing.md): the kinds of tests, running them, the rules for writing them, adding them, and using the test allocator.
 - [Releasing](development/releasing.md): for maintainers; how to release a new version, the repository settings the release process needs, and how to recover when something goes wrong.
 - [Changelog](../CHANGELOG.md): the notable changes of each version, for maintainers and for users who upgrade.
