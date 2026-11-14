@@ -84,7 +84,7 @@ The packed number holds only the numeric part. It is the same for `0.2.0-rc.1` a
 `ARGX_VERSION_NUMBER` and `ARGX_MAKE_VERSION()` contain casts, so they cannot be used in `#if`. In `#if`, compare the numeric macros one by one:
 
 ```c
-#if ARGX_VERSION_MAJOR > 0 || ARGX_VERSION_MINOR >= 2
+#if (ARGX_VERSION_MAJOR > 0) || (ARGX_VERSION_MINOR >= 2)
 /* Code for 0.2.0 or later. */
 #endif
 ```
