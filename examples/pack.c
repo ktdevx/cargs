@@ -129,21 +129,21 @@ static argx_error_t convert_size(const char *text, void *value, void *context)
     unsigned long bytes = 0;
     unsigned long unit = 1;
 
-    if (*p < '0' || *p > '9')
+    if ((*p < '0') || (*p > '9'))
     {
         return ARGX_ERROR_INVALID_VALUE;
     }
 
-    for (; *p >= '0' && *p <= '9'; ++p)
+    for (; (*p >= '0') && (*p <= '9'); ++p)
     {
         unsigned long digit = (unsigned long)(*p - '0');
 
-        if (bytes > (limit->max - digit) / 10)
+        if (bytes > ((limit->max - digit) / 10))
         {
             return ARGX_ERROR_INVALID_VALUE;
         }
 
-        bytes = bytes * 10 + digit;
+        bytes = (bytes * 10) + digit;
     }
 
     if (*p == 'k')
@@ -157,7 +157,7 @@ static argx_error_t convert_size(const char *text, void *value, void *context)
         ++p;
     }
 
-    if (*p != '\0' || bytes > limit->max / unit)
+    if ((*p != '\0') || (bytes > (limit->max / unit)))
     {
         return ARGX_ERROR_INVALID_VALUE;
     }
@@ -352,7 +352,7 @@ static bool help_was_given(const argx_result_t *result)
         const argx_command_t *command = argx_result_command_at(result, i);
         const argx_option_t *help = argx_command_find_long(command, "help", 4, NULL);
 
-        if (help != NULL && argx_result_flag(result, help))
+        if ((help != NULL) && argx_result_flag(result, help))
         {
             return true;
         }
@@ -461,7 +461,7 @@ static int run(const pack_schema_t *schema, const argx_result_t *result)
 {
     const argx_command_t *command = argx_result_command(result);
 
-    if (command != schema->create && command != schema->list)
+    if ((command != schema->create) && (command != schema->list))
     {
         /* A command line that names no subcommand is not a parse error. */
         fprintf(stderr, "pack: a command is required\n");

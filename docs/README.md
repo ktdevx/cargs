@@ -10,8 +10,8 @@ This page lists the documents of ArgX, with a one-line description of each. The 
 
 ## Guides
 
-- [How-to](guides/how-to.md): recipes for specific tasks: the help as a string, a parse error with the usage line from a fixed buffer, and wide-character argv with `wmain`.
-- [FAQ](guides/faq.md): short answers to common questions about command lines, values, the help and debugging.
+- [How-to](guides/how-to.md): recipes for specific tasks, such as requiring a subcommand, Unicode argv on Windows, and getting the help as a string.
+- [FAQ](guides/faq.md): why ArgX behaves as it does, in short answers.
 - [Design](guides/design.md): why the library works the way it does, one decision at a time.
 
 ## References

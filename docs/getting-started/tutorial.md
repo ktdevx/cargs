@@ -133,7 +133,7 @@ for (i = 0; i < argx_result_command_count(result); ++i)
     const argx_command_t *command = argx_result_command_at(result, i);
     const argx_option_t *help = argx_command_find_long(command, "help", 4, NULL);
 
-    if (help != NULL && argx_result_flag(result, help))
+    if ((help != NULL) && argx_result_flag(result, help))
     {
         return true;
     }
