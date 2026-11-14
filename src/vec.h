@@ -4,18 +4,18 @@
  *
  * ArgX - internal declarations for the growing array.
  *
- * A argx_vec_t is an array of items of one size, which is given at run
- * time. Items are added at the end and stay where they were added: there is
- * no removal, no insertion and no sorting.
+ * An argx_vec_t is an array of items that all have one size, given at run
+ * time. Items are added at the end and stay where they were added. There
+ * is no removal, insertion or sorting.
  *
- * The array holds copies of the items. If the items are pointers, the array
- * holds the pointers only; what they point to belongs to the caller.
+ * The array holds copies of the items. If the items are pointers, the
+ * array holds only the pointers. What they point to belongs to the caller.
  *
- * All its memory comes from the allocator that is set
- * (argx_set_allocator(), <argx/alloc.h>), through argx_realloc() and
- * argx_free() ("alloc_internal.h").
+ * All its memory comes from the current allocator (argx_set_allocator(),
+ * <argx/alloc.h>), through argx_realloc() and argx_free()
+ * ("alloc_internal.h").
  *
- * Nothing here is synchronized: do not change one argx_vec_t from several
+ * Nothing here is synchronized. Do not change one argx_vec_t from several
  * threads at the same time.
  */
 #ifndef ARGX_VEC_H
@@ -26,11 +26,11 @@
 #include <stddef.h>
 
 /*
- * The array. Read the number of items from count; treat the other fields
+ * The array. Read the item count from count, and treat the other fields
  * as private.
  *
  * It is empty (items == NULL, count == 0, capacity == 0) after
- * argx_vec_init() and after argx_vec_destroy(); otherwise
+ * argx_vec_init() and after argx_vec_destroy(). Otherwise
  * count <= capacity, and items has room for capacity items.
  */
 typedef struct argx_vec
@@ -42,8 +42,8 @@ typedef struct argx_vec
 } argx_vec_t;
 
 /*
- * Makes vec an empty array of items of item_size bytes. Allocates nothing
- * and cannot fail. Whatever vec held before is overwritten, not freed.
+ * Makes vec an empty array of item_size-byte items. Allocates nothing and
+ * cannot fail. Whatever vec held before is overwritten, not freed.
  *
  * Preconditions: vec is not NULL; item_size is not 0. They are checked with
  * assert.
@@ -51,15 +51,15 @@ typedef struct argx_vec
 void argx_vec_init(argx_vec_t *vec, size_t item_size);
 
 /*
- * Adds a copy of the item_size bytes at item to the end of the array. When
- * the array is full it grows first: to 4 items the first time, to twice
+ * Appends a copy of the item_size bytes at item to the array. When the
+ * array is full, it grows first: to 4 items the first time, and to twice
  * its capacity after that. Growing may move the items.
  *
  * Returns ARGX_ERROR_NONE, or ARGX_ERROR_OUT_OF_MEMORY when the
- * allocation fails or when the size of the grown array cannot be
- * represented in a size_t (the allocator is not called then). After a
- * failure the count, the capacity and the items are as they were before
- * the call, and the array can be used and destroyed as before. Does not
+ * allocation fails or when the grown array's size cannot be represented
+ * in a size_t (in which case the allocator is not called). After a
+ * failure, the count, capacity and items are unchanged, and the array can
+ * still be used and destroyed as before. Does not
  * write errno, print anything or end the process.
  *
  * Preconditions: vec is not NULL and was initialized with
@@ -69,8 +69,8 @@ void argx_vec_init(argx_vec_t *vec, size_t item_size);
 argx_error_t argx_vec_push(argx_vec_t *vec, const void *item);
 
 /*
- * Returns a pointer to the item at index, counted from 0. The pointer is
- * valid until the next argx_vec_push() or argx_vec_destroy() of the
+ * Returns a pointer to the item at index, counted from 0. The pointer
+ * stays valid until the next argx_vec_push() or argx_vec_destroy() on the
  * array.
  *
  * Preconditions: vec is not NULL; index < vec->count. They are checked with
@@ -79,10 +79,10 @@ argx_error_t argx_vec_push(argx_vec_t *vec, const void *item);
 void *argx_vec_at(const argx_vec_t *vec, size_t index);
 
 /*
- * Frees the memory of the array and makes it empty again, as it was after
- * argx_vec_init(): the item size stays, and the array can be used again.
- * It may be called twice, and on an array that never had an item. What the
- * items point to is not freed.
+ * Frees the array's memory and makes it empty again, as after
+ * argx_vec_init(). The item size is kept, and the array can be used again.
+ * It may be called twice, and on an array that never had an item. What
+ * the items point to is not freed.
  *
  * Preconditions: vec is not NULL and was initialized with
  * argx_vec_init(). That it is not NULL is checked with assert.

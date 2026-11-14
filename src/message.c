@@ -2,7 +2,7 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the message of a parse error.
+ * ArgX - parse error messages.
  */
 #include "message.h"
 
@@ -13,9 +13,8 @@
 #include <string.h>
 
 /*
- * The largest number of pieces of a message: the wording of an invalid
- * value has four fixed texts, the value, the prefix, the name and the name
- * of the type.
+ * The most pieces a message can have. The invalid value wording has four
+ * fixed texts, plus the value, the prefix, the name and the type name.
  */
 #define MAX_PIECES 8
 
@@ -26,7 +25,7 @@ typedef struct piece
     size_t length;
 } piece_t;
 
-/* The pieces of a message, in their order. */
+/* The pieces of a message, in order. */
 typedef struct pieces
 {
     piece_t items[MAX_PIECES];
@@ -60,11 +59,11 @@ static void add_name(pieces_t *pieces, const argx_message_parts_t *parts)
     add_bytes(pieces, parts->name, parts->name_length);
 }
 
-/* Appends a fixed text of the wording. */
+/* Appends a fixed text from the wording. */
 #define ADD_TEXT(pieces, literal) add_bytes((pieces), (literal), sizeof(literal) - 1)
 
 /*
- * Collects the pieces of the wording of the kind; see the table in
+ * Collects the pieces of the kind's wording. See the table in
  * "message.h".
  */
 static void collect(pieces_t *pieces, const argx_message_parts_t *parts)
@@ -158,7 +157,7 @@ argx_error_t argx_message_build(const argx_message_parts_t *parts, char **out)
 
     *out = NULL;
 
-    /* Count first: the sum of the lengths, then the terminator. */
+    /* Count first: the total length, then the terminator. */
     collect(&pieces, parts);
     for (i = 0; i < pieces.count; ++i)
     {

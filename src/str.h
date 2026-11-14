@@ -8,17 +8,17 @@
 #define ARGX_STR_H
 
 /*
- * Returns a new copy of the string str, with its terminator, in memory of
- * the allocator that is set (argx_set_allocator(), <argx/alloc.h>). The
- * name and the parameter match the common strdup. The copy of an empty
- * string is a string of one byte.
+ * Returns a new copy of str, terminator included, allocated with the
+ * current allocator (argx_set_allocator(), <argx/alloc.h>). The name and
+ * parameter match the common strdup. Copying an empty string yields a
+ * one-byte string.
  *
  * The caller owns the copy and frees it with argx_free()
  * ("alloc_internal.h").
  *
- * Returns NULL when the allocation fails; nothing is left allocated then,
- * and the caller reports it as ARGX_ERROR_OUT_OF_MEMORY. Does not write
- * errno, print anything or end the process.
+ * Returns NULL when the allocation fails. Nothing is left allocated in
+ * that case, and the caller reports it as ARGX_ERROR_OUT_OF_MEMORY. Does
+ * not write errno, print anything or end the process.
  *
  * Precondition: str is not NULL. It is checked with assert.
  */

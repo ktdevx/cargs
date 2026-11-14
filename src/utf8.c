@@ -2,7 +2,7 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the conversion of a wide string to UTF-8.
+ * ArgX - wide string to UTF-8 conversion.
  */
 #include "utf8.h"
 
@@ -10,17 +10,17 @@
 #include <stdint.h>
 #include <string.h>
 
-/* The largest number of bytes of one code point in UTF-8. */
+/* The most bytes one code point takes in UTF-8. */
 #define UTF8_MAX_BYTES 4
 
 /* The code point that replaces a unit that cannot be converted. */
 #define REPLACEMENT 0xFFFDUL
 
 /*
- * Reads one code point at text, which is not at the terminator. Returns the
- * number of units read: 1 or 2. A unit that cannot be converted is read
- * alone, *code_point is set to U+FFFD and *valid to false. *valid is not
- * written otherwise.
+ * Reads one code point at text, which is not at the terminator. Returns
+ * the number of units read: 1 or 2. A unit that cannot be converted is
+ * read alone, and *code_point is set to U+FFFD and *valid to false.
+ * Otherwise *valid is not written.
  *
  * A code point is held in an unsigned long, which has 32 bits or more.
  */
@@ -40,8 +40,8 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
     if (unit <= 0xDBFFUL)
     {
         /*
-         * A high surrogate. The next unit exists: it is a unit or the
-         * terminator, and the terminator is not a low surrogate.
+         * A high surrogate. The next unit exists: it is either a unit or
+         * the terminator, and the terminator is not a low surrogate.
          */
         next = (unsigned long)text[1];
         if (next >= 0xDC00UL && next <= 0xDFFFUL)
@@ -66,8 +66,8 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
 {
     /*
      * Where wchar_t is signed, a negative value becomes a value above
-     * U+10FFFF here: no comparison with 0 is needed, and none is written,
-     * because it would be always false where wchar_t is unsigned.
+     * U+10FFFF here. No comparison with 0 is needed, and none is written,
+     * because it would always be false where wchar_t is unsigned.
      */
     unsigned long unit = (unsigned long)text[0];
 
@@ -84,9 +84,9 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
 #endif
 
 /*
- * Writes the bytes of code_point in UTF-8 to bytes and returns their
- * number: 1 to 4. code_point is U+10FFFF or less and not a surrogate, which
- * decode() guarantees.
+ * Writes code_point in UTF-8 to bytes and returns the byte count: 1 to 4.
+ * code_point is at most U+10FFFF and not a surrogate, as decode()
+ * guarantees.
  */
 static size_t encode(unsigned long code_point, unsigned char bytes[UTF8_MAX_BYTES])
 {
@@ -154,8 +154,8 @@ size_t argx_utf8_write(const wchar_t *text, char *out)
         text += decode(text, &code_point, &valid);
         count = encode(code_point, bytes);
         /*
-         * The bytes are copied as they are: no conversion of a value above
-         * 127 to char, which may be signed.
+         * The bytes are copied as is, so no value above 127 is converted to
+         * char, which may be signed.
          */
         memcpy(out + length, bytes, count);
         length += count;

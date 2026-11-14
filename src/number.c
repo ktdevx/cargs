@@ -2,7 +2,7 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the conversion of numbers.
+ * ArgX - number conversion.
  */
 #include "number.h"
 
@@ -18,20 +18,20 @@
 #include <string.h>
 
 /*
- * The size of the array that holds the copy of a short floating-point
- * input. A longer copy comes from the allocator.
+ * The size of the array that holds a copy of a short floating-point input.
+ * A longer copy comes from the allocator.
  */
 #define SHORT_COPY_SIZE 64
 
 /*
- * The size of the array that holds the decimal point of the locale and its
+ * The size of the array that holds the locale's decimal point and its
  * terminator. A decimal point is one character, which may take several
  * bytes.
  */
 #define DECIMAL_POINT_SIZE 16
 
 /*
- * An ASCII digit. The comparison is with the ASCII range, not with
+ * An ASCII digit. The check compares against the ASCII range, not
  * <ctype.h>, which follows the locale.
  */
 static bool is_digit(char c)
@@ -61,11 +61,11 @@ argx_error_t argx_number_parse_int(const char *text, int64_t *out)
     }
 
     /*
-     * The value is built as a negative number: the negative range has one
-     * value more than the positive one, so INT64_MIN is built like any
-     * other value. Before each step, the check tells whether
-     * value * 10 - digit would still be INT64_MIN or more. The division
-     * rounds towards 0, which is upwards here: exactly the bound.
+     * The value is built as a negative number. The negative range has one
+     * more value than the positive range, so INT64_MIN is built like any
+     * other value. Before each step, the check tests whether
+     * value * 10 - digit would still be at least INT64_MIN. The division
+     * rounds towards 0, which is upwards here, giving exactly the bound.
      */
     value = 0;
     for (; *p != '\0'; ++p)
@@ -99,12 +99,12 @@ argx_error_t argx_number_parse_int(const char *text, int64_t *out)
 }
 
 /*
- * Returns true when text has the shape of a floating-point number:
+ * Returns true when text has the form of a floating-point number:
  *
  *     [+-]? ( [0-9]+ ( "." [0-9]* )? | "." [0-9]+ ) ( [eE] [+-]? [0-9]+ )?
  *
- * Then *length is the length of text, and *point is the index of its '.',
- * or *length when it has none.
+ * In that case, *length is the length of text, and *point is the index of
+ * its '.', or *length when it has none.
  */
 static bool scan_float(const char *text, size_t *length, size_t *point)
 {
@@ -129,7 +129,7 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
             has_digit = true;
         }
     }
-    /* A digit before the '.' or after it, or both. */
+    /* A digit before the '.', after it, or both. */
     if (!has_digit)
     {
         return false;
@@ -147,7 +147,7 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
         }
         for (; is_digit(*p); ++p)
         {
-            /* The digits of the exponent. */
+            /* The exponent digits. */
         }
     }
     if (*p != '\0')
@@ -161,12 +161,13 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
 }
 
 /*
- * Writes the decimal point of the current locale and a terminator to
- * buffer, which has DECIMAL_POINT_SIZE bytes, and returns its length.
+ * Writes the current locale's decimal point and a terminator to buffer,
+ * which has DECIMAL_POINT_SIZE bytes, and returns the decimal point's
+ * length.
  *
- * The decimal point is what stands between the two digits of 0.5 when it
- * is formatted. localeconv is not used: its result is a structure that
- * later calls may overwrite. If the formatted number is not a '0', a
+ * The decimal point is whatever stands between the two digits when 0.5 is
+ * formatted. localeconv is not used, because its result is a structure
+ * that later calls may overwrite. If the formatted number is not a '0', a
  * decimal point and a '5', the decimal point is taken to be ".".
  */
 static size_t decimal_point(char *buffer)
@@ -185,8 +186,8 @@ static size_t decimal_point(char *buffer)
     }
 
     /*
-     * written is less than DECIMAL_POINT_SIZE + 2, so the decimal point and
-     * its terminator fit.
+     * written is less than DECIMAL_POINT_SIZE + 2, so the decimal point
+     * and its terminator fit.
      */
     length = (size_t)written - 2;
     memcpy(buffer, formatted + 1, length);
@@ -220,10 +221,10 @@ argx_error_t argx_number_parse_float(const char *text, double *out)
     saved_errno = errno;
 
     /*
-     * strtod reads the decimal point of the current locale, so it gets a
-     * copy of the input with that in the place of the '.'. The length does
-     * not overflow: the input is an object that exists, and the decimal
-     * point adds a few bytes at most.
+     * strtod reads the current locale's decimal point, so it gets a copy
+     * of the input with that decimal point in place of the '.'. The length
+     * cannot overflow, because the input is an existing object and the
+     * decimal point adds at most a few bytes.
      */
     point_length = decimal_point(point_text);
     copy_length = (point < length) ? (length - 1 + point_length) : length;
@@ -259,8 +260,8 @@ argx_error_t argx_number_parse_float(const char *text, double *out)
     errno = saved_errno;
 
     /*
-     * strtod read the whole copy, unless the locale changed between the
-     * two calls above. A value beyond the finite range comes back as an
+     * strtod read the whole copy unless the locale changed between the two
+     * calls above. A value beyond the finite range comes back as an
      * infinity (HUGE_VAL, with either sign).
      */
     if (!complete || (value > DBL_MAX) || (value < -DBL_MAX))

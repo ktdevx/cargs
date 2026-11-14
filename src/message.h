@@ -2,11 +2,11 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - internal declarations for the message of a parse error.
+ * ArgX - internal declarations for parse error messages.
  *
- * A message is one line of English that can be shown to the user of the
- * program as it is. It has no line break, no prefix such as the name of the
- * program, and no full stop. The wording of each kind:
+ * A message is one line of English that can be shown to the program's
+ * user as is. It has no line break, no prefix such as the program name,
+ * and no full stop. The wording for each kind:
  *
  *     kind                    wording
  *     UNKNOWN_OPTION          unknown option '<name>'
@@ -22,11 +22,11 @@
  *     INVALID_ENCODING        invalid character encoding in argument '<value>'
  *
  * <name> is name_prefix followed by the first name_length bytes of name,
- * <value> is value and <type> is type_name. The strings are put in as they
- * are: nothing is escaped, replaced or cut.
+ * <value> is value, and <type> is type_name. The strings are inserted as
+ * is: nothing is escaped, replaced or truncated.
  *
- * The function knows neither the schema nor the result: it gets the kind
- * and the strings only.
+ * The function knows neither the schema nor the result. It receives only
+ * the kind and the strings.
  */
 #ifndef ARGX_MESSAGE_H
 #define ARGX_MESSAGE_H
@@ -38,42 +38,41 @@
 #include <stddef.h>
 
 /*
- * What a message is built from. The strings are only read during the
+ * The parts a message is built from. The strings are only read during the
  * call.
  */
 typedef struct argx_message_parts
 {
     argx_parse_error_kind_t kind;
-    argx_source_t source;    /* ARGX_SOURCE_DEFAULT: the wording of a default value */
-    bool for_positional;     /* INVALID_VALUE: the wording of a positional argument */
+    argx_source_t source;    /* ARGX_SOURCE_DEFAULT: default value wording */
+    bool for_positional;     /* INVALID_VALUE: positional argument wording */
     const char *name_prefix; /* "--", "-" or "". Never NULL */
     const char *name;        /* The name. NULL for a kind that has no <name> */
-    size_t name_length;      /* The length of name, which need not end at a terminator */
-    const char *value;       /* The value or the element. NULL for a kind that has no <value> */
-    const char *type_name;   /* The name of the value type. Used by INVALID_VALUE only */
+    size_t name_length;      /* Length of name, which need not be terminated */
+    const char *value;       /* The value or element. NULL for a kind that has no <value> */
+    const char *type_name;   /* The value type name. Used by INVALID_VALUE only */
 } argx_message_parts_t;
 
 /*
- * Builds the message of a parse error from parts and writes it to *out, as
- * a string with a terminator in memory of the allocator that is set. The
- * message takes one allocation. source and for_positional are read for
- * ARGX_PARSE_ERROR_INVALID_VALUE only.
+ * Builds a parse error message from parts and writes it to *out as a
+ * terminated string allocated with the current allocator. The message
+ * takes one allocation. source and for_positional are read only for
+ * ARGX_PARSE_ERROR_INVALID_VALUE.
  *
  * The caller owns the message and frees it with argx_free()
  * ("alloc_internal.h").
  *
  * Returns ARGX_ERROR_NONE on success. Returns ARGX_ERROR_OUT_OF_MEMORY
- * when the allocation fails or the length of the message does not fit in
- * size_t; *out is NULL then and nothing is left allocated.
+ * when the allocation fails or the message length does not fit in a
+ * size_t. In that case *out is NULL and nothing is left allocated.
  *
  * Preconditions, checked with assert:
  *
  * - parts and out are not NULL.
- * - parts->kind is one of the kinds of the table above; it is not
+ * - parts->kind is one of the kinds in the table above. It is not
  *   ARGX_PARSE_ERROR_NONE.
- * - The strings that the wording of the kind uses are not NULL:
- *   name_prefix and name for <name>, value for <value>, type_name for
- *   <type>.
+ * - The strings that the kind's wording uses are not NULL: name_prefix
+ *   and name for <name>, value for <value>, type_name for <type>.
  */
 argx_error_t argx_message_build(const argx_message_parts_t *parts, char **out);
 

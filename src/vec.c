@@ -12,10 +12,10 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The number of items of the first allocation. */
+/* The item count of the first allocation. */
 #define ARGX_VEC_FIRST_CAPACITY ((size_t)4)
 
-/* The largest value of a size_t. */
+/* The largest size_t value. */
 #define ARGX_VEC_SIZE_MAX ((size_t)-1)
 
 /*
@@ -47,8 +47,8 @@ static argx_error_t argx_vec_grow(argx_vec_t *vec)
     }
 
     /*
-     * The first time items is NULL, so this allocates. When it fails, the
-     * old items are still valid and vec still points to them.
+     * The first time, items is NULL, so this allocates. If it fails, the
+     * old items stay valid and vec still points to them.
      */
     new_items = argx_realloc(vec->items, new_capacity * vec->item_size);
     if (new_items == NULL)
@@ -90,7 +90,7 @@ argx_error_t argx_vec_push(argx_vec_t *vec, const void *item)
 
     /*
      * count < capacity now, so the product is less than the size of the
-     * items and does not overflow.
+     * items buffer and cannot overflow.
      */
     memcpy((char *)vec->items + (vec->count * vec->item_size), item,
         vec->item_size);

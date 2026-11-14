@@ -2,7 +2,7 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the rules of names.
+ * ArgX - the name rules.
  */
 #include "name.h"
 
@@ -10,9 +10,10 @@
 #include <stddef.h>
 
 /*
- * The first character of a name: an ASCII letter or digit. The comparisons
- * are with the ASCII ranges, not with <ctype.h>, which follows the locale.
- * A byte outside ASCII is in no range, whether char is signed or not.
+ * The first character of a name: an ASCII letter or digit. The checks
+ * compare against the ASCII ranges, not <ctype.h>, which follows the
+ * locale. A byte outside ASCII is in no range, whether char is signed or
+ * not.
  */
 static bool is_name_start(char c)
 {
@@ -26,8 +27,8 @@ static bool is_name_continue(char c)
 }
 
 /*
- * The rule that the long name and the subcommand name share: the first
- * character starts a name and all the others continue it. False for an
+ * The rule shared by long names and subcommand names: the first character
+ * starts a name and every other character continues it. False for an
  * empty string.
  */
 static bool is_name(const char *name)
@@ -58,8 +59,8 @@ bool argx_name_is_long(const char *name)
     assert(name != NULL);
 
     /*
-     * is_name() saw a first character, so name[1] exists: it is the second
-     * character or the terminator.
+     * is_name() accepted a first character, so name[1] exists. It is
+     * either the second character or the terminator.
      */
     return is_name(name) && (name[1] != '\0');
 }

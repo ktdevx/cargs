@@ -20,8 +20,9 @@ char *argx_strdup(const char *str)
     assert(str != NULL);
 
     /*
-     * The terminator is copied with the string. The sum does not overflow:
-     * the string and its terminator are an object that exists.
+     * The terminator is copied along with the string. The sum cannot
+     * overflow, because the string and its terminator form an existing
+     * object.
      */
     size = strlen(str) + 1;
     copy = argx_malloc(size);

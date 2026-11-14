@@ -2,8 +2,8 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - commands: the tree of the schema, and the helper functions that
- * the sources of the schema share.
+ * ArgX - commands: the schema tree, and the helper functions shared by the
+ * schema sources.
  */
 #include "schema_internal.h"
 
@@ -17,7 +17,7 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The pointers that the three arrays of a command hold. */
+/* The pointers held in a command's three arrays. */
 static argx_option_t *option_at(const argx_command_t *command, size_t index)
 {
     return *(argx_option_t **)argx_vec_at(&command->options, index);
@@ -33,7 +33,7 @@ static argx_command_t *subcommand_at(const argx_command_t *command, size_t index
     return *(argx_command_t **)argx_vec_at(&command->subcommands, index);
 }
 
-/* Whether the string name is exactly the length bytes at text. */
+/* Whether the string name equals exactly the length bytes at text. */
 static bool name_equals(const char *name, const char *text, size_t length)
 {
     return (strlen(name) == length) && (memcmp(name, text, length) == 0);
@@ -63,8 +63,8 @@ static void free_positional(argx_positional_t *positional)
 }
 
 /*
- * Frees command and everything below it. The depth of the recursion is the
- * depth of the tree.
+ * Frees command and everything below it. The recursion depth equals the
+ * tree depth.
  */
 static void free_command(argx_command_t *command)
 {
@@ -92,9 +92,9 @@ static void free_command(argx_command_t *command)
 }
 
 /*
- * Allocates an empty command with a copy of name and the parent parent
- * (NULL for a root). It is not put in the array of the parent. Returns
- * NULL, with nothing left allocated, when an allocation fails.
+ * Allocates an empty command with a copy of name and with parent as its
+ * parent (NULL for a root). It is not added to the parent's array.
+ * Returns NULL, with nothing left allocated, when an allocation fails.
  */
 static argx_command_t *new_command(const char *name, argx_command_t *parent)
 {
@@ -122,8 +122,8 @@ static argx_command_t *new_command(const char *name, argx_command_t *parent)
 }
 
 /*
- * Returns the root of the tree that command belongs to; command itself when
- * it is a root. command is not NULL.
+ * Returns the root of the tree that command belongs to, or command itself
+ * when it is a root. command is not NULL.
  */
 static argx_command_t *root_of(argx_command_t *command)
 {
@@ -213,8 +213,8 @@ argx_error_t argx_command_add_subcommand(argx_command_t *command, const char *na
     }
 
     /*
-     * The checks come before every allocation, so a wrong definition
-     * touches nothing.
+     * The checks come before any allocation, so an invalid definition
+     * changes nothing.
      */
     if (!argx_name_is_subcommand(name))
     {
@@ -236,8 +236,8 @@ argx_error_t argx_command_add_subcommand(argx_command_t *command, const char *na
     }
 
     /*
-     * The tree is changed last: a push that fails leaves the array as it
-     * was.
+     * The tree is changed last, and a failed push leaves the array
+     * unchanged.
      */
     if (argx_vec_push(&command->subcommands, &subcommand) != ARGX_ERROR_NONE)
     {
@@ -348,8 +348,8 @@ const argx_option_t *argx_command_find_short(const argx_command_t *command, char
     assert(command != NULL);
 
     /*
-     * '\0' is how an option without a short name is stored; it is not a
-     * name.
+     * '\0' marks an option that has no short name. It is not a name
+     * itself.
      */
     if (name == '\0')
     {

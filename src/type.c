@@ -17,8 +17,8 @@
 #include <string.h>
 
 /*
- * The conversion function of the string type. Every input is taken, and the
- * value is the pointer to the input itself.
+ * The string type's conversion function. Every input is accepted, and the
+ * value is a pointer to the input itself.
  */
 static argx_error_t convert_string(const char *text, void *value, void *context)
 {
@@ -28,7 +28,7 @@ static argx_error_t convert_string(const char *text, void *value, void *context)
     return ARGX_ERROR_NONE;
 }
 
-/* The conversion function of the integer type. */
+/* The integer type's conversion function. */
 static argx_error_t convert_int(const char *text, void *value, void *context)
 {
     (void)context;
@@ -36,7 +36,7 @@ static argx_error_t convert_int(const char *text, void *value, void *context)
     return argx_number_parse_int(text, (int64_t *)value);
 }
 
-/* The conversion function of the floating-point type. */
+/* The floating-point type's conversion function. */
 static argx_error_t convert_float(const char *text, void *value, void *context)
 {
     (void)context;
@@ -45,8 +45,8 @@ static argx_error_t convert_float(const char *text, void *value, void *context)
 }
 
 /*
- * The conversion function of a choice type. context is the value type
- * itself. The value is the index of the choice that is exactly text.
+ * A choice type's conversion function. context is the value type itself.
+ * The value is the index of the choice that exactly matches text.
  */
 static argx_error_t convert_choice(const char *text, void *value, void *context)
 {
@@ -65,8 +65,8 @@ static argx_error_t convert_choice(const char *text, void *value, void *context)
 }
 
 /*
- * Returns true when a string is in the count strings of choices more than
- * once.
+ * Returns true when any string appears more than once among the count
+ * strings of choices.
  */
 static bool has_duplicate(const char *const *choices, size_t count)
 {
@@ -139,7 +139,7 @@ argx_error_t argx_type_create_choice(const char *const *choices, size_t count, a
         return ARGX_ERROR_INVALID_DEFINITION;
     }
 
-    /* The size of the array of the copies must not overflow. */
+    /* The size of the array of copies must not overflow. */
     if (count > (SIZE_MAX / sizeof(char *)))
     {
         return ARGX_ERROR_OUT_OF_MEMORY;
@@ -169,8 +169,8 @@ argx_error_t argx_type_create_choice(const char *const *choices, size_t count, a
     }
 
     /*
-     * choice_count is the number of the copies made so far, so that a
-     * failure frees exactly those.
+     * choice_count is the number of copies made so far, so a failure frees
+     * exactly those.
      */
     for (index = 0; index < count; ++index)
     {
