@@ -15,26 +15,26 @@
 #include <string.h>
 
 /*
- * The state of one generation. It lives on the stack of the public
- * function, for the one call.
+ * The state of one generation. It lives on the public function's stack
+ * for the duration of one call.
  */
 typedef struct help_context
 {
     const argx_command_t *command; /* the command the text is about */
     size_t width;                  /* the width in columns; 0 means no limit */
     size_t indent;                 /* the blanks before each item of a list */
-    size_t max_column;             /* the last column at which the descriptions may start */
+    size_t max_column;             /* the last column at which descriptions may start */
     size_t column;                 /* the description column; set before the lists are written */
     argx_out_t out;                /* where the text goes */
     /*
-     * the cell text of one item, as bytes; used again for the
-     * next item, freed before the generation returns
+     * the cell text of one item, as bytes; reused for the next
+     * item and freed before the generation returns
      */
     argx_vec_t text;
 } help_context_t;
 
 /*
- * Starts a generation for command: takes the settings from options, or
+ * Starts a generation for command. Takes the settings from options, or
  * their default values when options is NULL, and starts the output. The
  * cell text is empty; nothing is allocated.
  */
@@ -61,8 +61,8 @@ static void help_context_init(help_context_t *context, const argx_command_t *com
 }
 
 /*
- * The result of a generation in which no allocation failed: whether the
- * write function has reported a failure.
+ * Returns the result of a generation in which no allocation failed. It
+ * depends only on whether the write function has reported a failure.
  */
 static argx_error_t help_context_result(const help_context_t *context)
 {
@@ -70,9 +70,9 @@ static argx_error_t help_context_result(const help_context_t *context)
 }
 
 /*
- * Writes the path of command: the names of the commands from the root down
- * to command, separated by one blank each. Nothing is allocated: for each
- * level, from the root down, the parents are walked again from command.
+ * Writes command's path: the command names from the root down to command,
+ * separated by single blanks. Nothing is allocated: for each level, from
+ * the root down, the parent chain is walked again from command.
  */
 static void help_write_path(argx_out_t *out, const argx_command_t *command)
 {
@@ -106,7 +106,7 @@ static void help_write_path(argx_out_t *out, const argx_command_t *command)
 
 /*
  * Returns whether command has an option that is not required: one that
- * takes no value, or one with a value that need not be given.
+ * takes no value, or one whose value need not be given.
  */
 static bool help_has_optional_option(const argx_command_t *command)
 {
@@ -124,12 +124,12 @@ static bool help_has_optional_option(const argx_command_t *command)
 }
 
 /*
- * The blanks that start each line of the usage line after the first: the
+ * The blanks that start each continuation line of the usage line: the
  * width of "Usage: ".
  */
 #define HELP_USAGE_INDENT ((size_t)7)
 
-/* The kinds of the items of the usage line that follow the path. */
+/* The kinds of usage line items that follow the path. */
 typedef enum help_usage_kind
 {
     HELP_USAGE_OPTIONS,    /* "[OPTIONS]" */
@@ -138,7 +138,7 @@ typedef enum help_usage_kind
     HELP_USAGE_COMMAND     /* "[COMMAND]" */
 } help_usage_kind_t;
 
-/* One item of the usage line: a text that is never divided. */
+/* One usage line item: a text that is never split. */
 typedef struct help_usage_item
 {
     help_usage_kind_t kind;
@@ -147,8 +147,8 @@ typedef struct help_usage_item
 } help_usage_item_t;
 
 /*
- * Writes item to out: the one place that knows the text of an item, for
- * the output and for the measuring.
+ * Writes item to out. This is the one place that knows an item's text,
+ * for both output and measuring.
  */
 static void help_usage_item_write(argx_out_t *out, const help_usage_item_t *item)
 {
@@ -170,8 +170,8 @@ static void help_usage_item_write(argx_out_t *out, const help_usage_item_t *item
 }
 
 /*
- * Returns a + b, or the greatest value of a size_t when the sum would be
- * greater than it.
+ * Returns a + b, or the greatest size_t value when the sum would exceed
+ * it.
  */
 static size_t help_add(size_t a, size_t b)
 {
@@ -180,8 +180,8 @@ static size_t help_add(size_t a, size_t b)
 
 /*
  * A write function that keeps nothing: it adds length to the size_t that
- * user_data points to. The sum stops at the greatest value of a size_t
- * instead of wrapping around.
+ * user_data points to. The sum stops at the greatest size_t value instead
+ * of wrapping around.
  */
 static bool help_count_write(void *user_data, const char *text, size_t length)
 {
@@ -193,15 +193,15 @@ static bool help_count_write(void *user_data, const char *text, size_t length)
 }
 
 /*
- * Starts counter as an output that measures a width: *width is set to 0,
- * and every byte that is then written to counter adds 1 to it. Nothing is
- * kept and nothing is allocated.
+ * Starts counter as an output that measures a width. Sets *width to 0;
+ * every byte then written to counter adds 1 to it. Nothing is kept and
+ * nothing is allocated.
  *
- * The width of an item of the usage line or of a heading is the number of
- * all its bytes, also of those before a newline inside a name and of the
- * newline itself. The column of an output would not do, as it starts again
- * at 0 after a newline. Inside an item or a heading no blank is
- * remembered, so every byte reaches the count.
+ * The width of a usage line item or a heading is the number of all its
+ * bytes, including those before a newline inside a name and the newline
+ * itself. The output column would not do, as it restarts at 0 after a
+ * newline. No blank is remembered inside an item or a heading, so every
+ * byte reaches the count.
  */
 static void help_counter_init(argx_out_t *counter, size_t *width)
 {
@@ -210,8 +210,8 @@ static void help_counter_init(argx_out_t *counter, size_t *width)
 }
 
 /*
- * Returns the width of item: the number of all its bytes. The item is
- * written once to an output that only counts; see help_counter_init().
+ * Returns item's width: the number of all its bytes. The item is written
+ * once to an output that only counts; see help_counter_init().
  */
 static size_t help_usage_item_width(const help_usage_item_t *item)
 {
@@ -224,15 +224,14 @@ static size_t help_usage_item_width(const help_usage_item_t *item)
 }
 
 /*
- * Separates item, the next item of the usage line, from the one before it:
- * with one blank, or, when the width is not 0 and "the current column + 1 +
- * the width of the item" is greater than it, with a newline and the indent
- * of the usage line. An item that is wider than the width is so written as
- * it is, on a line of its own.
+ * Separates item, the next usage line item, from the previous one. Uses
+ * one blank or, when the width is not 0 and "current column + 1 + item
+ * width" exceeds it, a newline and the usage line indent. An item wider
+ * than the width is thus written as it is, on its own line.
  *
- * The current column is the one of the output. After an item with a
- * newline inside a name it counts from that newline: it is the length of
- * the last line of what was written, not the width of the item before.
+ * The current column is the output's column. After an item with a newline
+ * inside a name, it counts from that newline: it is the length of the
+ * last line written, not the previous item's width.
  */
 static void help_usage_separate(help_context_t *context, const help_usage_item_t *item)
 {
@@ -244,8 +243,8 @@ static void help_usage_separate(help_context_t *context, const help_usage_item_t
 
         /*
          * "column + 1 + item_width > width", written without a sum that
-         * could wrap around: the subtraction is done only when item_width
-         * is less than the width.
+         * could wrap around. The subtraction happens only when
+         * item_width is less than the width.
          */
         if ((item_width >= context->width) ||
             (argx_out_column(out) >= (context->width - item_width)))
@@ -260,8 +259,8 @@ static void help_usage_separate(help_context_t *context, const help_usage_item_t
 }
 
 /*
- * Writes item, an item of the usage line after the first, behind what
- * separates it from the item before.
+ * Writes item, a usage line item after the first, preceded by what
+ * separates it from the previous item.
  */
 static void help_usage_add(help_context_t *context, const help_usage_item_t *item)
 {
@@ -270,11 +269,11 @@ static void help_usage_add(help_context_t *context, const help_usage_item_t *ite
 }
 
 /*
- * Writes the usage line of the command of context, with the newline that
- * ends it. The items, in their order: "Usage: " and the path of the
- * command, "[OPTIONS]", the required options, the positionals and
- * "[COMMAND]". The line is broken between two items where it would go
- * beyond the width; no item is divided.
+ * Writes the usage line of context's command, including the newline that
+ * ends it. The items, in order: "Usage: " and the command path,
+ * "[OPTIONS]", the required options, the positionals and "[COMMAND]".
+ * The line is broken between two items where it would exceed the width;
+ * no item is split.
  */
 static void help_write_usage_line(help_context_t *context)
 {
@@ -285,9 +284,9 @@ static void help_write_usage_line(help_context_t *context)
     size_t index;
 
     /*
-     * The first item: nothing separates it from anything, and it is not
-     * measured. The blank is part of it: it is written even when the name
-     * of the root starts with a newline.
+     * The first item has no separator and is not measured. The blank is
+     * part of it: it is written even when the root command's name starts
+     * with a newline.
      */
     argx_out_text(out, "Usage: ", 7);
     help_write_path(out, command);
@@ -348,7 +347,7 @@ argx_error_t argx_help_write_usage(const argx_command_t *command,
 
 /* ---- The lists ----------------------------------------------------------- */
 
-/* The kinds of the items of the lists. */
+/* The kinds of list items. */
 typedef enum help_heading_kind
 {
     HELP_HEADING_SUBCOMMAND, /* an item of "Commands:" */
@@ -357,7 +356,7 @@ typedef enum help_heading_kind
 } help_heading_kind_t;
 
 /*
- * The heading of one item of a list: what stands on the left of its
+ * The heading of one list item: what stands to the left of its
  * description.
  */
 typedef struct help_heading
@@ -369,8 +368,8 @@ typedef struct help_heading
 } help_heading_t;
 
 /*
- * Writes heading to out: the one place that knows the text of a heading,
- * for the output and for the measuring. The heading of a subcommand is its
+ * Writes heading to out. This is the one place that knows a heading's
+ * text, for both output and measuring. A subcommand's heading is its
  * name.
  */
 static void help_heading_write(argx_out_t *out, const help_heading_t *heading)
@@ -390,8 +389,8 @@ static void help_heading_write(argx_out_t *out, const help_heading_t *heading)
 }
 
 /*
- * Returns the width of heading: the number of all its bytes. The heading
- * is written once to an output that only counts; see help_counter_init().
+ * Returns heading's width: the number of all its bytes. The heading is
+ * written once to an output that only counts; see help_counter_init().
  */
 static size_t help_heading_width(const help_heading_t *heading)
 {
@@ -403,7 +402,7 @@ static size_t help_heading_width(const help_heading_t *heading)
     return width;
 }
 
-/* Returns the heading of the subcommand of command at index. */
+/* Returns the heading of command's subcommand at index. */
 static help_heading_t help_subcommand_heading(const argx_command_t *command, size_t index)
 {
     help_heading_t heading;
@@ -415,7 +414,7 @@ static help_heading_t help_subcommand_heading(const argx_command_t *command, siz
     return heading;
 }
 
-/* Returns the heading of the positional of command at index. */
+/* Returns the heading of command's positional at index. */
 static help_heading_t help_positional_heading(const argx_command_t *command, size_t index)
 {
     help_heading_t heading;
@@ -427,7 +426,7 @@ static help_heading_t help_positional_heading(const argx_command_t *command, siz
     return heading;
 }
 
-/* Returns the heading of the option of command at index. */
+/* Returns the heading of command's option at index. */
 static help_heading_t help_option_heading(const argx_command_t *command, size_t index)
 {
     help_heading_t heading;
@@ -440,12 +439,12 @@ static help_heading_t help_option_heading(const argx_command_t *command, size_t 
 }
 
 /*
- * Returns "the indent + width + 2": the first column at which a
- * description can start on the line of a heading of that width.
+ * Returns "indent + width + 2": the first column at which a description
+ * can start on the line of a heading of that width.
  *
  * A width is the length of strings in memory and the indent is at most
- * ARGX_HELP_SETTING_MAX, so the sum is not expected to go beyond a
- * size_t; help_add() keeps it defined if it ever does.
+ * ARGX_HELP_SETTING_MAX, so the sum is not expected to overflow a size_t;
+ * help_add() keeps it defined if it ever does.
  */
 static size_t help_heading_reach(const help_context_t *context, size_t width)
 {
@@ -453,14 +452,14 @@ static size_t help_heading_reach(const help_context_t *context, size_t width)
 }
 
 /*
- * Returns the description column of the help of the command of context:
- * "the indent + the width of the widest heading + 2", but not more than
- * the limit. The widest heading is looked for in all the lists of the
- * help, so the descriptions of every list start at the same column.
+ * Returns the description column for the help of context's command:
+ * "indent + widest heading width + 2", but no more than the limit. The
+ * widest heading is searched for across all the lists of the help, so the
+ * descriptions of every list start at the same column.
  *
- * The limit is the maximum column of the settings or, when the width is
- * not 0 and half of it, rounded down, is less, that half. It is never less
- * than "the indent + 2".
+ * The limit is the maximum description column setting or, when the width
+ * is not 0 and half of it (rounded down) is less, that half. It is never
+ * less than "indent + 2".
  */
 static size_t help_description_column(const help_context_t *context)
 {
@@ -526,10 +525,10 @@ static size_t help_description_column(const help_context_t *context)
 }
 
 /*
- * Returns whether the length bytes of text hold nothing to show: no byte
- * other than blanks and newlines. A description of which that is true
- * counts as not set; this is the one place that decides it, for the
- * description of the command and for those of the items.
+ * Returns whether length bytes of text hold nothing to show: no byte
+ * other than blanks and newlines. A description for which this is true
+ * counts as not set. This is the one place that decides it, for both the
+ * command description and the item descriptions.
  */
 static bool help_is_blank(const char *text, size_t length)
 {
@@ -547,14 +546,14 @@ static bool help_is_blank(const char *text, size_t length)
 
 /*
  * Returns the length of the part of text that a description writes: text
- * up to and with its last byte that is neither a blank nor a newline. The
- * run of blanks and newlines behind that byte, the trailing run, is not
- * part of it: its blanks are ignored, and the number of its newlines is
- * stored in *newlines. So "foo\n  " gives what "foo\n" gives, and
- * "foo\n \n" what "foo\n\n" gives.
+ * up to and including its last byte that is neither a blank nor a
+ * newline. The run of blanks and newlines after that byte, the trailing
+ * run, is not part of it. Its blanks are ignored, and the number of its
+ * newlines is stored in *newlines. So "foo\n  " gives the same result as
+ * "foo\n", and "foo\n \n" the same as "foo\n\n".
  *
- * Returns 0, and stores 0, when text is NULL or holds nothing but blanks
- * and newlines: 0 means that there is no description to write.
+ * Returns 0, and stores 0, when text is NULL or holds only blanks and
+ * newlines: 0 means there is no description to write.
  */
 static size_t help_whole_length(const char *text, size_t *newlines)
 {
@@ -583,10 +582,10 @@ static size_t help_whole_length(const char *text, size_t *newlines)
 }
 
 /*
- * Returns the length of the part of text before its first newline: the
- * length of the description of a subcommand in a list. Returns 0 when text
- * is NULL or that part holds nothing but blanks, whatever follows the
- * newline: 0 means that there is no description to write.
+ * Returns the length of text before its first newline: the length of a
+ * subcommand's description in a list. Returns 0 when text is NULL or that
+ * part holds only blanks, whatever follows the newline: 0 means there is
+ * no description to write.
  */
 static size_t help_first_line_length(const char *text)
 {
@@ -604,9 +603,9 @@ static size_t help_first_line_length(const char *text)
 }
 
 /*
- * Writes the description of the command of context, when it has one that
- * holds more than blanks and newlines: an empty line, then the text up to
- * its trailing run, from the start of the line, broken at the width.
+ * Writes the description of context's command, when it has one that holds
+ * more than blanks and newlines: an empty line, then the text up to its
+ * trailing run, from the start of the line, broken at the width.
  */
 static void help_write_description(help_context_t *context)
 {
@@ -625,7 +624,7 @@ static void help_write_description(help_context_t *context)
     argx_out_newline(out);
 }
 
-/* Starts a list: writes an empty line and the line of its title. */
+/* Starts a list: writes an empty line and its title line. */
 static void help_write_title(help_context_t *context, const char *title)
 {
     argx_out_t *out = &context->out;
@@ -636,19 +635,19 @@ static void help_write_title(help_context_t *context, const char *title)
 }
 
 /*
- * Writes one item of a list: the indent, heading, and the length bytes of
- * text, its description, from the description column on, broken at the
- * width. With the length 0 the line holds the heading only.
+ * Writes one list item: the indent, heading, and length bytes of text,
+ * its description, from the description column onward, broken at the
+ * width. When length is 0, the line holds only the heading.
  *
- * The description starts on the line of the heading when the heading ends
- * to the left of the description column by 2 columns or more: when "the
- * indent + the width of the heading + 2" is not greater than the column.
- * If not, the line ends behind the heading, and the description starts on
- * the next line, at the description column.
+ * The description starts on the heading's line when the heading ends at
+ * least 2 columns left of the description column, that is, when "indent +
+ * heading width + 2" does not exceed the column. Otherwise the line ends
+ * after the heading, and the description starts on the next line, at the
+ * description column.
  *
- * What decides is the width of the heading, the number of all its bytes,
- * not the column of the output behind it: the two differ for a heading
- * with a newline inside a name.
+ * The decision uses the heading width (the number of all its bytes), not
+ * the output column after the heading: the two differ for a heading with
+ * a newline inside a name.
  */
 static void help_write_item(help_context_t *context, const help_heading_t *heading,
                             const char *text, size_t length)
@@ -665,11 +664,11 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
         }
 
         /*
-         * argx_wrap_write() needs the output to stand at the description
-         * column or to the left of it. On the line of the heading the
-         * output stands at "the indent + the width of the heading" at
-         * most, less after a newline inside a name, and that is to the
-         * left of the column by 2 or more; on a new line it stands at 0.
+         * argx_wrap_write() needs the output to be at or left of the
+         * description column. On the heading's line the output is at
+         * "indent + heading width" at most (less after a newline inside
+         * a name), which is at least 2 left of the column. On a new line
+         * it is at 0.
          */
         assert(argx_out_column(out) <= context->column);
         argx_wrap_write(out, text, length, context->column, context->width);
@@ -678,12 +677,12 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
 }
 
 /*
- * Starts the cell text of an item: makes it empty, its memory is kept for
- * the next item, and appends description when the item has one that holds
- * more than blanks and newlines: its part up to its trailing run, then the
- * newlines of that run, without its blanks (see help_whole_length()). A
- * description that ends with a newline keeps it: an annotation then starts
- * on the next line.
+ * Starts an item's cell text. Empties it, keeping its memory for the next
+ * item, and appends description when the item has one that holds more
+ * than blanks and newlines: the part up to its trailing run, then the
+ * newlines of that run without its blanks (see help_whole_length()). A
+ * description that ends with a newline keeps it, so an annotation then
+ * starts on the next line.
  *
  * Returns ARGX_ERROR_OUT_OF_MEMORY when an allocation fails.
  */
@@ -708,9 +707,9 @@ static argx_error_t help_cell_start(help_context_t *context, const char *descrip
 }
 
 /*
- * Writes one item of a list with the cell text as its description; see
- * help_write_item(). The newlines at the end of the cell text are not
- * written. An empty cell text gives a line with the heading only.
+ * Writes one list item with the cell text as its description; see
+ * help_write_item(). Newlines at the end of the cell text are not
+ * written. An empty cell text gives a line with only the heading.
  */
 static void help_write_cell_item(help_context_t *context, const help_heading_t *heading)
 {
@@ -721,9 +720,9 @@ static void help_write_cell_item(help_context_t *context, const help_heading_t *
 }
 
 /*
- * Writes the list of the subcommands of the command of context, when it
- * has one: the subcommands of the command itself, in the order in which
- * they were added, each with the first line of its description.
+ * Writes the subcommand list of context's command, when it has any: the
+ * command's own subcommands, in the order they were added, each with the
+ * first line of its description.
  */
 static void help_write_commands(help_context_t *context)
 {
@@ -747,12 +746,12 @@ static void help_write_commands(help_context_t *context)
 }
 
 /*
- * Writes the list of the positionals of the command of context, when it
- * has one: in the order in which they were added, each with its whole
- * description and, behind it, its annotations.
+ * Writes the positional list of context's command, when it has any: in
+ * the order they were added, each with its whole description followed by
+ * its annotations.
  *
  * Returns ARGX_ERROR_OUT_OF_MEMORY when an allocation for the cell text
- * fails; the list ends before the item that it was for.
+ * fails; the list ends before the item it was for.
  */
 static argx_error_t help_write_arguments(help_context_t *context)
 {
@@ -786,14 +785,13 @@ static argx_error_t help_write_arguments(help_context_t *context)
 }
 
 /*
- * Writes the list of the options of the command of context, when it has
- * one: the options of the command itself, not those of its parent or of
- * its subcommands, in the order in which they were added, each with its
- * whole description and, behind it, its annotations. Nothing is listed
- * that the schema does not have.
+ * Writes the option list of context's command, when it has any: the
+ * command's own options, not those of its parent or its subcommands, in
+ * the order they were added, each with its whole description followed by
+ * its annotations. Nothing is listed that the schema does not have.
  *
  * Returns ARGX_ERROR_OUT_OF_MEMORY when an allocation for the cell text
- * fails; the list ends before the item that it was for.
+ * fails; the list ends before the item it was for.
  */
 static argx_error_t help_write_options(help_context_t *context)
 {
@@ -841,7 +839,7 @@ argx_error_t argx_help_write(const argx_command_t *command,
     help_write_usage_line(&context);
     help_write_description(&context);
 
-    /* One column for all the lists, from the headings of all of them. */
+    /* One column for all the lists, computed from all their headings. */
     context.column = help_description_column(&context);
     help_write_commands(&context);
     error = help_write_arguments(&context);
@@ -851,9 +849,9 @@ argx_error_t argx_help_write(const argx_command_t *command,
     }
 
     /*
-     * The cell text is the only memory of a generation. An allocation and
-     * the write function never both fail: the first failure ends the
-     * lists.
+     * The cell text is the only memory a generation allocates. An
+     * allocation and the write function never both fail: the first
+     * failure ends the lists.
      */
     argx_vec_destroy(&context.text);
     if (error != ARGX_ERROR_NONE)
@@ -866,23 +864,23 @@ argx_error_t argx_help_write(const argx_command_t *command,
 /* ---- The buffer ---------------------------------------------------------- */
 
 /*
- * The array of the caller that a text is put into, and how much of the
- * text has come. It lives on the stack of the public function, for the one
- * call.
+ * The caller's array that a text is put into, and how much of the text
+ * has arrived. It lives on the public function's stack for the duration
+ * of one call.
  */
 typedef struct help_buffer
 {
     char *buffer;  /* the array; may be NULL when size is 0 */
-    size_t size;   /* the number of bytes of the array */
-    size_t length; /* the bytes of the text so far, also those that did not fit */
+    size_t size;   /* the size of the array in bytes */
+    size_t length; /* the text bytes so far, including those that did not fit */
 } help_buffer_t;
 
 /*
- * The write function of the buffer functions: copies what fits of the part
- * into the array, in front of the place of the '\0', and counts all of it.
- * It never reports a failure, so the generation runs to its end and the
- * count becomes the length of the whole text. The count stops at the
- * greatest value of a size_t instead of wrapping around.
+ * The write function of the buffer functions. Copies as much of the part
+ * as fits into the array, ahead of the place for the '\0', and counts all
+ * of it. It never reports a failure, so the generation runs to the end and
+ * the count becomes the length of the whole text. The count stops at the
+ * greatest size_t value instead of wrapping around.
  */
 static bool help_buffer_write(void *user_data, const char *text, size_t length)
 {
@@ -900,10 +898,10 @@ static bool help_buffer_write(void *user_data, const char *text, size_t length)
 }
 
 /*
- * Ends a generation into target, which returned error: after a failure the
- * text counts as empty. The array, when it has a byte, gets its '\0'
- * behind the part of the text that it holds, and *length, when length is
- * not NULL, the length of the whole text. Returns error.
+ * Ends a generation into target that returned error. After a failure the
+ * text counts as empty. When the array has at least one byte, it gets its
+ * '\0' after the part of the text it holds. When length is not NULL,
+ * *length gets the length of the whole text. Returns error.
  */
 static argx_error_t help_buffer_finish(help_buffer_t *target, argx_error_t error,
                                        size_t *length)

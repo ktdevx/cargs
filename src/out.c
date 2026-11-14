@@ -2,8 +2,8 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the output of the help: counts columns while it passes text to
- * a write function.
+ * ArgX - the help output: counts columns while it passes text to a write
+ * function.
  */
 #include "out.h"
 
@@ -13,16 +13,16 @@
 #include <string.h>
 
 /*
- * The blanks that are passed to the write function in one call. More
- * blanks than these take several calls.
+ * The blanks passed to the write function in one call. More blanks than
+ * this take several calls.
  */
 #define ARGX_OUT_BLANKS "                                "
 #define ARGX_OUT_BLANKS_LENGTH (sizeof ARGX_OUT_BLANKS - 1)
 
 /*
- * Passes the length bytes of text to the write function, unless there is
- * none or it has failed before, and remembers a failure. This is the only
- * place that calls the write function. length is not 0.
+ * Passes length bytes of text to the write function, unless there is none
+ * or it has already failed, and records a failure. This is the only place
+ * that calls the write function. length is not 0.
  */
 static void out_write(argx_out_t *out, const char *text, size_t length)
 {
@@ -39,8 +39,8 @@ static void out_write(argx_out_t *out, const char *text, size_t length)
 }
 
 /*
- * Writes the blanks that are remembered and forgets them. The column
- * counts them already.
+ * Writes the remembered blanks and forgets them. The column already
+ * counts them.
  */
 static void out_flush_blanks(argx_out_t *out)
 {

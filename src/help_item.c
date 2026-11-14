@@ -2,8 +2,8 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the items of the help: how one option or positional of a schema
- * is written.
+ * ArgX - help items: how one option or positional of a schema is
+ * written.
  */
 #include "help_item.h"
 
@@ -35,9 +35,9 @@ void argx_help_item_string(argx_out_t *out, const char *text)
 }
 
 /*
- * Writes the display name of the value of option between "<" and ">": the
- * value name that was set, or else the name of the value type. option
- * takes a value.
+ * Writes the display name of option's value between "<" and ">": the
+ * value name that was set, or else the value type name. option takes a
+ * value.
  */
 static void item_value_name(argx_out_t *out, const argx_option_t *option)
 {
@@ -77,7 +77,7 @@ void argx_help_item_option_heading(argx_out_t *out, const argx_option_t *option)
         break;
     case ARGX_OPTION_FLAG:
     default:
-        /* A kind of a later version is written in the simplest form. */
+        /* A kind from a later version is written in the simplest form. */
         break;
     }
 
@@ -85,8 +85,8 @@ void argx_help_item_option_heading(argx_out_t *out, const argx_option_t *option)
     short_name = argx_option_short_name(option);
 
     /*
-     * The blanks belong to the heading: they are written with the text,
-     * not remembered, so they count for its width.
+     * The blanks are part of the heading. They are written with the
+     * text rather than remembered, so they count toward its width.
      */
     if (short_name != '\0')
     {
@@ -146,7 +146,7 @@ void argx_help_item_positional_heading(argx_out_t *out, const argx_positional_t 
         break;
     case ARGX_ARITY_REQUIRED:
     default:
-        /* An arity of a later version is written in the simplest form. */
+        /* An arity from a later version is written in the simplest form. */
         break;
     }
 
@@ -182,7 +182,7 @@ void argx_help_item_usage_option(argx_out_t *out, const argx_option_t *option)
     }
 
     /*
-     * The blank belongs to the item: it is written with the text, not
+     * The blank is part of the item. It is written with the text, not
      * remembered as a blank between two items.
      */
     argx_out_text(out, " ", 1);
@@ -216,8 +216,8 @@ static argx_error_t item_text_string(argx_vec_t *text, const char *part)
 }
 
 /*
- * Starts an annotation at the end of text: appends the blank that
- * separates it from what stands before, unless text is empty or ends with
+ * Starts an annotation at the end of text. Appends the blank that
+ * separates it from the preceding text, unless text is empty or ends with
  * a newline, and then opening, the start of the annotation.
  */
 static argx_error_t item_note_open(argx_vec_t *text, const char *opening)
@@ -235,8 +235,8 @@ static argx_error_t item_note_open(argx_vec_t *text, const char *opening)
 }
 
 /*
- * Appends the annotation of the choices of type, "[choices: a, b, c]",
- * when type is of the kind with choices.
+ * Appends the choices annotation of type, "[choices: a, b, c]", when
+ * type is of the kind with choices.
  */
 static argx_error_t item_choices_note(argx_vec_t *text, const argx_type_t *type)
 {
@@ -253,7 +253,7 @@ static argx_error_t item_choices_note(argx_vec_t *text, const argx_type_t *type)
     case ARGX_TYPE_FLOAT:
     case ARGX_TYPE_CUSTOM:
     default:
-        /* A kind of a later version is taken as one without choices. */
+        /* A kind from a later version is treated as one without choices. */
         return ARGX_ERROR_NONE;
     }
 
@@ -278,8 +278,8 @@ static argx_error_t item_choices_note(argx_vec_t *text, const argx_type_t *type)
 }
 
 /*
- * Appends the annotation of a default value, "[default: VALUE]", with the
- * string value as it is.
+ * Appends a default value annotation, "[default: VALUE]", with the string
+ * value unchanged.
  */
 static argx_error_t item_default_note(argx_vec_t *text, const char *value)
 {
@@ -338,7 +338,7 @@ argx_error_t argx_help_item_option_notes(argx_vec_t *text, const argx_option_t *
     case ARGX_OPTION_FLAG:
     case ARGX_OPTION_COUNT:
     default:
-        /* A kind of a later version has no annotation. */
+        /* A kind from a later version has no annotation. */
         break;
     }
     return error;
