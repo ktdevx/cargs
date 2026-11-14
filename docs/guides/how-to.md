@@ -1,6 +1,6 @@
 # How-to
 
-Short recipes for specific tasks. To learn ArgX from the start, read the [Tutorial](tutorial.md).
+Short recipes for specific tasks. To learn ArgX from the start, read the [Tutorial](../getting-started/tutorial.md).
 
 ## Getting the help as a string
 

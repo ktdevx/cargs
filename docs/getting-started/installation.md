@@ -1,6 +1,6 @@
 # Installation
 
-How to build ArgX and use it from your project. How to write a program with it is in the [Tutorial](../guides/tutorial.md).
+How to build ArgX and use it from your project. How to write a program with it is in the [Tutorial](tutorial.md).
 
 ## Requirements
 

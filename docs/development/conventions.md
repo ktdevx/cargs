@@ -49,12 +49,13 @@ Create build directories outside the repository, or as `build/` or `build-*/` at
 
 | Directory | Contents |
 | --- | --- |
-| `guides/` | The walkthrough, the FAQ and the design rationale |
+| `getting-started/` | Installation and the tutorial |
+| `guides/` | How-to recipes, the FAQ and the design rationale |
 | `references/` | Rules, tables, code fragments and output only: no walkthroughs, advice or rationale |
 
 - **A fact has one place.** Guides link to the references instead of repeating them.
 - **One API page per public header,** starting with a `## Functions` index. The description and preconditions of each function stay in the comment of its declaration and are not copied. Rules not about one header (the command-line syntax, the layout of the help) are specification pages.
-- **Keep examples in sync.** When you change `examples/pack.c`, update the excerpts in the [Tutorial](../guides/tutorial.md). When an example's output changes, update its `argx_add_example_test()` and the comment at the top of the program.
+- **Keep examples in sync.** When you change `examples/pack.c`, update the excerpts in the [Tutorial](../getting-started/tutorial.md). When an example's output changes, update its `argx_add_example_test()` and the comment at the top of the program.
 - **Complete C functions in documents compile as they are** and follow [Code style](#code-style). An example with placeholder names shows its placeholder header in a comment.
 
 ## Code style

@@ -1,6 +1,6 @@
 # Tutorial
 
-A walk through [examples/pack.c](../../examples/pack.c), a complete program for a made-up archiver with the subcommands `create` and `list`. Each excerpt names the function it comes from. To build ArgX, see [Installation](../getting-started/installation.md).
+A walk through [examples/pack.c](../../examples/pack.c), a complete program for a made-up archiver with the subcommands `create` and `list`. Each excerpt names the function it comes from. To build ArgX, see [Installation](installation.md).
 
 ## Concepts
 
@@ -212,4 +212,4 @@ argx_type_destroy(schema.format);
 
 ## What to read next
 
-[How-to](how-to.md) for specific tasks, the [FAQ](faq.md), [Design](design.md), and the references in the [documentation index](../README.md#references).
+[How-to](../guides/how-to.md) for specific tasks, the [FAQ](../guides/faq.md), [Design](../guides/design.md), and the references in the [documentation index](../README.md#references).
