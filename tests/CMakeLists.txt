@@ -7,7 +7,7 @@
 #     argx_add_test(<name> SOURCES internal/<file> INTERNAL)
 
 argx_add_test(alloc SOURCES public/alloc_test.c)
-argx_add_test(alloc_internal SOURCES internal/alloc_internal_test.c support/test_allocator.c INTERNAL)
+argx_add_test(alloc_internal SOURCES internal/alloc_internal_test.c support/test_allocator.c support/wrap_allocator.c INTERNAL)
 argx_add_test(command SOURCES public/command_test.c support/test_allocator.c)
 argx_add_test(error SOURCES public/error_test.c)
 argx_add_test(help SOURCES public/help_test.c support/test_allocator.c)
@@ -31,12 +31,12 @@ argx_add_test(positional SOURCES public/positional_test.c support/test_allocator
 argx_add_test(number SOURCES internal/number_test.c support/test_allocator.c INTERNAL)
 argx_add_test(result SOURCES internal/result_test.c support/test_allocator.c INTERNAL)
 argx_add_test(schema_failure SOURCES public/schema_failure_test.c support/test_allocator.c)
-argx_add_test(str SOURCES internal/str_test.c support/test_allocator.c INTERNAL)
+argx_add_test(str SOURCES internal/str_test.c support/test_allocator.c support/wrap_allocator.c INTERNAL)
 argx_add_test(test_allocator SOURCES public/test_allocator_test.c support/test_allocator.c)
 argx_add_test(type SOURCES public/type_test.c support/test_allocator.c)
 argx_add_test(utf8 SOURCES internal/utf8_test.c INTERNAL)
 argx_add_test(validate SOURCES public/validate_test.c support/test_allocator.c)
-argx_add_test(vec SOURCES internal/vec_test.c support/test_allocator.c INTERNAL)
+argx_add_test(vec SOURCES internal/vec_test.c support/test_allocator.c support/wrap_allocator.c INTERNAL)
 argx_add_test(version SOURCES public/version_test.c)
 argx_add_test(wrap SOURCES internal/wrap_test.c INTERNAL)
 

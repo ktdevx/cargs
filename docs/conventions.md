@@ -98,7 +98,7 @@ tests/
 ├── CMakeLists.txt    The argx_add_test() calls, the registration of the allocation check and the export check, and the registration of the release tests
 ├── public/           Tests of the public API. Linked to ArgX::argx
 ├── internal/         Tests of internal functions. Linked to argx_internal
-├── support/          Test support sources and headers (the test allocator). Not part of the library and not installed
+├── support/          Test support sources and headers (the test allocator and the wrap allocator). Not part of the library and not installed
 ├── consumer/         Checks of using the library from a consuming project. Not part of the main build
 └── release/          Tests of the release scripts and modules, run with cmake -P. Need no build
     ├── ReleaseTestHelpers.cmake  Checks and fixtures shared by the release tests
@@ -396,6 +396,8 @@ The test allocator depends only on `<argx/argx.h>` and the C standard library, s
 - **Call `reset` while nothing is allocated.** If you call it while there are blocks not yet freed, the count of live blocks is wrong from then on.
 - **Every test checks at its end that `live` and `violations` are 0.** The counts can still be read after `uninstall`.
 - The test allocator is not synchronized.
+
+When a test needs to tell the kinds of request apart, or to see the size that was requested, use the wrap allocator (`tests/support/wrap_allocator.h`, `tests/support/wrap_allocator.c`) instead of writing one in the test file. It only forwards to the standard functions, and counts the calls of each of the four functions and the size of the last `malloc_fn` and `realloc_fn`. It cannot fail a request and does not check the contract. Add `support/wrap_allocator.c` to the `SOURCES` of `argx_add_test()`, include `"../support/wrap_allocator.h"`, set it with `argx_set_allocator()` (its functions come from `argx_wrap_allocator_get()`), and read the counts with `argx_wrap_allocator_counts()` after `argx_wrap_allocator_reset()`.
 
 #### The failure of every allocation in turn
 
@@ -829,7 +831,7 @@ Tests are written with [Naos](https://github.com/vabelorg/naos) v0.4.0. Test cod
 - **How to write the macros.** Do not write a comma after the last element of `NAOS_SUITE` and `NAOS_MAIN`. Do not put `;` after `NAOS_TEST(...) { ... }`, `NAOS_SUITE(...)` or `NAOS_MAIN(...)` (`-Wpedantic` warns).
 - Use the assertion that matches the type: `NAOS_CHECK_UINT_EQ` for unsigned values, `NAOS_CHECK_INT_EQ` for signed values, and so on.
 - **Taking the address of a standard function with MSVC.** With the MSVC DLL runtime, standard functions (such as `malloc`) are imported. Their addresses cannot be written in static initializers, and with `/W4` even local initializers and assignments produce warnings (C4204, C4232). Write it in one of the following ways.
-  - Wrap the standard function in a `static` function within the file, and pass that function (such as `wrap_malloc` in `tests/internal/vec_test.c`; in the library, `default_malloc` and others in `src/alloc.c`).
+  - Wrap the standard function in a `static` function within the file, and pass that function (such as `wrap_malloc` in `tests/support/wrap_allocator.c`; in the library, `default_malloc` and others in `src/alloc.c`).
   - In a test that checks that the standard functions can be listed as they are (`tests/public/alloc_test.c`), write the following at the top of the file.
 
     ```c

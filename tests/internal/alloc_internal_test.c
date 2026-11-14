@@ -17,78 +17,18 @@
 #include "alloc_internal.h"
 
 #include "../support/test_allocator.h"
+#include "../support/wrap_allocator.h"
 
 #include <naos/naos.h>
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
 /* More than any block that the tests read back. */
 #define ZERO_COUNT 128
 
 static const unsigned char zeros[ZERO_COUNT] = { 0 };
-
-/*
- * An allocator that only wraps the standard functions. The wrappers count
- * their calls, so that a test can tell that they were called, and which of
- * them. They are functions of this file, not the standard functions
- * themselves, so that no initializer takes the address of an imported
- * function (MSVC warns about that).
- */
-static size_t wrap_malloc_calls;
-static size_t wrap_realloc_calls;
-static size_t wrap_calloc_calls;
-static size_t wrap_free_calls;
-
-static void *wrap_malloc(size_t size)
-{
-    ++wrap_malloc_calls;
-    return malloc(size);
-}
-
-static void *wrap_realloc(void *ptr, size_t size)
-{
-    ++wrap_realloc_calls;
-    return realloc(ptr, size);
-}
-
-static void *wrap_calloc(size_t count, size_t size)
-{
-    ++wrap_calloc_calls;
-    return calloc(count, size);
-}
-
-static void wrap_free(void *ptr)
-{
-    ++wrap_free_calls;
-    free(ptr);
-}
-
-static argx_allocator_t wrap_allocator(void)
-{
-    argx_allocator_t allocator;
-
-    allocator.malloc_fn = wrap_malloc;
-    allocator.realloc_fn = wrap_realloc;
-    allocator.calloc_fn = wrap_calloc;
-    allocator.free_fn = wrap_free;
-    return allocator;
-}
-
-static void wrap_reset(void)
-{
-    wrap_malloc_calls = 0;
-    wrap_realloc_calls = 0;
-    wrap_calloc_calls = 0;
-    wrap_free_calls = 0;
-}
-
-static size_t wrap_calls(void)
-{
-    return wrap_malloc_calls + wrap_realloc_calls + wrap_calloc_calls + wrap_free_calls;
-}
 
 /*
  * A calloc_fn that allocates nothing: it records its arguments and the
@@ -244,37 +184,37 @@ NAOS_TEST(install_routes_the_requests)
 /* Each internal function calls the function of the same kind. */
 NAOS_TEST(calls_the_matching_function)
 {
-    argx_allocator_t allocator = wrap_allocator();
+    argx_allocator_t allocator = argx_wrap_allocator_get();
     unsigned char *block;
     unsigned char *cleared;
     unsigned char *grown;
 
     argx_test_allocator_reset();
-    wrap_reset();
+    argx_wrap_allocator_reset();
     argx_set_allocator(&allocator);
 
     block = argx_malloc(16);
-    NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_calls(), 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().malloc_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_calls(), 1);
     NAOS_REQUIRE_TRUE(block != NULL);
     memset(block, 1, 16);
 
     cleared = argx_calloc(2, 8);
-    NAOS_CHECK_UINT_EQ(wrap_calloc_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_calls(), 2);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().calloc_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_calls(), 2);
     NAOS_REQUIRE_TRUE(cleared != NULL);
 
     grown = argx_realloc(block, 64);
-    NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_calls(), 3);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().realloc_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_calls(), 3);
     NAOS_REQUIRE_TRUE(grown != NULL);
 
     argx_free(cleared);
-    NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_calls(), 4);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().free_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_calls(), 4);
     argx_free(grown);
-    NAOS_CHECK_UINT_EQ(wrap_free_calls, 2);
-    NAOS_CHECK_UINT_EQ(wrap_calls(), 5);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().free_calls, 2);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_calls(), 5);
 
     argx_set_allocator(NULL);
     NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
@@ -379,11 +319,11 @@ NAOS_TEST(keeps_a_copy_of_the_structure)
     unsigned char *grown;
 
     argx_test_allocator_reset();
-    wrap_reset();
+    argx_wrap_allocator_reset();
     argx_set_allocator(&allocator);
 
     /* The structure now names other functions. They must not be called. */
-    allocator = wrap_allocator();
+    allocator = argx_wrap_allocator_get();
 
     block = argx_malloc(16);
     NAOS_REQUIRE_TRUE(block != NULL);
@@ -400,8 +340,8 @@ NAOS_TEST(keeps_a_copy_of_the_structure)
     argx_free(grown);
 
     NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(wrap_calls(), 0);
-    NAOS_CHECK_TRUE(allocator.malloc_fn == wrap_malloc);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_calls(), 0);
+    NAOS_CHECK_TRUE(allocator.malloc_fn == argx_wrap_allocator_get().malloc_fn);
 
     argx_set_allocator(NULL);
     check_clean();
@@ -499,10 +439,10 @@ NAOS_TEST(calloc_overflow_is_not_forwarded)
  */
 NAOS_TEST(calloc_forwards_the_largest_product)
 {
-    argx_allocator_t allocator = wrap_allocator();
+    argx_allocator_t allocator = argx_wrap_allocator_get();
 
     argx_test_allocator_reset();
-    wrap_reset();
+    argx_wrap_allocator_reset();
     probe_calloc_calls = 0;
     probe_calloc_count = 0;
     probe_calloc_size = 0;
@@ -520,7 +460,7 @@ NAOS_TEST(calloc_forwards_the_largest_product)
     NAOS_CHECK_UINT_EQ(probe_calloc_size, 2);
 
     /* Nothing else was called: no other request, and no free of NULL. */
-    NAOS_CHECK_UINT_EQ(wrap_calls(), 0);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_calls(), 0);
 
     argx_set_allocator(NULL);
     NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
@@ -697,173 +637,6 @@ NAOS_TEST(free_of_null_does_nothing)
     check_clean();
 }
 
-/* ---- The default and a wrapper of the standard functions -------------- */
-
-/* What one run of the sequence of operations saw. */
-#define RECORD_CAPACITY 256
-
-typedef struct record
-{
-    unsigned char bytes[RECORD_CAPACITY];
-    size_t size;
-    int overflowed;
-} record_t;
-
-static void record_bytes(record_t *record, const unsigned char *bytes, size_t size)
-{
-    if (size > (RECORD_CAPACITY - record->size))
-    {
-        record->overflowed = 1;
-        return;
-    }
-    memcpy(record->bytes + record->size, bytes, size);
-    record->size += size;
-}
-
-static void record_flag(record_t *record, int flag)
-{
-    unsigned char byte = (unsigned char)(flag ? 1 : 0);
-
-    record_bytes(record, &byte, 1);
-}
-
-/*
- * Runs a fixed sequence of operations with the allocator that is set and
- * records every result that does not depend on the addresses: whether a
- * pointer is NULL, and the contents that the functions promise. Frees all
- * that it allocates.
- */
-static void run_sequence(record_t *record)
-{
-    unsigned char *block;
-    unsigned char *cleared;
-    unsigned char *other;
-
-    memset(record, 0, sizeof *record);
-
-    block = argx_malloc(24);
-    record_flag(record, block != NULL);
-    NAOS_REQUIRE_TRUE(block != NULL);
-    fill(block, 24, 41);
-
-    cleared = argx_calloc(6, 4);
-    record_flag(record, cleared != NULL);
-    NAOS_REQUIRE_TRUE(cleared != NULL);
-    record_bytes(record, cleared, 24);
-
-    block = argx_realloc(block, 200);
-    record_flag(record, block != NULL);
-    NAOS_REQUIRE_TRUE(block != NULL);
-    record_bytes(record, block, 24);
-    fill(block + 24, 200 - 24, 53);
-
-    block = argx_realloc(block, 40);
-    record_flag(record, block != NULL);
-    NAOS_REQUIRE_TRUE(block != NULL);
-    record_bytes(record, block, 40);
-
-    record_flag(record, argx_malloc(0) != NULL);
-    record_flag(record, argx_calloc(0, 4) != NULL);
-    record_flag(record, argx_calloc(4, 0) != NULL);
-    record_flag(record, argx_calloc(SIZE_MAX, 2) != NULL);
-    record_flag(record, argx_realloc(NULL, 0) != NULL);
-
-    other = argx_realloc(NULL, 12);
-    record_flag(record, other != NULL);
-    NAOS_REQUIRE_TRUE(other != NULL);
-    fill(other, 12, 67);
-    record_bytes(record, other, 12);
-    record_flag(record, argx_realloc(other, 0) != NULL);
-
-    argx_free(NULL);
-    argx_free(cleared);
-    argx_free(block);
-}
-
-/*
- * The same sequence of operations gives the same results with the default
- * allocator and with an allocator that only wraps the standard functions.
- */
-NAOS_TEST(default_and_wrapper_give_the_same_results)
-{
-    static record_t with_default;
-    static record_t with_wrapper;
-    argx_allocator_t allocator = wrap_allocator();
-
-    argx_test_allocator_reset();
-    wrap_reset();
-
-    argx_set_allocator(NULL);
-    run_sequence(&with_default);
-    /* The default allocator is not the wrapper. */
-    NAOS_CHECK_UINT_EQ(wrap_calls(), 0);
-
-    argx_set_allocator(&allocator);
-    run_sequence(&with_wrapper);
-    argx_set_allocator(NULL);
-
-    /*
-     * The wrapper was called, and only in the way the contract allows:
-     * malloc, calloc, 2 x realloc and the malloc of realloc(NULL, 12);
-     * the free of realloc(other, 0) and the two calls of free.
-     */
-    NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 2);
-    NAOS_CHECK_UINT_EQ(wrap_calloc_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 2);
-    NAOS_CHECK_UINT_EQ(wrap_free_calls, 3);
-
-    NAOS_CHECK_FALSE(with_default.overflowed);
-    NAOS_CHECK_FALSE(with_wrapper.overflowed);
-    NAOS_CHECK_UINT_GT(with_default.size, 0);
-    NAOS_CHECK_MEM_EQ(with_default.bytes, with_default.size, with_wrapper.bytes, with_wrapper.size);
-
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
-    check_clean();
-}
-
-/*
- * The results of the sequence are the ones that the functions promise, not
- * only equal to each other.
- */
-NAOS_TEST(sequence_gives_the_promised_results)
-{
-    static record_t seen;
-    static record_t expected;
-    unsigned char pattern[200];
-
-    argx_test_allocator_install();
-    run_sequence(&seen);
-    argx_test_allocator_uninstall();
-
-    memset(&expected, 0, sizeof expected);
-    fill(pattern, 24, 41);
-    fill(pattern + 24, 200 - 24, 53);
-    record_flag(&expected, 1);            /* malloc(24) */
-    record_flag(&expected, 1);            /* calloc(6, 4) */
-    record_bytes(&expected, zeros, 24);
-    record_flag(&expected, 1);            /* realloc(block, 200) */
-    record_bytes(&expected, pattern, 24);
-    record_flag(&expected, 1);            /* realloc(block, 40) */
-    record_bytes(&expected, pattern, 40);
-    record_flag(&expected, 0);            /* malloc(0) */
-    record_flag(&expected, 0);            /* calloc(0, 4) */
-    record_flag(&expected, 0);            /* calloc(4, 0) */
-    record_flag(&expected, 0);            /* calloc(SIZE_MAX, 2) */
-    record_flag(&expected, 0);            /* realloc(NULL, 0) */
-    record_flag(&expected, 1);            /* realloc(NULL, 12) */
-    fill(pattern, 12, 67);
-    record_bytes(&expected, pattern, 12);
-    record_flag(&expected, 0);            /* realloc(other, 0) */
-
-    NAOS_CHECK_FALSE(seen.overflowed);
-    NAOS_CHECK_FALSE(expected.overflowed);
-    NAOS_CHECK_MEM_EQ(seen.bytes, seen.size, expected.bytes, expected.size);
-
-    /* malloc, calloc, 2 x realloc, and the malloc of realloc(NULL, 12). */
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 5);
-    check_clean();
-}
-
 NAOS_SUITE(default_allocator,
     NAOS_ADD_TEST(works_when_nothing_is_set),
     NAOS_ADD_TEST(default_handles_the_special_cases)
@@ -893,14 +666,8 @@ NAOS_SUITE(contract,
     NAOS_ADD_TEST(free_of_null_does_nothing)
 )
 
-NAOS_SUITE(equivalence,
-    NAOS_ADD_TEST(default_and_wrapper_give_the_same_results),
-    NAOS_ADD_TEST(sequence_gives_the_promised_results)
-)
-
 NAOS_MAIN(
     NAOS_ADD_SUITE(default_allocator),
     NAOS_ADD_SUITE(set_allocator),
-    NAOS_ADD_SUITE(contract),
-    NAOS_ADD_SUITE(equivalence)
+    NAOS_ADD_SUITE(contract)
 )

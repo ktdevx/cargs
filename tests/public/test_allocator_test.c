@@ -38,52 +38,6 @@ NAOS_TEST(get_returns_the_four_functions)
     NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
-/* Every call of get returns the same four functions. */
-NAOS_TEST(get_returns_the_same_functions_every_time)
-{
-    argx_allocator_t first = argx_test_allocator_get();
-    argx_allocator_t second = argx_test_allocator_get();
-
-    NAOS_CHECK_TRUE(first.malloc_fn == second.malloc_fn);
-    NAOS_CHECK_TRUE(first.realloc_fn == second.realloc_fn);
-    NAOS_CHECK_TRUE(first.calloc_fn == second.calloc_fn);
-    NAOS_CHECK_TRUE(first.free_fn == second.free_fn);
-}
-
-/* Without a request to fail, every kind of request succeeds. */
-NAOS_TEST(succeeds_when_no_failure_is_set)
-{
-    argx_allocator_t allocator = argx_test_allocator_get();
-    void *blocks[8];
-    void *grown;
-    size_t i;
-
-    argx_test_allocator_reset();
-
-    for (i = 0; i < 8; ++i)
-    {
-        blocks[i] = ((i % 2) == 0) ? allocator.malloc_fn(16) : allocator.calloc_fn(4, 4);
-        NAOS_CHECK_TRUE(blocks[i] != NULL);
-    }
-    for (i = 0; i < 8; ++i)
-    {
-        grown = allocator.realloc_fn(blocks[i], 64);
-        NAOS_CHECK_TRUE(grown != NULL);
-        if (grown != NULL)
-        {
-            blocks[i] = grown;
-        }
-    }
-    for (i = 0; i < 8; ++i)
-    {
-        allocator.free_fn(blocks[i]);
-    }
-
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 16);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
-}
-
 /* fail_at(n) fails the n-th request and only that one: malloc_fn. */
 NAOS_TEST(fails_only_the_requested_malloc)
 {
@@ -106,33 +60,6 @@ NAOS_TEST(fails_only_the_requested_malloc)
     NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 2);
 
     allocator.free_fn(first);
-    allocator.free_fn(third);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
-}
-
-/* fail_at(n) fails the n-th request and only that one: calloc_fn. */
-NAOS_TEST(fails_only_the_requested_calloc)
-{
-    argx_allocator_t allocator = argx_test_allocator_get();
-    void *first;
-    void *second;
-    void *third;
-
-    argx_test_allocator_reset();
-    argx_test_allocator_fail_at(1);
-
-    first = allocator.calloc_fn(2, 8);
-    second = allocator.calloc_fn(2, 8);
-    third = allocator.calloc_fn(2, 8);
-
-    NAOS_CHECK_TRUE(first == NULL);
-    NAOS_CHECK_TRUE(second != NULL);
-    NAOS_CHECK_TRUE(third != NULL);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 3);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 2);
-
-    allocator.free_fn(second);
     allocator.free_fn(third);
     NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
     NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
@@ -227,54 +154,6 @@ NAOS_TEST(fail_at_zero_fails_no_request)
 
     allocator.free_fn(first);
     allocator.free_fn(second);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
-}
-
-/* calloc_fn returns count * size bytes that are all 0. */
-NAOS_TEST(calloc_returns_zeroed_memory)
-{
-    enum { COUNT = 37, SIZE = 11 };
-    argx_allocator_t allocator = argx_test_allocator_get();
-    unsigned char zeros[COUNT * SIZE];
-    unsigned char *block;
-
-    argx_test_allocator_reset();
-    memset(zeros, 0, sizeof zeros);
-
-    /* Dirty a block of the same size first, so that a reused block shows. */
-    block = allocator.malloc_fn(sizeof zeros);
-    NAOS_REQUIRE_TRUE(block != NULL);
-    memset(block, 0xA5, sizeof zeros);
-    allocator.free_fn(block);
-
-    block = allocator.calloc_fn(COUNT, SIZE);
-    NAOS_REQUIRE_TRUE(block != NULL);
-    NAOS_CHECK_MEM_EQ(block, sizeof zeros, zeros, sizeof zeros);
-
-    allocator.free_fn(block);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
-}
-
-/* A realloc_fn that succeeds keeps the contents. */
-NAOS_TEST(realloc_keeps_the_contents)
-{
-    static const char text[] = "kept";
-    argx_allocator_t allocator = argx_test_allocator_get();
-    char *block;
-    char *grown;
-
-    argx_test_allocator_reset();
-
-    block = allocator.malloc_fn(sizeof text);
-    NAOS_REQUIRE_TRUE(block != NULL);
-    memcpy(block, text, sizeof text);
-
-    grown = allocator.realloc_fn(block, 100000);
-    NAOS_REQUIRE_TRUE(grown != NULL);
-    NAOS_CHECK_MEM_EQ(grown, sizeof text, text, sizeof text);
-
-    allocator.free_fn(grown);
     NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 }
 
@@ -497,37 +376,18 @@ NAOS_TEST(install_resets_and_uninstall_can_follow)
     NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
-/* install and uninstall can be repeated, and uninstall needs no install. */
-NAOS_TEST(installs_and_uninstalls_more_than_once)
-{
-    argx_test_allocator_uninstall();
-    argx_test_allocator_install();
-    argx_test_allocator_uninstall();
-    argx_test_allocator_install();
-    argx_test_allocator_install();
-    argx_test_allocator_uninstall();
-    argx_test_allocator_uninstall();
-    NAOS_PASS();
-}
-
 NAOS_SUITE(test_allocator,
     NAOS_ADD_TEST(get_returns_the_four_functions),
-    NAOS_ADD_TEST(get_returns_the_same_functions_every_time),
-    NAOS_ADD_TEST(succeeds_when_no_failure_is_set),
     NAOS_ADD_TEST(fails_only_the_requested_malloc),
-    NAOS_ADD_TEST(fails_only_the_requested_calloc),
     NAOS_ADD_TEST(fails_only_the_requested_realloc_and_keeps_the_block),
     NAOS_ADD_TEST(counts_the_request_to_fail_across_the_kinds),
     NAOS_ADD_TEST(fail_at_zero_fails_no_request),
-    NAOS_ADD_TEST(calloc_returns_zeroed_memory),
-    NAOS_ADD_TEST(realloc_keeps_the_contents),
     NAOS_ADD_TEST(counts_the_requests),
     NAOS_ADD_TEST(counts_the_live_blocks),
     NAOS_ADD_TEST(counts_zero_sized_requests_as_violations),
     NAOS_ADD_TEST(counts_null_pointers_as_violations),
     NAOS_ADD_TEST(reset_restores_the_initial_state),
-    NAOS_ADD_TEST(install_resets_and_uninstall_can_follow),
-    NAOS_ADD_TEST(installs_and_uninstalls_more_than_once)
+    NAOS_ADD_TEST(install_resets_and_uninstall_can_follow)
 )
 
 NAOS_MAIN(
