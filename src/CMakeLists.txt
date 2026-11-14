@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # The library sources. To add a source file, add one line to this list.
 set(ARGX_SOURCES
     alloc.c

@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - internal declarations for value types.
  *
  * The contents of a value type. Built-in and user-defined value types are

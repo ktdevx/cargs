@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the public command API: the command part of <argx/schema.h>.
  *
  * A tree of commands is created, read and destroyed the way a consumer does

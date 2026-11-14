@@ -149,6 +149,13 @@ docs/                 Documents
 | Add an error code | Add one line `X(name, description)` at the end of `ARGX_ERROR_LIST` in `include/argx/error.h`. Change nothing else ([Adding an error code](#adding-an-error-code)) |
 | Use the test allocator | Add `support/test_allocator.c` to the `SOURCES` of `argx_add_test()`, and include `"../support/test_allocator.h"` in the test ([Using the test allocator](#using-the-test-allocator)) |
 
+Every new file under `include/`, `src/`, `tests/`, `tools/` and `cmake/`, and every `CMakeLists.txt`, starts with the license header below, followed by the comment that describes the file. In C files, write it inside the first comment (`/*`, ` * SPDX-...`, ` * SPDX-...`, ` *`). In CMake files, write it with `#`; if the file does not start with a comment, put an empty line after the header. Keep the year as it is: it is the year of the first publication, not the year you add the file. The input files of the tests (`tests/release/fixtures/`) do not take the header.
+
+```
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+```
+
 None of these procedures needs any change to the CMake files other than the one line above. The install rules cover every `*.h` in `include/argx/`, and the export check reads the expected names from the public headers.
 
 Below, `<name>` is written as `example`.

@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - error codes and their messages.
  *
  * A function that can fail at run time returns a argx_error_t. Only

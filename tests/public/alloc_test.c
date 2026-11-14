@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the public allocator API: <argx/alloc.h>.
  *
  * These tests check that the type takes the standard functions as they are

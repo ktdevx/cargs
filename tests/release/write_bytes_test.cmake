@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # Tests of argx_write_bytes() and argx_check_write_bytes() in
 # tools/release/ArgXReadBytes.cmake: a text is written byte for byte, line
 # endings included, both with file(WRITE), as on Linux and macOS, and with

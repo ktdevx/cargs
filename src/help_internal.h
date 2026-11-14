@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - internal declarations for the help: the contents of the help
  * options, their default values and their limit.
  *

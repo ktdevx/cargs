@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXReadBytes.cmake - reads and writes a text file byte for byte, line
 # endings included.
 #

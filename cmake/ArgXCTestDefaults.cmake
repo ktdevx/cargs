@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXCTestDefaults.cmake - the configuration ctest uses when none is given.
 #
 # This file is not included by a CMakeLists.txt. ctest reads it, before the

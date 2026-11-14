@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # Tests of tools/release/ArgXSemver.cmake: parsing a version of the form
 # <major>.<minor>.<patch>[-<pre-release>], rejecting every other form with a
 # reason, and comparing two versions by SemVer 2.0.0 precedence.

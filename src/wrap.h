@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - internal declarations for the wrapping of the help: one text is
  * written to a argx_out_t, broken into lines at the blanks so that it
  * fits a width.

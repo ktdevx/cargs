@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the failure of an allocation in a parse: argx_parse() and
  * argx_parse_wide() of <argx/parse.h>.
  *

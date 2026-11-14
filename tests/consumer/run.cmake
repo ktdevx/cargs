@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # run.cmake - runs the consumer check from start to end.
 #
 # A script, run with "cmake -P" on a build directory of ArgX that is

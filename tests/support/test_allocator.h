@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX test support - the test allocator: an allocator that can fail a
  * chosen request and that counts requests, live blocks and violations of
  * the allocator contract.

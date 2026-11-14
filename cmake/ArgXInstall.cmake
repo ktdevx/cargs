@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXInstall.cmake - the install rules and the package files of ArgX.
 #
 # Included by the top-level CMakeLists.txt, after the target argx exists,

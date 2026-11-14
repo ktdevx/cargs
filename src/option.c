@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - options: the addition of the four kinds of options to a command,
  * the attributes of an option, and the reading of an option.
  */

@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the layout of the help: the description column of
  * argx_help_write() of <argx/help.h>, its limit, the items whose
  * heading is too wide for it, the breaking of the descriptions into lines,

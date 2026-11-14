@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the internal string functions: "str.h".
  *
  * The tests use the test allocator ("../support/test_allocator.h") to see

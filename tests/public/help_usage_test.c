@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the usage line: argx_help_write_usage() of <argx/help.h>.
  *
  * Each test builds a schema, validates it, has the usage line of one of its

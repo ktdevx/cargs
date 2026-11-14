@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - parsing: the two entries, and the scan of the arguments.
  *
  * The arguments are read once each, from the first after the name of the

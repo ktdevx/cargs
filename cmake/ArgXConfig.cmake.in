@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXConfig.cmake - the package file of ArgX for find_package(ArgX).
 #
 # Provides the target ArgX::argx. Link to it and nothing else is needed:

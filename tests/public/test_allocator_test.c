@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the test allocator itself: "../support/test_allocator.h".
  *
  * The test allocator is test support, not a part of the library. Many tests

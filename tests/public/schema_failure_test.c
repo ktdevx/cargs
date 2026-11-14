@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the failure of an allocation, across the schema: the functions
  * of <argx/type.h> and <argx/schema.h> that allocate.
  *

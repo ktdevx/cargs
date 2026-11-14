@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the public value type API: <argx/type.h>.
  *
  * The boundaries of the conversion of numbers are tested with the internal

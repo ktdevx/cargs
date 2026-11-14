@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # changes.cmake - decides whether a change touches documentation only, so that
 # the CI can skip the builds and tests that documentation cannot affect.
 #

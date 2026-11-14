@@ -100,4 +100,4 @@ This section is for maintainers. The release procedure is described in [docs/rel
 
 ## License
 
-By contributing to ArgX, you agree that your contributions are distributed under the MIT License, as described in [LICENSE](LICENSE).
+By contributing to ArgX, you agree that your contributions are distributed under the MIT License, as described in [LICENSE](LICENSE). The copyright holder written in [LICENSE](LICENSE) and at the top of each source file, "The ArgX Authors", means everyone who has contributed to ArgX; the git history records who they are. Add the license header to every new file, as described in [Procedures](docs/conventions.md#procedures).

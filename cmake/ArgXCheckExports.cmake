@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXCheckExports.cmake - checks what the shared library exports.
 #
 # A script, run with "cmake -P". When the library is a shared library and the

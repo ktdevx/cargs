@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXTesting.cmake - the test framework (Naos) and the registration of tests.
 #
 # Included only when the option ARGX_BUILD_TESTS is ON. Including it fetches

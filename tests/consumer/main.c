@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * The consumer check: a program that uses ArgX the way a user does.
  *
  * Returns 0 if the version of the linked library equals the version of the

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # Tests of argx_read_version (cmake/ArgXVersion.cmake): reading the
 # pre-release identifiers, and stopping on a header whose pre-release macro is
 # missing, defined twice or not a valid value.

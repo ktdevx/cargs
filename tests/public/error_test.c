@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the public error API: <argx/error.h>.
  *
  * The table below is generated from ARGX_ERROR_LIST, so these tests cover

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # Tests of tools/ci/changes.cmake: a list of changed files is documentation
 # only when every path in it is documentation, and a list that is missing,
 # empty or holds a path that is not documentation runs the whole CI. Markdown

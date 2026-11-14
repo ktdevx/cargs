@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXCheckAllocations.cmake - checks that the library sources do not use
 # the allocation functions of the C standard library directly.
 #

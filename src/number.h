@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - internal declarations for the conversion of numbers.
  *
  * The conversion of a string to a signed 64-bit integer and to a finite

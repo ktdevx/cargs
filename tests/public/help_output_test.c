@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of where the text of a help goes: the write function of
  * argx_help_write() and argx_help_write_usage() of <argx/help.h>,
  * and the functions that put the same texts into an array of the caller,

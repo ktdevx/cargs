@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - the result of a parse: its creation and destruction, the copy
  * of the arguments, the selected commands, the values, the parse error and
  * the functions that read it.
