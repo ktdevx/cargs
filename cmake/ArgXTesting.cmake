@@ -10,7 +10,7 @@
 # Registers one test executable. Call it from tests/CMakeLists.txt:
 #
 #   argx_add_test(version SOURCES public/version_test.c)
-#   argx_add_test(version_internal SOURCES internal/version_internal_test.c INTERNAL)
+#   argx_add_test(alloc_internal SOURCES internal/alloc_internal_test.c INTERNAL)
 #
 #   - Makes the executable argx_test_<name> from the sources.
 #   - Gives it the compile settings of the ArgX targets, without the strict
@@ -20,7 +20,7 @@
 #                         the tests of the public API;
 #       with INTERNAL     argx_internal, always linked statically, for the
 #                         tests of the internal functions. The test includes
-#                         an internal header as "version_internal.h".
+#                         an internal header as "alloc_internal.h".
 #   - On Windows with a shared library, copies the DLLs a test of the public
 #     API needs next to its executable, so that it starts with no change to
 #     PATH.

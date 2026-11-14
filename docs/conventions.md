@@ -22,16 +22,16 @@ Contents:
 |---|---|---|
 | Public functions and types | `argx_` + lowercase snake case. Type names end with `_t` | `argx_version`, `argx_example_t` |
 | Public macros and enumeration constants | `ARGX_` + uppercase snake case | `ARGX_VERSION_MAJOR` |
-| Internal functions and types (used across files) | The same `argx_` + lowercase snake case as public ones. Type names end with `_t`. Do not add `ARGX_API`; declare them in an internal header in `src/` | `argx_version_pack` |
+| Internal functions and types (used across files) | The same `argx_` + lowercase snake case as public ones. Type names end with `_t`. Do not add `ARGX_API`; declare them in an internal header in `src/` | `argx_vec_push`, `argx_vec_t` |
 | Structure and enumeration tags | The type name without `_t`. Do not add `_t` | `struct argx_example`, `enum argx_example_kind` |
 | Function pointer types and the fields that hold them | The type is `argx_<name>_fn_t`, the field is `<name>_fn` | `argx_example_fn_t`, `example_fn` |
-| Internal macros | The same `ARGX_` + uppercase snake case as public ones. Define them in an internal header in `src/` | `ARGX_VERSION_INTERNAL_H` (include guard) |
+| Internal macros | The same `ARGX_` + uppercase snake case as public ones. Define them in an internal header in `src/` | `ARGX_ALLOC_INTERNAL_H` (include guard) |
 | Functions used only within one file | Add `static`. No prefix is needed | — |
 | Public headers | `include/argx/<name>.h` | `include/argx/version.h` |
 | Sources | `src/<name>.c` | `src/version.c` |
-| Internal headers | `src/<name>_internal.h` for a module that has a public header of the same name (`include/argx/<name>.h`), `src/<name>.h` for a module that does not | `src/version_internal.h` (`include/argx/version.h` exists) |
+| Internal headers | `src/<name>_internal.h` for a module that has a public header of the same name (`include/argx/<name>.h`), `src/<name>.h` for a module that does not | `src/alloc_internal.h` (`include/argx/alloc.h` exists), `src/vec.h` |
 | Tests of the public API | `tests/public/<name>_test.c` | `tests/public/version_test.c` |
-| Tests of internal functions | `tests/internal/<internal-header-name>_test.c` | `tests/internal/version_internal_test.c` |
+| Tests of internal functions | `tests/internal/<internal-header-name>_test.c` | `tests/internal/alloc_internal_test.c` |
 | CMake options, functions and modules | `ARGX_<name>`, `argx_<name>()`, `cmake/ArgX<name>.cmake` | `ARGX_BUILD_TESTS`, `argx_add_test()`, `cmake/ArgXTesting.cmake` |
 
 - Public and internal names are not told apart by prefix. Whether a function is public is decided by whether it is declared with `ARGX_API` in a header under `include/argx/`. `ARGX_API` (`include/argx/export.h`) is the only mark that makes a function public. Do not make functions public in any other way (writing compiler attributes directly, adding a `.def` file and so on).

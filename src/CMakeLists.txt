@@ -74,7 +74,7 @@ endif()
 # The target for the tests of the internal functions. It exists only when the
 # tests are built, and it is never installed. A test that links to it gets
 # the public headers and the internal headers of this directory, and includes
-# an internal header as "version_internal.h".
+# an internal header as "alloc_internal.h".
 if(ARGX_BUILD_TESTS)
     if(argx_type STREQUAL "SHARED_LIBRARY")
         # The shared library does not export the internal functions. So the
