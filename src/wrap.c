@@ -33,8 +33,10 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
         size_t start = position;
 
         if (text[position] == '\n') {
-            /* The blanks that are remembered, those that lead to column
-             * included, are dropped by the newline. */
+            /*
+             * The blanks that are remembered, those that lead to column
+             * included, are dropped by the newline.
+             */
             ++position;
             clargs_out_newline(out);
             clargs_out_pad_to(out, column);
@@ -53,8 +55,10 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
             }
             word = position - start;
 
-            /* "current + word > width" without the sum: the subtraction
-             * cannot wrap around, because current < width there. */
+            /*
+             * "current + word > width" without the sum: the subtraction
+             * cannot wrap around, because current < width there.
+             */
             current = clargs_out_column(out);
             if (line_has_word && width != 0 && (current >= width || word > width - current)) {
                 /* The blanks before the word are dropped by the newline. */

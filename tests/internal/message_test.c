@@ -28,17 +28,21 @@
 #include <stdint.h>
 #include <string.h>
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 }
 
-/* The parts of a message of the kind, for an error on the command line,
+/*
+ * The parts of a message of the kind, for an error on the command line,
  * with no strings: a test sets the strings that the wording of the kind
- * uses. */
+ * uses.
+ */
 static clargs_message_parts_t parts_of(clargs_parse_error_kind_t kind)
 {
     clargs_message_parts_t parts;
@@ -62,9 +66,11 @@ static void set_name(clargs_message_parts_t *parts, const char *prefix, const ch
     parts->name_length = strlen(name);
 }
 
-/* Builds the message of the parts and checks that it is exactly expected:
+/*
+ * Builds the message of the parts and checks that it is exactly expected:
  * the same bytes with the terminator, made with one request, and freed
- * with clargs_free. The test allocator is installed. */
+ * with clargs_free. The test allocator is installed.
+ */
 static void check_message(const clargs_message_parts_t *parts, const char *expected)
 {
     char *message = NULL;
@@ -85,8 +91,10 @@ static void check_message(const clargs_message_parts_t *parts, const char *expec
 
 /* ---- The public enumerations ------------------------------------------ */
 
-/* The values are in the order of the design, from 0: a value that is added
- * later comes after them and changes none. */
+/*
+ * The values are in the order of the design, from 0: a value that is added
+ * later comes after them and changes none.
+ */
 NAOS_TEST(enumerations_keep_their_order)
 {
     NAOS_CHECK_INT_EQ(CLARGS_SOURCE_NONE, 0);
@@ -292,8 +300,10 @@ NAOS_TEST(invalid_encoding)
 
 /* ---- What the wording does not depend on ------------------------------ */
 
-/* The source chooses the wording of CLARGS_PARSE_ERROR_INVALID_VALUE only,
- * and for_positional too: the other kinds read neither. */
+/*
+ * The source chooses the wording of CLARGS_PARSE_ERROR_INVALID_VALUE only,
+ * and for_positional too: the other kinds read neither.
+ */
 NAOS_TEST(source_and_for_positional_change_only_an_invalid_value)
 {
     clargs_message_parts_t parts = parts_of(CLARGS_PARSE_ERROR_MISSING_OPTION);
@@ -320,8 +330,10 @@ NAOS_TEST(source_and_for_positional_change_only_an_invalid_value)
     check_clean();
 }
 
-/* The strings that a kind does not use are not read: they may be NULL, and
- * what they hold does not get into the message. */
+/*
+ * The strings that a kind does not use are not read: they may be NULL, and
+ * what they hold does not get into the message.
+ */
 NAOS_TEST(unused_strings_are_ignored)
 {
     clargs_message_parts_t parts = parts_of(CLARGS_PARSE_ERROR_UNKNOWN_OPTION);
@@ -345,8 +357,10 @@ NAOS_TEST(unused_strings_are_ignored)
 
 /* ---- The name --------------------------------------------------------- */
 
-/* The name ends after name_length bytes, not at the terminator: the name
- * of "--output=file" is the six bytes of "output". */
+/*
+ * The name ends after name_length bytes, not at the terminator: the name
+ * of "--output=file" is the six bytes of "output".
+ */
 NAOS_TEST(name_ends_at_its_length)
 {
     const char element[] = "--output=file";
@@ -398,9 +412,11 @@ NAOS_TEST(name_of_the_length_zero)
 
 /* ---- The strings are not changed -------------------------------------- */
 
-/* A value is put in as it is: quotes, a percent sign, a backslash, bytes
+/*
+ * A value is put in as it is: quotes, a percent sign, a backslash, bytes
  * that are not ASCII and an empty string are neither escaped nor replaced
- * nor cut. */
+ * nor cut.
+ */
 NAOS_TEST(strings_are_embedded_as_they_are)
 {
     clargs_message_parts_t parts = parts_of(CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL);
@@ -456,9 +472,11 @@ NAOS_TEST(long_strings_are_copied_whole)
 
 /* ---- The form of the message ------------------------------------------ */
 
-/* One line: no line break, no prefix, no full stop. Every wording starts
+/*
+ * One line: no line break, no prefix, no full stop. Every wording starts
  * with a lower case letter of its own text and ends with the last
- * character of the table. */
+ * character of the table.
+ */
 NAOS_TEST(message_is_one_line_without_a_full_stop)
 {
     static const clargs_parse_error_kind_t kinds[] = {
@@ -502,8 +520,10 @@ NAOS_TEST(message_is_one_line_without_a_full_stop)
 
 /* ---- Failures --------------------------------------------------------- */
 
-/* When the allocation fails, the result is CLARGS_ERROR_OUT_OF_MEMORY, *out
- * is NULL and nothing stays allocated. The next build works again. */
+/*
+ * When the allocation fails, the result is CLARGS_ERROR_OUT_OF_MEMORY, *out
+ * is NULL and nothing stays allocated. The next build works again.
+ */
 NAOS_TEST(allocation_failure_is_reported)
 {
     clargs_message_parts_t parts = parts_of(CLARGS_PARSE_ERROR_INVALID_VALUE);
@@ -530,10 +550,12 @@ NAOS_TEST(allocation_failure_is_reported)
     check_clean();
 }
 
-/* A length that does not fit in size_t is an allocation failure: nothing
+/*
+ * A length that does not fit in size_t is an allocation failure: nothing
  * is requested and no string is read past its real end. The name is not
  * read before the lengths have been added, so a length that is not the
- * real one shows it. */
+ * real one shows it.
+ */
 NAOS_TEST(length_overflow_is_an_allocation_failure)
 {
     clargs_message_parts_t parts = parts_of(CLARGS_PARSE_ERROR_UNKNOWN_OPTION);

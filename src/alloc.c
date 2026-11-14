@@ -44,8 +44,10 @@ static void default_free(void *ptr)
 
 static const clargs_allocator_t default_allocator = DEFAULT_ALLOCATOR;
 
-/* The allocator that is set. This is the only mutable global state of the
- * library. Only clargs_set_allocator() writes it. */
+/*
+ * The allocator that is set. This is the only mutable global state of the
+ * library. Only clargs_set_allocator() writes it.
+ */
 static clargs_allocator_t current_allocator = DEFAULT_ALLOCATOR;
 
 void clargs_set_allocator(const clargs_allocator_t *allocator)

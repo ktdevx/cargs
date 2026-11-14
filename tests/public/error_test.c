@@ -124,8 +124,10 @@ NAOS_TEST(definition_values_are_fixed)
     NAOS_CHECK_INT_EQ(CLARGS_ERROR_INVALID_VALUE, 6);
 }
 
-/* The codes of the definition mistakes have the messages they were published
- * with. */
+/*
+ * The codes of the definition mistakes have the messages they were published
+ * with.
+ */
 NAOS_TEST(definition_messages_are_fixed)
 {
     NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_INVALID_NAME), "invalid name");
@@ -143,16 +145,20 @@ NAOS_TEST(command_line_value_is_fixed)
     NAOS_CHECK_INT_EQ(CLARGS_ERROR_INVALID_COMMAND_LINE, 7);
 }
 
-/* The code of the command line mistakes has the message it was published
- * with. */
+/*
+ * The code of the command line mistakes has the message it was published
+ * with.
+ */
 NAOS_TEST(command_line_message_is_fixed)
 {
     NAOS_CHECK_STR_EQ(clargs_error_message(CLARGS_ERROR_INVALID_COMMAND_LINE),
                       "invalid command line");
 }
 
-/* The code of the write failures follows the command line mistakes. It is
- * the last code of the list. */
+/*
+ * The code of the write failures follows the command line mistakes. It is
+ * the last code of the list.
+ */
 NAOS_TEST(write_value_is_fixed)
 {
     NAOS_CHECK_INT_EQ(CLARGS_ERROR_WRITE_FAILED, 8);

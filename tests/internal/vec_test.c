@@ -90,16 +90,20 @@ static void wrap_reset(void)
     wrap_free_calls = 0;
 }
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 }
 
-/* The array is in the empty state, the state right after
- * clargs_vec_init. */
+/*
+ * The array is in the empty state, the state right after
+ * clargs_vec_init.
+ */
 static void check_empty(const clargs_vec_t *vec, size_t item_size)
 {
     NAOS_CHECK_TRUE(vec->items == NULL);
@@ -108,16 +112,20 @@ static void check_empty(const clargs_vec_t *vec, size_t item_size)
     NAOS_CHECK_UINT_EQ(vec->item_size, item_size);
 }
 
-/* The value of the item at index in the arrays of int of these tests. Any
- * value that differs from item to item will do. */
+/*
+ * The value of the item at index in the arrays of int of these tests. Any
+ * value that differs from item to item will do.
+ */
 static int int_value(size_t index)
 {
     return (int)index * 7 - 3;
 }
 
-/* Pushes the items int_value(vec->count) ... int_value(total - 1), so that
+/*
+ * Pushes the items int_value(vec->count) ... int_value(total - 1), so that
  * the array has total items afterwards. Stops at the first push that fails
- * and returns its error. */
+ * and returns its error.
+ */
 static clargs_error_t push_ints_up_to(clargs_vec_t *vec, size_t total)
 {
     while (vec->count < total) {
@@ -131,8 +139,10 @@ static clargs_error_t push_ints_up_to(clargs_vec_t *vec, size_t total)
     return CLARGS_ERROR_NONE;
 }
 
-/* Every item of an array of int has the value that push_ints_up_to gave
- * it. */
+/*
+ * Every item of an array of int has the value that push_ints_up_to gave
+ * it.
+ */
 static void check_ints(const clargs_vec_t *vec)
 {
     size_t i;
@@ -153,8 +163,10 @@ NAOS_TEST(init_makes_an_empty_array_without_allocating)
 
     clargs_test_allocator_install();
 
-    /* Not the values of the empty state, so that the checks below see what
-     * clargs_vec_init wrote. */
+    /*
+     * Not the values of the empty state, so that the checks below see what
+     * clargs_vec_init wrote.
+     */
     memset(&vec, 0x5a, sizeof vec);
 
     clargs_vec_init(&vec, sizeof(int));
@@ -168,8 +180,10 @@ NAOS_TEST(init_makes_an_empty_array_without_allocating)
     check_clean();
 }
 
-/* Destroying an array that never had an item asks nothing of the
- * allocator: no free_fn of NULL. */
+/*
+ * Destroying an array that never had an item asks nothing of the
+ * allocator: no free_fn of NULL.
+ */
 NAOS_TEST(destroy_of_an_empty_array_does_not_call_the_allocator)
 {
     clargs_allocator_t allocator = wrap_allocator();
@@ -194,8 +208,10 @@ NAOS_TEST(destroy_of_an_empty_array_does_not_call_the_allocator)
 
 /* ---- Pushing and growing ---------------------------------------------- */
 
-/* The first push allocates room for 4 items. The next three pushes use
- * it. */
+/*
+ * The first push allocates room for 4 items. The next three pushes use
+ * it.
+ */
 NAOS_TEST(first_push_allocates_four_items)
 {
     clargs_vec_t vec;
@@ -227,8 +243,10 @@ NAOS_TEST(first_push_allocates_four_items)
     check_clean();
 }
 
-/* When the array is full, a push doubles the capacity: 4, 8, 16, ... One
- * request each time, and one live block all the time. */
+/*
+ * When the array is full, a push doubles the capacity: 4, 8, 16, ... One
+ * request each time, and one live block all the time.
+ */
 NAOS_TEST(capacity_doubles_when_the_array_is_full)
 {
     clargs_vec_t vec;
@@ -284,9 +302,11 @@ NAOS_TEST(growth_keeps_the_contents)
     check_clean();
 }
 
-/* A push copies the item: changing the variable afterwards does not change
+/*
+ * A push copies the item: changing the variable afterwards does not change
  * the item in the array, and the item is not at the address of the
- * variable. */
+ * variable.
+ */
 NAOS_TEST(push_copies_the_item)
 {
     clargs_vec_t vec;
@@ -319,8 +339,10 @@ NAOS_TEST(push_copies_the_item)
 
 /* ---- clargs_vec_at ---------------------------------------------------- */
 
-/* clargs_vec_at returns the address of the item: index * item_size bytes
- * from the start of the items. The item can be written through it. */
+/*
+ * clargs_vec_at returns the address of the item: index * item_size bytes
+ * from the start of the items. The item can be written through it.
+ */
 NAOS_TEST(at_returns_the_address_of_the_item)
 {
     clargs_vec_t vec;
@@ -435,8 +457,10 @@ NAOS_TEST(holds_structs)
     check_clean();
 }
 
-/* Pointers. The array holds the pointers, not what they point to: destroy
- * frees the array and leaves the strings to the caller. */
+/*
+ * Pointers. The array holds the pointers, not what they point to: destroy
+ * frees the array and leaves the strings to the caller.
+ */
 NAOS_TEST(holds_pointers)
 {
     char first[] = "first";
@@ -512,8 +536,10 @@ NAOS_TEST(holds_large_items)
 
 /* ---- Destroying ------------------------------------------------------- */
 
-/* clargs_vec_destroy frees the items and puts the array back in the empty
- * state. */
+/*
+ * clargs_vec_destroy frees the items and puts the array back in the empty
+ * state.
+ */
 NAOS_TEST(destroy_frees_and_empties)
 {
     clargs_vec_t vec;
@@ -532,8 +558,10 @@ NAOS_TEST(destroy_frees_and_empties)
     check_clean();
 }
 
-/* clargs_vec_destroy may be called twice: the second call does nothing,
- * and does not free NULL. */
+/*
+ * clargs_vec_destroy may be called twice: the second call does nothing,
+ * and does not free NULL.
+ */
 NAOS_TEST(destroy_twice_is_allowed)
 {
     clargs_vec_t vec;
@@ -553,8 +581,10 @@ NAOS_TEST(destroy_twice_is_allowed)
     check_clean();
 }
 
-/* After clargs_vec_destroy the array can be used again, without another
- * clargs_vec_init: it starts again from the first capacity. */
+/*
+ * After clargs_vec_destroy the array can be used again, without another
+ * clargs_vec_init: it starts again from the first capacity.
+ */
 NAOS_TEST(usable_again_after_destroy)
 {
     clargs_vec_t vec;
@@ -587,9 +617,11 @@ NAOS_TEST(usable_again_after_destroy)
 
 /* ---- The allocator ---------------------------------------------------- */
 
-/* All the memory comes from clargs_realloc: the first allocation reaches
+/*
+ * All the memory comes from clargs_realloc: the first allocation reaches
  * the allocator as a malloc_fn of 4 items (the pointer is NULL then), every
- * growth as a realloc_fn of twice the items, and destroy as one free_fn. */
+ * growth as a realloc_fn of twice the items, and destroy as one free_fn.
+ */
 NAOS_TEST(requests_go_through_realloc_and_free)
 {
     clargs_allocator_t allocator = wrap_allocator();
@@ -656,8 +688,10 @@ NAOS_TEST(works_with_the_default_allocator)
 
 /* ---- The failure of the allocation ------------------------------------ */
 
-/* When the first allocation fails, the push returns
- * CLARGS_ERROR_OUT_OF_MEMORY and the array stays empty. */
+/*
+ * When the first allocation fails, the push returns
+ * CLARGS_ERROR_OUT_OF_MEMORY and the array stays empty.
+ */
 NAOS_TEST(failed_first_push_leaves_the_array_empty)
 {
     clargs_vec_t vec;
@@ -735,8 +769,10 @@ NAOS_TEST(fails_at_every_allocation_point)
 
         if (error == CLARGS_ERROR_NONE
             && clargs_test_allocator_requests() < n) {
-            /* The operation ended before the request to fail was reached:
-             * every allocation point has been passed. */
+            /*
+             * The operation ended before the request to fail was reached:
+             * every allocation point has been passed.
+             */
             NAOS_CHECK_UINT_EQ(vec.count, total);
             check_ints(&vec);
             clargs_vec_destroy(&vec);
@@ -750,9 +786,11 @@ NAOS_TEST(fails_at_every_allocation_point)
         NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n);
 
-        /* The array is as it was before the push: it is full, the items
+        /*
+         * The array is as it was before the push: it is full, the items
          * that were pushed are all there, and nothing was lost or leaked
-         * (one block if there are items, none if there are not). */
+         * (one block if there are items, none if there are not).
+         */
         count = vec.count;
         capacity = vec.capacity;
         items = vec.items;
@@ -773,8 +811,10 @@ NAOS_TEST(fails_at_every_allocation_point)
         NAOS_CHECK_TRUE(vec.items == items);
         check_ints(&vec);
 
-        /* The array is still usable: the next push succeeds, and so do
-         * the pushes after it. */
+        /*
+         * The array is still usable: the next push succeeds, and so do
+         * the pushes after it.
+         */
         error = push_ints_up_to(&vec, count + 1);
         NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(vec.count, count + 1);
@@ -790,8 +830,10 @@ NAOS_TEST(fails_at_every_allocation_point)
         check_clean();
     }
 
-    /* The loop ended because the operation completed, after each of its
-     * allocations had failed once. */
+    /*
+     * The loop ended because the operation completed, after each of its
+     * allocations had failed once.
+     */
     NAOS_CHECK_TRUE(completed);
     NAOS_CHECK_UINT_EQ(failures, allocation_points);
 
@@ -808,8 +850,10 @@ NAOS_TEST(fails_at_every_allocation_point)
  * The fields are put back by hand at the end, so that nothing is freed.
  */
 
-/* The size of the first allocation, 4 items, does not fit in a size_t: the
- * push fails without calling the allocator, and the array is unchanged. */
+/*
+ * The size of the first allocation, 4 items, does not fit in a size_t: the
+ * push fails without calling the allocator, and the array is unchanged.
+ */
 NAOS_TEST(overflow_of_the_first_allocation)
 {
     const size_t item_size = SIZE_MAX / 2;
@@ -828,8 +872,10 @@ NAOS_TEST(overflow_of_the_first_allocation)
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
     check_empty(&vec, item_size);
 
-    /* The largest item size whose first allocation overflows by one
-     * byte only. */
+    /*
+     * The largest item size whose first allocation overflows by one
+     * byte only.
+     */
     vec.item_size = SIZE_MAX / 4 + 1;
     NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
         CLARGS_ERROR_OUT_OF_MEMORY);
@@ -880,9 +926,11 @@ NAOS_TEST(overflow_of_the_doubled_capacity)
     check_clean();
 }
 
-/* Twice the capacity wraps around to a small number that is not 0: a
+/*
+ * Twice the capacity wraps around to a small number that is not 0: a
  * request of that size would look like any other. The push fails without
- * calling the allocator. */
+ * calling the allocator.
+ */
 NAOS_TEST(overflow_of_the_doubled_capacity_to_a_small_number)
 {
     /* Twice this is 4, modulo SIZE_MAX + 1. */
@@ -921,8 +969,10 @@ NAOS_TEST(overflow_of_the_doubled_capacity_to_a_small_number)
  * not take the size for an overflow.
  */
 
-/* The largest capacity that can be doubled: SIZE_MAX / 2 items of one
- * byte become SIZE_MAX - 1 bytes. */
+/*
+ * The largest capacity that can be doubled: SIZE_MAX / 2 items of one
+ * byte become SIZE_MAX - 1 bytes.
+ */
 NAOS_TEST(largest_capacity_that_doubles_is_requested)
 {
     const size_t full = SIZE_MAX / 2;
@@ -954,8 +1004,10 @@ NAOS_TEST(largest_capacity_that_doubles_is_requested)
     check_clean();
 }
 
-/* The largest item size whose first allocation fits: 4 items of
- * SIZE_MAX / 4 bytes are SIZE_MAX - 3 bytes. */
+/*
+ * The largest item size whose first allocation fits: 4 items of
+ * SIZE_MAX / 4 bytes are SIZE_MAX - 3 bytes.
+ */
 NAOS_TEST(largest_first_allocation_is_requested)
 {
     const size_t item_size = SIZE_MAX / 4;
@@ -980,8 +1032,10 @@ NAOS_TEST(largest_first_allocation_is_requested)
     check_clean();
 }
 
-/* Twice the capacity fits in a size_t, but that many items do not: the
- * product of the new capacity and the item size overflows. */
+/*
+ * Twice the capacity fits in a size_t, but that many items do not: the
+ * product of the new capacity and the item size overflows.
+ */
 NAOS_TEST(overflow_of_the_size_in_bytes)
 {
     typedef struct eight {
@@ -1015,8 +1069,10 @@ NAOS_TEST(overflow_of_the_size_in_bytes)
     check_clean();
 }
 
-/* After a push that failed for an overflow, the array is still usable once
- * it is in a state that can exist. */
+/*
+ * After a push that failed for an overflow, the array is still usable once
+ * it is in a state that can exist.
+ */
 NAOS_TEST(usable_after_an_overflow)
 {
     clargs_vec_t vec;

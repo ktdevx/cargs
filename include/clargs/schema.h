@@ -49,8 +49,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* A command: the root of a schema, or a subcommand. The contents are not
- * public. */
+/*
+ * A command: the root of a schema, or a subcommand. The contents are not
+ * public.
+ */
 typedef struct clargs_command clargs_command_t;
 
 /* An option of a command. The contents are not public. */

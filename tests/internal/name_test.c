@@ -43,8 +43,10 @@ NAOS_TEST(short_rejects_hyphen_and_underscore)
     NAOS_CHECK_FALSE(clargs_name_is_short('_'));
 }
 
-/* Other printable characters, the space and the terminator ('\0' means
- * "no short name" to the callers) are not short names. */
+/*
+ * Other printable characters, the space and the terminator ('\0' means
+ * "no short name" to the callers) are not short names.
+ */
 NAOS_TEST(short_rejects_other_characters)
 {
     NAOS_CHECK_FALSE(clargs_name_is_short('?'));
@@ -65,8 +67,10 @@ NAOS_TEST(short_rejects_the_neighbours_of_the_ranges)
     NAOS_CHECK_FALSE(clargs_name_is_short('{')); /* after 'z' */
 }
 
-/* A byte outside ASCII is not a short name, whether char is signed or
- * not, and whatever the locale calls a letter. */
+/*
+ * A byte outside ASCII is not a short name, whether char is signed or
+ * not, and whatever the locale calls a letter.
+ */
 NAOS_TEST(short_rejects_bytes_outside_ascii)
 {
     NAOS_CHECK_FALSE(clargs_name_is_short('\x80'));
@@ -131,8 +135,10 @@ NAOS_TEST(long_rejects_space_and_equals)
     NAOS_CHECK_FALSE(clargs_name_is_long("a.b"));
 }
 
-/* Bytes outside ASCII are rejected at the start, in the middle and at the
- * end. */
+/*
+ * Bytes outside ASCII are rejected at the start, in the middle and at the
+ * end.
+ */
 NAOS_TEST(long_rejects_bytes_outside_ascii)
 {
     NAOS_CHECK_FALSE(clargs_name_is_long("\xC3\xA9t\xC3\xA9")); /* UTF-8 */

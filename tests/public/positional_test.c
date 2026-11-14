@@ -31,8 +31,10 @@ static const clargs_arity_t all_arities[ARITY_COUNT] = { CLARGS_ARITY_REQUIRED, 
                                                          CLARGS_ARITY_ZERO_OR_MORE,
                                                          CLARGS_ARITY_ONE_OR_MORE };
 
-/* The end of every test that allocates: the test allocator has no live
- * block and saw no violation of the allocator contract. */
+/*
+ * The end of every test that allocates: the test allocator has no live
+ * block and saw no violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -68,8 +70,10 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name)
     return sub;
 }
 
-/* Adds a positional with the value type of strings that must succeed, and
- * returns it. */
+/*
+ * Adds a positional with the value type of strings that must succeed, and
+ * returns it.
+ */
 static clargs_positional_t *add(clargs_command_t *command, const char *name, clargs_arity_t arity)
 {
     clargs_positional_t *positional = NULL;
@@ -80,9 +84,11 @@ static clargs_positional_t *add(clargs_command_t *command, const char *name, cla
     return positional;
 }
 
-/* Checks that the addition of a positional with the name name fails with
+/*
+ * Checks that the addition of a positional with the name name fails with
  * expected for every arity, sets the output to NULL, adds nothing and
- * allocates nothing. */
+ * allocates nothing.
+ */
 static void check_rejected(clargs_command_t *command, const char *name, clargs_error_t expected)
 {
     const size_t count = clargs_command_positional_count(command);
@@ -92,8 +98,10 @@ static void check_rejected(clargs_command_t *command, const char *name, clargs_e
     size_t requests;
     size_t index;
 
-    /* What a failure must not leave in the output: a handle of another
-     * tree. */
+    /*
+     * What a failure must not leave in the output: a handle of another
+     * tree.
+     */
     NAOS_REQUIRE_TRUE(clargs_command_create("other", &other) == CLARGS_ERROR_NONE);
     sentinel = add(other, "sentinel", CLARGS_ARITY_REQUIRED);
     requests = clargs_test_allocator_requests();
@@ -119,9 +127,11 @@ static void check_rejected(clargs_command_t *command, const char *name, clargs_e
     clargs_command_destroy(other);
 }
 
-/* Checks that the addition of a subcommand with the name name to command
+/*
+ * Checks that the addition of a subcommand with the name name to command
  * fails with expected, sets the output to NULL, adds nothing and allocates
- * nothing. */
+ * nothing.
+ */
 static void check_subcommand_rejected(clargs_command_t *command, const char *name, clargs_error_t expected)
 {
     const size_t count = clargs_command_positional_count(command);
@@ -138,8 +148,10 @@ static void check_subcommand_rejected(clargs_command_t *command, const char *nam
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
 }
 
-/* Checks that actual is the string expected, or NULL when expected is
- * NULL. */
+/*
+ * Checks that actual is the string expected, or NULL when expected is
+ * NULL.
+ */
 static void check_text(const char *actual, const char *expected)
 {
     if (expected == NULL) {
@@ -150,8 +162,10 @@ static void check_text(const char *actual, const char *expected)
     }
 }
 
-/* Checks what the readers return for what a positional got when it was
- * added. */
+/*
+ * Checks what the readers return for what a positional got when it was
+ * added.
+ */
 static void check_positional(const clargs_positional_t *positional, const clargs_command_t *command,
                              const char *name, clargs_arity_t arity, const clargs_type_t *type)
 {
@@ -163,8 +177,10 @@ static void check_positional(const clargs_positional_t *positional, const clargs
     NAOS_CHECK_TRUE(clargs_positional_type(positional) == type);
 }
 
-/* Checks the attributes of a positional. A string is NULL when the
- * attribute must not be set. */
+/*
+ * Checks the attributes of a positional. A string is NULL when the
+ * attribute must not be set.
+ */
 static void check_attributes(const clargs_positional_t *positional, const char *description,
                              const char *default_value)
 {
@@ -207,8 +223,10 @@ static const char *get_text(text_attribute_t attribute, const clargs_positional_
 
 /* ---- Addition ----------------------------------------------------------- */
 
-/* A positional of each of the four arities is added, with its name and its
- * value type, and read back. */
+/*
+ * A positional of each of the four arities is added, with its name and its
+ * value type, and read back.
+ */
 NAOS_TEST(the_four_arities_are_added_and_read)
 {
     static const char *const names[ARITY_COUNT] = { "input", "output", "extra", "file" };
@@ -253,8 +271,10 @@ NAOS_TEST(the_four_arities_are_different)
     }
 }
 
-/* The name is for display and identification and never appears on a command
- * line: any string that is not empty is a name. */
+/*
+ * The name is for display and identification and never appears on a command
+ * line: any string that is not empty is a name.
+ */
 NAOS_TEST(any_string_that_is_not_empty_is_a_name)
 {
     static const char *const names[] = { "f",     "FILE",    "input-file", "<file>", "[file]...",
@@ -300,8 +320,10 @@ NAOS_TEST(the_name_of_a_positional_is_copied)
     destroy_root(root);
 }
 
-/* The output is optional: the positional is added and is read from the
- * command. */
+/*
+ * The output is optional: the positional is added and is read from the
+ * command.
+ */
 NAOS_TEST(a_positional_can_be_added_without_an_output)
 {
     clargs_command_t *root = create_root();
@@ -321,9 +343,11 @@ NAOS_TEST(a_positional_can_be_added_without_an_output)
     destroy_root(root);
 }
 
-/* A positional is added after the ones the command has: they are read in
+/*
+ * A positional is added after the ones the command has: they are read in
  * the order of the definition, and a handle stays the same while the array
- * grows. */
+ * grows.
+ */
 NAOS_TEST(positionals_are_read_in_the_order_of_the_definition)
 {
     static const char *const names[] = { "p00", "p01", "p02", "p03", "p04", "p05", "p06", "p07", "p08",
@@ -355,8 +379,10 @@ NAOS_TEST(positionals_are_read_in_the_order_of_the_definition)
     destroy_root(root);
 }
 
-/* An order of the arities that no command line can follow is found by the
- * validation of the tree, not by the addition: every addition succeeds. */
+/*
+ * An order of the arities that no command line can follow is found by the
+ * validation of the tree, not by the addition: every addition succeeds.
+ */
 NAOS_TEST(the_order_of_the_arities_is_not_checked_by_the_addition)
 {
     clargs_command_t *root = create_root();
@@ -377,8 +403,10 @@ NAOS_TEST(the_order_of_the_arities_is_not_checked_by_the_addition)
     destroy_root(root);
 }
 
-/* The value type is borrowed: positionals and options share one, and the
- * tree does not destroy it. */
+/*
+ * The value type is borrowed: positionals and options share one, and the
+ * tree does not destroy it.
+ */
 NAOS_TEST(a_value_type_is_borrowed_and_can_be_shared)
 {
     static const char *const choices[] = { "debug", "release" };
@@ -436,8 +464,10 @@ NAOS_TEST(an_empty_name_is_an_invalid_name)
     destroy_root(root);
 }
 
-/* A name is the name of one positional of a command, whatever the arities
- * and the value types are. */
+/*
+ * A name is the name of one positional of a command, whatever the arities
+ * and the value types are.
+ */
 NAOS_TEST(a_name_is_used_once_in_a_command)
 {
     clargs_command_t *root = create_root();
@@ -461,8 +491,10 @@ NAOS_TEST(a_name_is_used_once_in_a_command)
     check_positional(input, root, "input", CLARGS_ARITY_REQUIRED, clargs_type_string());
     check_positional(output, root, "output", CLARGS_ARITY_OPTIONAL, clargs_type_string());
 
-    /* The whole name is compared, byte by byte: upper and lower case are
-     * different, and so are a part of a name and a longer name. */
+    /*
+     * The whole name is compared, byte by byte: upper and lower case are
+     * different, and so are a part of a name and a longer name.
+     */
     (void)add(root, "Input", CLARGS_ARITY_OPTIONAL);
     (void)add(root, "INPUT", CLARGS_ARITY_OPTIONAL);
     (void)add(root, "in", CLARGS_ARITY_OPTIONAL);
@@ -474,9 +506,11 @@ NAOS_TEST(a_name_is_used_once_in_a_command)
     destroy_root(root);
 }
 
-/* The names of the positionals of a command are apart from every other
+/*
+ * The names of the positionals of a command are apart from every other
  * name: the same name can be used in another command, and for an option and
- * for the command itself. */
+ * for the command itself.
+ */
 NAOS_TEST(the_same_name_can_be_used_elsewhere)
 {
     clargs_command_t *root = create_root();
@@ -493,8 +527,10 @@ NAOS_TEST(the_same_name_can_be_used_elsewhere)
     NAOS_CHECK_UINT_EQ(clargs_command_positional_count(test), 1);
     NAOS_CHECK_UINT_EQ(clargs_command_positional_count(root), 0);
 
-    /* The long name of an option, in either order, and the name of the
-     * command. */
+    /*
+     * The long name of an option, in either order, and the name of the
+     * command.
+     */
     NAOS_CHECK_INT_EQ(clargs_command_add_flag(build, '\0', "target", &option), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(clargs_command_add_flag(build, 'o', "output", NULL), CLARGS_ERROR_NONE);
     (void)add(build, "output", CLARGS_ARITY_OPTIONAL);
@@ -506,8 +542,10 @@ NAOS_TEST(the_same_name_can_be_used_elsewhere)
     destroy_root(root);
 }
 
-/* A command has positionals or subcommands, not both: a command with a
- * subcommand takes no positional. */
+/*
+ * A command has positionals or subcommands, not both: a command with a
+ * subcommand takes no positional.
+ */
 NAOS_TEST(a_command_with_a_subcommand_takes_no_positional)
 {
     clargs_command_t *root = create_root();
@@ -521,8 +559,10 @@ NAOS_TEST(a_command_with_a_subcommand_takes_no_positional)
     NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(root), 1);
     NAOS_CHECK_TRUE(clargs_command_subcommand_at(root, 0) == build);
 
-    /* The subcommand has no subcommand of its own, so it takes
-     * positionals; it does not once it has one. */
+    /*
+     * The subcommand has no subcommand of its own, so it takes
+     * positionals; it does not once it has one.
+     */
     inner = add_sub(build, "inner");
     check_rejected(build, "input", CLARGS_ERROR_INVALID_DEFINITION);
     (void)add(inner, "input", CLARGS_ARITY_REQUIRED);
@@ -533,8 +573,10 @@ NAOS_TEST(a_command_with_a_subcommand_takes_no_positional)
     destroy_root(root);
 }
 
-/* The other side of the same rule: a command with a positional takes no
- * subcommand. */
+/*
+ * The other side of the same rule: a command with a positional takes no
+ * subcommand.
+ */
 NAOS_TEST(a_command_with_a_positional_takes_no_subcommand)
 {
     clargs_command_t *root = create_root();
@@ -572,8 +614,10 @@ NAOS_TEST(a_command_with_a_positional_takes_no_subcommand)
     destroy_root(root);
 }
 
-/* The rule is about positionals only: a command with subcommands takes
- * options of every kind, before and after it got the subcommands. */
+/*
+ * The rule is about positionals only: a command with subcommands takes
+ * options of every kind, before and after it got the subcommands.
+ */
 NAOS_TEST(a_command_with_a_subcommand_takes_options)
 {
     clargs_command_t *root = create_root();
@@ -603,8 +647,10 @@ NAOS_TEST(a_command_with_a_subcommand_takes_options)
     NAOS_CHECK_TRUE(clargs_option_command(value) == root);
     NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(root), 2);
 
-    /* A command with positionals takes options as well, and one with
-     * options takes positionals. */
+    /*
+     * A command with positionals takes options as well, and one with
+     * options takes positionals.
+     */
     NAOS_CHECK_INT_EQ(clargs_command_add_flag(build, 'f', "force", NULL), CLARGS_ERROR_NONE);
     (void)add(build, "target", CLARGS_ARITY_ZERO_OR_MORE);
     NAOS_CHECK_INT_EQ(clargs_command_add_value(build, 'j', "jobs", clargs_type_int(), NULL),
@@ -615,8 +661,10 @@ NAOS_TEST(a_command_with_a_subcommand_takes_options)
     destroy_root(root);
 }
 
-/* The checks are made in the order of the contract: the name first, then
- * the rule of positionals and subcommands, then the conflict of names. */
+/*
+ * The checks are made in the order of the contract: the name first, then
+ * the rule of positionals and subcommands, then the conflict of names.
+ */
 NAOS_TEST(the_checks_are_made_in_order)
 {
     clargs_command_t *root = create_root();
@@ -626,16 +674,20 @@ NAOS_TEST(the_checks_are_made_in_order)
     /* An empty name on a command with a subcommand is an invalid name. */
     check_rejected(root, "", CLARGS_ERROR_INVALID_NAME);
 
-    /* A name that is not the name of a subcommand, added to a command with
+    /*
+     * A name that is not the name of a subcommand, added to a command with
      * a positional, is an invalid name; a name that is one is refused by
-     * the rule. */
+     * the rule.
+     */
     (void)add(build, "input", CLARGS_ARITY_REQUIRED);
     check_subcommand_rejected(build, "", CLARGS_ERROR_INVALID_NAME);
     check_subcommand_rejected(build, "-inner", CLARGS_ERROR_INVALID_NAME);
     check_subcommand_rejected(build, "inner", CLARGS_ERROR_INVALID_DEFINITION);
 
-    /* A failure changes nothing: what was refused for another reason is
-     * added afterwards. */
+    /*
+     * A failure changes nothing: what was refused for another reason is
+     * added afterwards.
+     */
     (void)add(test, "input", CLARGS_ARITY_REQUIRED);
     check_rejected(test, "input", CLARGS_ERROR_NAME_CONFLICT);
     check_rejected(test, "", CLARGS_ERROR_INVALID_NAME);
@@ -647,8 +699,10 @@ NAOS_TEST(the_checks_are_made_in_order)
 
 /* ---- Attributes --------------------------------------------------------- */
 
-/* A positional that was just added has no description and no default
- * value, whatever its arity is. */
+/*
+ * A positional that was just added has no description and no default
+ * value, whatever its arity is.
+ */
 NAOS_TEST(a_new_positional_has_no_attribute)
 {
     static const char *const names[ARITY_COUNT] = { "a", "b", "c", "d" };
@@ -662,8 +716,10 @@ NAOS_TEST(a_new_positional_has_no_attribute)
     destroy_root(root);
 }
 
-/* Every arity takes a description. The empty string is a description; it is
- * not the same as none. */
+/*
+ * Every arity takes a description. The empty string is a description; it is
+ * not the same as none.
+ */
 NAOS_TEST(a_description_is_set_on_every_arity)
 {
     static const char *const names[ARITY_COUNT] = { "a", "b", "c", "d" };
@@ -693,9 +749,11 @@ NAOS_TEST(a_description_is_set_on_every_arity)
     destroy_root(root);
 }
 
-/* An optional positional, none or one argument, takes a default value. The
+/*
+ * An optional positional, none or one argument, takes a default value. The
  * string is kept as it is: whether the value type takes it is found by the
- * validation of the tree. */
+ * validation of the tree.
+ */
 NAOS_TEST(a_default_value_is_set_on_an_optional_positional)
 {
     clargs_command_t *root = create_root();
@@ -714,8 +772,10 @@ NAOS_TEST(a_default_value_is_set_on_an_optional_positional)
     check_attributes(level, NULL, "not a number");
     check_attributes(empty, NULL, "");
 
-    /* The description and the default value are set on their own, in any
-     * order. */
+    /*
+     * The description and the default value are set on their own, in any
+     * order.
+     */
     NAOS_CHECK_INT_EQ(clargs_positional_set_description(output, "Where the output goes."),
                       CLARGS_ERROR_NONE);
     check_attributes(output, "Where the output goes.", "a.out");
@@ -725,9 +785,11 @@ NAOS_TEST(a_default_value_is_set_on_an_optional_positional)
     destroy_root(root);
 }
 
-/* Only an optional positional takes a default value. For the three other
+/*
+ * Only an optional positional takes a default value. For the three other
  * arities the set is an inconsistent definition, whatever the value is; it
- * sets nothing and allocates nothing. */
+ * sets nothing and allocates nothing.
+ */
 NAOS_TEST(a_default_value_on_another_arity_is_an_inconsistent_definition)
 {
     static const clargs_arity_t others[] = { CLARGS_ARITY_REQUIRED, CLARGS_ARITY_ZERO_OR_MORE,
@@ -748,8 +810,10 @@ NAOS_TEST(a_default_value_on_another_arity_is_an_inconsistent_definition)
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
         check_attributes(positional, NULL, NULL);
 
-        /* It takes a description, and the failed set does not touch the
-         * description either. */
+        /*
+         * It takes a description, and the failed set does not touch the
+         * description either.
+         */
         NAOS_CHECK_INT_EQ(clargs_positional_set_description(positional, "Described."), CLARGS_ERROR_NONE);
         NAOS_CHECK_INT_EQ(clargs_positional_set_default(positional, "value"),
                           CLARGS_ERROR_INVALID_DEFINITION);
@@ -761,8 +825,10 @@ NAOS_TEST(a_default_value_on_another_arity_is_an_inconsistent_definition)
     }
 }
 
-/* A set replaces what was set before, with a longer and with a shorter
- * string, and the old string is freed. */
+/*
+ * A set replaces what was set before, with a longer and with a shorter
+ * string, and the old string is freed.
+ */
 NAOS_TEST(an_attribute_that_is_set_again_is_replaced)
 {
     clargs_command_t *root = create_root();
@@ -790,16 +856,20 @@ NAOS_TEST(an_attribute_that_is_set_again_is_replaced)
     NAOS_CHECK_INT_EQ(clargs_positional_set_default(output, ""), CLARGS_ERROR_NONE);
     check_attributes(output, "", "");
 
-    /* Each replaced string was freed: the positional holds two strings, as
-     * before. */
+    /*
+     * Each replaced string was freed: the positional holds two strings, as
+     * before.
+     */
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
     check_positional(output, root, "output", CLARGS_ARITY_OPTIONAL, clargs_type_string());
 
     destroy_root(root);
 }
 
-/* The strings are copied: the caller may change its buffers after the
- * call. */
+/*
+ * The strings are copied: the caller may change its buffers after the
+ * call.
+ */
 NAOS_TEST(the_strings_of_the_attributes_are_copied)
 {
     char description[] = "Where the output goes.";
@@ -826,8 +896,10 @@ NAOS_TEST(the_strings_of_the_attributes_are_copied)
     destroy_root(root);
 }
 
-/* An attribute can be set with a string that was read from another
- * attribute or from a name of the tree: it gets a copy of its own. */
+/*
+ * An attribute can be set with a string that was read from another
+ * attribute or from a name of the tree: it gets a copy of its own.
+ */
 NAOS_TEST(an_attribute_can_be_set_with_a_string_that_was_read)
 {
     clargs_command_t *root = create_root();
@@ -846,8 +918,10 @@ NAOS_TEST(an_attribute_can_be_set_with_a_string_that_was_read)
 
 /* ---- Destruction ------------------------------------------------------- */
 
-/* One destruction of the root frees the positionals of every command, their
- * names and the strings of their attributes. */
+/*
+ * One destruction of the root frees the positionals of every command, their
+ * names and the strings of their attributes.
+ */
 NAOS_TEST(destroy_frees_the_positionals_of_the_whole_tree)
 {
     clargs_command_t *root = create_root();
@@ -881,11 +955,13 @@ NAOS_TEST(destroy_frees_the_positionals_of_the_whole_tree)
 
 /* ---- Failure of an allocation ------------------------------------------ */
 
-/* Builds a root with existing positionals "p0", "p1", ... of the four
+/*
+ * Builds a root with existing positionals "p0", "p1", ... of the four
  * arities in turn, and returns it. The first gets a description and the
  * second a default value. The number is chosen by the tests so that the
  * array of the positionals is empty, has room, or is full. *last is the
- * positional that was added last, or NULL when existing is 0. */
+ * positional that was added last, or NULL when existing is 0.
+ */
 static clargs_command_t *build_root_with(size_t existing, clargs_positional_t **last)
 {
     static const char *const names[] = { "p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7" };
@@ -924,9 +1000,11 @@ static void check_built_root(const clargs_command_t *root, size_t existing)
     }
 }
 
-/* Fails each allocation of the addition of a positional of the arity arity,
+/*
+ * Fails each allocation of the addition of a positional of the arity arity,
  * with the name "new", to a root that has existing positionals already.
- * Returns the number of the failures. */
+ * Returns the number of the failures.
+ */
 static size_t fail_each_allocation_of_an_addition(clargs_arity_t arity, size_t existing)
 {
     const size_t limit = 20;
@@ -943,8 +1021,10 @@ static size_t fail_each_allocation_of_an_addition(clargs_arity_t arity, size_t e
 
         clargs_test_allocator_reset();
 
-        /* What a failure must not leave in the output: the positional
-         * that was added last, when there is one. */
+        /*
+         * What a failure must not leave in the output: the positional
+         * that was added last, when there is one.
+         */
         root = build_root_with(existing, &positional);
         requests = clargs_test_allocator_requests();
         live = clargs_test_allocator_live();
@@ -966,8 +1046,10 @@ static size_t fail_each_allocation_of_an_addition(clargs_arity_t arity, size_t e
         NAOS_CHECK_TRUE(positional == NULL);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + n);
 
-        /* The tree is as it was before the call, and nothing of the call
-         * stays allocated. */
+        /*
+         * The tree is as it was before the call, and nothing of the call
+         * stays allocated.
+         */
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
         check_built_root(root, existing);
 
@@ -989,11 +1071,13 @@ static size_t fail_each_allocation_of_an_addition(clargs_arity_t arity, size_t e
     return failures;
 }
 
-/* When an allocation of the addition of a positional fails, whichever it
+/*
+ * When an allocation of the addition of a positional fails, whichever it
  * is, the output is NULL, the tree is as it was, and nothing leaks. The
  * array of the positionals grows in the first and in the third case, and
  * has room in the second. The arity makes no difference to the
- * allocations. */
+ * allocations.
+ */
 NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
 {
     size_t with_room_of_the_first = 0;
@@ -1020,9 +1104,11 @@ NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
     check_clean();
 }
 
-/* When the copy of a string of an attribute cannot be allocated, the set is
+/*
+ * When the copy of a string of an attribute cannot be allocated, the set is
  * out of memory, the attribute has the value it had, set or not, and nothing
- * leaks. A set makes one allocation, the copy. */
+ * leaks. A set makes one allocation, the copy.
+ */
 NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
 {
     static const text_attribute_t attributes[TEXT_ATTRIBUTE_COUNT] = { TEXT_DESCRIPTION, TEXT_DEFAULT };
@@ -1045,8 +1131,10 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
             NAOS_REQUIRE_TRUE(clargs_command_create("app", &root) == CLARGS_ERROR_NONE);
             positional = add(root, "output", CLARGS_ARITY_OPTIONAL);
 
-            /* The other attribute is set, so that it shows if the failure
-             * touches it. */
+            /*
+             * The other attribute is set, so that it shows if the failure
+             * touches it.
+             */
             for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other) {
                 if (other != index) {
                     NAOS_REQUIRE_TRUE(set_text(attributes[other], positional, "other") == CLARGS_ERROR_NONE);
@@ -1064,8 +1152,10 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
                               CLARGS_ERROR_OUT_OF_MEMORY);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 1);
 
-            /* The positional is as it was before the call, and nothing of
-             * the call stays allocated. */
+            /*
+             * The positional is as it was before the call, and nothing of
+             * the call stays allocated.
+             */
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
             check_text(get_text(attribute, positional), old);
             for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other) {

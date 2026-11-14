@@ -38,8 +38,10 @@
 
 #include <stddef.h>
 
-/* The types of the four functions: the same form as the standard malloc,
- * realloc, calloc and free. */
+/*
+ * The types of the four functions: the same form as the standard malloc,
+ * realloc, calloc and free.
+ */
 typedef void *(*clargs_malloc_fn_t)(size_t size);
 typedef void *(*clargs_realloc_fn_t)(void *ptr, size_t size);
 typedef void *(*clargs_calloc_fn_t)(size_t count, size_t size);

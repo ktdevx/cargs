@@ -38,8 +38,10 @@ static void sink_init(sink_t *sink)
     memset(sink, 0, sizeof *sink);
 }
 
-/* Appends the part to the sink. The call number fail_at takes nothing and
- * reports a failure, and so would every later call. */
+/*
+ * Appends the part to the sink. The call number fail_at takes nothing and
+ * reports a failure, and so would every later call.
+ */
 static bool sink_write(void *user_data, const char *text, size_t length)
 {
     sink_t *sink = user_data;
@@ -61,8 +63,10 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     return true;
 }
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -98,8 +102,10 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name)
     return sub;
 }
 
-/* Adds an option with a value that must succeed. value_name is its display
- * name, or NULL to set none. */
+/*
+ * Adds an option with a value that must succeed. value_name is its display
+ * name, or NULL to set none.
+ */
 static void add_value(clargs_command_t *command, char short_name, const char *long_name,
                       const clargs_type_t *type, const char *value_name, bool required)
 {
@@ -130,8 +136,10 @@ static void validate(clargs_command_t *root)
     NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
 }
 
-/* Creates help options with the width given; the other settings keep their
- * default values. */
+/*
+ * Creates help options with the width given; the other settings keep their
+ * default values.
+ */
 static clargs_help_options_t *create_options(size_t width)
 {
     clargs_help_options_t *options = NULL;
@@ -142,8 +150,10 @@ static clargs_help_options_t *create_options(size_t width)
     return options;
 }
 
-/* Returns whether a line of the length bytes of text ends with a blank: a
- * blank before a newline, or at the end of the text. */
+/*
+ * Returns whether a line of the length bytes of text ends with a blank: a
+ * blank before a newline, or at the end of the text.
+ */
 static bool has_blank_at_line_end(const char *text, size_t length)
 {
     size_t index;
@@ -190,8 +200,10 @@ static void check_usage(const clargs_command_t *command, const char *expected)
 
 /* ---- The command alone --------------------------------------------------- */
 
-/* A command with no option, no positional and no subcommand: "Usage: " and
- * the name, nothing else. */
+/*
+ * A command with no option, no positional and no subcommand: "Usage: " and
+ * the name, nothing else.
+ */
 NAOS_TEST(command_with_nothing_is_only_its_name)
 {
     clargs_command_t *root = create_root();
@@ -204,8 +216,10 @@ NAOS_TEST(command_with_nothing_is_only_its_name)
 
 /* ---- [OPTIONS] ----------------------------------------------------------- */
 
-/* An option that is not required, of any of the four kinds, gives
- * [OPTIONS], and is not written itself. */
+/*
+ * An option that is not required, of any of the four kinds, gives
+ * [OPTIONS], and is not written itself.
+ */
 NAOS_TEST(option_that_is_not_required_gives_options_marker)
 {
     clargs_command_t *root;
@@ -263,8 +277,10 @@ NAOS_TEST(only_required_options_give_no_options_marker)
 
 /* ---- Required options ---------------------------------------------------- */
 
-/* A required option with a long name is written with the long name, also
- * when it has a short name. */
+/*
+ * A required option with a long name is written with the long name, also
+ * when it has a short name.
+ */
 NAOS_TEST(required_option_uses_long_name)
 {
     clargs_command_t *root;
@@ -294,8 +310,10 @@ NAOS_TEST(required_option_without_long_name_uses_short_name)
     destroy_root(root);
 }
 
-/* The conversion function of the user-defined value type of the tests. No
- * test converts a value with it. */
+/*
+ * The conversion function of the user-defined value type of the tests. No
+ * test converts a value with it.
+ */
 static clargs_error_t convert_nothing(const char *text, void *value, void *context)
 {
     (void)text;
@@ -304,9 +322,11 @@ static clargs_error_t convert_nothing(const char *text, void *value, void *conte
     return CLARGS_ERROR_NONE;
 }
 
-/* Without a display name of the value, the name of the value type stands
+/*
+ * Without a display name of the value, the name of the value type stands
  * in its place: of a built-in type, of a choice and of a user-defined
- * type. */
+ * type.
+ */
 NAOS_TEST(required_option_without_value_name_uses_type_name)
 {
     static const char *const choices[] = { "json", "yaml" };
@@ -335,9 +355,11 @@ NAOS_TEST(required_option_without_value_name_uses_type_name)
     check_clean();
 }
 
-/* The required options come after [OPTIONS], in the order in which they
+/*
+ * The required options come after [OPTIONS], in the order in which they
  * were added; the options between them that are not required are not
- * written. */
+ * written.
+ */
 NAOS_TEST(required_options_follow_options_marker_in_definition_order)
 {
     clargs_command_t *root = create_root();
@@ -406,8 +428,10 @@ NAOS_TEST(positionals_come_in_definition_order)
     destroy_root(root);
 }
 
-/* The parts in their order: [OPTIONS], the required options, the
- * positionals. */
+/*
+ * The parts in their order: [OPTIONS], the required options, the
+ * positionals.
+ */
 NAOS_TEST(options_come_before_positionals)
 {
     clargs_command_t *root = create_root();
@@ -425,8 +449,10 @@ NAOS_TEST(options_come_before_positionals)
 
 /* ---- Subcommands --------------------------------------------------------- */
 
-/* A command with subcommands ends with [COMMAND], once, whatever their
- * number. */
+/*
+ * A command with subcommands ends with [COMMAND], once, whatever their
+ * number.
+ */
 NAOS_TEST(subcommands_give_command_marker)
 {
     clargs_command_t *root;
@@ -447,9 +473,11 @@ NAOS_TEST(subcommands_give_command_marker)
     destroy_root(root);
 }
 
-/* The path of a subcommand is written from the root down, and the line
+/*
+ * The path of a subcommand is written from the root down, and the line
  * shows what the subcommand itself has: not the options of its parent, and
- * not what its own subcommands have. */
+ * not what its own subcommands have.
+ */
 NAOS_TEST(subcommand_usage_has_path_from_root)
 {
     clargs_command_t *root = create_root();
@@ -478,8 +506,10 @@ NAOS_TEST(subcommand_usage_has_path_from_root)
 
 /* ---- The strings of the schema ------------------------------------------- */
 
-/* Names are written as they are: upper and lower case, bytes that are not
- * ASCII, blanks and a newline. */
+/*
+ * Names are written as they are: upper and lower case, bytes that are not
+ * ASCII, blanks and a newline.
+ */
 NAOS_TEST(schema_strings_are_written_unchanged)
 {
     clargs_command_t *root = NULL;
@@ -501,9 +531,11 @@ NAOS_TEST(schema_strings_are_written_unchanged)
 
 /* ---- The help options ---------------------------------------------------- */
 
-/* Without help options (NULL), the text is the one that help options with
+/*
+ * Without help options (NULL), the text is the one that help options with
  * their default values give, and help options can be used for more than one
- * call. */
+ * call.
+ */
 NAOS_TEST(null_options_are_the_default_options)
 {
     static const char expected[] = "Usage: tool [OPTIONS] --output <FILE> <input> [extra]...\n";
@@ -529,11 +561,13 @@ NAOS_TEST(null_options_are_the_default_options)
 
 /* ---- The width ------------------------------------------------------------ */
 
-/* Adds what the tests of the width share: with every item on one line,
+/*
+ * Adds what the tests of the width share: with every item on one line,
  *
  *     Usage: tool [OPTIONS] --output <FILE> <input> [extra]...
  *
- * whose items end at the columns 11, 21, 37, 45 and 56. */
+ * whose items end at the columns 11, 21, 37, 45 and 56.
+ */
 static void add_all_kinds_of_items(clargs_command_t *root)
 {
     NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
@@ -542,10 +576,12 @@ static void add_all_kinds_of_items(clargs_command_t *root)
     add_positional(root, "extra", CLARGS_ARITY_ZERO_OR_MORE);
 }
 
-/* A line that does not fit the width is broken between two items, and each
+/*
+ * A line that does not fit the width is broken between two items, and each
  * line after the first starts with 7 blanks, the width of "Usage: ". An
  * item that still fits stays on the line: at the width 30, "<input>" ends
- * at the column 30. */
+ * at the column 30.
+ */
 NAOS_TEST(narrow_width_breaks_between_items_with_indent_of_seven)
 {
     clargs_help_options_t *options;
@@ -575,9 +611,11 @@ NAOS_TEST(narrow_width_breaks_between_items_with_indent_of_seven)
     destroy_root(root);
 }
 
-/* "[COMMAND]" is an item like the others: it stays on the line when it
+/*
+ * "[COMMAND]" is an item like the others: it stays on the line when it
  * fits and starts a new line when it does not. The whole line has 43
- * bytes. */
+ * bytes.
+ */
 NAOS_TEST(command_marker_moves_to_next_line_when_it_does_not_fit)
 {
     clargs_help_options_t *options;
@@ -600,9 +638,11 @@ NAOS_TEST(command_marker_moves_to_next_line_when_it_does_not_fit)
     destroy_root(root);
 }
 
-/* The boundary: an item whose last byte is at the column of the width
+/*
+ * The boundary: an item whose last byte is at the column of the width
  * stays on the line; with a width one column smaller, it starts the next
- * line. "Usage: tool <source>" has 20 bytes and the whole line 29. */
+ * line. "Usage: tool <source>" has 20 bytes and the whole line 29.
+ */
 NAOS_TEST(item_that_just_fits_stays_and_one_column_less_breaks)
 {
     clargs_help_options_t *options;
@@ -632,10 +672,12 @@ NAOS_TEST(item_that_just_fits_stays_and_one_column_less_breaks)
     destroy_root(root);
 }
 
-/* An item is not divided at a blank inside it: not the path, not a
+/*
+ * An item is not divided at a blank inside it: not the path, not a
  * required option between its name and its value, and not inside a display
  * name or a name that holds a blank. At the width 30, "Usage: My Tool
- * --output" and "--output <File Name> <In" would fit. */
+ * --output" and "--output <File Name> <In" would fit.
+ */
 NAOS_TEST(item_with_blank_inside_is_not_divided)
 {
     clargs_help_options_t *options;
@@ -667,9 +709,11 @@ NAOS_TEST(item_with_blank_inside_is_not_divided)
     destroy_root(root);
 }
 
-/* An item that is wider than the width is written as it is, on a line of
+/*
+ * An item that is wider than the width is written as it is, on a line of
  * its own: the path of a subcommand, which is one item with "Usage: ", and
- * every other kind of item. */
+ * every other kind of item.
+ */
 NAOS_TEST(item_wider_than_width_is_written_as_it_is)
 {
     clargs_help_options_t *options;
@@ -704,16 +748,20 @@ NAOS_TEST(item_wider_than_width_is_written_as_it_is)
                      "Usage: tool remote\n"
                      "       [COMMAND]\n");
 
-    /* The path, 22 bytes, and the option, 29 bytes with the indent, are
-     * wider than 20; "<name>" would fit behind neither. */
+    /*
+     * The path, 22 bytes, and the option, 29 bytes with the indent, are
+     * wider than 20; "<name>" would fit behind neither.
+     */
     clargs_help_options_set_width(options, 20);
     check_usage_with(add, options,
                      "Usage: tool remote add\n"
                      "       --configuration <FILE>\n"
                      "       <name>\n");
 
-    /* An item that is too wide does not push the next one down when that
-     * one still fits behind it. */
+    /*
+     * An item that is too wide does not push the next one down when that
+     * one still fits behind it.
+     */
     clargs_help_options_set_width(options, 36);
     check_usage_with(add, options,
                      "Usage: tool remote add\n"
@@ -723,11 +771,13 @@ NAOS_TEST(item_wider_than_width_is_written_as_it_is)
     destroy_root(root);
 }
 
-/* Adds seven positionals. With every item on one line,
+/*
+ * Adds seven positionals. With every item on one line,
  *
  *     Usage: tool <argument-1> ... <argument-5> <x> <argument-7>
  *
- * "<x>" ends at the column 80 and the whole line has 93 bytes. */
+ * "<x>" ends at the column 80 and the whole line has 93 bytes.
+ */
 static void add_positionals_beyond_80_columns(clargs_command_t *root)
 {
     add_positional(root, "argument-1", CLARGS_ARITY_REQUIRED);
@@ -757,9 +807,11 @@ NAOS_TEST(width_zero_gives_one_line)
     destroy_root(root);
 }
 
-/* Without help options (NULL) the width is the default, 80, as with help
+/*
+ * Without help options (NULL) the width is the default, 80, as with help
  * options that were just created: a line of exactly 80 bytes stays whole
- * and the next item starts a new line. A width that is set takes effect. */
+ * and the next item starts a new line. A width that is set takes effect.
+ */
 NAOS_TEST(default_width_of_80_applies_without_options)
 {
     static const char expected[] =
@@ -792,11 +844,13 @@ NAOS_TEST(default_width_of_80_applies_without_options)
     destroy_root(root);
 }
 
-/* The width of an item is the number of all its bytes, also when a name in
+/*
+ * The width of an item is the number of all its bytes, also when a name in
  * it holds a newline: "--mode <two\nlines>" counts as 18 columns, not as
  * the 6 of "lines>". The column that the next item is measured from is the
  * one of the output: after that item it counts from the newline inside the
- * name. */
+ * name.
+ */
 NAOS_TEST(item_with_newline_inside_counts_all_its_bytes)
 {
     clargs_help_options_t *options;
@@ -810,8 +864,10 @@ NAOS_TEST(item_with_newline_inside_counts_all_its_bytes)
     options = create_options(30);
     check_usage_with(root, options, "Usage: tool --mode <two\nlines> <input>\n");
 
-    /* One column less, and the option starts a new line. "<input>" stays
-     * behind it: "lines>" ends at the column 6. */
+    /*
+     * One column less, and the option starts a new line. "<input>" stays
+     * behind it: "lines>" ends at the column 6.
+     */
     clargs_help_options_set_width(options, 29);
     check_usage_with(root, options,
                      "Usage: tool\n"
@@ -835,9 +891,11 @@ NAOS_TEST(item_with_newline_inside_counts_all_its_bytes)
 
 /* ---- The write function -------------------------------------------------- */
 
-/* When the write function reports a failure, the call returns
+/*
+ * When the write function reports a failure, the call returns
  * CLARGS_ERROR_WRITE_FAILED, the write function is not called again, and
- * what it took before stays: the start of the text. */
+ * what it took before stays: the start of the text.
+ */
 NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
 {
     static const char expected[] = "Usage: tool [OPTIONS] --output <FILE> <input>\n";

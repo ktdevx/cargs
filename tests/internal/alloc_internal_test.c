@@ -117,8 +117,10 @@ static void fill(unsigned char *bytes, size_t size, unsigned char seed)
     }
 }
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -127,8 +129,10 @@ static void check_clean(void)
 
 /* ---- The default allocator ------------------------------------------- */
 
-/* With nothing set, the four functions work. This test is the first one, and
- * it does not call clargs_set_allocator(). */
+/*
+ * With nothing set, the four functions work. This test is the first one, and
+ * it does not call clargs_set_allocator().
+ */
 NAOS_TEST(works_when_nothing_is_set)
 {
     unsigned char expected[16];
@@ -145,8 +149,10 @@ NAOS_TEST(works_when_nothing_is_set)
     memcpy(block, expected, sizeof expected);
     NAOS_CHECK_MEM_EQ(block, sizeof expected, expected, sizeof expected);
 
-    /* Leave a freed block that is not 0 behind, for the allocation below
-     * to reuse if it can. */
+    /*
+     * Leave a freed block that is not 0 behind, for the allocation below
+     * to reuse if it can.
+     */
     dirty = clargs_malloc(32);
     NAOS_REQUIRE_TRUE(dirty != NULL);
     memset(dirty, 0xA5, 32);
@@ -169,8 +175,10 @@ NAOS_TEST(works_when_nothing_is_set)
     check_clean();
 }
 
-/* With the default allocator, the special cases give the same results as
- * with an allocator that was set. */
+/*
+ * With the default allocator, the special cases give the same results as
+ * with an allocator that was set.
+ */
 NAOS_TEST(default_handles_the_special_cases)
 {
     unsigned char *block;
@@ -304,8 +312,10 @@ NAOS_TEST(uninstall_stops_the_requests)
     check_clean();
 }
 
-/* After clargs_set_allocator(NULL), no request reaches the allocator that
- * was set before. */
+/*
+ * After clargs_set_allocator(NULL), no request reaches the allocator that
+ * was set before.
+ */
 NAOS_TEST(null_stops_the_requests)
 {
     clargs_allocator_t allocator = clargs_test_allocator_get();
@@ -356,8 +366,10 @@ NAOS_TEST(routes_again_after_a_reset)
     check_clean();
 }
 
-/* The library keeps a copy: changing the caller's structure after the call
- * does not change the allocator that is set. */
+/*
+ * The library keeps a copy: changing the caller's structure after the call
+ * does not change the allocator that is set.
+ */
 NAOS_TEST(keeps_a_copy_of_the_structure)
 {
     clargs_allocator_t allocator = clargs_test_allocator_get();
@@ -404,8 +416,10 @@ NAOS_TEST(calloc_returns_zeroed_memory)
 
     clargs_test_allocator_install();
 
-    /* Leave a freed block that is not 0 behind, for the allocation below
-     * to reuse if it can. */
+    /*
+     * Leave a freed block that is not 0 behind, for the allocation below
+     * to reuse if it can.
+     */
     dirty = clargs_malloc(ZERO_COUNT);
     NAOS_REQUIRE_TRUE(dirty != NULL);
     memset(dirty, 0xA5, ZERO_COUNT);
@@ -433,8 +447,10 @@ NAOS_TEST(malloc_of_size_0_is_not_forwarded)
     check_clean();
 }
 
-/* clargs_calloc with a count or a size of 0 returns NULL and does not call
- * the allocator. */
+/*
+ * clargs_calloc with a count or a size of 0 returns NULL and does not call
+ * the allocator.
+ */
 NAOS_TEST(calloc_of_count_or_size_0_is_not_forwarded)
 {
     clargs_test_allocator_install();
@@ -453,8 +469,10 @@ NAOS_TEST(calloc_of_count_or_size_0_is_not_forwarded)
     check_clean();
 }
 
-/* When count * size does not fit in a size_t, clargs_calloc returns NULL
- * and does not call the allocator. */
+/*
+ * When count * size does not fit in a size_t, clargs_calloc returns NULL
+ * and does not call the allocator.
+ */
 NAOS_TEST(calloc_overflow_is_not_forwarded)
 {
     clargs_test_allocator_install();
@@ -472,10 +490,12 @@ NAOS_TEST(calloc_overflow_is_not_forwarded)
     check_clean();
 }
 
-/* A product that fits is forwarded, however large, with the arguments as
+/*
+ * A product that fits is forwarded, however large, with the arguments as
  * they were passed: only the overflow is refused by the library. The
  * calloc_fn of this test allocates nothing, so no such block is requested
- * from the standard functions. */
+ * from the standard functions.
+ */
 NAOS_TEST(calloc_forwards_the_largest_product)
 {
     clargs_allocator_t allocator = wrap_allocator();
@@ -506,8 +526,10 @@ NAOS_TEST(calloc_forwards_the_largest_product)
     check_clean();
 }
 
-/* clargs_realloc(NULL, size) allocates, through malloc_fn: realloc_fn is
- * never called with NULL. */
+/*
+ * clargs_realloc(NULL, size) allocates, through malloc_fn: realloc_fn is
+ * never called with NULL.
+ */
 NAOS_TEST(realloc_of_null_allocates)
 {
     unsigned char expected[32];
@@ -541,8 +563,10 @@ NAOS_TEST(realloc_of_null_and_size_0_is_not_forwarded)
     check_clean();
 }
 
-/* clargs_realloc(ptr, 0) frees the block and returns NULL: realloc_fn is
- * never called with a size of 0. */
+/*
+ * clargs_realloc(ptr, 0) frees the block and returns NULL: realloc_fn is
+ * never called with a size of 0.
+ */
 NAOS_TEST(realloc_to_size_0_frees)
 {
     unsigned char *block;
@@ -592,8 +616,10 @@ NAOS_TEST(realloc_keeps_the_contents)
     check_clean();
 }
 
-/* When the reallocation fails, clargs_realloc returns NULL and the old
- * block is still valid and unchanged. */
+/*
+ * When the reallocation fails, clargs_realloc returns NULL and the old
+ * block is still valid and unchanged.
+ */
 NAOS_TEST(failed_realloc_keeps_the_old_block)
 {
     unsigned char expected[40];
@@ -625,8 +651,10 @@ NAOS_TEST(failed_realloc_keeps_the_old_block)
     check_clean();
 }
 
-/* When the allocation fails, clargs_malloc, clargs_calloc and
- * clargs_realloc(NULL, size) return NULL, and nothing is left allocated. */
+/*
+ * When the allocation fails, clargs_malloc, clargs_calloc and
+ * clargs_realloc(NULL, size) return NULL, and nothing is left allocated.
+ */
 NAOS_TEST(failed_allocations_return_null)
 {
     clargs_test_allocator_install();
@@ -749,8 +777,10 @@ static void run_sequence(record_t *record)
     clargs_free(block);
 }
 
-/* The same sequence of operations gives the same results with the default
- * allocator and with an allocator that only wraps the standard functions. */
+/*
+ * The same sequence of operations gives the same results with the default
+ * allocator and with an allocator that only wraps the standard functions.
+ */
 NAOS_TEST(default_and_wrapper_give_the_same_results)
 {
     static record_t with_default;
@@ -769,9 +799,11 @@ NAOS_TEST(default_and_wrapper_give_the_same_results)
     run_sequence(&with_wrapper);
     clargs_set_allocator(NULL);
 
-    /* The wrapper was called, and only in the way the contract allows:
+    /*
+     * The wrapper was called, and only in the way the contract allows:
      * malloc, calloc, 2 x realloc and the malloc of realloc(NULL, 12);
-     * the free of realloc(other, 0) and the two calls of free. */
+     * the free of realloc(other, 0) and the two calls of free.
+     */
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 2);
     NAOS_CHECK_UINT_EQ(wrap_calloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 2);
@@ -786,8 +818,10 @@ NAOS_TEST(default_and_wrapper_give_the_same_results)
     check_clean();
 }
 
-/* The results of the sequence are the ones that the functions promise, not
- * only equal to each other. */
+/*
+ * The results of the sequence are the ones that the functions promise, not
+ * only equal to each other.
+ */
 NAOS_TEST(sequence_gives_the_promised_results)
 {
     static record_t seen;

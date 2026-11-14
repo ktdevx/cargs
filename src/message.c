@@ -9,9 +9,11 @@
 #include <stdint.h>
 #include <string.h>
 
-/* The largest number of pieces of a message: the wording of an invalid
+/*
+ * The largest number of pieces of a message: the wording of an invalid
  * value has four fixed texts, the value, the prefix, the name and the name
- * of the type. */
+ * of the type.
+ */
 #define MAX_PIECES 8
 
 /* One piece of a message: length bytes at text, with no terminator. */
@@ -56,8 +58,10 @@ static void add_name(pieces_t *pieces, const clargs_message_parts_t *parts)
 /* Appends a fixed text of the wording. */
 #define ADD_TEXT(pieces, literal) add_bytes((pieces), (literal), sizeof(literal) - 1)
 
-/* Collects the pieces of the wording of the kind; see the table in
- * "message.h". */
+/*
+ * Collects the pieces of the wording of the kind; see the table in
+ * "message.h".
+ */
 static void collect(pieces_t *pieces, const clargs_message_parts_t *parts)
 {
     pieces->count = 0;

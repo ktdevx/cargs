@@ -36,8 +36,10 @@ static bool failed(clargs_error_t *error, clargs_error_t result)
     return result != CLARGS_ERROR_NONE;
 }
 
-/* The write function: the library passes the text of the help to it, part
- * by part. This one writes each part to the stream in user_data. */
+/*
+ * The write function: the library passes the text of the help to it, part
+ * by part. This one writes each part to the stream in user_data.
+ */
 static bool write_to_stream(void *user_data, const char *text, size_t length)
 {
     return fwrite(text, 1, length, (FILE *)user_data) == length;
@@ -54,8 +56,10 @@ int main(int argc, char **argv)
     clargs_error_t error;
     int status = EXIT_FAILURE;
 
-    /* The schema: greet [-h] [-l] [-n COUNT] name. The descriptions are
-     * for the help. The schema is validated before it is parsed with. */
+    /*
+     * The schema: greet [-h] [-l] [-n COUNT] name. The descriptions are
+     * for the help. The schema is validated before it is parsed with.
+     */
     if (failed(&error, clargs_command_create("greet", &root)) ||
         failed(&error, clargs_command_set_description(root, "Greet somebody.")) ||
         failed(&error, clargs_command_add_flag(root, 'h', "help", &help)) ||
@@ -79,8 +83,10 @@ int main(int argc, char **argv)
             /* CLARGS_ERROR_OUT_OF_MEMORY: there is no result. */
             fprintf(stderr, "greet: %s\n", clargs_error_message(error));
         } else if (clargs_result_flag(result, help)) {
-            /* --help first: "greet --help" leaves out the name, and that
-             * must not hide the help. The text is made from the schema. */
+            /*
+             * --help first: "greet --help" leaves out the name, and that
+             * must not hide the help. The text is made from the schema.
+             */
             if (clargs_help_write(root, NULL, write_to_stream, stdout) == CLARGS_ERROR_NONE) {
                 status = EXIT_SUCCESS;
             }
@@ -92,8 +98,10 @@ int main(int argc, char **argv)
             int64_t times = 0;
             int64_t i;
 
-            /* The name is required and --count has a default value: after
-             * a parse that succeeded, both have a value. */
+            /*
+             * The name is required and --count has a default value: after
+             * a parse that succeeded, both have a value.
+             */
             if (clargs_result_positional_string(result, name, 0, &text) &&
                 clargs_result_option_int(result, count, &times)) {
                 for (i = 0; i < times; ++i) {
@@ -105,8 +113,10 @@ int main(int argc, char **argv)
         }
     }
 
-    /* The result first, then the schema it was made from. A parse error
-     * also leaves a result to destroy. Destroying NULL does nothing. */
+    /*
+     * The result first, then the schema it was made from. A parse error
+     * also leaves a result to destroy. Destroying NULL does nothing.
+     */
     clargs_result_destroy(result);
     clargs_command_destroy(root);
 

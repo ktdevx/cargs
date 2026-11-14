@@ -30,17 +30,23 @@
 #include <stdio.h>
 #include <string.h>
 
-/* The value that an output holds before a conversion that must fail: the
- * conversion must leave it there. */
+/*
+ * The value that an output holds before a conversion that must fail: the
+ * conversion must leave it there.
+ */
 #define INT_SENTINEL INT64_C(-7777)
 #define FLOAT_SENTINEL (-7777.25)
 
-/* The length of the long inputs. It is far more than the array that the
- * conversion of a floating-point number keeps for short inputs. */
+/*
+ * The length of the long inputs. It is far more than the array that the
+ * conversion of a floating-point number keeps for short inputs.
+ */
 #define LONG_LENGTH 300
 
-/* The end of the tests that install the test allocator: it has no live
- * block and saw no violation of the allocator contract. */
+/*
+ * The end of the tests that install the test allocator: it has no live
+ * block and saw no violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -74,8 +80,10 @@ static void check_float(const char *text, double expected)
     NAOS_CHECK_TRUE(value == expected);
 }
 
-/* text is not a finite floating-point number, and the output is left as it
- * was. */
+/*
+ * text is not a finite floating-point number, and the output is left as it
+ * was.
+ */
 static void check_float_invalid(const char *text)
 {
     double value = FLOAT_SENTINEL;
@@ -84,8 +92,10 @@ static void check_float_invalid(const char *text)
     NAOS_CHECK_TRUE(value == FLOAT_SENTINEL);
 }
 
-/* Writes a long number into buffer, which has LONG_LENGTH + 1 bytes:
- * "1.000...0005". Its value is a little more than 1. */
+/*
+ * Writes a long number into buffer, which has LONG_LENGTH + 1 bytes:
+ * "1.000...0005". Its value is a little more than 1.
+ */
 static void fill_long_fraction(char *buffer)
 {
     memset(buffer, '0', LONG_LENGTH);
@@ -125,8 +135,10 @@ NAOS_TEST(int_accepts_the_limits)
     check_int("-0000009223372036854775808", INT64_MIN);
 }
 
-/* One more than the largest value, one less than the smallest, and far
- * beyond both. */
+/*
+ * One more than the largest value, one less than the smallest, and far
+ * beyond both.
+ */
 NAOS_TEST(int_rejects_values_out_of_range)
 {
     check_int_invalid("9223372036854775808");
@@ -197,8 +209,10 @@ NAOS_TEST(int_rejects_other_characters)
     check_int_invalid("1\xFF");
 }
 
-/* The conversion of an integer allocates nothing, however long the input
- * is. */
+/*
+ * The conversion of an integer allocates nothing, however long the input
+ * is.
+ */
 NAOS_TEST(int_allocates_nothing)
 {
     char text[LONG_LENGTH + 1];
@@ -222,8 +236,10 @@ NAOS_TEST(int_allocates_nothing)
 
 /* ---- The floating-point number ---------------------------------------- */
 
-/* The decimal notation: digits, with a '.' before, between or after them,
- * or with none. */
+/*
+ * The decimal notation: digits, with a '.' before, between or after them,
+ * or with none.
+ */
 NAOS_TEST(float_accepts_decimal_notation)
 {
     check_float("1", 1.0);
@@ -272,8 +288,10 @@ NAOS_TEST(float_accepts_exponent_notation)
     NAOS_CHECK_TRUE(value == -DBL_MAX);
 }
 
-/* An input that is too close to 0 for a double succeeds, with the value
- * that the standard conversion gives: 0 or a number next to it. */
+/*
+ * An input that is too close to 0 for a double succeeds, with the value
+ * that the standard conversion gives: 0 or a number next to it.
+ */
 NAOS_TEST(float_accepts_underflow)
 {
     double value = FLOAT_SENTINEL;
@@ -327,8 +345,10 @@ NAOS_TEST(float_rejects_incomplete_shapes)
     check_float_invalid("1e--5");
 }
 
-/* The spellings of infinity and of not-a-number that the standard
- * conversion takes. */
+/*
+ * The spellings of infinity and of not-a-number that the standard
+ * conversion takes.
+ */
 NAOS_TEST(float_rejects_inf_and_nan)
 {
     check_float_invalid("inf");
@@ -358,8 +378,10 @@ NAOS_TEST(float_rejects_hexadecimal)
     check_float_invalid("1p3");
 }
 
-/* ',' is neither a decimal point nor a separator, and other characters are
- * no part of a number. */
+/*
+ * ',' is neither a decimal point nor a separator, and other characters are
+ * no part of a number.
+ */
 NAOS_TEST(float_rejects_other_characters)
 {
     check_float_invalid("1,5");
@@ -415,8 +437,10 @@ NAOS_TEST(float_short_input_allocates_nothing)
     check_clean();
 }
 
-/* A long input is copied into memory of the allocator, in one request, and
- * the copy is freed before the function returns. */
+/*
+ * A long input is copied into memory of the allocator, in one request, and
+ * the copy is freed before the function returns.
+ */
 NAOS_TEST(float_long_input_is_copied_and_freed)
 {
     char text[LONG_LENGTH + 1];
@@ -450,8 +474,10 @@ NAOS_TEST(float_long_input_out_of_range_frees_the_copy)
 {
     char text[LONG_LENGTH + 1];
 
-    /* 9 and LONG_LENGTH - 1 nines, then "e99" over the last digits: far
-     * more than the largest finite value. */
+    /*
+     * 9 and LONG_LENGTH - 1 nines, then "e99" over the last digits: far
+     * more than the largest finite value.
+     */
     memset(text, '9', LONG_LENGTH);
     text[LONG_LENGTH - 3] = 'e';
     text[LONG_LENGTH] = '\0';
@@ -466,8 +492,10 @@ NAOS_TEST(float_long_input_out_of_range_frees_the_copy)
     check_clean();
 }
 
-/* The shape is checked before the copy is made: a long input that is not a
- * number fails without a request. */
+/*
+ * The shape is checked before the copy is made: a long input that is not a
+ * number fails without a request.
+ */
 NAOS_TEST(float_long_invalid_input_allocates_nothing)
 {
     char text[LONG_LENGTH + 1];
@@ -492,8 +520,10 @@ NAOS_TEST(float_long_invalid_input_allocates_nothing)
     check_clean();
 }
 
-/* When the allocation of the copy fails, the conversion reports that, not
- * an invalid value, and leaves the output as it was. */
+/*
+ * When the allocation of the copy fails, the conversion reports that, not
+ * an invalid value, and leaves the output as it was.
+ */
 NAOS_TEST(float_long_input_allocation_failure)
 {
     char text[LONG_LENGTH + 1];
@@ -522,9 +552,11 @@ NAOS_TEST(float_long_input_allocation_failure)
 
 /* ---- errno ------------------------------------------------------------ */
 
-/* Calls both conversions, with inputs that succeed, that are invalid and
+/*
+ * Calls both conversions, with inputs that succeed, that are invalid and
  * that are out of range (where the standard conversion writes errno), and
- * checks after each that errno is still expected. */
+ * checks after each that errno is still expected.
+ */
 static void check_errno_stays(int expected)
 {
     char text[LONG_LENGTH + 1];
@@ -562,8 +594,10 @@ static void check_errno_stays(int expected)
     NAOS_CHECK_INT_EQ(errno, expected);
 }
 
-/* errno is as it was before the call: 0 stays 0, and a value that an
- * earlier call left stays too. */
+/*
+ * errno is as it was before the call: 0 stays 0, and a value that an
+ * earlier call left stays too.
+ */
 NAOS_TEST(errno_is_unchanged)
 {
     int saved = errno;
@@ -607,8 +641,10 @@ static bool decimal_point_is_comma(void)
     return strcmp(formatted, "0,5") == 0;
 }
 
-/* What every locale must give: '.' is the decimal point and ',' is not,
- * for a short input and for a long one. */
+/*
+ * What every locale must give: '.' is the decimal point and ',' is not,
+ * for a short input and for a long one.
+ */
 static void check_point_only(void)
 {
     char text[LONG_LENGTH + 1];

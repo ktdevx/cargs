@@ -34,8 +34,10 @@ static void sink_init(sink_t *sink)
     memset(sink, 0, sizeof *sink);
 }
 
-/* Appends the part to the sink. The call number fail_at takes nothing and
- * reports a failure, and so would every later call. */
+/*
+ * Appends the part to the sink. The call number fail_at takes nothing and
+ * reports a failure, and so would every later call.
+ */
 static bool sink_write(void *user_data, const char *text, size_t length)
 {
     sink_t *sink = user_data;
@@ -80,8 +82,10 @@ NAOS_TEST(init_starts_at_column_zero)
     NAOS_CHECK_UINT_EQ(sink.calls, 0);
 }
 
-/* The column advances by the number of bytes, and the parts arrive in the
- * order they were written. */
+/*
+ * The column advances by the number of bytes, and the parts arrive in the
+ * order they were written.
+ */
 NAOS_TEST(text_advances_the_column)
 {
     sink_t sink;
@@ -99,8 +103,10 @@ NAOS_TEST(text_advances_the_column)
     NAOS_CHECK_FALSE(clargs_out_failed(&out));
 }
 
-/* Only the first length bytes are written: the text need not be
- * terminated. */
+/*
+ * Only the first length bytes are written: the text need not be
+ * terminated.
+ */
 NAOS_TEST(text_takes_only_its_length)
 {
     sink_t sink;
@@ -115,9 +121,11 @@ NAOS_TEST(text_takes_only_its_length)
     check_sink(&sink, "abc");
 }
 
-/* One byte is one column, whatever the byte is: the three bytes of a
+/*
+ * One byte is one column, whatever the byte is: the three bytes of a
  * character outside ASCII are three columns, and they are passed on as
- * they are. */
+ * they are.
+ */
 NAOS_TEST(one_byte_is_one_column)
 {
     sink_t sink;
@@ -134,8 +142,10 @@ NAOS_TEST(one_byte_is_one_column)
     check_sink(&sink, "\xE3\x81\x82\t\x01");
 }
 
-/* A text of the length 0 does nothing: no call, no column, and the text
- * may be NULL then. */
+/*
+ * A text of the length 0 does nothing: no call, no column, and the text
+ * may be NULL then.
+ */
 NAOS_TEST(empty_text_does_nothing)
 {
     sink_t sink;
@@ -176,8 +186,10 @@ NAOS_TEST(newline_resets_the_column)
 
 /* ---- The blanks ------------------------------------------------------------ */
 
-/* Blanks count for the column at once, but they are not written until a
- * text follows. */
+/*
+ * Blanks count for the column at once, but they are not written until a
+ * text follows.
+ */
 NAOS_TEST(spaces_wait_for_the_next_text)
 {
     sink_t sink;
@@ -196,8 +208,10 @@ NAOS_TEST(spaces_wait_for_the_next_text)
     check_sink(&sink, "a   b");
 }
 
-/* Blanks at the start of a line are kept in the same way, and blanks that
- * are remembered in several calls add up. */
+/*
+ * Blanks at the start of a line are kept in the same way, and blanks that
+ * are remembered in several calls add up.
+ */
 NAOS_TEST(spaces_add_up)
 {
     sink_t sink;
@@ -217,8 +231,10 @@ NAOS_TEST(spaces_add_up)
     check_sink(&sink, "    x");
 }
 
-/* A text of the length 0 does not write the blanks: they still wait, and a
- * newline drops them. */
+/*
+ * A text of the length 0 does not write the blanks: they still wait, and a
+ * newline drops them.
+ */
 NAOS_TEST(empty_text_keeps_the_spaces_waiting)
 {
     sink_t sink;
@@ -237,9 +253,11 @@ NAOS_TEST(empty_text_keeps_the_spaces_waiting)
     check_sink(&sink, "a\n");
 }
 
-/* A newline drops the blanks that wait, so no line ends with a blank, and
+/*
+ * A newline drops the blanks that wait, so no line ends with a blank, and
  * a line of blanks alone is an empty line. The dropped blanks do not come
- * back on the next line. */
+ * back on the next line.
+ */
 NAOS_TEST(newline_drops_the_spaces)
 {
     sink_t sink;
@@ -264,8 +282,10 @@ NAOS_TEST(newline_drops_the_spaces)
     check_sink(&sink, "a\n\nb\n");
 }
 
-/* Any number of blanks is written, also more than the part passes on in
- * one call. */
+/*
+ * Any number of blanks is written, also more than the part passes on in
+ * one call.
+ */
 NAOS_TEST(many_spaces_are_all_written)
 {
     static const size_t counts[] = { 1, 31, 32, 33, 64, 65, 100 };
@@ -311,8 +331,10 @@ NAOS_TEST(pad_to_reaches_the_column)
     check_sink(&sink, "ab    c");
 }
 
-/* The boundaries: one column short is one blank, the column itself and a
- * column to the left are nothing. */
+/*
+ * The boundaries: one column short is one blank, the column itself and a
+ * column to the left are nothing.
+ */
 NAOS_TEST(pad_to_boundaries)
 {
     sink_t sink;
@@ -411,8 +433,10 @@ NAOS_TEST(no_call_is_empty)
     check_sink(&sink, "ab                                c\n\n");
 }
 
-/* After the write function has reported a failure it is not called again,
- * by any of the functions. The columns are counted as before. */
+/*
+ * After the write function has reported a failure it is not called again,
+ * by any of the functions. The columns are counted as before.
+ */
 NAOS_TEST(failure_stops_the_calls)
 {
     sink_t sink;
@@ -475,8 +499,10 @@ NAOS_TEST(failure_of_first_call_and_of_newline)
     check_sink(&sink, "one");
 }
 
-/* When the blanks that wait fail to be written, neither the rest of the
- * blanks nor the text that follows is passed on. */
+/*
+ * When the blanks that wait fail to be written, neither the rest of the
+ * blanks nor the text that follows is passed on.
+ */
 NAOS_TEST(failure_while_writing_the_spaces)
 {
     sink_t sink;
@@ -523,8 +549,10 @@ NAOS_TEST(init_forgets_everything)
 
 /* ---- Counting only --------------------------------------------------------- */
 
-/* Without a write function nothing is passed on and nothing fails; the
- * columns are counted exactly as with one. */
+/*
+ * Without a write function nothing is passed on and nothing fails; the
+ * columns are counted exactly as with one.
+ */
 NAOS_TEST(counting_only_advances_the_column)
 {
     clargs_out_t out;
@@ -554,8 +582,10 @@ NAOS_TEST(counting_only_advances_the_column)
     NAOS_CHECK_FALSE(clargs_out_failed(&out));
 }
 
-/* The same calls give the same columns with a write function and
- * without one. */
+/*
+ * The same calls give the same columns with a write function and
+ * without one.
+ */
 static void write_sample(clargs_out_t *out, size_t *columns)
 {
     clargs_out_spaces(out, 2);

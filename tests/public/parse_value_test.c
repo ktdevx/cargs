@@ -41,8 +41,10 @@
 /* The number of arguments of an argv array. */
 #define ARGC(argv) ((int)(sizeof(argv) / sizeof((argv)[0])))
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -69,8 +71,10 @@ static clargs_command_t *add_subcommand(clargs_command_t *command, const char *n
     return subcommand;
 }
 
-/* Adds an option that takes a value to command. default_value may be
- * NULL: the option has no default value then. */
+/*
+ * Adds an option that takes a value to command. default_value may be
+ * NULL: the option has no default value then.
+ */
 static clargs_option_t *add_value(clargs_command_t *command, char short_name, const char *long_name,
                                   const clargs_type_t *type, const char *default_value)
 {
@@ -95,8 +99,10 @@ static clargs_option_t *add_required(clargs_command_t *command, char short_name,
     return option;
 }
 
-/* Adds a positional to command. default_value may be NULL: the positional
- * has no default value then. */
+/*
+ * Adds a positional to command. default_value may be NULL: the positional
+ * has no default value then.
+ */
 static clargs_positional_t *add_positional(clargs_command_t *command, const char *name,
                                            const clargs_type_t *type, clargs_arity_t arity,
                                            const char *default_value)
@@ -125,8 +131,10 @@ static void destroy_root(clargs_command_t *root)
     check_clean();
 }
 
-/* Parses argv, which must match the schema. Returns the result, which the
- * caller destroys. */
+/*
+ * Parses argv, which must match the schema. Returns the result, which the
+ * caller destroys.
+ */
 static clargs_result_t *parse_ok(const clargs_command_t *root, int argc, char *const *argv)
 {
     clargs_result_t *result = NULL;
@@ -139,8 +147,10 @@ static clargs_result_t *parse_ok(const clargs_command_t *root, int argc, char *c
     return result;
 }
 
-/* Parses argv, which must have a parse error of the kind with the message.
- * Returns the result, which the caller destroys. */
+/*
+ * Parses argv, which must have a parse error of the kind with the message.
+ * Returns the result, which the caller destroys.
+ */
 static clargs_result_t *parse_bad(const clargs_command_t *root, int argc, char *const *argv,
                                   clargs_parse_error_kind_t kind, const char *message)
 {
@@ -155,8 +165,10 @@ static clargs_result_t *parse_bad(const clargs_command_t *root, int argc, char *
     return result;
 }
 
-/* Checks that option, of the value type string, has the value expected
- * from source, through both ways of reading it. */
+/*
+ * Checks that option, of the value type string, has the value expected
+ * from source, through both ways of reading it.
+ */
 static void check_option_string(const clargs_result_t *result, const clargs_option_t *option,
                                 const char *expected, clargs_source_t source)
 {
@@ -194,8 +206,10 @@ static void check_option_none(const clargs_result_t *result, const clargs_option
     NAOS_CHECK_TRUE(clargs_result_option_value(result, option) == NULL);
 }
 
-/* Checks that positional, of the value type string, has the one value
- * expected from source. */
+/*
+ * Checks that positional, of the value type string, has the one value
+ * expected from source.
+ */
 static void check_positional_string(const clargs_result_t *result, const clargs_positional_t *positional,
                                     const char *expected, clargs_source_t source)
 {
@@ -241,8 +255,10 @@ NAOS_TEST(an_option_and_a_positional_that_were_not_given_have_their_default_valu
     check_positional_string(result, file, "out.txt", CLARGS_SOURCE_DEFAULT);
     clargs_result_destroy(result);
 
-    /* A command line without any argument, not even the name of the
-     * program, is one on which nothing was given. */
+    /*
+     * A command line without any argument, not even the name of the
+     * program, is one on which nothing was given.
+     */
     result = parse_ok(root, 0, NULL);
     check_option_string(result, name, "anon", CLARGS_SOURCE_DEFAULT);
     check_option_int(result, jobs, 4, CLARGS_SOURCE_DEFAULT);
@@ -270,8 +286,10 @@ NAOS_TEST(what_was_given_on_the_command_line_is_the_value_and_not_the_default)
     check_positional_string(result, file, "in.txt", CLARGS_SOURCE_COMMAND_LINE);
     clargs_result_destroy(result);
 
-    /* A value that equals the default value still comes from the command
-     * line; the others are defaults. */
+    /*
+     * A value that equals the default value still comes from the command
+     * line; the others are defaults.
+     */
     result = parse_ok(root, ARGC(some), some);
     check_option_string(result, name, "anon", CLARGS_SOURCE_DEFAULT);
     check_option_int(result, jobs, 4, CLARGS_SOURCE_COMMAND_LINE);
@@ -467,16 +485,20 @@ NAOS_TEST(a_positional_that_takes_one_or_more_without_a_value_is_a_parse_error)
     destroy_root(root);
 }
 
-/* Of several required things that are missing, the first is reported: the
+/*
+ * Of several required things that are missing, the first is reported: the
  * commands from the root on, the options of a command before its
- * positionals, each in the order in which they were added. */
+ * positionals, each in the order in which they were added.
+ */
 NAOS_TEST(the_first_missing_required_thing_is_reported)
 {
     clargs_command_t *root = create_root("tool");
     clargs_option_t *token = add_required(root, 't', "token", clargs_type_string());
     clargs_command_t *copy = add_subcommand(root, "copy");
-    /* The positionals are added before the options, to tell the order of
-     * the report from the order of the definitions. */
+    /*
+     * The positionals are added before the options, to tell the order of
+     * the report from the order of the definitions.
+     */
     clargs_positional_t *source =
         add_positional(copy, "SOURCE", clargs_type_string(), CLARGS_ARITY_REQUIRED, NULL);
     clargs_positional_t *target =
@@ -534,8 +556,10 @@ NAOS_TEST(the_first_missing_required_thing_is_reported)
 
 /* ---- The commands that were and were not selected ----------------------- */
 
-/* A tool with the subcommands "build", which has something required, a
- * default value and a negatable flag for each initial state, and "clean". */
+/*
+ * A tool with the subcommands "build", which has something required, a
+ * default value and a negatable flag for each initial state, and "clean".
+ */
 typedef struct tool_fixture {
     clargs_command_t *root;
     clargs_option_t *config;      /* --config of tool, default "tool.cfg" */
@@ -602,8 +626,10 @@ NAOS_TEST(a_command_that_was_not_selected_is_not_checked_and_gets_no_default_val
 
     set_up_tool(&fixture);
 
-    /* "build" has a required option and a required positional, and "clean"
-     * was selected: nothing is missing. */
+    /*
+     * "build" has a required option and a required positional, and "clean"
+     * was selected: nothing is missing.
+     */
     result = parse_ok(fixture.root, ARGC(sibling), sibling);
     NAOS_CHECK_TRUE(clargs_result_command(result) == fixture.clean);
     check_option_string(result, fixture.config, "tool.cfg", CLARGS_SOURCE_DEFAULT);
@@ -684,8 +710,10 @@ NAOS_TEST(a_result_with_a_parse_error_has_no_default_value)
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, fixture.cache), CLARGS_SOURCE_DEFAULT);
     clargs_result_destroy(result);
 
-    /* Something required is missing: the default values of the commands
-     * before it, and of the same command, are not applied either. */
+    /*
+     * Something required is missing: the default values of the commands
+     * before it, and of the same command, are not applied either.
+     */
     result = parse_bad(fixture.root, ARGC(missing), missing, CLARGS_PARSE_ERROR_MISSING_OPTION,
                        "missing required option '--target'");
     check_option_none(result, fixture.config);
@@ -698,9 +726,11 @@ NAOS_TEST(a_result_with_a_parse_error_has_no_default_value)
     destroy_root(fixture.root);
 }
 
-/* A value type that takes every text until it is told to reject the text
+/*
+ * A value type that takes every text until it is told to reject the text
  * "bad". Its value is the text. The validation of a schema converts the
- * default values with it; the switch is thrown afterwards. */
+ * default values with it; the switch is thrown afterwards.
+ */
 typedef struct picky {
     bool reject;
 } picky_t;
@@ -716,8 +746,10 @@ static clargs_error_t picky_convert(const char *text, void *value, void *context
     return CLARGS_ERROR_NONE;
 }
 
-/* The validation checked the default values, so this happens only with a
- * value type that does not give the same answer twice. */
+/*
+ * The validation checked the default values, so this happens only with a
+ * value type that does not give the same answer twice.
+ */
 NAOS_TEST(a_default_value_that_its_type_does_not_take_is_a_parse_error_without_default_values)
 {
     picky_t picky = { false };
@@ -775,8 +807,10 @@ NAOS_TEST(a_parse_that_cannot_allocate_a_default_value_returns_no_result_and_lea
     set_up_tool(&fixture);
     live = clargs_test_allocator_live();
 
-    /* How many requests a parse that succeeds makes. The last ones are
-     * those of the default values. */
+    /*
+     * How many requests a parse that succeeds makes. The last ones are
+     * those of the default values.
+     */
     before = clargs_test_allocator_requests();
     result = parse_ok(fixture.root, ARGC(argv), argv);
     requests = clargs_test_allocator_requests() - before;
@@ -811,17 +845,21 @@ NAOS_TEST(a_parse_that_cannot_allocate_a_default_value_returns_no_result_and_lea
 
 /* ---- The value types ---------------------------------------------------- */
 
-/* The value of the user-defined value type "word": the text that the
- * conversion was given, not a copy of it, and the length of the text. */
+/*
+ * The value of the user-defined value type "word": the text that the
+ * conversion was given, not a copy of it, and the length of the text.
+ */
 typedef struct word {
     const char *text;
     size_t length;
 } word_t;
 
-/* The user data of the value type "word". It counts the conversions that
+/*
+ * The user data of the value type "word". It counts the conversions that
  * succeeded and the cleanups, keeps the text of the last conversion that
  * was requested and of the last value that was cleaned up, and tells what
- * the conversion of the text "bad" returns. */
+ * the conversion of the text "bad" returns.
+ */
 typedef struct word_log {
     size_t converted;
     size_t released;
@@ -857,8 +895,10 @@ static clargs_error_t word_convert(const char *text, void *value, void *context)
     return CLARGS_ERROR_NONE;
 }
 
-/* Reads the text of the value: the text must still be valid when its value
- * is cleaned up. */
+/*
+ * Reads the text of the value: the text must still be valid when its value
+ * is cleaned up.
+ */
 static void word_release(void *value, void *context)
 {
     word_log_t *log = context;
@@ -868,8 +908,10 @@ static void word_release(void *value, void *context)
     log->released++;
 }
 
-/* Creates the value type "word" with log, which it puts in its first
- * state. Call it after create_root(), which resets the test allocator. */
+/*
+ * Creates the value type "word" with log, which it puts in its first
+ * state. Call it after create_root(), which resets the test allocator.
+ */
 static clargs_type_t *create_word_type(word_log_t *log)
 {
     clargs_type_t *type = NULL;
@@ -885,8 +927,10 @@ static clargs_type_t *create_word_type(word_log_t *log)
     return type;
 }
 
-/* Creates the value type of the choices "red", "green" and "blue". Call it
- * after create_root(). */
+/*
+ * Creates the value type of the choices "red", "green" and "blue". Call it
+ * after create_root().
+ */
 static clargs_type_t *create_color_type(void)
 {
     const char *const colors[] = { "red", "green", "blue" };
@@ -898,8 +942,10 @@ static clargs_type_t *create_color_type(void)
     return type;
 }
 
-/* Checks that area, the area of a value of the value type "word", holds
- * the text expected. */
+/*
+ * Checks that area, the area of a value of the value type "word", holds
+ * the text expected.
+ */
 static void check_word(const void *area, const char *expected)
 {
     const word_t *word = area;
@@ -910,8 +956,10 @@ static void check_word(const void *area, const char *expected)
     NAOS_CHECK_UINT_EQ(word->length, strlen(expected));
 }
 
-/* Checks that the value at index of positional, of the value type string,
- * is expected, through both ways of reading it. */
+/*
+ * Checks that the value at index of positional, of the value type string,
+ * is expected, through both ways of reading it.
+ */
 static void check_positional_string_at(const clargs_result_t *result, const clargs_positional_t *positional,
                                        size_t index, const char *expected)
 {
@@ -968,8 +1016,10 @@ static void check_positional_choice_at(const clargs_result_t *result, const clar
     NAOS_CHECK_TRUE(*(const size_t *)area == value);
 }
 
-/* Checks that positional has count values, all from the command line, and
- * none after them. */
+/*
+ * Checks that positional has count values, all from the command line, and
+ * none after them.
+ */
 static void check_positional_given(const clargs_result_t *result, const clargs_positional_t *positional,
                                    size_t count)
 {
@@ -1076,8 +1126,10 @@ NAOS_TEST(a_positional_of_every_value_type_reads_the_same_through_both_ways)
     check_clean();
 }
 
-/* One subcommand for each value type, with a positional of that type that
- * takes any number of values. */
+/*
+ * One subcommand for each value type, with a positional of that type that
+ * takes any number of values.
+ */
 NAOS_TEST(a_positional_that_takes_several_values_of_every_value_type_reads_each_in_its_order)
 {
     word_log_t log;
@@ -1217,8 +1269,10 @@ NAOS_TEST(a_value_type_is_given_the_text_as_it_was_written)
     check_clean();
 }
 
-/* The built-in value types take no white space. A value with a space in
- * front or behind is not trimmed for them, so they do not take it. */
+/*
+ * The built-in value types take no white space. A value with a space in
+ * front or behind is not trimmed for them, so they do not take it.
+ */
 NAOS_TEST(white_space_around_a_value_is_not_removed_for_its_value_type)
 {
     clargs_command_t *root = create_root("tool");
@@ -1283,10 +1337,12 @@ NAOS_TEST(white_space_around_a_value_is_not_removed_for_its_value_type)
 
 /* ---- The cleanup of the values ------------------------------------------ */
 
-/* A tool whose values are all of the value type "word": the option --word,
+/*
+ * A tool whose values are all of the value type "word": the option --word,
  * the option --late, whose default value is "bad", and the positional ITEM,
  * which takes any number of values. The conversion takes "bad" until
- * log.failure is set, which is done after the validation. */
+ * log.failure is set, which is done after the validation.
+ */
 typedef struct word_fixture {
     word_log_t log;
     clargs_type_t *type;
@@ -1310,8 +1366,10 @@ static void set_up_words(word_fixture_t *fixture)
     fixture->converted = fixture->log.converted;
 }
 
-/* The number of conversions that succeeded since the validation, and the
- * number of those values that were not cleaned up yet. */
+/*
+ * The number of conversions that succeeded since the validation, and the
+ * number of those values that were not cleaned up yet.
+ */
 static size_t words_converted(const word_fixture_t *fixture)
 {
     return fixture->log.converted - fixture->converted;
@@ -1340,8 +1398,10 @@ NAOS_TEST(a_value_that_was_replaced_is_cleaned_up_once_and_the_last_one_with_the
     set_up_words(&fixture);
     result = parse_ok(fixture.root, ARGC(argv), argv);
 
-    /* Four conversions; "a" and then "b" were replaced and cleaned up, and
-     * the values of --word and --late are held. */
+    /*
+     * Four conversions; "a" and then "b" were replaced and cleaned up, and
+     * the values of --word and --late are held.
+     */
     NAOS_CHECK_UINT_EQ(words_converted(&fixture), 4);
     NAOS_CHECK_UINT_EQ(words_held(&fixture), 2);
     NAOS_CHECK_STR_EQ(fixture.log.last_released, "b");
@@ -1365,8 +1425,10 @@ NAOS_TEST(the_values_of_a_parse_that_ends_in_a_parse_error_are_cleaned_up_with_t
     result = parse_bad(fixture.root, ARGC(argv), argv, CLARGS_PARSE_ERROR_UNKNOWN_OPTION,
                        "unknown option '--bogus'");
 
-    /* Four conversions before the error and none after it; "a" was
-     * replaced. No default value was converted. */
+    /*
+     * Four conversions before the error and none after it; "a" was
+     * replaced. No default value was converted.
+     */
     NAOS_CHECK_UINT_EQ(words_converted(&fixture), 4);
     NAOS_CHECK_UINT_EQ(words_held(&fixture), 3);
     NAOS_CHECK_STR_EQ(fixture.log.last_released, "a");
@@ -1420,9 +1482,11 @@ NAOS_TEST(a_default_value_is_converted_once_and_cleaned_up_with_the_result)
 
 /* ---- What a conversion that failed returns ------------------------------ */
 
-/* A conversion that fails with failure, which is not the lack of memory,
+/*
+ * A conversion that fails with failure, which is not the lack of memory,
  * is the parse error of a value that its value type does not take: for the
- * value of an option, of a positional and for a default value. */
+ * value of an option, of a positional and for a default value.
+ */
 static void check_failed_conversion_is_a_parse_error(clargs_error_t failure)
 {
     word_fixture_t fixture;
@@ -1474,8 +1538,10 @@ static void check_failed_conversion_is_a_parse_error(clargs_error_t failure)
     clargs_result_destroy(result);
     NAOS_CHECK_UINT_EQ(words_held(&fixture), 0);
 
-    /* Without the text that the value type does not take, the parse
-     * succeeds. */
+    /*
+     * Without the text that the value type does not take, the parse
+     * succeeds.
+     */
     result = parse_ok(fixture.root, ARGC(good), good);
     check_word(clargs_result_option_value(result, fixture.late), "l");
     clargs_result_destroy(result);
@@ -1534,8 +1600,10 @@ NAOS_TEST(a_conversion_that_reports_a_lack_of_memory_fails_the_parse_without_a_r
         NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
         /* The place of the result was written to. */
         NAOS_CHECK_TRUE(result == NULL);
-        /* The values that were converted before the failure were cleaned
-         * up, and nothing of the parse stays allocated. */
+        /*
+         * The values that were converted before the failure were cleaned
+         * up, and nothing of the parse stays allocated.
+         */
         NAOS_CHECK_STR_EQ(fixture.log.last_text, "bad");
         NAOS_CHECK_UINT_EQ(fixture.log.converted - converted, expected[i]);
         NAOS_CHECK_UINT_EQ(words_held(&fixture), held);

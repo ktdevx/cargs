@@ -46,8 +46,10 @@ typedef struct clargs_positional_slot {
     clargs_vec_t values; /* Items of the type void *: the memory of each value. */
 } clargs_positional_slot_t;
 
-/* One selected command and the slots of its options and positionals, in
- * the order of the command. */
+/*
+ * One selected command and the slots of its options and positionals, in
+ * the order of the command.
+ */
 typedef struct clargs_result_frame {
     const clargs_command_t *command;
     clargs_option_slot_t *options;         /* NULL when option_count is 0. */
@@ -58,11 +60,17 @@ typedef struct clargs_result_frame {
 
 struct clargs_result {
     const clargs_command_t *root;
-    char **args;              /* The copy of the arguments: the array and the strings in one allocation.
-                                 NULL when arg_count is 0. */
+    /*
+     * The copy of the arguments: the array and the strings in one allocation.
+     * NULL when arg_count is 0.
+     */
+    char **args;
     size_t arg_count;
-    size_t first_invalid_arg; /* The index of the first argument with a sequence that could not be
-                                 converted; 0 when there is none. */
+    /*
+     * The index of the first argument with a sequence that could not be
+     * converted; 0 when there is none.
+     */
+    size_t first_invalid_arg;
     clargs_vec_t frames;      /* Items of the type clargs_result_frame_t; the first is that of root. */
     clargs_error_t error;     /* CLARGS_ERROR_NONE or CLARGS_ERROR_INVALID_COMMAND_LINE */
     clargs_parse_error_kind_t error_kind;
@@ -176,19 +184,33 @@ void clargs_result_record_flag(clargs_result_t *result, const clargs_option_t *o
 void clargs_result_record_state(clargs_result_t *result, const clargs_option_t *option, bool on);
 void clargs_result_record_count(clargs_result_t *result, const clargs_option_t *option);
 
-/* Where a parse error is: for a record of a value, where the value is,
+/*
+ * Where a parse error is: for a record of a value, where the value is,
  * for the parse error of a value that its value type does not take. The
- * strings are only read during the call. */
+ * strings are only read during the call.
+ */
 typedef struct clargs_result_where {
-    clargs_source_t source;  /* CLARGS_SOURCE_COMMAND_LINE or CLARGS_SOURCE_DEFAULT for a value;
-                                CLARGS_SOURCE_NONE for an error that has no position. */
-    size_t index;            /* The index of the argument that is wrong, or that holds the value; 0 when
-                                source is not CLARGS_SOURCE_COMMAND_LINE. */
+    /*
+     * CLARGS_SOURCE_COMMAND_LINE or CLARGS_SOURCE_DEFAULT for a value;
+     * CLARGS_SOURCE_NONE for an error that has no position.
+     */
+    clargs_source_t source;
+    /*
+     * The index of the argument that is wrong, or that holds the value; 0 when
+     * source is not CLARGS_SOURCE_COMMAND_LINE.
+     */
+    size_t index;
     char short_name;         /* The letter that the error is about in a bundle; otherwise '\0'. */
-    const char *name_prefix; /* For the message: the prefix of the name as it was written, "--", "-" or
-                                "". NULL is read as "". */
-    const char *name;        /* For the message: the name as it was written. May be NULL for a kind
-                                whose message has no name ("message.h"). */
+    /*
+     * For the message: the prefix of the name as it was written, "--", "-" or
+     * "". NULL is read as "".
+     */
+    const char *name_prefix;
+    /*
+     * For the message: the name as it was written. May be NULL for a kind
+     * whose message has no name ("message.h").
+     */
+    const char *name;
     size_t name_length;      /* The length of name, which need not end at a terminator. */
 } clargs_result_where_t;
 
@@ -240,13 +262,18 @@ clargs_error_t clargs_result_record_positional_value(clargs_result_t *result,
  */
 void clargs_result_discard_defaults(clargs_result_t *result);
 
-/* A parse error to record. The strings are only read during the call,
- * except value, which the result keeps a pointer to. */
+/*
+ * A parse error to record. The strings are only read during the call,
+ * except value, which the result keeps a pointer to.
+ */
 typedef struct clargs_result_failure {
     clargs_parse_error_kind_t kind;
     clargs_result_where_t where;
-    const char *value;                     /* In the arguments of the result, a default value of the
-                                              schema, or NULL. */
+    /*
+     * In the arguments of the result, a default value of the
+     * schema, or NULL.
+     */
+    const char *value;
     const clargs_command_t *command;
     const clargs_option_t *option;         /* May be NULL. */
     const clargs_positional_t *positional; /* May be NULL. */

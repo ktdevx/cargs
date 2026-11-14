@@ -428,8 +428,10 @@ The model is `fails_at_every_allocation_point` in `tests/internal/vec_test.c`. W
 
 #include <stddef.h>
 
-/* Pushes the items count, count + 1, ... so that the array has total items
- * afterwards. Stops at the first push that fails and returns its error. */
+/*
+ * Pushes the items count, count + 1, ... so that the array has total items
+ * afterwards. Stops at the first push that fails and returns its error.
+ */
 static clargs_error_t push_up_to(clargs_vec_t *vec, size_t total)
 {
     while (vec->count < total) {
@@ -467,8 +469,10 @@ NAOS_TEST(fails_at_every_allocation_point)
 
         if (error == CLARGS_ERROR_NONE
             && clargs_test_allocator_requests() < n) {
-            /* The operation ended before the request to fail was reached:
-             * every allocation point has failed once. */
+            /*
+             * The operation ended before the request to fail was reached:
+             * every allocation point has failed once.
+             */
             NAOS_CHECK_UINT_EQ(vec.count, total);
             clargs_vec_destroy(&vec);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -481,8 +485,10 @@ NAOS_TEST(fails_at_every_allocation_point)
         NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n);
 
-        /* What the failure must leave unchanged: the array is as it was
-         * before the push that failed. */
+        /*
+         * What the failure must leave unchanged: the array is as it was
+         * before the push that failed.
+         */
         NAOS_CHECK_TRUE(vec.count < total);
         NAOS_CHECK_UINT_EQ(vec.count, vec.capacity);
         for (index = 0; index < vec.count; ++index) {

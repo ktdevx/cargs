@@ -57,8 +57,10 @@
 /* The size of the text that the sink of most tests holds. */
 #define SINK_SIZE ((size_t)1024)
 
-/* The size of the text that the sink of the tests of the greatest settings
- * holds: two lines of 65535 columns and more, and some short lines. */
+/*
+ * The size of the text that the sink of the tests of the greatest settings
+ * holds: two lines of 65535 columns and more, and some short lines.
+ */
 #define BIG_SINK_SIZE ((size_t)140000)
 
 /* The greatest value that a setting keeps. */
@@ -82,8 +84,10 @@ static void sink_init(sink_t *sink, char *buffer, size_t size)
     sink->size = size;
 }
 
-/* Appends the part to the sink. The call number fail_at takes nothing and
- * reports a failure, and so would every later call. */
+/*
+ * Appends the part to the sink. The call number fail_at takes nothing and
+ * reports a failure, and so would every later call.
+ */
 static bool sink_write(void *user_data, const char *text, size_t length)
 {
     sink_t *sink = user_data;
@@ -105,8 +109,10 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     return true;
 }
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -138,8 +144,10 @@ static void describe(clargs_command_t *command, const char *description)
     NAOS_REQUIRE_TRUE(clargs_command_set_description(command, description) == CLARGS_ERROR_NONE);
 }
 
-/* Adds a subcommand that must succeed, and returns it. description is its
- * description, or NULL to set none. */
+/*
+ * Adds a subcommand that must succeed, and returns it. description is its
+ * description, or NULL to set none.
+ */
 static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
                                  const char *description)
 {
@@ -153,8 +161,10 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
     return sub;
 }
 
-/* Adds a positional of strings that must succeed. description is its
- * description, or NULL to set none. */
+/*
+ * Adds a positional of strings that must succeed. description is its
+ * description, or NULL to set none.
+ */
 static void add_positional(clargs_command_t *command, const char *name, clargs_arity_t arity,
                            const char *description)
 {
@@ -169,9 +179,11 @@ static void add_positional(clargs_command_t *command, const char *name, clargs_a
     }
 }
 
-/* Adds a positional of strings that takes none or one argument and has the
+/*
+ * Adds a positional of strings that takes none or one argument and has the
  * default value given; it must succeed. description is its description, or
- * NULL to set none. */
+ * NULL to set none.
+ */
 static void add_positional_default(clargs_command_t *command, const char *name,
                                    const char *default_value, const char *description)
 {
@@ -189,9 +201,11 @@ static void add_positional_default(clargs_command_t *command, const char *name,
     }
 }
 
-/* Adds a flag that must succeed. short_name is '\0' and long_name is NULL
+/*
+ * Adds a flag that must succeed. short_name is '\0' and long_name is NULL
  * for a name that the option does not have; description is its
- * description, or NULL to set none. */
+ * description, or NULL to set none.
+ */
 static void add_flag(clargs_command_t *command, char short_name, const char *long_name,
                      const char *description)
 {
@@ -205,9 +219,11 @@ static void add_flag(clargs_command_t *command, char short_name, const char *lon
     }
 }
 
-/* Adds an option with a value of strings that must succeed, with the
+/*
+ * Adds an option with a value of strings that must succeed, with the
  * display name value_name. The option is not required. default_value is
- * its default value, or NULL to set none. */
+ * its default value, or NULL to set none.
+ */
 static void add_value(clargs_command_t *command, char short_name, const char *long_name,
                       const char *value_name, const char *default_value,
                       const char *description)
@@ -233,8 +249,10 @@ static void validate(clargs_command_t *root)
     NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
 }
 
-/* Returns whether a line of the length bytes of text ends with a blank: a
- * blank before a newline, or at the end of the text. */
+/*
+ * Returns whether a line of the length bytes of text ends with a blank: a
+ * blank before a newline, or at the end of the text.
+ */
 static bool has_blank_at_line_end(const char *text, size_t length)
 {
     size_t index;
@@ -247,9 +265,11 @@ static bool has_blank_at_line_end(const char *text, size_t length)
     return false;
 }
 
-/* Checks the shape of a help text: no line ends with a blank, there is no
+/*
+ * Checks the shape of a help text: no line ends with a blank, there is no
  * '\r', the text ends with one "\n", and it neither starts nor ends with
- * an empty line. */
+ * an empty line.
+ */
 static void check_shape(const char *text, size_t length)
 {
     NAOS_CHECK_TRUE(!has_blank_at_line_end(text, length));
@@ -283,9 +303,11 @@ static void generate(const clargs_command_t *command, const clargs_help_options_
     NAOS_CHECK_TRUE(clargs_command_is_validated(command));
 }
 
-/* Has the help of command written with options, checks the generation as
+/*
+ * Has the help of command written with options, checks the generation as
  * generate() does, and checks that the text is exactly the string
- * expected: by its length and by its bytes. */
+ * expected: by its length and by its bytes.
+ */
 static void check_help_with(const clargs_command_t *command, const clargs_help_options_t *options,
                             const char *expected)
 {
@@ -300,8 +322,10 @@ static void check_help_with(const clargs_command_t *command, const clargs_help_o
     check_shape(expected, strlen(expected));
 }
 
-/* Creates help options that must succeed, with the width, the indent and
- * the maximum column given. */
+/*
+ * Creates help options that must succeed, with the width, the indent and
+ * the maximum column given.
+ */
 static clargs_help_options_t *create_options(size_t width, size_t indent, size_t max_column)
 {
     clargs_help_options_t *options = NULL;
@@ -314,9 +338,11 @@ static clargs_help_options_t *create_options(size_t width, size_t indent, size_t
     return options;
 }
 
-/* Has the help of command written with help options that have the width,
+/*
+ * Has the help of command written with help options that have the width,
  * the indent and the maximum column given, and checks it as
- * check_help_with() does. The help options are destroyed again. */
+ * check_help_with() does. The help options are destroyed again.
+ */
 static void check_layout(const clargs_command_t *command, size_t width, size_t indent,
                          size_t max_column, const char *expected)
 {
@@ -843,8 +869,10 @@ NAOS_TEST(long_descriptions_break_between_words)
     destroy_root(root);
 }
 
-/* The description of a positional is broken in the same way: with the
- * width 30 it goes on at the column 11, the one of the heading. */
+/*
+ * The description of a positional is broken in the same way: with the
+ * width 30 it goes on at the column 11, the one of the heading.
+ */
 NAOS_TEST(long_description_of_an_argument_breaks_between_words)
 {
     clargs_command_t *root = create_root();
@@ -1184,17 +1212,21 @@ NAOS_TEST(one_options_object_serves_many_generations)
 
 /* ---- The greatest settings ------------------------------------------------ */
 
-/* One piece of a long text: the bytes of literal and, behind them, count
- * times the byte fill. */
+/*
+ * One piece of a long text: the bytes of literal and, behind them, count
+ * times the byte fill.
+ */
 typedef struct piece {
     const char *literal;
     char fill;
     size_t count;
 } piece_t;
 
-/* Checks that the length bytes of text are exactly the pieces, one behind
+/*
+ * Checks that the length bytes of text are exactly the pieces, one behind
  * the other: by the length and by every byte. A text of some 65535 columns
- * is so compared without a literal of that size. */
+ * is so compared without a literal of that size.
+ */
 static void check_pieces(const char *text, size_t length, const piece_t *pieces, size_t count)
 {
     size_t expected = 0;
@@ -1224,10 +1256,12 @@ static void check_pieces(const char *text, size_t length, const piece_t *pieces,
     }
 }
 
-/* Has the help of command written with help options that have the width,
+/*
+ * Has the help of command written with help options that have the width,
  * the indent and the maximum column given, into the BIG_SINK_SIZE bytes of
  * buffer, and checks the generation as generate() does and the text with
- * check_pieces(). */
+ * check_pieces().
+ */
 static void check_big_layout(const clargs_command_t *command, size_t width, size_t indent,
                              size_t max_column, char *buffer, const piece_t *pieces, size_t count)
 {
@@ -1241,8 +1275,10 @@ static void check_big_layout(const clargs_command_t *command, size_t width, size
     clargs_help_options_destroy(options);
 }
 
-/* The values above the limit that the tests set: the first one, another,
- * and the greatest size_t. */
+/*
+ * The values above the limit that the tests set: the first one, another,
+ * and the greatest size_t.
+ */
 static const size_t beyond_the_limit[] = { (size_t)65536, (size_t)70000, (size_t)-1 };
 
 #define BEYOND_COUNT (sizeof beyond_the_limit / sizeof beyond_the_limit[0])
@@ -1371,9 +1407,11 @@ NAOS_TEST(maximum_column_above_the_limit_works_as_the_limit)
 
 /* ---- Descriptions of blanks and newlines only ---------------------------- */
 
-/* Checks that description, as the description of a command, is not
+/*
+ * Checks that description, as the description of a command, is not
  * written: the help is the usage line alone, and with a list one empty
- * line stands between the usage line and the list. */
+ * line stands between the usage line and the list.
+ */
 static void check_blank_command_description(const char *description)
 {
     clargs_command_t *root = create_root();
@@ -1399,8 +1437,10 @@ static void check_blank_command_description(const char *description)
     destroy_root(root);
 }
 
-/* A description of a command that holds nothing but blanks and newlines
- * counts as not set: no paragraph and no empty line stands for it. */
+/*
+ * A description of a command that holds nothing but blanks and newlines
+ * counts as not set: no paragraph and no empty line stands for it.
+ */
 NAOS_TEST(blank_description_of_the_command_is_not_written)
 {
     check_blank_command_description("   ");
@@ -1525,8 +1565,10 @@ NAOS_TEST(blank_description_leaves_the_annotations_alone)
 
 /* ---- The blanks of the trailing run of a description ----------------- */
 
-/* Builds the items of a test of the trailing run, each with the
- * description given, on root. */
+/*
+ * Builds the items of a test of the trailing run, each with the
+ * description given, on root.
+ */
 typedef void (*trailing_build_t)(clargs_command_t *root, const char *description);
 
 /* The command has the description, and nothing else. */
@@ -1584,17 +1626,21 @@ static void build_arguments_short_last(clargs_command_t *root, const char *descr
     add_positional(root, "input", CLARGS_ARITY_REQUIRED, description);
 }
 
-/* Optional positionals with a default value: a heading that fits, then
- * one too wide. */
+/*
+ * Optional positionals with a default value: a heading that fits, then
+ * one too wide.
+ */
 static void build_argument_defaults(clargs_command_t *root, const char *description)
 {
     add_positional_default(root, "out", "o", description);
     add_positional_default(root, "a-long-optional-name", "x", description);
 }
 
-/* Builds a root with build and description, and has its help written with
+/*
+ * Builds a root with build and description, and has its help written with
  * the width 80, the indent 2 and the maximum column 20 to sink, as
- * generate() does: which checks the shape of the text. */
+ * generate() does: which checks the shape of the text.
+ */
 static void generate_trailing(trailing_build_t build, const char *description, sink_t *sink)
 {
     clargs_command_t *root = create_root();
@@ -1608,8 +1654,10 @@ static void generate_trailing(trailing_build_t build, const char *description, s
     destroy_root(root);
 }
 
-/* Checks that the help built with build and description is the text of
- * the one built with build and reduced, byte for byte. */
+/*
+ * Checks that the help built with build and description is the text of
+ * the one built with build and reduced, byte for byte.
+ */
 static void check_same_text(trailing_build_t build, const char *description, const char *reduced)
 {
     char buffer[SINK_SIZE];
@@ -1670,9 +1718,11 @@ NAOS_TEST(blanks_of_the_trailing_run_are_ignored)
     }
 }
 
-/* The description of the command with blanks in its trailing run: the
+/*
+ * The description of the command with blanks in its trailing run: the
  * text ends with the line of the description, or the list follows it
- * behind one empty line. */
+ * behind one empty line.
+ */
 NAOS_TEST(blanks_behind_the_description_of_the_command)
 {
     check_trailing(build_command_alone, "foo\n  ", "Usage: tool\n\nfoo\n");
@@ -1686,8 +1736,10 @@ NAOS_TEST(blanks_behind_the_description_of_the_command)
                    "  -v  Say more\n");
 }
 
-/* Items without annotations: no empty line follows an item whose
- * description has blanks in its trailing run, also not the last one. */
+/*
+ * Items without annotations: no empty line follows an item whose
+ * description has blanks in its trailing run, also not the last one.
+ */
 NAOS_TEST(blanks_behind_the_description_of_an_item)
 {
     check_trailing(build_flags_long_last, "foo\n  ",

@@ -33,8 +33,10 @@
 /* The number of arguments of an argv array. */
 #define ARGC(argv) ((int)(sizeof(argv) / sizeof((argv)[0])))
 
-/* The schema of the tests: the command "tool" with one option of each kind
- * and more. */
+/*
+ * The schema of the tests: the command "tool" with one option of each kind
+ * and more.
+ */
 typedef struct fixture {
     clargs_command_t *root;
     clargs_option_t *verbose; /* -v, --verbose: a flag */
@@ -47,8 +49,10 @@ typedef struct fixture {
     clargs_option_t *num;     /* --num: an integer */
 } fixture_t;
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -91,9 +95,11 @@ static void tear_down(fixture_t *fixture)
     check_clean();
 }
 
-/* Parses argv and returns the result, which the caller destroys. The parse
+/*
+ * Parses argv and returns the result, which the caller destroys. The parse
  * must return expected, which is not CLARGS_ERROR_OUT_OF_MEMORY, and the
- * result must report the same. */
+ * result must report the same.
+ */
 static clargs_result_t *parse(const fixture_t *fixture, int argc, char *const *argv, clargs_error_t expected)
 {
     clargs_result_t *result = NULL;
@@ -113,8 +119,10 @@ static clargs_result_t *parse_ok(const fixture_t *fixture, int argc, char *const
     return result;
 }
 
-/* Parses argv, which must have a parse error of the kind, at the argument
- * with the index, with the message. Returns the result. */
+/*
+ * Parses argv, which must have a parse error of the kind, at the argument
+ * with the index, with the message. Returns the result.
+ */
 static clargs_result_t *parse_bad(const fixture_t *fixture, int argc, char *const *argv,
                                   clargs_parse_error_kind_t kind, size_t index, const char *message)
 {
@@ -251,8 +259,10 @@ NAOS_TEST(two_parses_with_one_schema_give_the_same_result)
     results[2] = parse_ok(&fixture, ARGC(argv), argv);
     NAOS_CHECK_TRUE(results[0] != results[2]);
 
-    /* The first and the third parse read the same; the parse between them
-     * left nothing behind. */
+    /*
+     * The first and the third parse read the same; the parse between them
+     * left nothing behind.
+     */
     for (i = 0; i < 3; i += 2) {
         NAOS_CHECK_TRUE(clargs_result_flag(results[i], fixture.verbose));
         NAOS_CHECK_UINT_EQ(clargs_result_count(results[i], fixture.debug), 2);
@@ -869,8 +879,10 @@ typedef struct short_fixture {
     clargs_option_t *one;     /* -1: a flag; only with a digit */
 } short_fixture_t;
 
-/* Installs the test allocator, builds the schema and validates it. The
- * option "-1" is added when with_digit is true. */
+/*
+ * Installs the test allocator, builds the schema and validates it. The
+ * option "-1" is added when with_digit is true.
+ */
 static void set_up_short(short_fixture_t *fixture, bool with_digit)
 {
     clargs_command_t *root = NULL;
@@ -921,9 +933,11 @@ static clargs_result_t *parse_short_ok(const short_fixture_t *fixture, int argc,
     return result;
 }
 
-/* Parses argv, which must have a parse error of the kind, at the argument
+/*
+ * Parses argv, which must have a parse error of the kind, at the argument
  * with the index, about the letter short_name, with the message. Returns
- * the result. */
+ * the result.
+ */
 static clargs_result_t *parse_short_bad(const short_fixture_t *fixture, int argc, char *const *argv,
                                         clargs_parse_error_kind_t kind, size_t index, char short_name,
                                         const char *message)
@@ -1230,8 +1244,10 @@ NAOS_TEST(a_letter_that_is_no_short_name_is_an_unknown_option)
 
     set_up_short(&fixture, false);
 
-    /* The argument of the error is the whole bundle; the letter is read
-     * with clargs_result_error_short_name(). */
+    /*
+     * The argument of the error is the whole bundle; the letter is read
+     * with clargs_result_error_short_name().
+     */
     result = parse_short_bad(&fixture, ARGC(argv), argv, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, 1, 'x',
                              "unknown option '-x'");
     NAOS_CHECK_TRUE(clargs_result_error_value(result) == NULL);
@@ -1329,8 +1345,10 @@ NAOS_TEST(a_value_of_a_short_option_that_its_type_does_not_take_is_an_error_at_i
     check_no_value(result, fixture.num);
     clargs_result_destroy(result);
 
-    /* A value in the next argument: the argument of the error is that one,
-     * and the letter is still that of the option. */
+    /*
+     * A value in the next argument: the argument of the error is that one,
+     * and the letter is still that of the option.
+     */
     result = parse_short_bad(&fixture, ARGC(next), next, CLARGS_PARSE_ERROR_INVALID_VALUE, 3, 'n',
                              "invalid value 'x' for option '-n' (expected integer)");
     NAOS_REQUIRE_TRUE(clargs_result_error_value(result) != NULL);
@@ -1383,8 +1401,10 @@ NAOS_TEST(a_digit_is_a_short_option_of_a_command_that_has_a_digit_as_a_short_nam
     NAOS_CHECK_UINT_EQ(clargs_result_count(result, fixture.verbose), 1);
     clargs_result_destroy(result);
 
-    /* Every argument with the form of a negative number is a bundle then,
-     * also one whose digit is no short name. */
+    /*
+     * Every argument with the form of a negative number is a bundle then,
+     * also one whose digit is no short name.
+     */
     result = parse_short_bad(&fixture, ARGC(other_digit), other_digit, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, 2,
                              '2', "unknown option '-2'");
     NAOS_CHECK_TRUE(clargs_result_flag(result, fixture.a));
@@ -1410,8 +1430,10 @@ NAOS_TEST(a_negative_number_is_not_a_bundle_of_a_command_that_has_no_digit_as_a_
 
     set_up_short(&fixture, false);
 
-    /* Not an unknown option: an argument that is not an option, which this
-     * command, one without positionals, does not take. */
+    /*
+     * Not an unknown option: an argument that is not an option, which this
+     * command, one without positionals, does not take.
+     */
     result = parse_short_bad(&fixture, ARGC(argv), argv, CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL, 2, '\0',
                              "unexpected argument '-1'");
     NAOS_CHECK_TRUE(clargs_result_flag(result, fixture.a));
@@ -1451,8 +1473,10 @@ NAOS_TEST(a_negative_number_is_not_a_bundle_of_a_command_that_has_no_digit_as_a_
 
 /* ---- A lack of memory --------------------------------------------------- */
 
-/* Parses argv once for each allocation of the parse, with that allocation
- * failing, and then once with none failing, which must return expected. */
+/*
+ * Parses argv once for each allocation of the parse, with that allocation
+ * failing, and then once with none failing, which must return expected.
+ */
 static void check_every_allocation_failing(const fixture_t *fixture, int argc, char *const *argv,
                                            clargs_error_t expected)
 {

@@ -16,8 +16,10 @@ char *clargs_strdup(const char *str)
 
     assert(str != NULL);
 
-    /* The terminator is copied with the string. The sum does not overflow:
-     * the string and its terminator are an object that exists. */
+    /*
+     * The terminator is copied with the string. The sum does not overflow:
+     * the string and its terminator are an object that exists.
+     */
     size = strlen(str) + 1;
     copy = clargs_malloc(size);
     if (copy == NULL) {

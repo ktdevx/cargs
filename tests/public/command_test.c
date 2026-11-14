@@ -22,8 +22,10 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The end of every test that allocates: the test allocator has no live
- * block and saw no violation of the allocator contract. */
+/*
+ * The end of every test that allocates: the test allocator has no live
+ * block and saw no violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -59,8 +61,10 @@ static clargs_command_t *add(clargs_command_t *command, const char *name)
     return sub;
 }
 
-/* Checks that command has no option, no positional and no subcommand, and
- * that every lookup finds nothing. */
+/*
+ * Checks that command has no option, no positional and no subcommand, and
+ * that every lookup finds nothing.
+ */
 static void check_empty(const clargs_command_t *command)
 {
     bool negated = true;
@@ -93,8 +97,10 @@ NAOS_TEST(a_new_root_is_empty)
     destroy_root(root);
 }
 
-/* The name of a root is any string that is not empty: the rule of the
- * names of subcommands does not apply. */
+/*
+ * The name of a root is any string that is not empty: the rule of the
+ * names of subcommands does not apply.
+ */
 NAOS_TEST(a_root_takes_any_name_that_is_not_empty)
 {
     static const char *const names[] = { "a", "my app", "-x", "_", "./bin/app.exe", "\xe3\x81\x82" };
@@ -146,7 +152,8 @@ NAOS_TEST(the_name_of_a_root_is_copied)
 
 /* ---- Subcommands ------------------------------------------------------- */
 
-/* Three levels below the root:
+/*
+ * Three levels below the root:
  *
  *     app
  *     ├── remote
@@ -237,8 +244,10 @@ NAOS_TEST(find_subcommand_looks_in_the_command_itself_only)
     NAOS_CHECK_TRUE(clargs_command_find_subcommand(remote, "add") == remote_add);
     NAOS_CHECK_TRUE(clargs_command_find_subcommand(remote_add, "mirror") == mirror);
 
-    /* Not the subcommands of a subcommand, not those of the parent, not the
-     * command itself. */
+    /*
+     * Not the subcommands of a subcommand, not those of the parent, not the
+     * command itself.
+     */
     NAOS_CHECK_TRUE(clargs_command_find_subcommand(root, "add") == NULL);
     NAOS_CHECK_TRUE(clargs_command_find_subcommand(root, "mirror") == NULL);
     NAOS_CHECK_TRUE(clargs_command_find_subcommand(remote, "build") == NULL);
@@ -349,9 +358,11 @@ NAOS_TEST(a_subcommand_name_is_used_once_in_a_command)
     destroy_root(root);
 }
 
-/* Upper and lower case are different names, and the same name can be used
+/*
+ * Upper and lower case are different names, and the same name can be used
  * in another command: in the parent, in a child, in a sibling, and as the
- * name of the root. */
+ * name of the root.
+ */
 NAOS_TEST(names_conflict_only_bytewise_and_only_in_one_command)
 {
     clargs_command_t *root = create_root();
@@ -461,8 +472,10 @@ NAOS_TEST(destroy_does_nothing_for_null)
     check_clean();
 }
 
-/* One destruction of the root frees the whole tree: commands, names,
- * descriptions and the arrays. */
+/*
+ * One destruction of the root frees the whole tree: commands, names,
+ * descriptions and the arrays.
+ */
 NAOS_TEST(destroy_frees_the_whole_tree)
 {
     clargs_command_t *root = create_root();
@@ -488,8 +501,10 @@ NAOS_TEST(destroy_frees_the_whole_tree)
 
 /* ---- Failure of an allocation ------------------------------------------ */
 
-/* When an allocation of the creation fails, whichever it is, nothing stays
- * allocated, the output is NULL, and the error is the allocation failure. */
+/*
+ * When an allocation of the creation fails, whichever it is, nothing stays
+ * allocated, the output is NULL, and the error is the allocation failure.
+ */
 NAOS_TEST(creation_frees_everything_when_an_allocation_fails)
 {
     const size_t limit = 20;
@@ -536,9 +551,11 @@ NAOS_TEST(creation_frees_everything_when_an_allocation_fails)
     check_clean();
 }
 
-/* Builds a root with existing subcommands "s0", "s1", ... and returns it.
+/*
+ * Builds a root with existing subcommands "s0", "s1", ... and returns it.
  * The number is chosen by the tests so that the array of the subcommands
- * is empty, has room, or is full. */
+ * is empty, has room, or is full.
+ */
 static clargs_command_t *build_root_with(size_t existing)
 {
     static const char *const names[] = { "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7" };
@@ -554,8 +571,10 @@ static clargs_command_t *build_root_with(size_t existing)
     return root;
 }
 
-/* Fails each allocation of the addition of a subcommand to a root that has
- * existing subcommands already. Returns the number of the failures. */
+/*
+ * Fails each allocation of the addition of a subcommand to a root that has
+ * existing subcommands already. Returns the number of the failures.
+ */
 static size_t fail_each_allocation_of_an_addition(size_t existing)
 {
     const size_t limit = 20;
@@ -594,8 +613,10 @@ static size_t fail_each_allocation_of_an_addition(size_t existing)
         NAOS_CHECK_TRUE(sub == NULL);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + n);
 
-        /* The tree is as it was before the call, and nothing of the call
-         * stays allocated. */
+        /*
+         * The tree is as it was before the call, and nothing of the call
+         * stays allocated.
+         */
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
         NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(root), existing);
         NAOS_CHECK_TRUE(clargs_command_find_subcommand(root, "new") == NULL);
@@ -622,10 +643,12 @@ static size_t fail_each_allocation_of_an_addition(size_t existing)
     return failures;
 }
 
-/* When an allocation of the addition of a subcommand fails, whichever it
+/*
+ * When an allocation of the addition of a subcommand fails, whichever it
  * is, the output is NULL, the tree is as it was, and nothing leaks. The
  * array of the subcommands grows in the first and in the third case, and
- * has room in the second. */
+ * has room in the second.
+ */
 NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
 {
     size_t growing;
@@ -643,8 +666,10 @@ NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
     check_clean();
 }
 
-/* When the copy of a new description cannot be allocated, the command
- * keeps the description it had. */
+/*
+ * When the copy of a new description cannot be allocated, the command
+ * keeps the description it had.
+ */
 NAOS_TEST(a_failed_description_keeps_the_old_one)
 {
     clargs_command_t *root = create_root();

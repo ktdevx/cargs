@@ -30,8 +30,10 @@
 #define ANY CLARGS_ARITY_ZERO_OR_MORE
 #define MANY CLARGS_ARITY_ONE_OR_MORE
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -113,8 +115,10 @@ static clargs_positional_t *add_positional(clargs_command_t *command, const char
     return positional;
 }
 
-/* Makes option, an option that takes a value, faulty: required and with a
- * default value. */
+/*
+ * Makes option, an option that takes a value, faulty: required and with a
+ * default value.
+ */
 static void make_faulty(clargs_option_t *option)
 {
     NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
@@ -386,9 +390,11 @@ NAOS_TEST(a_valid_tree_can_be_validated_again)
 
 #define ORDER_MAX 5
 
-/* The arities of the positionals of one command, in the order of the
+/*
+ * The arities of the positionals of one command, in the order of the
  * definition, and the index of the positional that the validation reports;
- * count for an order without a fault. */
+ * count for an order without a fault.
+ */
 typedef struct order {
     size_t count;
     clargs_arity_t arities[ORDER_MAX];
@@ -481,8 +487,10 @@ NAOS_TEST(the_orders_that_a_command_line_can_follow_are_valid)
     check_orders(orders, sizeof(orders) / sizeof(orders[0]));
 }
 
-/* A positional that takes none or one argument, or any number, is followed
- * by one that needs an argument. */
+/*
+ * A positional that takes none or one argument, or any number, is followed
+ * by one that needs an argument.
+ */
 NAOS_TEST(a_required_positional_after_an_optional_one_is_an_inconsistent_definition)
 {
     static const order_t orders[] = {
@@ -498,8 +506,10 @@ NAOS_TEST(a_required_positional_after_an_optional_one_is_an_inconsistent_definit
     check_orders(orders, sizeof(orders) / sizeof(orders[0]));
 }
 
-/* A positional that takes any number of arguments is followed by another
- * positional. */
+/*
+ * A positional that takes any number of arguments is followed by another
+ * positional.
+ */
 NAOS_TEST(a_positional_after_a_variadic_one_is_an_inconsistent_definition)
 {
     static const order_t orders[] = {
@@ -628,8 +638,10 @@ NAOS_TEST(a_faulty_option_in_a_subcommand_is_found)
     NAOS_CHECK_FALSE(clargs_command_is_validated(root));
     NAOS_CHECK_FALSE(clargs_command_is_validated(now));
 
-    /* The handles that are reported are those of the tree: they read as
-     * the definition was made. */
+    /*
+     * The handles that are reported are those of the tree: they read as
+     * the definition was made.
+     */
     NAOS_CHECK_TRUE(clargs_option_command(token) == now);
     NAOS_CHECK_STR_EQ(clargs_command_name(now), "now");
     NAOS_CHECK_STR_EQ(clargs_option_long_name(token), "token");
@@ -657,8 +669,10 @@ NAOS_TEST(a_faulty_positional_in_a_subcommand_is_found)
     destroy_root(root);
 }
 
-/* In one command, the positionals are checked before the options, whatever
- * was added first. */
+/*
+ * In one command, the positionals are checked before the options, whatever
+ * was added first.
+ */
 NAOS_TEST(a_faulty_positional_is_reported_before_a_faulty_option_of_the_same_command)
 {
     clargs_command_t *root = create_root();
@@ -693,8 +707,10 @@ NAOS_TEST(a_fault_of_a_command_is_reported_before_a_fault_of_its_subcommands)
 
     check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, root, root_option, NULL);
 
-    /* With the fault of the root taken away, the next one in the order is
-     * reported. */
+    /*
+     * With the fault of the root taken away, the next one in the order is
+     * reported.
+     */
     NAOS_REQUIRE_TRUE(clargs_option_set_required(root_option, false) == CLARGS_ERROR_NONE);
     check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, run, run_option, NULL);
 
@@ -704,8 +720,10 @@ NAOS_TEST(a_fault_of_a_command_is_reported_before_a_fault_of_its_subcommands)
     destroy_root(root);
 }
 
-/* The subcommands are checked in the order of their definition, and each
- * with everything below it before the next. */
+/*
+ * The subcommands are checked in the order of their definition, and each
+ * with everything below it before the next.
+ */
 NAOS_TEST(the_subcommands_are_checked_in_the_order_of_their_definition)
 {
     clargs_command_t *root = create_root();
@@ -726,8 +744,10 @@ NAOS_TEST(the_subcommands_are_checked_in_the_order_of_their_definition)
     make_faulty(in_second);
     check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, second, in_second, NULL);
 
-    /* A command below the first subcommand comes before the second
-     * subcommand. */
+    /*
+     * A command below the first subcommand comes before the second
+     * subcommand.
+     */
     in_below_first = add_value(below_first, 'o', "output");
     make_faulty(in_below_first);
     check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, below_first, in_below_first, NULL);
@@ -794,8 +814,10 @@ NAOS_TEST(a_validation_that_fails_leaves_the_tree_not_validated_and_unchanged)
     destroy_root(tree.root);
 }
 
-/* A fault that is added to a validated tree: the addition takes the state
- * back, and the validation that fails leaves it there. */
+/*
+ * A fault that is added to a validated tree: the addition takes the state
+ * back, and the validation that fails leaves it there.
+ */
 NAOS_TEST(a_fault_that_is_added_to_a_validated_tree_is_found)
 {
     full_tree_t tree;
@@ -951,9 +973,11 @@ static bool mutation_needs_positionals(mutation_t mutation)
            mutation == SET_POSITIONAL_DEFAULT;
 }
 
-/* The least number of allocations of the change, each of which can fail:
+/*
+ * The least number of allocations of the change, each of which can fail:
  * the definition, its strings and the array it is put in for an addition,
- * the copy for a set of a string, none for a set of a truth value. */
+ * the copy for a set of a string, none for a set of a truth value.
+ */
 static size_t mutation_allocations(mutation_t mutation)
 {
     switch (mutation) {
@@ -973,8 +997,10 @@ static size_t mutation_allocations(mutation_t mutation)
     }
 }
 
-/* Makes the change to the target of the fixture. Each change is one that
- * the tree takes and that leaves it without a fault. */
+/*
+ * Makes the change to the target of the fixture. Each change is one that
+ * the tree takes and that leaves it without a fault.
+ */
 static clargs_error_t mutate(const fixture_t *fixture, mutation_t mutation)
 {
     switch (mutation) {
@@ -1030,8 +1056,10 @@ NAOS_TEST(every_change_that_succeeds_takes_a_validated_tree_back_to_not_validate
             NAOS_CHECK_INT_EQ(mutate(&fixture, mutation), CLARGS_ERROR_NONE);
             check_state(&fixture, false);
 
-            /* The tree has no fault: it is validated again, and only by a
-             * validation. */
+            /*
+             * The tree has no fault: it is validated again, and only by a
+             * validation.
+             */
             NAOS_CHECK_INT_EQ(clargs_command_validate(fixture.root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
             check_state(&fixture, true);
 
@@ -1043,8 +1071,10 @@ NAOS_TEST(every_change_that_succeeds_takes_a_validated_tree_back_to_not_validate
     check_clean();
 }
 
-/* A set that succeeds takes the state back even when the value it sets is
- * the value that was there. */
+/*
+ * A set that succeeds takes the state back even when the value it sets is
+ * the value that was there.
+ */
 NAOS_TEST(a_set_of_the_same_value_takes_a_validated_tree_back_to_not_validated)
 {
     size_t where;
@@ -1261,8 +1291,10 @@ NAOS_TEST(a_change_that_is_refused_leaves_a_validated_tree_validated)
 /* The most allocations that one change is given to fail in. */
 #define ALLOCATION_LIMIT 16
 
-/* Every allocation of every change is made to fail in turn, each time on a
- * tree that was just validated. */
+/*
+ * Every allocation of every change is made to fail in turn, each time on a
+ * tree that was just validated.
+ */
 NAOS_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_validated)
 {
     size_t where;
@@ -1304,8 +1336,10 @@ NAOS_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_valid
                     check_state(&fixture, true);
                     ++failures;
 
-                    /* The same change succeeds afterwards, and only then
-                     * takes the state back. */
+                    /*
+                     * The same change succeeds afterwards, and only then
+                     * takes the state back.
+                     */
                     NAOS_CHECK_INT_EQ(mutate(&fixture, mutation), CLARGS_ERROR_NONE);
                     check_state(&fixture, false);
                 }
@@ -1370,8 +1404,10 @@ static clargs_type_t *new_choice_type(void)
     return type;
 }
 
-/* What the functions of a user-defined value type count. It is the user
- * data of the value type. */
+/*
+ * What the functions of a user-defined value type count. It is the user
+ * data of the value type.
+ */
 typedef struct probe {
     size_t conversions; /* calls of the conversion function */
     size_t successes;   /* conversions that succeeded */
@@ -1379,8 +1415,10 @@ typedef struct probe {
     size_t mismatches;  /* cleanups of something that is not a value */
 } probe_t;
 
-/* The value of the user-defined value type. It is larger than every value
- * of a built-in value type, and the conversion writes all of it. */
+/*
+ * The value of the user-defined value type. It is larger than every value
+ * of a built-in value type, and the conversion writes all of it.
+ */
 typedef struct probe_value {
     double number;
     const char *text;
@@ -1391,8 +1429,10 @@ typedef struct probe_value {
 #define PROBE_FILL 0xA5
 #define PROBE_MARKER 1234
 
-/* The inputs that the conversion of the user-defined value type does not
- * take, and what it returns for each. Every other input is taken. */
+/*
+ * The inputs that the conversion of the user-defined value type does not
+ * take, and what it returns for each. Every other input is taken.
+ */
 #define PROBE_REJECTED "rejected"       /* CLARGS_ERROR_INVALID_VALUE */
 #define PROBE_OTHER_CODE "other-code"   /* CLARGS_ERROR_INVALID_NAME */
 #define PROBE_NO_MEMORY "no-memory"     /* CLARGS_ERROR_OUT_OF_MEMORY */
@@ -1404,8 +1444,10 @@ static clargs_error_t probe_convert(const char *text, void *value, void *context
 
     ++probe->conversions;
 
-    /* The whole area is written, also by a conversion that fails: what it
-     * leaves behind is not a value and must not be cleaned up. */
+    /*
+     * The whole area is written, also by a conversion that fails: what it
+     * leaves behind is not a value and must not be cleaned up.
+     */
     memset(out, PROBE_FILL, sizeof(*out));
 
     if (strcmp(text, PROBE_REJECTED) == 0) {
@@ -1432,8 +1474,10 @@ static void probe_release(void *value, void *context)
 
     ++probe->releases;
 
-    /* The value is the one that the last conversion wrote, and that
-     * conversion succeeded. */
+    /*
+     * The value is the one that the last conversion wrote, and that
+     * conversion succeeded.
+     */
     if (probe->releases > probe->successes || in->marker != PROBE_MARKER || in->text == NULL ||
         in->fill[0] != PROBE_FILL || in->fill[sizeof(in->fill) - 1] != PROBE_FILL) {
         ++probe->mismatches;
@@ -1462,8 +1506,10 @@ static void check_probe(const probe_t *probe, size_t conversions, size_t success
     NAOS_CHECK_UINT_EQ(probe->conversions, conversions);
     NAOS_CHECK_UINT_EQ(probe->successes, successes);
 
-    /* The cleanup function is called once for each conversion that
-     * succeeded, and for nothing else. */
+    /*
+     * The cleanup function is called once for each conversion that
+     * succeeded, and for nothing else.
+     */
     NAOS_CHECK_UINT_EQ(probe->releases, successes);
     NAOS_CHECK_UINT_EQ(probe->mismatches, 0);
 }
@@ -1644,8 +1690,10 @@ NAOS_TEST(a_default_value_that_a_user_defined_type_rejects_is_an_invalid_default
     NAOS_CHECK_FALSE(clargs_command_is_validated(root));
     NAOS_CHECK_STR_EQ(clargs_option_default(port), PROBE_REJECTED);
 
-    /* Every validation asked for the conversion, and nothing was cleaned
-     * up: no conversion succeeded. */
+    /*
+     * Every validation asked for the conversion, and nothing was cleaned
+     * up: no conversion succeeded.
+     */
     check_probe(&probe, CHECK_VALIDATE_ROUNDS, 0);
 
     clargs_command_destroy(root);
@@ -1653,9 +1701,11 @@ NAOS_TEST(a_default_value_that_a_user_defined_type_rejects_is_an_invalid_default
     end_test();
 }
 
-/* A conversion function may return any code for a failure. Whatever it is,
+/*
+ * A conversion function may return any code for a failure. Whatever it is,
  * other than the lack of memory, the validation reports an invalid default
- * value. */
+ * value.
+ */
 NAOS_TEST(any_other_code_of_a_user_defined_conversion_is_an_invalid_default_value)
 {
     probe_t probe;
@@ -1756,8 +1806,10 @@ NAOS_TEST(default_values_that_their_types_take_are_valid)
     NAOS_CHECK_TRUE(clargs_command_is_validated(run));
     check_probe(&probe, 1, 1);
 
-    /* One allocation for each of the seven default values: the area that
-     * the value is written to. */
+    /*
+     * One allocation for each of the seven default values: the area that
+     * the value is written to.
+     */
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 7);
 
     check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
@@ -1770,9 +1822,11 @@ NAOS_TEST(default_values_that_their_types_take_are_valid)
     end_test();
 }
 
-/* The cleanup function of a user-defined value type is called as often as
+/*
+ * The cleanup function of a user-defined value type is called as often as
  * its conversions succeeded: no more, no less, and before the validation
- * returns. */
+ * returns.
+ */
 NAOS_TEST(the_cleanup_function_is_called_once_for_each_conversion_that_succeeded)
 {
     probe_t probe;
@@ -1807,9 +1861,11 @@ NAOS_TEST(the_cleanup_function_is_called_once_for_each_conversion_that_succeeded
     NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
     check_probe(&probe, 8, 8);
 
-    /* The validation stops at the conversion that fails: the one before it
+    /*
+     * The validation stops at the conversion that fails: the one before it
      * is cleaned up, the one that failed is not, the ones after it are not
-     * asked for. */
+     * asked for.
+     */
     set_option_default(second, PROBE_REJECTED);
     NAOS_CHECK_INT_EQ(clargs_command_validate(root, &command, &option, &positional),
                       CLARGS_ERROR_INVALID_DEFAULT);
@@ -1855,8 +1911,10 @@ NAOS_TEST(one_value_type_can_be_given_to_several_definitions)
     build = add_sub(root, "build");
     test = add_sub(root, "test");
 
-    /* The same value types in three commands, for options and for
-     * positionals, with a default value and without. */
+    /*
+     * The same value types in three commands, for options and for
+     * positionals, with a default value and without.
+     */
     root_mode = add_typed_value(root, 'm', "mode", choice);
     (void)add_typed_value(root, 'p', "port", custom);
     (void)add_typed_value(root, 'j', "jobs", clargs_type_int());
@@ -1880,8 +1938,10 @@ NAOS_TEST(one_value_type_can_be_given_to_several_definitions)
     NAOS_CHECK_TRUE(clargs_command_is_validated(test));
     check_probe(&probe, 3, 3);
 
-    /* Each definition is checked for itself: one of those that share the
-     * value type has a default value that the type does not take. */
+    /*
+     * Each definition is checked for itself: one of those that share the
+     * value type has a default value that the type does not take.
+     */
     set_option_default(build_mode, "fast");
     check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, build, build_mode, NULL);
     set_option_default(build_mode, "debug");
@@ -1900,8 +1960,10 @@ NAOS_TEST(one_value_type_can_be_given_to_several_definitions)
     end_test();
 }
 
-/* For one option, required with a default value is checked first: the
- * default value of such an option is not converted. */
+/*
+ * For one option, required with a default value is checked first: the
+ * default value of such an option is not converted.
+ */
 NAOS_TEST(a_required_option_with_a_default_value_is_reported_before_its_default_value_is_checked)
 {
     probe_t probe;
@@ -1927,9 +1989,11 @@ NAOS_TEST(a_required_option_with_a_default_value_is_reported_before_its_default_
     end_test();
 }
 
-/* The options are checked one after the other, each with both of its
+/*
+ * The options are checked one after the other, each with both of its
  * checks: an option whose default value is not taken comes before a later
- * option that is required and has a default value. */
+ * option that is required and has a default value.
+ */
 NAOS_TEST(the_options_are_checked_one_by_one_in_the_order_of_their_definition)
 {
     clargs_command_t *root = create_root();
@@ -1950,8 +2014,10 @@ NAOS_TEST(the_options_are_checked_one_by_one_in_the_order_of_their_definition)
     destroy_root(root);
 }
 
-/* In one command: the order of the positionals, then the options, then the
- * default values of the positionals. */
+/*
+ * In one command: the order of the positionals, then the options, then the
+ * default values of the positionals.
+ */
 NAOS_TEST(the_default_values_of_the_positionals_are_checked_after_the_options)
 {
     clargs_command_t *root = create_root();
@@ -1999,13 +2065,17 @@ NAOS_TEST(a_default_value_of_a_command_is_checked_before_its_subcommands)
     set_option_default(in_second, "many");
     check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, second, in_second, NULL);
 
-    /* A command below the first subcommand comes before the second
-     * subcommand. */
+    /*
+     * A command below the first subcommand comes before the second
+     * subcommand.
+     */
     set_positional_default(in_below, "high");
     check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, below, NULL, in_below);
 
-    /* A fault of another kind in a command that is checked earlier comes
-     * first. */
+    /*
+     * A fault of another kind in a command that is checked earlier comes
+     * first.
+     */
     make_faulty(in_first);
     check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, first, in_first, NULL);
 
@@ -2026,8 +2096,10 @@ NAOS_TEST(an_invalid_default_value_leaves_the_tree_not_validated_and_unchanged)
     NAOS_REQUIRE_TRUE(clargs_command_validate(tree.root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
     check_full_tree_state(&tree, true);
 
-    /* A new option with a default value that its value type does not
-     * take. The changes take the state back. */
+    /*
+     * A new option with a default value that its value type does not
+     * take. The changes take the state back.
+     */
     limit = add_typed_value(tree.add, 'l', "limit", clargs_type_int());
     set_option_default(limit, "none");
     check_full_tree_state(&tree, false);
@@ -2076,8 +2148,10 @@ NAOS_TEST(a_validation_that_cannot_allocate_the_area_of_a_value_fails_for_a_lack
     set_option_default(add_typed_value(root, 'j', "jobs", clargs_type_int()), "4");
     set_positional_default(add_typed_positional(run, "level", type), "3");
 
-    /* The tree has three default values, so a validation asks for three
-     * areas. Each of them fails in turn, on a tree that is not validated. */
+    /*
+     * The tree has three default values, so a validation asks for three
+     * areas. Each of them fails in turn, on a tree that is not validated.
+     */
     for (nth = 1; nth <= 3; ++nth) {
         const size_t successes = probe.successes;
 
@@ -2085,10 +2159,12 @@ NAOS_TEST(a_validation_that_cannot_allocate_the_area_of_a_value_fails_for_a_lack
         NAOS_CHECK_FALSE(clargs_command_is_validated(root));
         NAOS_CHECK_FALSE(clargs_command_is_validated(run));
 
-        /* The value that was converted before the failure is cleaned up.
+        /*
+         * The value that was converted before the failure is cleaned up.
          * That is the first default value when the second or the third
          * area fails; the second default value is an integer and is not
-         * counted. */
+         * counted.
+         */
         check_probe(&probe, probe.conversions, probe.successes);
         NAOS_CHECK_UINT_EQ(probe.successes, successes + (nth == 1 ? 0 : CHECK_VALIDATE_ROUNDS));
     }
@@ -2097,8 +2173,10 @@ NAOS_TEST(a_validation_that_cannot_allocate_the_area_of_a_value_fails_for_a_lack
     check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
     NAOS_CHECK_TRUE(clargs_command_is_validated(root));
 
-    /* A validation that fails for a lack of memory does not change the
-     * state: the tree stays validated. */
+    /*
+     * A validation that fails for a lack of memory does not change the
+     * state: the tree stays validated.
+     */
     check_validate_without_memory(root, 1);
     NAOS_CHECK_TRUE(clargs_command_is_validated(root));
     NAOS_CHECK_TRUE(clargs_command_is_validated(run));
@@ -2108,8 +2186,10 @@ NAOS_TEST(a_validation_that_cannot_allocate_the_area_of_a_value_fails_for_a_lack
     end_test();
 }
 
-/* A conversion function that reports a lack of memory: the validation
- * returns that, and not an invalid default value. */
+/*
+ * A conversion function that reports a lack of memory: the validation
+ * returns that, and not an invalid default value.
+ */
 NAOS_TEST(a_lack_of_memory_of_a_user_defined_conversion_is_returned_as_it_is)
 {
     probe_t probe;
@@ -2138,16 +2218,20 @@ NAOS_TEST(a_lack_of_memory_of_a_user_defined_conversion_is_returned_as_it_is)
     NAOS_CHECK_INT_EQ(clargs_command_validate(root, &command, &option, &positional),
                       CLARGS_ERROR_OUT_OF_MEMORY);
 
-    /* It is a lack of memory, not a fault of a definition: the outputs
-     * hold NULL. */
+    /*
+     * It is a lack of memory, not a fault of a definition: the outputs
+     * hold NULL.
+     */
     NAOS_CHECK_TRUE(command == NULL);
     NAOS_CHECK_TRUE(option == NULL);
     NAOS_CHECK_TRUE(positional == NULL);
     NAOS_CHECK_FALSE(clargs_command_is_validated(root));
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
 
-    /* The value before it was cleaned up, the conversion that failed was
-     * not. */
+    /*
+     * The value before it was cleaned up, the conversion that failed was
+     * not.
+     */
     check_probe(&probe, 2, 1);
 
     NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_OUT_OF_MEMORY);
@@ -2160,9 +2244,11 @@ NAOS_TEST(a_lack_of_memory_of_a_user_defined_conversion_is_returned_as_it_is)
     end_test();
 }
 
-/* The float conversion copies an input that is too long for its fixed
+/*
+ * The float conversion copies an input that is too long for its fixed
  * array. When that allocation fails, the validation fails for a lack of
- * memory, and the area of the value is freed. */
+ * memory, and the area of the value is freed.
+ */
 NAOS_TEST(a_lack_of_memory_of_a_built_in_conversion_is_returned_as_it_is)
 {
     static const char long_number[] =
@@ -2180,8 +2266,10 @@ NAOS_TEST(a_lack_of_memory_of_a_built_in_conversion_is_returned_as_it_is)
     NAOS_CHECK_FALSE(clargs_command_is_validated(root));
     NAOS_CHECK_STR_EQ(clargs_positional_default(ratio), long_number);
 
-    /* With memory, the default value is taken, and the validation asked
-     * for both allocations. */
+    /*
+     * With memory, the default value is taken, and the validation asked
+     * for both allocations.
+     */
     requests = clargs_test_allocator_requests();
     NAOS_CHECK_INT_EQ(clargs_command_validate(root, NULL, NULL, NULL), CLARGS_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 2);

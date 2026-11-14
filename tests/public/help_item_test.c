@@ -47,8 +47,10 @@ static void sink_init(sink_t *sink)
     memset(sink, 0, sizeof *sink);
 }
 
-/* Appends the part to the sink. The call number fail_at takes nothing and
- * reports a failure, and so would every later call. */
+/*
+ * Appends the part to the sink. The call number fail_at takes nothing and
+ * reports a failure, and so would every later call.
+ */
 static bool sink_write(void *user_data, const char *text, size_t length)
 {
     sink_t *sink = user_data;
@@ -70,8 +72,10 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     return true;
 }
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -97,8 +101,10 @@ static void destroy_root(clargs_command_t *root)
     check_clean();
 }
 
-/* Sets the description of option, when description is not NULL; it must
- * succeed. */
+/*
+ * Sets the description of option, when description is not NULL; it must
+ * succeed.
+ */
 static void describe_option(clargs_option_t *option, const char *description)
 {
     NAOS_REQUIRE_TRUE(option != NULL);
@@ -107,9 +113,11 @@ static void describe_option(clargs_option_t *option, const char *description)
     }
 }
 
-/* Adds a flag that must succeed. short_name is '\0' and long_name is NULL
+/*
+ * Adds a flag that must succeed. short_name is '\0' and long_name is NULL
  * for a name that the option does not have; description is its
- * description, or NULL to set none. */
+ * description, or NULL to set none.
+ */
 static void add_flag(clargs_command_t *command, char short_name, const char *long_name,
                      const char *description)
 {
@@ -142,9 +150,11 @@ static void add_count(clargs_command_t *command, char short_name, const char *lo
     describe_option(option, description);
 }
 
-/* Adds an option with a value of type that must succeed. value_name is
+/*
+ * Adds an option with a value of type that must succeed. value_name is
  * the display name of the value, or NULL to set none. The option is not
- * required and has no default value. */
+ * required and has no default value.
+ */
 static void add_value(clargs_command_t *command, char short_name, const char *long_name,
                       const clargs_type_t *type, const char *value_name, const char *description)
 {
@@ -159,8 +169,10 @@ static void add_value(clargs_command_t *command, char short_name, const char *lo
     describe_option(option, description);
 }
 
-/* The conversion function of the user-defined value types of the tests: no
- * test converts a value with it. */
+/*
+ * The conversion function of the user-defined value types of the tests: no
+ * test converts a value with it.
+ */
 static clargs_error_t convert_nothing(const char *text, void *value, void *context)
 {
     (void)text;
@@ -169,8 +181,10 @@ static clargs_error_t convert_nothing(const char *text, void *value, void *conte
     return CLARGS_ERROR_NONE;
 }
 
-/* Creates a user-defined value type with the name given; it must succeed.
- * The test destroys it after the schema that uses it. */
+/*
+ * Creates a user-defined value type with the name given; it must succeed.
+ * The test destroys it after the schema that uses it.
+ */
 static clargs_type_t *create_type(const char *name)
 {
     clargs_type_t *type = NULL;
@@ -181,8 +195,10 @@ static clargs_type_t *create_type(const char *name)
     return type;
 }
 
-/* Adds a subcommand that must succeed, and returns it. description is its
- * description, or NULL to set none. */
+/*
+ * Adds a subcommand that must succeed, and returns it. description is its
+ * description, or NULL to set none.
+ */
 static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
                                  const char *description)
 {
@@ -203,8 +219,10 @@ static void validate(clargs_command_t *root)
     NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
 }
 
-/* Returns whether a line of the length bytes of text ends with a blank: a
- * blank before a newline, or at the end of the text. */
+/*
+ * Returns whether a line of the length bytes of text ends with a blank: a
+ * blank before a newline, or at the end of the text.
+ */
 static bool has_blank_at_line_end(const char *text, size_t length)
 {
     size_t index;
@@ -217,9 +235,11 @@ static bool has_blank_at_line_end(const char *text, size_t length)
     return false;
 }
 
-/* Checks the shape of a help text: no line ends with a blank, there is no
+/*
+ * Checks the shape of a help text: no line ends with a blank, there is no
  * '\r', the text ends with one "\n", and it neither starts nor ends with
- * an empty line. */
+ * an empty line.
+ */
 static void check_shape(const char *text, size_t length)
 {
     NAOS_CHECK_TRUE(!has_blank_at_line_end(text, length));
@@ -266,9 +286,11 @@ static void check_help(const clargs_command_t *command, const char *expected)
 
 /* ---- The names ------------------------------------------------------------ */
 
-/* The three forms of the names, for a flag: "-s, --long" with both names,
+/*
+ * The three forms of the names, for a flag: "-s, --long" with both names,
  * "-s" with a short name only, and four blanks and "--long" with a long
- * name only, so that the long names stand one below the other. */
+ * name only, so that the long names stand one below the other.
+ */
 NAOS_TEST(flag_heading_has_three_forms_of_names)
 {
     clargs_command_t *root = create_root();
@@ -289,9 +311,11 @@ NAOS_TEST(flag_heading_has_three_forms_of_names)
     destroy_root(root);
 }
 
-/* The four blanks of a long name without a short name belong to the
+/*
+ * The four blanks of a long name without a short name belong to the
  * heading, also when no option of the list has a short name: they count
- * for the description column, 2 + (4 + 7) + 2. */
+ * for the description column, 2 + (4 + 7) + 2.
+ */
 NAOS_TEST(long_name_alone_keeps_its_four_blanks)
 {
     clargs_command_t *root = create_root();
@@ -312,8 +336,10 @@ NAOS_TEST(long_name_alone_keeps_its_four_blanks)
 
 /* ---- The kinds ------------------------------------------------------------ */
 
-/* A negatable flag: the long name is written as "--[no-]long", with and
- * without a short name. A negatable flag always has a long name. */
+/*
+ * A negatable flag: the long name is written as "--[no-]long", with and
+ * without a short name. A negatable flag always has a long name.
+ */
 NAOS_TEST(negatable_flag_heading_shows_the_negated_form)
 {
     clargs_command_t *root = create_root();
@@ -355,9 +381,11 @@ NAOS_TEST(count_heading_ends_with_dots)
     destroy_root(root);
 }
 
-/* An option with a value: behind the names, in each of their three forms,
+/*
+ * An option with a value: behind the names, in each of their three forms,
  * a blank and the display name of the value between "<" and ">". The
- * display name that was set is used whatever the value type is. */
+ * display name that was set is used whatever the value type is.
+ */
 NAOS_TEST(value_heading_shows_the_display_name)
 {
     clargs_command_t *root = create_root();
@@ -380,9 +408,11 @@ NAOS_TEST(value_heading_shows_the_display_name)
     destroy_root(root);
 }
 
-/* An option with a value and without a display name: the name of the value
+/*
+ * An option with a value and without a display name: the name of the value
  * type stands in its place, for the built-in types and for a user-defined
- * type. */
+ * type.
+ */
 NAOS_TEST(value_heading_without_display_name_shows_the_type_name)
 {
     clargs_command_t *root = create_root();
@@ -434,10 +464,12 @@ NAOS_TEST(all_kinds_stand_in_one_list)
 
 /* ---- What is listed -------------------------------------------------------- */
 
-/* A flag that the user defined as "--help" is an option like every other:
+/*
+ * A flag that the user defined as "--help" is an option like every other:
  * it is listed where it was added, in the usual form. The library adds no
  * option of its own: a command whose schema has no "--help" shows none, and
- * a command without options has no list. */
+ * a command without options has no list.
+ */
 NAOS_TEST(help_flag_of_the_schema_is_listed_and_none_is_added)
 {
     clargs_command_t *root = create_root();
@@ -478,11 +510,13 @@ NAOS_TEST(help_flag_of_the_schema_is_listed_and_none_is_added)
 
 /* ---- The bytes ------------------------------------------------------------- */
 
-/* The strings of the schema are written as they are: upper and lower case
+/*
+ * The strings of the schema are written as they are: upper and lower case
  * in the names, in a display name and in the name of a user-defined type
  * stay, a blank in a display name stays, and bytes that are not ASCII pass
  * through. A width is a number of bytes: the three bytes of the display
- * name of "-x" count as three columns. */
+ * name of "-x" count as three columns.
+ */
 NAOS_TEST(bytes_of_the_schema_are_written_unchanged)
 {
     clargs_command_t *root = create_root();
@@ -511,9 +545,11 @@ NAOS_TEST(bytes_of_the_schema_are_written_unchanged)
     check_clean();
 }
 
-/* The width of the heading of an option is the number of all its bytes,
+/*
+ * The width of the heading of an option is the number of all its bytes,
  * also when the display name holds a newline: "-o <A\nB>" counts as 8
- * columns, not as the 2 of "B>", so the description column is 2 + 8 + 2. */
+ * columns, not as the 2 of "B>", so the description column is 2 + 8 + 2.
+ */
 NAOS_TEST(option_heading_with_newline_inside_counts_all_its_bytes)
 {
     clargs_command_t *root = create_root();
@@ -534,11 +570,13 @@ NAOS_TEST(option_heading_with_newline_inside_counts_all_its_bytes)
 
 /* ---- The descriptions ------------------------------------------------------ */
 
-/* The description of an option is its whole description text: a newline
+/*
+ * The description of an option is its whole description text: a newline
  * inside it ends the line and what follows starts at the description
  * column, and the newlines at its end are dropped. An option without a
  * description, or with one that is empty without the newlines at its end,
- * is a line with the heading only. */
+ * is a line with the heading only.
+ */
 NAOS_TEST(option_description_is_written_whole)
 {
     clargs_command_t *root = create_root();
@@ -564,8 +602,10 @@ NAOS_TEST(option_description_is_written_whole)
 
 /* ---- The annotations ------------------------------------------------------- */
 
-/* Adds an option with a value of type that must succeed, and returns it,
- * so that the test can set what add_value() does not. */
+/*
+ * Adds an option with a value of type that must succeed, and returns it,
+ * so that the test can set what add_value() does not.
+ */
 static clargs_option_t *add_value_option(clargs_command_t *command, char short_name,
                                          const char *long_name, const clargs_type_t *type,
                                          const char *value_name, const char *description)
@@ -595,8 +635,10 @@ static void add_negatable_initial(clargs_command_t *command, char short_name,
     describe_option(option, description);
 }
 
-/* Adds a positional that must succeed, and returns it. description is its
- * description, or NULL to set none. */
+/*
+ * Adds a positional that must succeed, and returns it. description is its
+ * description, or NULL to set none.
+ */
 static clargs_positional_t *add_positional(clargs_command_t *command, const char *name,
                                            const clargs_type_t *type, clargs_arity_t arity,
                                            const char *description)
@@ -625,8 +667,10 @@ static void set_option_required(clargs_option_t *option)
     NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
 }
 
-/* Creates a value type with the count choices given; it must succeed. The
- * test destroys it after the schema that uses it. */
+/*
+ * Creates a value type with the count choices given; it must succeed. The
+ * test destroys it after the schema that uses it.
+ */
 static clargs_type_t *create_choice(const char *const *choices, size_t count)
 {
     clargs_type_t *type = NULL;
@@ -636,8 +680,10 @@ static clargs_type_t *create_choice(const char *const *choices, size_t count)
     return type;
 }
 
-/* Destroys root and then type, and ends the test: nothing stays
- * allocated. */
+/*
+ * Destroys root and then type, and ends the test: nothing stays
+ * allocated.
+ */
 static void destroy_root_and_type(clargs_command_t *root, clargs_type_t *type)
 {
     clargs_command_destroy(root);
@@ -646,10 +692,12 @@ static void destroy_root_and_type(clargs_command_t *root, clargs_type_t *type)
     check_clean();
 }
 
-/* An option whose value type has choices: "[choices: ...]" behind the
+/*
+ * An option whose value type has choices: "[choices: ...]" behind the
  * description, after one blank, with the choices in the order in which
  * they were defined, separated by ", ". An option of another type has
- * none. */
+ * none.
+ */
 NAOS_TEST(option_with_choices_shows_them)
 {
     static const char *const formats[] = {"text", "json", "xml"};
@@ -670,9 +718,11 @@ NAOS_TEST(option_with_choices_shows_them)
     destroy_root_and_type(root, format);
 }
 
-/* An option with a value, a choice type and no display name: the name of
+/*
+ * An option with a value, a choice type and no display name: the name of
  * the type, "choice", stands in the heading, and the choices stand in the
- * annotation of the same line. */
+ * annotation of the same line.
+ */
 NAOS_TEST(choice_heading_without_display_name_shows_the_type_name_and_the_choices)
 {
     static const char *const whens[] = {"auto", "always", "never"};
@@ -691,8 +741,10 @@ NAOS_TEST(choice_heading_without_display_name_shows_the_type_name_and_the_choice
     destroy_root_and_type(root, when);
 }
 
-/* An option with a default value: "[default: ...]" with the string that
- * was set, as it is: a blank inside it stays. */
+/*
+ * An option with a default value: "[default: ...]" with the string that
+ * was set, as it is: a blank inside it stays.
+ */
 NAOS_TEST(option_with_default_shows_it)
 {
     clargs_command_t *root = create_root();
@@ -716,8 +768,10 @@ NAOS_TEST(option_with_default_shows_it)
     destroy_root(root);
 }
 
-/* A required option: "[required]". An option that was set to not required
- * has none. */
+/*
+ * A required option: "[required]". An option that was set to not required
+ * has none.
+ */
 NAOS_TEST(required_option_shows_it)
 {
     clargs_command_t *root = create_root();
@@ -739,10 +793,12 @@ NAOS_TEST(required_option_shows_it)
     destroy_root(root);
 }
 
-/* The order of the annotations: the choices, then the default value or
+/*
+ * The order of the annotations: the choices, then the default value or
  * "[required]", each one blank behind the one before. A schema with an
  * option that is required and has a default value does not validate, so
- * the two never stand in one line. */
+ * the two never stand in one line.
+ */
 NAOS_TEST(annotations_stand_in_their_order)
 {
     static const char *const speeds[] = {"fast", "slow"};
@@ -763,9 +819,11 @@ NAOS_TEST(annotations_stand_in_their_order)
     destroy_root_and_type(root, speed);
 }
 
-/* A positional whose value type has choices: the same annotation as for
+/*
+ * A positional whose value type has choices: the same annotation as for
  * an option. A required positional has no "[required]": its heading shows
- * it. */
+ * it.
+ */
 NAOS_TEST(positional_with_choices_shows_them_and_no_required)
 {
     static const char *const actions[] = {"start", "stop"};
@@ -786,8 +844,10 @@ NAOS_TEST(positional_with_choices_shows_them_and_no_required)
     destroy_root_and_type(root, action);
 }
 
-/* A positional with a default value: the same annotation as for an
- * option, behind the choices when it has both. */
+/*
+ * A positional with a default value: the same annotation as for an
+ * option, behind the choices when it has both.
+ */
 NAOS_TEST(positional_with_default_shows_it)
 {
     static const char *const units[] = {"s", "ms"};
@@ -815,10 +875,12 @@ NAOS_TEST(positional_with_default_shows_it)
     destroy_root_and_type(root, unit);
 }
 
-/* An item without a description, or with one that is empty without the
+/*
+ * An item without a description, or with one that is empty without the
  * newlines at its end, and with annotations: the annotations are its
  * description, from the description column on, with no blank before
- * them. */
+ * them.
+ */
 NAOS_TEST(annotations_alone_are_the_description)
 {
     static const char *const sizes[] = {"s", "l"};
@@ -851,8 +913,10 @@ NAOS_TEST(annotations_alone_are_the_description)
     destroy_root_and_type(root, size);
 }
 
-/* A negatable flag whose initial state is on: "[default: on]". One whose
- * initial state is off, set or left as it is, has no annotation. */
+/*
+ * A negatable flag whose initial state is on: "[default: on]". One whose
+ * initial state is off, set or left as it is, has no annotation.
+ */
 NAOS_TEST(negatable_flag_shows_default_on_only)
 {
     clargs_command_t *root = create_root();
@@ -873,9 +937,11 @@ NAOS_TEST(negatable_flag_shows_default_on_only)
     destroy_root(root);
 }
 
-/* A description that ends with a newline: the annotations start on the
+/*
+ * A description that ends with a newline: the annotations start on the
  * next line, at the description column, with no blank before them, and
- * the following annotations are separated by one blank as usual. */
+ * the following annotations are separated by one blank as usual.
+ */
 NAOS_TEST(annotations_after_final_newline_start_on_the_next_line)
 {
     static const char *const formats[] = {"text", "json"};
@@ -908,10 +974,12 @@ NAOS_TEST(annotations_after_final_newline_start_on_the_next_line)
     destroy_root_and_type(root, format);
 }
 
-/* The annotations are a part of the description and are broken with it:
+/*
+ * The annotations are a part of the description and are broken with it:
  * at the blanks, also at those inside an annotation, and what follows
  * starts at the description column. The first line of the option ends at
- * the width, 80. */
+ * the width, 80.
+ */
 NAOS_TEST(long_annotations_are_wrapped_at_the_description_column)
 {
     static const char *const formats[] = {"text", "json", "yaml", "html", "markdown"};
@@ -935,8 +1003,10 @@ NAOS_TEST(long_annotations_are_wrapped_at_the_description_column)
 
 /* ---- The memory ------------------------------------------------------------ */
 
-/* The schema of the tests of the memory: its help allocates for the cell
- * texts. */
+/*
+ * The schema of the tests of the memory: its help allocates for the cell
+ * texts.
+ */
 static const char *const memory_help =
     "Usage: tool [OPTIONS] --token <TOKEN>\n"
     "\n"
@@ -957,10 +1027,12 @@ static clargs_command_t *create_memory_root(void)
     return root;
 }
 
-/* A generation allocates for the cell texts and frees all of it before it
+/*
+ * A generation allocates for the cell texts and frees all of it before it
  * returns: the live blocks are those of the schema, and after the schema
  * is destroyed none is left. No rule of the allocator is violated. The
- * usage line alone allocates nothing. */
+ * usage line alone allocates nothing.
+ */
 NAOS_TEST(generation_leaves_nothing_allocated)
 {
     clargs_command_t *root = create_memory_root();
@@ -985,10 +1057,12 @@ NAOS_TEST(generation_leaves_nothing_allocated)
     check_clean();
 }
 
-/* An allocation of the generation fails, the first one and a later one
+/*
+ * An allocation of the generation fails, the first one and a later one
  * that grows the cell text: the result is CLARGS_ERROR_OUT_OF_MEMORY,
  * nothing of the generation stays allocated, and what was written before
- * is the start of the help. The next generation succeeds. */
+ * is the start of the help. The next generation succeeds.
+ */
 NAOS_TEST(generation_out_of_memory_frees_the_cell_text)
 {
     clargs_command_t *root = create_memory_root();

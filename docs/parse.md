@@ -38,8 +38,10 @@ The example is one translation unit, and it includes only `<clargs/clargs.h>` an
 #include <stdio.h>
 #include <stdlib.h>
 
-/* The schema of pack, and the handles that the result is read with. The
- * root owns all of them. */
+/*
+ * The schema of pack, and the handles that the result is read with. The
+ * root owns all of them.
+ */
 typedef struct pack_schema {
     clargs_command_t *root;
     clargs_command_t *create;
@@ -60,15 +62,19 @@ static bool failed(clargs_error_t *error, clargs_error_t result)
     return result != CLARGS_ERROR_NONE;
 }
 
-/* Adds -h, --help to command. An option is only known where its command is
- * the current command, so every command gets its own. */
+/*
+ * Adds -h, --help to command. An option is only known where its command is
+ * the current command, so every command gets its own.
+ */
 static clargs_error_t add_help(clargs_command_t *command)
 {
     return clargs_command_add_flag(command, 'h', "help", NULL);
 }
 
-/* Defines the schema. When it fails, schema->root is NULL or a schema that
- * can be destroyed. */
+/*
+ * Defines the schema. When it fails, schema->root is NULL or a schema that
+ * can be destroyed.
+ */
 static clargs_error_t define_schema(pack_schema_t *schema)
 {
     clargs_error_t error;
@@ -110,9 +116,11 @@ static clargs_error_t define_schema(pack_schema_t *schema)
     return clargs_command_validate(schema->root, NULL, NULL, NULL);
 }
 
-/* Tells whether --help or -h was given to one of the commands that the
+/*
+ * Tells whether --help or -h was given to one of the commands that the
  * command line selected. This also works on a result with a parse error:
- * it holds what was read before the error. */
+ * it holds what was read before the error.
+ */
 static bool help_was_given(const clargs_result_t *result)
 {
     size_t i;
@@ -141,8 +149,10 @@ static void print_usage(const pack_schema_t *schema, const clargs_command_t *com
     }
 }
 
-/* The text of a source, for this example. Later versions may add sources,
- * so the switch has a default label. */
+/*
+ * The text of a source, for this example. Later versions may add sources,
+ * so the switch has a default label.
+ */
 static const char *source_text(clargs_source_t source)
 {
     switch (source) {
@@ -176,8 +186,10 @@ static int run(const pack_schema_t *schema, const clargs_result_t *result)
         int64_t level = 0;
         size_t i;
 
-        /* --output is required and --level has a default value: after a
-         * parse that succeeded, both have a value. */
+        /*
+         * --output is required and --level has a default value: after a
+         * parse that succeeded, both have a value.
+         */
         if (!clargs_result_option_string(result, schema->output, &output) ||
             !clargs_result_option_int(result, schema->level, &level)) {
             return EXIT_FAILURE;
@@ -185,8 +197,10 @@ static int run(const pack_schema_t *schema, const clargs_result_t *result)
         printf("create %s, level %" PRId64 " (%s)\n", output, level,
                source_text(clargs_result_option_source(result, schema->level)));
 
-        /* A positional that takes any number of arguments: its values in
-         * the order of the command line. */
+        /*
+         * A positional that takes any number of arguments: its values in
+         * the order of the command line.
+         */
         for (i = 0; i < clargs_result_positional_count(result, schema->files); ++i) {
             if (clargs_result_positional_string(result, schema->files, i, &file)) {
                 printf("  %s\n", file);
@@ -224,8 +238,10 @@ int main(int argc, char **argv)
             /* CLARGS_ERROR_OUT_OF_MEMORY: there is no result. */
             fprintf(stderr, "pack: %s\n", clargs_error_message(error));
         } else if (help_was_given(result)) {
-            /* --help first: "pack create --help" leaves out what create
-             * requires, and that must not hide the help. */
+            /*
+             * --help first: "pack create --help" leaves out what create
+             * requires, and that must not hide the help.
+             */
             print_usage(&schema, clargs_result_command(result));
             status = EXIT_SUCCESS;
         } else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE) {
@@ -240,8 +256,10 @@ int main(int argc, char **argv)
         }
     }
 
-    /* The result first, then the schema it was made from. A parse error
-     * also leaves a result to destroy. Destroying NULL does nothing. */
+    /*
+     * The result first, then the schema it was made from. A parse error
+     * also leaves a result to destroy. Destroying NULL does nothing.
+     */
     clargs_result_destroy(result);
     clargs_command_destroy(schema.root);
 

@@ -39,19 +39,25 @@
 /* The size of the text that a sink holds. */
 #define SINK_SIZE ((size_t)1024)
 
-/* The bytes before the array that a format function is given, and the
- * least number of bytes behind the text: they must stay as they were. */
+/*
+ * The bytes before the array that a format function is given, and the
+ * least number of bytes behind the text: they must stay as they were.
+ */
 #define GUARD_SIZE ((size_t)16)
 
 /* The size of the area that holds the guard bytes and the array. */
 #define AREA_SIZE ((size_t)1024)
 
-/* The byte that fills the area before a call. No text of this file has
- * it. */
+/*
+ * The byte that fills the area before a call. No text of this file has
+ * it.
+ */
 #define SENTINEL ((char)0x7E)
 
-/* The value of a length before a call: no text of this file is that
- * long. */
+/*
+ * The value of a length before a call: no text of this file is that
+ * long.
+ */
 #define LENGTH_UNSET ((size_t)54321)
 
 /* The two texts that the library generates. */
@@ -75,8 +81,10 @@ static void sink_init(sink_t *sink)
     memset(sink, 0, sizeof *sink);
 }
 
-/* Appends the part to the sink. The call number fail_at takes nothing and
- * reports a failure, and so would every later call. */
+/*
+ * Appends the part to the sink. The call number fail_at takes nothing and
+ * reports a failure, and so would every later call.
+ */
 static bool sink_write(void *user_data, const char *text, size_t length)
 {
     sink_t *sink = user_data;
@@ -98,8 +106,10 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     return true;
 }
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -116,8 +126,10 @@ static void add_sub(clargs_command_t *command, const char *name, const char *des
     NAOS_REQUIRE_TRUE(clargs_command_set_description(sub, description) == CLARGS_ERROR_NONE);
 }
 
-/* Adds a flag that must succeed. short_name is '\0' for none; description
- * is its description, or NULL to set none. */
+/*
+ * Adds a flag that must succeed. short_name is '\0' for none; description
+ * is its description, or NULL to set none.
+ */
 static void add_flag(clargs_command_t *command, char short_name, const char *long_name,
                      const char *description)
 {
@@ -131,9 +143,11 @@ static void add_flag(clargs_command_t *command, char short_name, const char *lon
     }
 }
 
-/* Adds an option with a value of strings and the display name "FILE"; it
+/*
+ * Adds an option with a value of strings and the display name "FILE"; it
  * must succeed. short_name is '\0' for none. default_value is its default
- * value, or NULL for an option that is required. */
+ * value, or NULL for an option that is required.
+ */
 static void add_file(clargs_command_t *command, char short_name, const char *long_name,
                      const char *default_value, const char *description)
 {
@@ -193,8 +207,10 @@ static clargs_help_options_t *create_narrow(void)
     return options;
 }
 
-/* Destroys the help options and the schema, and ends the test: nothing
- * stays allocated. */
+/*
+ * Destroys the help options and the schema, and ends the test: nothing
+ * stays allocated.
+ */
 static void destroy_schema(clargs_command_t *root, clargs_help_options_t *options)
 {
     clargs_help_options_destroy(options);
@@ -255,8 +271,10 @@ static clargs_error_t format_text(text_kind_t kind, const clargs_command_t *comm
     return clargs_help_format(command, options, buffer, size, length);
 }
 
-/* Has the whole text of the kind written to sink; it must succeed, with a
- * call or more and no call without a text. */
+/*
+ * Has the whole text of the kind written to sink; it must succeed, with a
+ * call or more and no call without a text.
+ */
 static void collect(text_kind_t kind, const clargs_command_t *command,
                     const clargs_help_options_t *options, sink_t *sink)
 {
@@ -318,9 +336,11 @@ static void check_format(text_kind_t kind, const clargs_command_t *command,
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 }
 
-/* Checks the format function of the kind with the size given: with and
+/*
+ * Checks the format function of the kind with the size given: with and
  * without a place for the length, and for the size 0 also with NULL as the
- * array. The text that is expected is the one that a write function gets. */
+ * array. The text that is expected is the one that a write function gets.
+ */
 static void check_size(text_kind_t kind, const clargs_command_t *command,
                        const clargs_help_options_t *options, size_t size)
 {
@@ -353,9 +373,11 @@ static size_t text_length(text_kind_t kind, const clargs_command_t *command,
     return sink.length;
 }
 
-/* Runs check_size() for both kinds, with the narrow help options and with
+/*
+ * Runs check_size() for both kinds, with the narrow help options and with
  * none, with the size that the length of the text and delta give: the
- * length + delta, or delta alone when from_length is false. */
+ * length + delta, or delta alone when from_length is false.
+ */
 static void check_sizes(bool from_length, size_t delta)
 {
     clargs_command_t *root = create_schema();
@@ -480,8 +502,10 @@ typedef struct probe {
     size_t mismatches; /* the calls whose user data was another pointer */
 } probe_t;
 
-/* Counts the call in the probe that user_data points to, and whether
- * user_data is the address that the test wrote into the probe. */
+/*
+ * Counts the call in the probe that user_data points to, and whether
+ * user_data is the address that the test wrote into the probe.
+ */
 static bool probe_write(void *user_data, const char *text, size_t length)
 {
     probe_t *probe = user_data;
@@ -495,8 +519,10 @@ static bool probe_write(void *user_data, const char *text, size_t length)
     return true;
 }
 
-/* Takes every part, and reports a failure when the user data is not
- * NULL. */
+/*
+ * Takes every part, and reports a failure when the user data is not
+ * NULL.
+ */
 static bool null_user_data_write(void *user_data, const char *text, size_t length)
 {
     (void)text;
@@ -740,8 +766,10 @@ static void check_out_of_memory(const clargs_command_t *command,
     NAOS_CHECK_UINT_EQ(length, call.with_length ? (size_t)0 : LENGTH_UNSET);
 
     if (call.size != 0) {
-        /* The empty string. The bytes of the array behind its '\0' are not
-         * specified: the start of the text may have been there. */
+        /*
+         * The empty string. The bytes of the array behind its '\0' are not
+         * specified: the start of the text may have been there.
+         */
         NAOS_CHECK_TRUE(area[GUARD_SIZE] == '\0');
     }
     NAOS_CHECK_MEM_EQ(area, GUARD_SIZE, want, GUARD_SIZE);
@@ -764,8 +792,10 @@ NAOS_TEST(format_out_of_memory_empties_the_buffer_and_the_length)
         call.with_length = with_length != 0;
         call.null_buffer = false;
 
-        /* Room for all of the text: its start was written before the
-         * allocation failed. */
+        /*
+         * Room for all of the text: its start was written before the
+         * allocation failed.
+         */
         call.size = whole + 1;
         check_out_of_memory(root, narrow, call);
         /* Room for a part of it. */
@@ -781,8 +811,10 @@ NAOS_TEST(format_out_of_memory_empties_the_buffer_and_the_length)
         check_out_of_memory(root, narrow, call);
     }
 
-    /* The schema and the help options are as they were: the next call
-     * succeeds and gives the whole text. */
+    /*
+     * The schema and the help options are as they were: the next call
+     * succeeds and gives the whole text.
+     */
     {
         char buffer[SINK_SIZE];
         size_t length = LENGTH_UNSET;

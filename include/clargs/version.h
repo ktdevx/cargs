@@ -19,8 +19,10 @@
 #define CLARGS_VERSION_MAJOR 0
 #define CLARGS_VERSION_MINOR 1
 #define CLARGS_VERSION_PATCH 0
-/* The pre-release identifiers of the version without the leading hyphen, such as "rc.1".
-   An empty string for a release. */
+/*
+ * The pre-release identifiers of the version without the leading hyphen, such as "rc.1".
+ * An empty string for a release.
+ */
 #define CLARGS_VERSION_PRERELEASE ""
 
 /* Packs a version into one number: 0x00MMmmpp. Each part is in 0-255. */

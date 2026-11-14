@@ -15,8 +15,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* Where a fault is: the command it is in, and the option or the positional
- * that has it. One of option and positional is NULL. */
+/*
+ * Where a fault is: the command it is in, and the option or the positional
+ * that has it. One of option and positional is NULL.
+ */
 typedef struct fault {
     const clargs_command_t *command;
     const clargs_option_t *option;
@@ -74,8 +76,10 @@ static const clargs_positional_t *find_positional_fault(const clargs_command_t *
  */
 static clargs_error_t check_default(const clargs_type_t *type, const char *text)
 {
-    /* Memory of the allocator is aligned for an object of any type, as the
-     * conversion needs it, and the size of a value is never 0. */
+    /*
+     * Memory of the allocator is aligned for an object of any type, as the
+     * conversion needs it, and the size of a value is never 0.
+     */
     void *value = clargs_malloc(clargs_type_value_size(type));
     clargs_error_t error;
 
@@ -249,8 +253,10 @@ clargs_error_t clargs_command_validate(clargs_command_t *root, const clargs_comm
 
     error = check_command(root, &fault);
 
-    /* The state changes only here: a validation that fails leaves it as it
-     * was. */
+    /*
+     * The state changes only here: a validation that fails leaves it as it
+     * was.
+     */
     if (error == CLARGS_ERROR_NONE) {
         root->validated = true;
     }

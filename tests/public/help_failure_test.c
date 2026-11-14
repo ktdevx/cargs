@@ -40,49 +40,67 @@
 /* The most allocation requests that an operation is given to fail in. */
 #define REQUEST_LIMIT 100
 
-/* The size of the text that a sink holds: more than the longest text of
- * this file. */
+/*
+ * The size of the text that a sink holds: more than the longest text of
+ * this file.
+ */
 #define SINK_SIZE ((size_t)4096)
 
-/* The bytes before the array that clargs_help_format() is given, and the
- * least number of bytes behind it: they must stay as they were. */
+/*
+ * The bytes before the array that clargs_help_format() is given, and the
+ * least number of bytes behind it: they must stay as they were.
+ */
 #define GUARD_SIZE ((size_t)16)
 
 /* The size of the area that holds the guard bytes and the array. */
 #define AREA_SIZE (SINK_SIZE + 2 * GUARD_SIZE)
 
-/* The byte that fills the area before a call. No text of this file has
- * it. */
+/*
+ * The byte that fills the area before a call. No text of this file has
+ * it.
+ */
 #define SENTINEL ((char)0x7E)
 
-/* The value of a length before a call: no text of this file is that
- * long. */
+/*
+ * The value of a length before a call: no text of this file is that
+ * long.
+ */
 #define LENGTH_UNSET ((size_t)54321)
 
-/* The size of the text of a picture of the schema, and the most pointers
- * that a picture holds. */
+/*
+ * The size of the text of a picture of the schema, and the most pointers
+ * that a picture holds.
+ */
 #define PICTURE_SIZE ((size_t)8192)
 #define PICTURE_POINTERS ((size_t)256)
 
-/* The number of the generations that are compared: two commands, each
- * without help options and with help options that are not the default. */
+/*
+ * The number of the generations that are compared: two commands, each
+ * without help options and with help options that are not the default.
+ */
 #define CASE_COUNT ((size_t)4)
 
-/* The least number of requests that a generation of the help of the
- * schema of this file makes: so many allocation points fail, at least. */
+/*
+ * The least number of requests that a generation of the help of the
+ * schema of this file makes: so many allocation points fail, at least.
+ */
 #define LEAST_REQUESTS ((size_t)4)
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 }
 
-/* Help options that are not a result of clargs_help_options_create(): what
+/*
+ * Help options that are not a result of clargs_help_options_create(): what
  * an output holds before the call, so that a call that does not write its
- * output is seen. It is never read through. */
+ * output is seen. It is never read through.
+ */
 static clargs_help_options_t *stale_options(void)
 {
     /* Aligned for an object of any type, as allocated memory is. */
@@ -133,9 +151,11 @@ NAOS_TEST(creating_help_options_fails_cleanly_at_every_allocation_point)
         error = clargs_help_options_create(&options);
 
         if (error == CLARGS_ERROR_NONE) {
-            /* The creation ended before the request to fail was reached:
+            /*
+             * The creation ended before the request to fail was reached:
              * every allocation point has failed once. The creation is not
-             * an operation without requests. */
+             * an operation without requests.
+             */
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n - 1);
             NAOS_CHECK_TRUE(n > 1);
             NAOS_CHECK_TRUE(options != NULL);
@@ -149,8 +169,10 @@ NAOS_TEST(creating_help_options_fails_cleanly_at_every_allocation_point)
             break;
         }
 
-        /* The nth request failed, and the creation reported it: the output
-         * is NULL and no block is kept. */
+        /*
+         * The nth request failed, and the creation reported it: the output
+         * is NULL and no block is kept.
+         */
         NAOS_CHECK_TRUE(error == CLARGS_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_TRUE(options == NULL);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n);
@@ -203,9 +225,11 @@ NAOS_TEST(setting_help_options_never_allocates)
     live = clargs_test_allocator_live();
     NAOS_CHECK_UINT_EQ(live, 1);
 
-    /* An allocation would fail, and none is made: ordinary values, 0, the
+    /*
+     * An allocation would fail, and none is made: ordinary values, 0, the
      * limit, a value above the limit and the greatest size_t, each setting
-     * set more than once. */
+     * set more than once.
+     */
     clargs_test_allocator_fail_at(requests + 1);
 
     clargs_help_options_set_width(options, 100);
@@ -251,8 +275,10 @@ static void sink_init(sink_t *sink)
     memset(sink, 0, sizeof *sink);
 }
 
-/* Appends the part to the sink. A part that does not fit is a failure of
- * the write: no text of this file is that long. */
+/*
+ * Appends the part to the sink. A part that does not fit is a failure of
+ * the write: no text of this file is that long.
+ */
 static bool sink_write(void *user_data, const char *text, size_t length)
 {
     sink_t *sink = user_data;
@@ -309,8 +335,10 @@ static void put_pointer(picture_t *picture, const void *pointer)
     ++picture->pointer_count;
 }
 
-/* Appends the label and the string, in brackets, or "none" for NULL; the
- * pointer of the string goes to the pointers. */
+/*
+ * Appends the label and the string, in brackets, or "none" for NULL; the
+ * pointer of the string goes to the pointers.
+ */
 static void put_text(picture_t *picture, const char *label, const char *text)
 {
     put(picture, label);
@@ -341,8 +369,10 @@ static void put_count(picture_t *picture, const char *label, size_t count)
     put(picture, digits + at);
 }
 
-/* Appends the label and the value type: its name, its kind, the size of
- * its value and its choices; "none" for NULL. */
+/*
+ * Appends the label and the value type: its name, its kind, the size of
+ * its value and its choices; "none" for NULL.
+ */
 static void put_type(picture_t *picture, const char *label, const clargs_type_t *type)
 {
     size_t index;
@@ -435,8 +465,10 @@ static void draw(picture_t *picture, const clargs_command_t *root)
     NAOS_REQUIRE_TRUE(!picture->overflow);
 }
 
-/* One generation that is compared: a command, help options, and the text
- * and the number of requests of a generation without a failure. */
+/*
+ * One generation that is compared: a command, help options, and the text
+ * and the number of requests of a generation without a failure.
+ */
 typedef struct help_case {
     const clargs_command_t *command;
     const clargs_help_options_t *options; /* NULL: the default settings */
@@ -447,8 +479,10 @@ typedef struct help_case {
     size_t usage_length;
 } help_case_t;
 
-/* The schema of the tests, the help options that are not the default, and
- * what was read and generated before any failure. */
+/*
+ * The schema of the tests, the help options that are not the default, and
+ * what was read and generated before any failure.
+ */
 typedef struct fixture {
     clargs_type_t *format; /* the choices of --format */
     clargs_type_t *target; /* the choices of <target> and of --mode */
@@ -458,8 +492,10 @@ typedef struct fixture {
     picture_t before;
 } fixture_t;
 
-/* Adds an option with a value to command and sets what is not NULL or
- * false; it must succeed. */
+/*
+ * Adds an option with a value to command and sets what is not NULL or
+ * false; it must succeed.
+ */
 static void add_value(clargs_command_t *command, char short_name, const char *long_name,
                       const clargs_type_t *type, const char *value_name, const char *default_value,
                       bool required, const char *description)
@@ -481,8 +517,10 @@ static void add_value(clargs_command_t *command, char short_name, const char *lo
     NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
 }
 
-/* Adds a positional to command, with a default value when default_value is
- * not NULL; it must succeed. */
+/*
+ * Adds a positional to command, with a default value when default_value is
+ * not NULL; it must succeed.
+ */
 static void add_positional(clargs_command_t *command, const char *name, const clargs_type_t *type,
                            clargs_arity_t arity, const char *default_value,
                            const char *description)
@@ -587,8 +625,10 @@ static void build_schema(fixture_t *fixture)
     NAOS_REQUIRE_TRUE(clargs_command_is_validated(fixture->root));
 }
 
-/* Checks that the length bytes of a are the same text as the b_length
- * bytes of b: the same length and the same bytes. */
+/*
+ * Checks that the length bytes of a are the same text as the b_length
+ * bytes of b: the same length and the same bytes.
+ */
 static void check_same_text(const char *a, size_t length, const char *b, size_t b_length)
 {
     NAOS_CHECK_UINT_EQ(length, b_length);
@@ -642,8 +682,10 @@ static void fixture_start(fixture_t *fixture)
         memcpy(item->text, sink.text, sink.length);
         item->length = sink.length;
 
-        /* The generation is one that allocates, and more than once or
-         * twice: the cell text grows while the lists are written. */
+        /*
+         * The generation is one that allocates, and more than once or
+         * twice: the cell text grows while the lists are written.
+         */
         NAOS_REQUIRE_TRUE(item->requests >= LEAST_REQUESTS);
         NAOS_REQUIRE_TRUE(item->requests < REQUEST_LIMIT);
         NAOS_REQUIRE_TRUE(item->length >= 2);
@@ -664,8 +706,10 @@ static void fixture_start(fixture_t *fixture)
         NAOS_CHECK_MEM_EQ(item->text, item->usage_length, item->usage, item->usage_length);
     }
 
-    /* The settings change the text: a text that is as before proves that
-     * the help options are as before. */
+    /*
+     * The settings change the text: a text that is as before proves that
+     * the help options are as before.
+     */
     NAOS_CHECK_TRUE(fixture->cases[0].length != fixture->cases[1].length ||
                     memcmp(fixture->cases[0].text, fixture->cases[1].text,
                            fixture->cases[0].length) != 0);
@@ -676,8 +720,10 @@ static void fixture_start(fixture_t *fixture)
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 }
 
-/* Ends a test: destroys what fixture_start() created; nothing stays
- * allocated. */
+/*
+ * Ends a test: destroys what fixture_start() created; nothing stays
+ * allocated.
+ */
 static void fixture_end(fixture_t *fixture)
 {
     clargs_help_options_destroy(fixture->narrow);
@@ -779,12 +825,16 @@ static void check_format_failure(const help_case_t *item, size_t nth, format_cal
     NAOS_CHECK_UINT_EQ(length, call.with_length ? (size_t)0 : LENGTH_UNSET);
 
     if (call.size != 0) {
-        /* The empty string. The bytes of the array behind its '\0' are not
-         * specified: the start of the text may have been there. */
+        /*
+         * The empty string. The bytes of the array behind its '\0' are not
+         * specified: the start of the text may have been there.
+         */
         NAOS_CHECK_TRUE(area[GUARD_SIZE] == '\0');
     }
-    /* The bytes before the array and behind it; with the size 0 these are
-     * all the bytes of the area. */
+    /*
+     * The bytes before the array and behind it; with the size 0 these are
+     * all the bytes of the area.
+     */
     NAOS_CHECK_MEM_EQ(area, GUARD_SIZE, want, GUARD_SIZE);
     NAOS_CHECK_MEM_EQ(area + GUARD_SIZE + call.size, sizeof area - GUARD_SIZE - call.size,
                       want + GUARD_SIZE + call.size, sizeof want - GUARD_SIZE - call.size);
@@ -793,9 +843,11 @@ static void check_format_failure(const help_case_t *item, size_t nth, format_cal
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 }
 
-/* Every allocation of a generation through the write function fails once.
+/*
+ * Every allocation of a generation through the write function fails once.
  * The number of the allocations is the one that was counted, not one that
- * the test knows. */
+ * the test knows.
+ */
 NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
 {
     fixture_t fixture;
@@ -822,8 +874,10 @@ NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
             clargs_test_allocator_fail_at(0);
 
             if (error == CLARGS_ERROR_NONE) {
-                /* The generation ended before the request to fail was
-                 * reached: every allocation point has failed once. */
+                /*
+                 * The generation ended before the request to fail was
+                 * reached: every allocation point has failed once.
+                 */
                 NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests() - requests, n - 1);
                 NAOS_CHECK_UINT_EQ(n - 1, item->requests);
                 check_same_text(sink.text, sink.length, item->text, item->length);
@@ -832,18 +886,22 @@ NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
                 break;
             }
 
-            /* The nth request failed, and the generation reported it and
-             * made no request after it. No block is kept. */
+            /*
+             * The nth request failed, and the generation reported it and
+             * made no request after it. No block is kept.
+             */
             ++failures;
             NAOS_CHECK_TRUE(error == CLARGS_ERROR_OUT_OF_MEMORY);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests() - requests, n);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 
-            /* What the write function received is a start of the text, and
+            /*
+             * What the write function received is a start of the text, and
              * not all of it. The usage line came before the first request,
              * and the generation stopped before the heading of the item
-             * whose cell could not be built: the last line is whole. */
+             * whose cell could not be built: the last line is whole.
+             */
             NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
             NAOS_REQUIRE_TRUE(sink.length < item->length);
             NAOS_CHECK_MEM_EQ(sink.text, sink.length, item->text, sink.length);
@@ -853,26 +911,32 @@ NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
                 shortest = sink.length;
             }
 
-            /* The schema and the help options are as they were, and every
-             * generation gives its text again. */
+            /*
+             * The schema and the help options are as they were, and every
+             * generation gives its text again.
+             */
             check_unchanged(&fixture);
         }
 
         NAOS_CHECK_TRUE(completed);
         NAOS_CHECK_UINT_EQ(failures, item->requests);
         NAOS_CHECK_TRUE(failures >= LEAST_REQUESTS);
-        /* The first request is made for the first item of a list: more
-         * than the usage line was written before it. */
+        /*
+         * The first request is made for the first item of a list: more
+         * than the usage line was written before it.
+         */
         NAOS_CHECK_TRUE(shortest > item->usage_length);
     }
 
     fixture_end(&fixture);
 }
 
-/* Every allocation of a generation into an array fails once, for every
+/*
+ * Every allocation of a generation into an array fails once, for every
  * kind of array: one that holds all of the text, ones that hold a part of
  * it, one of one byte, and the size 0 with an array and with NULL; each of
- * them with and without the length. */
+ * them with and without the length.
+ */
 NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
 {
     fixture_t fixture;
@@ -887,8 +951,10 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
         NAOS_REQUIRE_TRUE(item->length + 1 <= AREA_SIZE - 2 * GUARD_SIZE);
         NAOS_REQUIRE_TRUE(item->length / 2 > 20);
 
-        /* The requests of a generation were counted by fixture_start(): the
-         * 1st to the last of them fail in turn. */
+        /*
+         * The requests of a generation were counted by fixture_start(): the
+         * 1st to the last of them fail in turn.
+         */
         for (n = 1; n <= item->requests; ++n) {
             format_call_t call;
             int with_length;
@@ -897,12 +963,16 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
                 call.with_length = with_length != 0;
                 call.null_buffer = false;
 
-                /* Room for all of the text: its start was written before
-                 * the allocation failed. */
+                /*
+                 * Room for all of the text: its start was written before
+                 * the allocation failed.
+                 */
                 call.size = item->length + 1;
                 check_format_failure(item, n, call);
-                /* Room for a part of it: a part that ends in the lists,
-                 * and one that ends in the usage line. */
+                /*
+                 * Room for a part of it: a part that ends in the lists,
+                 * and one that ends in the usage line.
+                 */
                 call.size = item->length / 2;
                 check_format_failure(item, n, call);
                 call.size = 20;
@@ -917,13 +987,17 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
                 check_format_failure(item, n, call);
             }
 
-            /* The schema and the help options are as they were, and every
-             * generation gives its text again. */
+            /*
+             * The schema and the help options are as they were, and every
+             * generation gives its text again.
+             */
             check_unchanged(&fixture);
         }
 
-        /* There is no request behind the last one that failed: with the
-         * next one set to fail, the generation succeeds. */
+        /*
+         * There is no request behind the last one that failed: with the
+         * next one set to fail, the generation succeeds.
+         */
         {
             char buffer[SINK_SIZE];
             size_t length = LENGTH_UNSET;
@@ -945,10 +1019,12 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
     fixture_end(&fixture);
 }
 
-/* The usage line alone is generated without a request, for the root and
+/*
+ * The usage line alone is generated without a request, for the root and
  * for a subcommand, with and without help options, through the write
  * function and into an array. A request would fail: the next one is set to
- * fail before every call, and none is made. */
+ * fail before every call, and none is made.
+ */
 NAOS_TEST(generating_a_usage_line_never_allocates)
 {
     fixture_t fixture;

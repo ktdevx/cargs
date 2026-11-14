@@ -38,8 +38,10 @@ static clargs_error_t clargs_vec_grow(clargs_vec_t *vec)
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
-    /* The first time items is NULL, so this allocates. When it fails, the
-     * old items are still valid and vec still points to them. */
+    /*
+     * The first time items is NULL, so this allocates. When it fails, the
+     * old items are still valid and vec still points to them.
+     */
     new_items = clargs_realloc(vec->items, new_capacity * vec->item_size);
     if (new_items == NULL) {
         return CLARGS_ERROR_OUT_OF_MEMORY;
@@ -75,8 +77,10 @@ clargs_error_t clargs_vec_push(clargs_vec_t *vec, const void *item)
         }
     }
 
-    /* count < capacity now, so the product is less than the size of the
-     * items and does not overflow. */
+    /*
+     * count < capacity now, so the product is less than the size of the
+     * items and does not overflow.
+     */
     memcpy((char *)vec->items + vec->count * vec->item_size, item,
         vec->item_size);
     ++vec->count;

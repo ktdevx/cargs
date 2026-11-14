@@ -427,8 +427,10 @@ NAOS_TEST(reset_restores_the_initial_state)
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 
-    /* The count of live blocks means nothing once that block is freed:
-     * reset again. */
+    /*
+     * The count of live blocks means nothing once that block is freed:
+     * reset again.
+     */
     allocator.free_fn(block);
     clargs_test_allocator_reset();
 
@@ -470,8 +472,10 @@ NAOS_TEST(install_resets_and_uninstall_can_follow)
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 
-    /* The count of live blocks means nothing once that block is freed:
-     * install again. */
+    /*
+     * The count of live blocks means nothing once that block is freed:
+     * install again.
+     */
     allocator.free_fn(leftover);
     clargs_test_allocator_install();
 

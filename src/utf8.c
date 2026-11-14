@@ -34,16 +34,20 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
         return 1;
     }
     if (unit <= 0xDBFFUL) {
-        /* A high surrogate. The next unit exists: it is a unit or the
-         * terminator, and the terminator is not a low surrogate. */
+        /*
+         * A high surrogate. The next unit exists: it is a unit or the
+         * terminator, and the terminator is not a low surrogate.
+         */
         next = (unsigned long)text[1];
         if (next >= 0xDC00UL && next <= 0xDFFFUL) {
             *code_point = 0x10000UL + ((unit - 0xD800UL) << 10) + (next - 0xDC00UL);
             return 2;
         }
     }
-    /* A high surrogate without a low one after it, or a low surrogate
-     * without a high one before it. */
+    /*
+     * A high surrogate without a low one after it, or a low surrogate
+     * without a high one before it.
+     */
     *code_point = REPLACEMENT;
     *valid = false;
     return 1;
@@ -54,9 +58,11 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
 /* UTF-32. */
 static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid)
 {
-    /* Where wchar_t is signed, a negative value becomes a value above
+    /*
+     * Where wchar_t is signed, a negative value becomes a value above
      * U+10FFFF here: no comparison with 0 is needed, and none is written,
-     * because it would be always false where wchar_t is unsigned. */
+     * because it would be always false where wchar_t is unsigned.
+     */
     unsigned long unit = (unsigned long)text[0];
 
     if (unit > 0x10FFFFUL || (unit >= 0xD800UL && unit <= 0xDFFFUL)) {
@@ -99,8 +105,10 @@ static size_t encode(unsigned long code_point, unsigned char bytes[UTF8_MAX_BYTE
     return 4;
 }
 
-/* The two functions below walk the string with the same decode() and count
- * with the same encode(), so they count the same number of bytes. */
+/*
+ * The two functions below walk the string with the same decode() and count
+ * with the same encode(), so they count the same number of bytes.
+ */
 
 size_t clargs_utf8_length(const wchar_t *text, bool *valid)
 {
@@ -133,8 +141,10 @@ size_t clargs_utf8_write(const wchar_t *text, char *out)
     while (*text != 0) {
         text += decode(text, &code_point, &valid);
         count = encode(code_point, bytes);
-        /* The bytes are copied as they are: no conversion of a value above
-         * 127 to char, which may be signed. */
+        /*
+         * The bytes are copied as they are: no conversion of a value above
+         * 127 to char, which may be signed.
+         */
         memcpy(out + length, bytes, count);
         length += count;
     }

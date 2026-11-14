@@ -22,8 +22,10 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The end of every test that allocates: the test allocator has no live
- * block and saw no violation of the allocator contract. */
+/*
+ * The end of every test that allocates: the test allocator has no live
+ * block and saw no violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -59,8 +61,10 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name)
     return sub;
 }
 
-/* Adds an option of the kind kind with the function of that kind. An option
- * with a value gets the value type of strings. */
+/*
+ * Adds an option of the kind kind with the function of that kind. An option
+ * with a value gets the value type of strings.
+ */
 static clargs_error_t add_kind(clargs_option_kind_t kind, clargs_command_t *command, char short_name,
                                const char *long_name, clargs_option_t **out)
 {
@@ -90,10 +94,12 @@ static clargs_option_t *add(clargs_option_kind_t kind, clargs_command_t *command
     return option;
 }
 
-/* Checks that an addition of every kind with these names fails with
+/*
+ * Checks that an addition of every kind with these names fails with
  * expected, sets the output to NULL, adds nothing and allocates nothing. A
  * negatable flag without a long name is an invalid name whatever else is
- * wrong: that check comes before the conflicts. */
+ * wrong: that check comes before the conflicts.
+ */
 static void check_rejected(clargs_command_t *command, char short_name, const char *long_name,
                            clargs_error_t expected)
 {
@@ -129,8 +135,10 @@ static void check_rejected(clargs_command_t *command, char short_name, const cha
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
 }
 
-/* Checks what the readers return for an option. negated_name and type are
- * NULL when the option must have none. */
+/*
+ * Checks what the readers return for an option. negated_name and type are
+ * NULL when the option must have none.
+ */
 static void check_option(const clargs_option_t *option, const clargs_command_t *command,
                          clargs_option_kind_t kind, char short_name, const char *long_name,
                          const char *negated_name, const clargs_type_t *type)
@@ -157,8 +165,10 @@ static void check_option(const clargs_option_t *option, const clargs_command_t *
     NAOS_CHECK_TRUE(clargs_option_type(option) == type);
 }
 
-/* The attributes that are strings, for the tests that do the same with each
- * of them. */
+/*
+ * The attributes that are strings, for the tests that do the same with each
+ * of them.
+ */
 typedef enum text_attribute {
     TEXT_DESCRIPTION,
     TEXT_VALUE_NAME,
@@ -199,8 +209,10 @@ static const char *get_text(text_attribute_t attribute, const clargs_option_t *o
     }
 }
 
-/* Checks a string that was read: NULL when expected is NULL, and else a
- * string with the same contents. */
+/*
+ * Checks a string that was read: NULL when expected is NULL, and else a
+ * string with the same contents.
+ */
 static void check_text(const char *actual, const char *expected)
 {
     if (expected == NULL) {
@@ -211,8 +223,10 @@ static void check_text(const char *actual, const char *expected)
     }
 }
 
-/* Checks what the readers of the attributes return for an option. A string
- * is NULL when the attribute must not be set. */
+/*
+ * Checks what the readers of the attributes return for an option. A string
+ * is NULL when the attribute must not be set.
+ */
 static void check_attributes(const clargs_option_t *option, const char *description, const char *value_name,
                              const char *default_value, bool required, bool initial)
 {
@@ -248,8 +262,10 @@ NAOS_TEST(the_four_kinds_are_added_and_read)
 
     NAOS_CHECK_UINT_EQ(clargs_command_option_count(root), 4);
 
-    /* Only a negatable flag has a negated name, and only an option with a
-     * value has a value type. */
+    /*
+     * Only a negatable flag has a negated name, and only an option with a
+     * value has a value type.
+     */
     check_option(flag, root, CLARGS_OPTION_FLAG, 'v', "verbose", NULL, NULL);
     check_option(negatable, root, CLARGS_OPTION_NEGATABLE, 'c', "color", "no-color", NULL);
     check_option(count, root, CLARGS_OPTION_COUNT, 'd', "debug", NULL, NULL);
@@ -374,8 +390,10 @@ NAOS_TEST(an_option_can_be_added_without_an_output)
     destroy_root(root);
 }
 
-/* The options are read in the order in which they were added, and a handle
- * stays the same when more options are added after it. */
+/*
+ * The options are read in the order in which they were added, and a handle
+ * stays the same when more options are added after it.
+ */
 NAOS_TEST(options_are_read_in_the_order_of_the_definition)
 {
     static const char *const names[] = { "o0", "o1", "o2", "o3", "o4", "o5", "o6", "o7", "o8", "o9" };
@@ -402,8 +420,10 @@ NAOS_TEST(options_are_read_in_the_order_of_the_definition)
     destroy_root(root);
 }
 
-/* The value type is borrowed: several options share one, and the tree does
- * not destroy it. */
+/*
+ * The value type is borrowed: several options share one, and the tree does
+ * not destroy it.
+ */
 NAOS_TEST(a_value_type_is_borrowed_and_can_be_shared)
 {
     static const char *const choices[] = { "never", "auto", "always" };
@@ -464,13 +484,17 @@ NAOS_TEST(a_negatable_flag_without_a_long_name_is_an_invalid_name)
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
     NAOS_CHECK_TRUE(clargs_command_find_short(root, 'c') == NULL);
 
-    /* The other kinds take a short name alone, and the same short name can
-     * be used after the failure. */
+    /*
+     * The other kinds take a short name alone, and the same short name can
+     * be used after the failure.
+     */
     option = add(CLARGS_OPTION_FLAG, root, 'c', NULL);
     NAOS_CHECK_TRUE(clargs_command_find_short(root, 'c') == option);
 
-    /* It is the first check of a negatable flag after the missing names:
-     * the conflict of the short name is not what is reported. */
+    /*
+     * It is the first check of a negatable flag after the missing names:
+     * the conflict of the short name is not what is reported.
+     */
     NAOS_CHECK_INT_EQ(clargs_command_add_negatable(root, 'c', NULL, &option), CLARGS_ERROR_INVALID_NAME);
     NAOS_CHECK_TRUE(option == NULL);
 
@@ -535,8 +559,10 @@ NAOS_TEST(a_short_name_is_used_once_in_a_command)
     clargs_option_t *output = add(CLARGS_OPTION_VALUE, root, 'o', NULL);
     clargs_option_t *option;
 
-    /* Whatever the kind of the new and of the existing option is, with and
-     * without a long name. */
+    /*
+     * Whatever the kind of the new and of the existing option is, with and
+     * without a long name.
+     */
     check_rejected(root, 'v', NULL, CLARGS_ERROR_NAME_CONFLICT);
     check_rejected(root, 'v', "version", CLARGS_ERROR_NAME_CONFLICT);
     check_rejected(root, 'o', NULL, CLARGS_ERROR_NAME_CONFLICT);
@@ -551,8 +577,10 @@ NAOS_TEST(a_short_name_is_used_once_in_a_command)
     NAOS_CHECK_TRUE(find_long(root, "version", NULL) == NULL);
     NAOS_CHECK_TRUE(find_long(root, "output", NULL) == NULL);
 
-    /* The long names of the failed additions were not taken: they can be
-     * added with another short name, or with none. */
+    /*
+     * The long names of the failed additions were not taken: they can be
+     * added with another short name, or with none.
+     */
     option = add(CLARGS_OPTION_FLAG, root, 'V', "version");
     NAOS_CHECK_TRUE(find_long(root, "version", NULL) == option);
     option = add(CLARGS_OPTION_NEGATABLE, root, '\0', "output");
@@ -562,8 +590,10 @@ NAOS_TEST(a_short_name_is_used_once_in_a_command)
     destroy_root(root);
 }
 
-/* A long name is in conflict with a long name and with a negated name of
- * the command. */
+/*
+ * A long name is in conflict with a long name and with a negated name of
+ * the command.
+ */
 NAOS_TEST(a_long_name_is_used_once_in_a_command)
 {
     clargs_command_t *root = create_root();
@@ -589,8 +619,10 @@ NAOS_TEST(a_long_name_is_used_once_in_a_command)
     NAOS_CHECK_TRUE(find_long(root, "no-color", &negated) == color);
     NAOS_CHECK_TRUE(negated);
 
-    /* Only a negatable flag has a negated name: "no-verbose" is free. And
-     * the short name of the failed additions was not taken. */
+    /*
+     * Only a negatable flag has a negated name: "no-verbose" is free. And
+     * the short name of the failed additions was not taken.
+     */
     option = add(CLARGS_OPTION_FLAG, root, 'x', "no-verbose");
     NAOS_CHECK_TRUE(find_long(root, "no-verbose", &negated) == option);
     NAOS_CHECK_FALSE(negated);
@@ -599,8 +631,10 @@ NAOS_TEST(a_long_name_is_used_once_in_a_command)
     destroy_root(root);
 }
 
-/* The negated name of a new negatable flag is in conflict with a long name
- * and with a negated name of the command. */
+/*
+ * The negated name of a new negatable flag is in conflict with a long name
+ * and with a negated name of the command.
+ */
 NAOS_TEST(a_negated_name_is_used_once_in_a_command)
 {
     clargs_command_t *root = create_root();
@@ -637,8 +671,10 @@ NAOS_TEST(a_negated_name_is_used_once_in_a_command)
     NAOS_CHECK_TRUE(find_long(root, "no-color", &negated) == no_color);
     NAOS_CHECK_FALSE(negated);
 
-    /* The other kinds have no negated name, so the same names are free for
-     * them, also after the failures. */
+    /*
+     * The other kinds have no negated name, so the same names are free for
+     * them, also after the failures.
+     */
     option = add(CLARGS_OPTION_FLAG, root, 'c', "color");
     NAOS_CHECK_TRUE(find_long(root, "color", NULL) == option);
     option = add(CLARGS_OPTION_COUNT, root, '\0', "pager");
@@ -654,8 +690,10 @@ NAOS_TEST(a_negated_name_is_used_once_in_a_command)
     destroy_root(root);
 }
 
-/* The same names can be used in another command: in the parent, in a
- * child and in a sibling. Each command finds its own option. */
+/*
+ * The same names can be used in another command: in the parent, in a
+ * child and in a sibling. Each command finds its own option.
+ */
 NAOS_TEST(the_same_names_can_be_used_in_another_command)
 {
     clargs_command_t *root = create_root();
@@ -760,15 +798,19 @@ NAOS_TEST(find_short_finds_the_option_with_that_short_name)
     NAOS_CHECK_TRUE(clargs_command_find_short(root, 'd') == debug);
     NAOS_CHECK_TRUE(clargs_command_find_short(root, '4') == jobs);
 
-    /* A name that no option has, the first letter of a long name, and the
-     * other case. */
+    /*
+     * A name that no option has, the first letter of a long name, and the
+     * other case.
+     */
     NAOS_CHECK_TRUE(clargs_command_find_short(root, 'x') == NULL);
     NAOS_CHECK_TRUE(clargs_command_find_short(root, 'a') == NULL);
     NAOS_CHECK_TRUE(clargs_command_find_short(root, 'j') == NULL);
     NAOS_CHECK_TRUE(clargs_command_find_short(root, 'D') == NULL);
 
-    /* '\0' is not a name: an option without a short name is not found by
-     * it. */
+    /*
+     * '\0' is not a name: an option without a short name is not found by
+     * it.
+     */
     NAOS_CHECK_INT_EQ(clargs_option_short_name(long_only), '\0');
     NAOS_CHECK_TRUE(clargs_command_find_short(root, '\0') == NULL);
 
@@ -808,8 +850,10 @@ NAOS_TEST(find_long_finds_a_long_name_or_a_negated_name)
     NAOS_CHECK_TRUE(find_long(root, "verbose", NULL) == verbose);
     NAOS_CHECK_TRUE(find_long(root, "no-color", NULL) == color);
 
-    /* Only a negatable flag has a negated name. When nothing is found,
-     * negated is not written. */
+    /*
+     * Only a negatable flag has a negated name. When nothing is found,
+     * negated is not written.
+     */
     negated = true;
     NAOS_CHECK_TRUE(find_long(root, "no-verbose", &negated) == NULL);
     NAOS_CHECK_TRUE(find_long(root, "no-debug", &negated) == NULL);
@@ -821,8 +865,10 @@ NAOS_TEST(find_long_finds_a_long_name_or_a_negated_name)
     NAOS_CHECK_TRUE(find_long(root, "other", &negated) == NULL);
     NAOS_CHECK_FALSE(negated);
 
-    /* A short name is not a long name, and an option without a long name
-     * is found by no string. */
+    /*
+     * A short name is not a long name, and an option without a long name
+     * is found by no string.
+     */
     NAOS_CHECK_TRUE(clargs_option_long_name(short_only) == NULL);
     NAOS_CHECK_TRUE(find_long(root, "x", NULL) == NULL);
     NAOS_CHECK_TRUE(find_long(root, "v", NULL) == NULL);
@@ -831,8 +877,10 @@ NAOS_TEST(find_long_finds_a_long_name_or_a_negated_name)
     destroy_root(root);
 }
 
-/* The name is the first length bytes of the string, and the whole name must
- * match: neither a part of a name nor a longer string does. */
+/*
+ * The name is the first length bytes of the string, and the whole name must
+ * match: neither a part of a name nor a longer string does.
+ */
 NAOS_TEST(find_long_compares_exactly_length_bytes)
 {
     clargs_command_t *root = create_root();
@@ -874,8 +922,10 @@ NAOS_TEST(find_long_compares_exactly_length_bytes)
 
 /* ---- Attributes -------------------------------------------------------- */
 
-/* Until an attribute is set, a string is read as NULL, an option is not
- * required, and the initial state is off. */
+/*
+ * Until an attribute is set, a string is read as NULL, an option is not
+ * required, and the initial state is off.
+ */
 NAOS_TEST(a_new_option_has_no_attribute)
 {
     clargs_command_t *root = create_root();
@@ -926,9 +976,11 @@ NAOS_TEST(a_description_is_set_on_every_kind)
     destroy_root(root);
 }
 
-/* An option with a value has a display name of the value, can be required
+/*
+ * An option with a value has a display name of the value, can be required
  * and has a default value. Each attribute is set alone and leaves the
- * others, and the rest of the option, as they were. */
+ * others, and the rest of the option, as they were.
+ */
 NAOS_TEST(the_attributes_of_an_option_with_a_value_are_set_and_read)
 {
     clargs_command_t *root = create_root();
@@ -950,8 +1002,10 @@ NAOS_TEST(the_attributes_of_an_option_with_a_value_are_set_and_read)
     NAOS_CHECK_INT_EQ(clargs_option_set_required(output, true), CLARGS_ERROR_NONE);
     check_attributes(output, NULL, NULL, NULL, true, false);
 
-    /* The other option, the names, the kind and the value type are as they
-     * were. */
+    /*
+     * The other option, the names, the kind and the value type are as they
+     * were.
+     */
     check_attributes(jobs, "Number of jobs.", "N", "4", false, false);
     check_option(jobs, root, CLARGS_OPTION_VALUE, 'j', "jobs", NULL, clargs_type_int());
     check_option(output, root, CLARGS_OPTION_VALUE, 'o', "output", NULL, clargs_type_string());
@@ -959,9 +1013,11 @@ NAOS_TEST(the_attributes_of_an_option_with_a_value_are_set_and_read)
     NAOS_CHECK_TRUE(clargs_command_find_short(root, 'j') == jobs);
     NAOS_CHECK_TRUE(find_long(root, "output", NULL) == output);
 
-    /* A default value is a string as it is written on a command line. It
+    /*
+     * A default value is a string as it is written on a command line. It
      * is kept as it is: whether the value type takes it is found by the
-     * validation, not here. The empty string is a value. */
+     * validation, not here. The empty string is a value.
+     */
     NAOS_CHECK_INT_EQ(clargs_option_set_default(jobs, "not a number"), CLARGS_ERROR_NONE);
     check_attributes(jobs, "Number of jobs.", "N", "not a number", false, false);
     NAOS_CHECK_INT_EQ(clargs_option_set_default(output, ""), CLARGS_ERROR_NONE);
@@ -1041,8 +1097,10 @@ NAOS_TEST(the_initial_state_of_a_negatable_flag_is_set_and_read)
     /* Nothing is allocated for a state. */
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
 
-    /* The names are as they were, and it has a description like every
-     * kind. */
+    /*
+     * The names are as they were, and it has a description like every
+     * kind.
+     */
     check_option(color, root, CLARGS_OPTION_NEGATABLE, 'c', "color", "no-color", NULL);
     NAOS_CHECK_INT_EQ(clargs_option_set_description(color, "Use colors."), CLARGS_ERROR_NONE);
     check_attributes(color, "Use colors.", NULL, NULL, false, true);
@@ -1050,8 +1108,10 @@ NAOS_TEST(the_initial_state_of_a_negatable_flag_is_set_and_read)
     destroy_root(root);
 }
 
-/* Checks that the attributes of an option with a value cannot be set on
- * option, whatever the value is, and that nothing is allocated for it. */
+/*
+ * Checks that the attributes of an option with a value cannot be set on
+ * option, whatever the value is, and that nothing is allocated for it.
+ */
 static void check_takes_no_attribute_of_a_value(clargs_option_t *option)
 {
     const size_t requests = clargs_test_allocator_requests();
@@ -1077,10 +1137,12 @@ static void check_takes_no_initial_state(clargs_option_t *option)
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
 }
 
-/* The display name of the value, required and the default value are for an
+/*
+ * The display name of the value, required and the default value are for an
  * option with a value only, and the initial state is for a negatable flag
  * only. On another kind the set is an inconsistent definition and changes
- * nothing. */
+ * nothing.
+ */
 NAOS_TEST(an_attribute_of_another_kind_is_an_inconsistent_definition)
 {
     clargs_command_t *root = create_root();
@@ -1137,8 +1199,10 @@ NAOS_TEST(an_attribute_of_another_kind_is_an_inconsistent_definition)
     check_takes_no_initial_state(value);
     check_attributes(value, "Value.", "FILE", "a.out", true, false);
 
-    /* The schema can be used after the failures: the attributes that the
-     * kinds do have are set, and an option is added. */
+    /*
+     * The schema can be used after the failures: the attributes that the
+     * kinds do have are set, and an option is added.
+     */
     NAOS_CHECK_INT_EQ(clargs_option_set_description(flag, "Still a flag."), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(clargs_option_set_initial(negatable, false), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(clargs_option_set_value_name(value, "PATH"), CLARGS_ERROR_NONE);
@@ -1151,8 +1215,10 @@ NAOS_TEST(an_attribute_of_another_kind_is_an_inconsistent_definition)
     destroy_root(root);
 }
 
-/* The strings are copied: the caller may change its buffers after the
- * call. */
+/*
+ * The strings are copied: the caller may change its buffers after the
+ * call.
+ */
 NAOS_TEST(the_strings_of_the_attributes_are_copied)
 {
     char description[] = "Where the output goes.";
@@ -1183,8 +1249,10 @@ NAOS_TEST(the_strings_of_the_attributes_are_copied)
     destroy_root(root);
 }
 
-/* An attribute can be set with a string that was read from another
- * attribute or from a name of the tree: it gets a copy of its own. */
+/*
+ * An attribute can be set with a string that was read from another
+ * attribute or from a name of the tree: it gets a copy of its own.
+ */
 NAOS_TEST(an_attribute_can_be_set_with_a_string_that_was_read)
 {
     clargs_command_t *root = create_root();
@@ -1201,9 +1269,11 @@ NAOS_TEST(an_attribute_can_be_set_with_a_string_that_was_read)
     destroy_root(root);
 }
 
-/* Required and a default value do not go together, but that is found by the
+/*
+ * Required and a default value do not go together, but that is found by the
  * validation of the tree: the order in which the two are set does not
- * matter, and each set succeeds. */
+ * matter, and each set succeeds.
+ */
 NAOS_TEST(required_and_a_default_value_are_both_kept)
 {
     clargs_command_t *root = create_root();
@@ -1223,8 +1293,10 @@ NAOS_TEST(required_and_a_default_value_are_both_kept)
 
 /* ---- Destruction ------------------------------------------------------- */
 
-/* One destruction of the root frees the options of every command, their
- * names and the strings of their attributes. */
+/*
+ * One destruction of the root frees the options of every command, their
+ * names and the strings of their attributes.
+ */
 NAOS_TEST(destroy_frees_the_options_of_the_whole_tree)
 {
     clargs_command_t *root = create_root();
@@ -1258,9 +1330,11 @@ NAOS_TEST(destroy_frees_the_options_of_the_whole_tree)
 
 /* ---- Failure of an allocation ------------------------------------------ */
 
-/* Builds a root with existing options "o0", "o1", ... of the four kinds in
+/*
+ * Builds a root with existing options "o0", "o1", ... of the four kinds in
  * turn, and returns it. The number is chosen by the tests so that the array
- * of the options is empty, has room, or is full. */
+ * of the options is empty, has room, or is full.
+ */
 static clargs_command_t *build_root_with(size_t existing)
 {
     static const char *const names[] = { "o0", "o1", "o2", "o3", "o4", "o5", "o6", "o7" };
@@ -1277,9 +1351,11 @@ static clargs_command_t *build_root_with(size_t existing)
     return root;
 }
 
-/* Fails each allocation of the addition of an option of the kind kind, with
+/*
+ * Fails each allocation of the addition of an option of the kind kind, with
  * the names -n and --new, to a root that has existing options already.
- * Returns the number of the failures. */
+ * Returns the number of the failures.
+ */
 static size_t fail_each_allocation_of_an_addition(clargs_option_kind_t kind, size_t existing)
 {
     const size_t limit = 20;
@@ -1319,8 +1395,10 @@ static size_t fail_each_allocation_of_an_addition(clargs_option_kind_t kind, siz
         NAOS_CHECK_TRUE(option == NULL);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + n);
 
-        /* The tree is as it was before the call, and nothing of the call
-         * stays allocated. */
+        /*
+         * The tree is as it was before the call, and nothing of the call
+         * stays allocated.
+         */
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
         NAOS_CHECK_UINT_EQ(clargs_command_option_count(root), existing);
         NAOS_CHECK_TRUE(clargs_command_find_short(root, 'n') == NULL);
@@ -1352,10 +1430,12 @@ static size_t fail_each_allocation_of_an_addition(clargs_option_kind_t kind, siz
     return failures;
 }
 
-/* When an allocation of the addition of an option fails, whichever it is,
+/*
+ * When an allocation of the addition of an option fails, whichever it is,
  * the output is NULL, the tree is as it was, and nothing leaks. The array of
  * the options grows in the first and in the third case, and has room in the
- * second. */
+ * second.
+ */
 NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
 {
     static const clargs_option_kind_t kinds[] = { CLARGS_OPTION_FLAG, CLARGS_OPTION_NEGATABLE,
@@ -1387,9 +1467,11 @@ NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
     check_clean();
 }
 
-/* When the copy of a string of an attribute cannot be allocated, the set is
+/*
+ * When the copy of a string of an attribute cannot be allocated, the set is
  * out of memory, the attribute has the value it had, set or not, and nothing
- * leaks. A set makes one allocation, the copy. */
+ * leaks. A set makes one allocation, the copy.
+ */
 NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
 {
     static const text_attribute_t attributes[TEXT_ATTRIBUTE_COUNT] = { TEXT_DESCRIPTION, TEXT_VALUE_NAME,
@@ -1413,8 +1495,10 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
             NAOS_REQUIRE_TRUE(clargs_command_create("app", &root) == CLARGS_ERROR_NONE);
             option = add(CLARGS_OPTION_VALUE, root, 'o', "output");
 
-            /* The other attributes are set, so that it shows if the failure
-             * touches one of them. */
+            /*
+             * The other attributes are set, so that it shows if the failure
+             * touches one of them.
+             */
             for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other) {
                 if (other != index) {
                     NAOS_REQUIRE_TRUE(set_text(attributes[other], option, "other") == CLARGS_ERROR_NONE);
@@ -1433,8 +1517,10 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
                               CLARGS_ERROR_OUT_OF_MEMORY);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 1);
 
-            /* The option is as it was before the call, and nothing of the
-             * call stays allocated. */
+            /*
+             * The option is as it was before the call, and nothing of the
+             * call stays allocated.
+             */
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
             check_text(get_text(attribute, option), old);
             for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other) {

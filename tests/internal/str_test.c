@@ -82,8 +82,10 @@ static void wrap_reset(void)
     wrap_free_calls = 0;
 }
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -92,8 +94,10 @@ static void check_clean(void)
 
 /* ---- The copy --------------------------------------------------------- */
 
-/* The copy has the contents of the string and its terminator. It takes one
- * request, and clargs_free releases it. */
+/*
+ * The copy has the contents of the string and its terminator. It takes one
+ * request, and clargs_free releases it.
+ */
 NAOS_TEST(copies_the_contents_and_the_terminator)
 {
     const char original[] = "--output=file.txt";
@@ -121,8 +125,10 @@ NAOS_TEST(copies_the_contents_and_the_terminator)
     check_clean();
 }
 
-/* The copy of an empty string succeeds: it is a string of one byte, the
- * terminator. */
+/*
+ * The copy of an empty string succeeds: it is a string of one byte, the
+ * terminator.
+ */
 NAOS_TEST(copies_an_empty_string)
 {
     char *copy;
@@ -169,8 +175,10 @@ NAOS_TEST(copies_a_long_string)
     check_clean();
 }
 
-/* The copy is another region than the string: writing to one of them does
- * not change the other. */
+/*
+ * The copy is another region than the string: writing to one of them does
+ * not change the other.
+ */
 NAOS_TEST(copy_is_a_separate_region)
 {
     char original[] = "verbose";
@@ -234,9 +242,11 @@ NAOS_TEST(copies_are_separate_from_each_other)
 
 /* ---- The allocator ---------------------------------------------------- */
 
-/* A copy is one malloc_fn of the length of the string plus the terminator,
+/*
+ * A copy is one malloc_fn of the length of the string plus the terminator,
  * and nothing else: an empty string asks for one byte. The copy ends at the
- * first terminator of the string. */
+ * first terminator of the string.
+ */
 NAOS_TEST(requests_the_bytes_of_the_string)
 {
     clargs_allocator_t allocator = wrap_allocator();
@@ -300,8 +310,10 @@ NAOS_TEST(works_with_the_default_allocator)
 
 /* ---- The failure of the allocation ------------------------------------ */
 
-/* When the first request fails, clargs_strdup returns NULL and nothing is
- * left allocated. */
+/*
+ * When the first request fails, clargs_strdup returns NULL and nothing is
+ * left allocated.
+ */
 NAOS_TEST(failed_allocation_returns_null)
 {
     char original[] = "--output=file.txt";

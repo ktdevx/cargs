@@ -62,8 +62,10 @@ static void name_positional(element_name_t *name, const clargs_positional_t *pos
     name->length = strlen(name->text);
 }
 
-/* Fills in where for something that is not on the command line: no index
- * and no letter of a bundle. name must outlive the use of where. */
+/*
+ * Fills in where for something that is not on the command line: no index
+ * and no letter of a bundle. name must outlive the use of where.
+ */
 static void locate(clargs_result_where_t *where, clargs_source_t source, const element_name_t *name)
 {
     where->source = source;
@@ -74,8 +76,10 @@ static void locate(clargs_result_where_t *where, clargs_source_t source, const e
     where->name_length = name->length;
 }
 
-/* Records that option or positional, one of which is NULL, is required by
- * command and was not given. Returns what clargs_result_fail() returns. */
+/*
+ * Records that option or positional, one of which is NULL, is required by
+ * command and was not given. Returns what clargs_result_fail() returns.
+ */
 static clargs_error_t fail_missing(clargs_result_t *result, const clargs_command_t *command,
                                    const clargs_option_t *option, const clargs_positional_t *positional)
 {
@@ -203,8 +207,10 @@ clargs_error_t clargs_resolve(clargs_result_t *result)
         const clargs_error_t error = apply_defaults(result, clargs_result_command_at(result, index));
 
         if (error != CLARGS_ERROR_NONE) {
-            /* A result with a parse error holds no default value. A result
-             * that ran out of memory is destroyed by the caller. */
+            /*
+             * A result with a parse error holds no default value. A result
+             * that ran out of memory is destroyed by the caller.
+             */
             if (error != CLARGS_ERROR_OUT_OF_MEMORY) {
                 clargs_result_discard_defaults(result);
             }

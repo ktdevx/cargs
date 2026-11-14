@@ -7,8 +7,10 @@
 
 #include <assert.h>
 
-/* The value that is kept for a setting: value, or the limit if value is
- * greater. */
+/*
+ * The value that is kept for a setting: value, or the limit if value is
+ * greater.
+ */
 static size_t clamp_setting(size_t value)
 {
     return value > CLARGS_HELP_SETTING_MAX ? CLARGS_HELP_SETTING_MAX : value;

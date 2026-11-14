@@ -28,8 +28,11 @@ typedef struct scan {
     size_t index;                    /* The index of the argument that is being read. */
     size_t count;                    /* The number of arguments, the name of the program included. */
     bool options_ended;              /* Whether the terminator of the options was read. */
-    size_t positional;               /* The index of the positional of command that takes the next
-                                        argument that is not an option. */
+    /*
+     * The index of the positional of command that takes the next
+     * argument that is not an option.
+     */
+    size_t positional;
     bool has_digit_short;            /* Whether command has an option whose short name is a digit. */
 } scan_t;
 
@@ -146,16 +149,20 @@ static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const
         break;
     case CLARGS_OPTION_VALUE:
     default:
-        /* An option that takes a value was recorded above. A kind that a
+        /*
+         * An option that takes a value was recorded above. A kind that a
          * later version adds is passed over, on purpose, until the scan
-         * learns what giving it means: nothing is recorded for it. */
+         * learns what giving it means: nothing is recorded for it.
+         */
         break;
     }
     return CLARGS_ERROR_NONE;
 }
 
-/* Reads arg, the argument that scan is at, as a long option of the current
- * command. */
+/*
+ * Reads arg, the argument that scan is at, as a long option of the current
+ * command.
+ */
 static clargs_error_t scan_long(clargs_result_t *result, scan_t *scan, const char *arg)
 {
     const clargs_option_t *option;
@@ -195,8 +202,10 @@ static clargs_error_t scan_bundle(clargs_result_t *result, scan_t *scan, const c
         clargs_result_where_t where;
         clargs_error_t error;
 
-        /* The argument of an error is the whole bundle; the name of its
-         * message is the letter. */
+        /*
+         * The argument of an error is the whole bundle; the name of its
+         * message is the letter.
+         */
         where.source = CLARGS_SOURCE_COMMAND_LINE;
         where.index = scan->index;
         where.short_name = *letter;
@@ -285,8 +294,10 @@ static clargs_error_t scan_plain(clargs_result_t *result, scan_t *scan, const ch
         break;
     }
 
-    /* The name of the message of a value that the value type does not
-     * take is the name of the positional. */
+    /*
+     * The name of the message of a value that the value type does not
+     * take is the name of the positional.
+     */
     where.name = clargs_positional_name(positional);
     where.name_length = strlen(where.name);
     return clargs_result_record_positional_value(result, positional, arg, &where);
@@ -320,10 +331,12 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
             return error;
         }
         if (scan.options_ended) {
-            /* After the terminator, an argument is not classified: it is
+            /*
+             * After the terminator, an argument is not classified: it is
              * not an option, whatever it looks like, a second "--"
              * included. The terminator stays read after a subcommand was
-             * selected. */
+             * selected.
+             */
             error = scan_plain(result, &scan, arg);
         } else {
             switch (clargs_lex_classify(arg)) {
@@ -331,9 +344,11 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
                 error = scan_long(result, &scan, arg);
                 break;
             case CLARGS_LEX_SHORT:
-                /* An argument with the form of a negative number is a
+                /*
+                 * An argument with the form of a negative number is a
                  * bundle only for a command that has a digit as a short
-                 * name. For any other command it is not an option. */
+                 * name. For any other command it is not an option.
+                 */
                 if (scan.has_digit_short || !clargs_lex_is_negative_number(arg)) {
                     error = scan_bundle(result, &scan, arg);
                 } else {
@@ -418,8 +433,10 @@ clargs_error_t clargs_parse_wide(const clargs_command_t *root, int argc, wchar_t
     assert(argc >= 0);
     assert(argc == 0 || argv != NULL);
 
-    /* The arguments are converted to UTF-8 here. From here on the two
-     * entries are the same. */
+    /*
+     * The arguments are converted to UTF-8 here. From here on the two
+     * entries are the same.
+     */
     error = clargs_result_create_wide(root, argc, argv, &result);
     if (error != CLARGS_ERROR_NONE) {
         *out = NULL;

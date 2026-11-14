@@ -53,9 +53,11 @@ static bool failed(clargs_error_t *error, clargs_error_t result)
     return result != CLARGS_ERROR_NONE;
 }
 
-/* The write function: writes one part of the text to the stream that
+/*
+ * The write function: writes one part of the text to the stream that
  * user_data points to. The part is not terminated, so it is written with
- * its length. */
+ * its length.
+ */
 static bool write_to_stream(void *user_data, const char *text, size_t length)
 {
     return fwrite(text, 1, length, (FILE *)user_data) == length;
@@ -164,9 +166,11 @@ static bool failed(clargs_error_t *error, clargs_error_t result)
     return result != CLARGS_ERROR_NONE;
 }
 
-/* Adds -h, --help to command. The library adds no such option by itself,
+/*
+ * Adds -h, --help to command. The library adds no such option by itself,
  * and an option is only known where its command is the current command, so
- * every command gets its own. */
+ * every command gets its own.
+ */
 static clargs_error_t add_help(clargs_command_t *command)
 {
     clargs_option_t *option = NULL;
@@ -178,8 +182,10 @@ static clargs_error_t add_help(clargs_command_t *command)
     return clargs_option_set_description(option, "Print this help.");
 }
 
-/* Defines the schema. When it fails, schema->root is NULL or a schema that
- * can be destroyed. */
+/*
+ * Defines the schema. When it fails, schema->root is NULL or a schema that
+ * can be destroyed.
+ */
 static clargs_error_t define_schema(pack_schema_t *schema)
 {
     clargs_option_t *option = NULL;
@@ -233,14 +239,18 @@ static clargs_error_t define_schema(pack_schema_t *schema)
         return error;
     }
 
-    /* A schema must be validated before it is parsed with, and before a
-     * help is generated from it. */
+    /*
+     * A schema must be validated before it is parsed with, and before a
+     * help is generated from it.
+     */
     return clargs_command_validate(schema->root, NULL, NULL, NULL);
 }
 
-/* Tells whether --help or -h was given to one of the commands that the
+/*
+ * Tells whether --help or -h was given to one of the commands that the
  * command line selected. This also works on a result with a parse error:
- * it holds what was read before the error. */
+ * it holds what was read before the error.
+ */
 static bool help_was_given(const clargs_result_t *result)
 {
     size_t i;
@@ -256,8 +266,10 @@ static bool help_was_given(const clargs_result_t *result)
     return false;
 }
 
-/* The write function: writes one part of the text to the stream that
- * user_data points to. */
+/*
+ * The write function: writes one part of the text to the stream that
+ * user_data points to.
+ */
 static bool write_to_stream(void *user_data, const char *text, size_t length)
 {
     return fwrite(text, 1, length, (FILE *)user_data) == length;
@@ -279,17 +291,21 @@ int main(int argc, char **argv)
             /* CLARGS_ERROR_OUT_OF_MEMORY: there is no result. */
             fprintf(stderr, "pack: %s\n", clargs_error_message(error));
         } else if (help_was_given(result)) {
-            /* --help first: "pack create --help" leaves out what create
+            /*
+             * --help first: "pack create --help" leaves out what create
              * requires, and that must not hide the help. The help is the one
              * of the command that the command line ends in. Ending the
-             * program is up to this code: the library never exits. */
+             * program is up to this code: the library never exits.
+             */
             if (clargs_help_write(clargs_result_command(result), NULL, write_to_stream, stdout) ==
                 CLARGS_ERROR_NONE) {
                 status = EXIT_SUCCESS;
             }
         } else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE) {
-            /* The message, then the usage line of the command in which the
-             * error was found, both to the standard error stream. */
+            /*
+             * The message, then the usage line of the command in which the
+             * error was found, both to the standard error stream.
+             */
             fprintf(stderr, "pack: %s\n", clargs_result_error_message(result));
             clargs_help_write_usage(clargs_result_error_command(result), NULL, write_to_stream,
                                     stderr);
@@ -784,9 +800,11 @@ The library passes the text to the write function from the start, in order, spli
 A write function that writes to a `FILE *` only calls `fwrite()`. Pass the stream as `user_data`.
 
 ```c
-/* The write function: writes one part of the text to the stream that
+/*
+ * The write function: writes one part of the text to the stream that
  * user_data points to. The part is not terminated, so it is written with
- * its length. */
+ * its length.
+ */
 static bool write_to_stream(void *user_data, const char *text, size_t length)
 {
     return fwrite(text, 1, length, (FILE *)user_data) == length;
@@ -818,15 +836,19 @@ error = clargs_help_write(root, NULL, write_to_stream, stdout);
 To get the whole text, call twice. The first call passes `size` 0 and `buffer` `NULL`, and gets the length. The second call passes an array of `*length + 1` bytes.
 
 ```c
-/* Returns the help of command as a string that the caller frees with
- * free(), or NULL when it cannot be made. */
+/*
+ * Returns the help of command as a string that the caller frees with
+ * free(), or NULL when it cannot be made.
+ */
 static char *help_string(const clargs_command_t *command)
 {
     char *text = NULL;
     size_t length = 0;
 
-    /* First the length: with the size 0 nothing is written, and the buffer
-     * may be NULL. */
+    /*
+     * First the length: with the size 0 nothing is written, and the buffer
+     * may be NULL.
+     */
     if (clargs_help_format(command, NULL, NULL, 0, &length) != CLARGS_ERROR_NONE) {
         return NULL;
     }
@@ -836,8 +858,10 @@ static char *help_string(const clargs_command_t *command)
         return NULL;
     }
 
-    /* Then the text. The schema and the settings are the same as in the
-     * first call, so the text has the same length and fits. */
+    /*
+     * Then the text. The schema and the settings are the same as in the
+     * first call, so the text has the same length and fits.
+     */
     if (clargs_help_format(command, NULL, text, length + 1, NULL) != CLARGS_ERROR_NONE) {
         free(text);
         return NULL;
