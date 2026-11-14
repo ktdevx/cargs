@@ -2,25 +2,24 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - resolving: what is done with a result after its arguments were
- * all read without a parse error.
+ * ArgX - resolving: what happens to a result once all its arguments were
+ * read without a parse error.
  *
- * Two passes go over the selected commands of the result, from the root to
- * the last, and for each command over its options and then its positionals,
+ * Two passes go over the result's selected commands, from the root to the
+ * last, and within each command over its options and then its positionals,
  * each in the order in which they were added. The first pass checks that
- * what is required was given and records the first that is missing. Only
- * when nothing is missing, the second pass gives the options and the
+ * everything required was given and records the first missing one. Only
+ * when nothing is missing does the second pass give the options and
  * positionals that have no value their default values.
  *
- * This source does not read the arguments. It reads the selected commands
- * and the state of a result through the public functions of
- * <argx/parse.h>, and the schema through <argx/schema.h>, and it writes
- * through the functions of "parse_internal.h". A command that was not
- * selected is never looked at.
+ * This source does not read the arguments. It reads a result's selected
+ * commands and state through the public functions of <argx/parse.h>, reads
+ * the schema through <argx/schema.h>, and writes through the functions of
+ * "parse_internal.h". A command that was not selected is never examined.
  *
  * The command line and the default values are the only sources of a value.
- * A later source, such as the environment, is one more pass before the
- * first, over what has no value yet.
+ * A later source, such as the environment, would be one more pass before
+ * the first, over what has no value yet.
  */
 #include "parse_internal.h"
 
@@ -29,10 +28,10 @@
 #include <string.h>
 
 /*
- * How an option or a positional is named in a message that is not about an
+ * How an option or positional is named in a message that is not about an
  * argument: an option by "--" and its long name or, when it has none, by
- * "-" and its short name, and a positional by its name alone. The strings
- * are those of the schema, except the short name, which is kept here.
+ * "-" and its short name; a positional by its name alone. The strings are
+ * the schema's, except the short name, which is kept here.
  */
 typedef struct element_name
 {
@@ -71,7 +70,7 @@ static void name_positional(element_name_t *name, const argx_positional_t *posit
 
 /*
  * Fills in where for something that is not on the command line: no index
- * and no letter of a bundle. name must outlive the use of where.
+ * and no bundle letter. name must outlive every use of where.
  */
 static void locate(argx_result_where_t *where, argx_source_t source, const element_name_t *name)
 {
@@ -84,8 +83,8 @@ static void locate(argx_result_where_t *where, argx_source_t source, const eleme
 }
 
 /*
- * Records that option or positional, one of which is NULL, is required by
- * command and was not given. Returns what argx_result_fail() returns.
+ * Records that option or positional (one of the two is NULL) is required
+ * by command and was not given. Returns what argx_result_fail() returns.
  */
 static argx_error_t fail_missing(argx_result_t *result, const argx_command_t *command,
                                  const argx_option_t *option, const argx_positional_t *positional)
@@ -112,9 +111,10 @@ static argx_error_t fail_missing(argx_result_t *result, const argx_command_t *co
 }
 
 /*
- * The first pass over command: records the first option, or else the first
- * positional, that is required and has no value. Returns ARGX_ERROR_NONE
- * when nothing is missing, and otherwise what argx_result_fail() returns.
+ * The first pass over command: records the first required option that has
+ * no value or, if there is none, the first required positional that has
+ * no value. Returns ARGX_ERROR_NONE when nothing is missing, and otherwise
+ * what argx_result_fail() returns.
  */
 static argx_error_t check_required(argx_result_t *result, const argx_command_t *command)
 {
@@ -147,10 +147,10 @@ static argx_error_t check_required(argx_result_t *result, const argx_command_t *
 }
 
 /*
- * The second pass over command: gives every option that takes a value, and
- * every positional, that has no value and has a default value that value,
- * with the source ARGX_SOURCE_DEFAULT. Returns ARGX_ERROR_NONE, or what
- * the record of the first default value that failed returned.
+ * The second pass over command: each option that takes a value, and each
+ * positional, that has no value but has a default value gets that default
+ * value, with the source ARGX_SOURCE_DEFAULT. Returns ARGX_ERROR_NONE, or
+ * what recording the first failing default value returned.
  */
 static argx_error_t apply_defaults(argx_result_t *result, const argx_command_t *command)
 {

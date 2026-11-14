@@ -4,15 +4,15 @@
  *
  * ArgX - internal declarations for the schema.
  *
- * The contents of a command, an option and a positional, and the helper
- * functions that the sources of the schema share. Only the sources of the
- * schema include this header.
+ * The command, option and positional structures, and the helper functions
+ * shared by the schema sources. Only the schema sources include this
+ * header.
  *
- * Each command, option and positional is one allocation of its own. The
- * arrays of a command hold the pointers to them, so a handle stays the same
- * when an array grows. Every string is a copy made with argx_strdup()
- * and is owned by the structure that holds it. The value types are
- * borrowed: the tree never frees one.
+ * Each command, option and positional is a separate allocation. A
+ * command's arrays hold pointers to them, so a handle stays the same when
+ * an array grows. Every string is a copy made with argx_strdup() and is
+ * owned by the structure that holds it. Value types are borrowed: the tree
+ * never frees one.
  */
 #ifndef ARGX_SCHEMA_INTERNAL_H
 #define ARGX_SCHEMA_INTERNAL_H
@@ -29,15 +29,14 @@
  *
  * - name: the name. Never NULL and never empty.
  * - description: the description, or NULL when none has been set.
- * - parent: the command this one is a subcommand of; NULL for a root.
- * - options: the options, as argx_option_t *, in the order of the
- *   definition.
- * - positionals: the positionals, as argx_positional_t *, in the order of
- *   the definition.
- * - subcommands: the subcommands, as argx_command_t *, in the order of
- *   the definition.
+ * - parent: the command this one is a subcommand of. NULL for a root.
+ * - options: the options, as argx_option_t *, in definition order.
+ * - positionals: the positionals, as argx_positional_t *, in definition
+ *   order.
+ * - subcommands: the subcommands, as argx_command_t *, in definition
+ *   order.
  * - validated: whether the tree has been validated since its last change.
- *   Used in the root only; read and write it through the root.
+ *   Used only in the root. Read and write it through the root.
  */
 struct argx_command
 {
@@ -57,18 +56,18 @@ struct argx_command
  * - kind: the kind.
  * - short_name: the short name, or '\0' when the option has none.
  * - long_name: the long name, or NULL when the option has none.
- * - negated_name: "no-" and the long name, for the kind
- *   ARGX_OPTION_NEGATABLE; NULL for every other kind.
- * - type: the value type, for the kind ARGX_OPTION_VALUE; NULL for every
+ * - negated_name: "no-" followed by the long name, for the
+ *   ARGX_OPTION_NEGATABLE kind. NULL for every other kind.
+ * - type: the value type, for the ARGX_OPTION_VALUE kind. NULL for every
  *   other kind. Borrowed.
  * - description: the description, or NULL when none has been set.
- * - value_name: the display name of the value, or NULL when none has been
- *   set. Only the kind ARGX_OPTION_VALUE has one.
+ * - value_name: the value name, or NULL when none has been set. Only the
+ *   ARGX_OPTION_VALUE kind has one.
  * - default_value: the default value, or NULL when none has been set. Only
- *   the kind ARGX_OPTION_VALUE has one.
- * - required: whether the option is required. Only the kind
- *   ARGX_OPTION_VALUE can be.
- * - initial: the initial state of the kind ARGX_OPTION_NEGATABLE; false
+ *   the ARGX_OPTION_VALUE kind has one.
+ * - required: whether the option is required. Only the ARGX_OPTION_VALUE
+ *   kind can be.
+ * - initial: the initial state, for the ARGX_OPTION_NEGATABLE kind. False
  *   for every other kind.
  */
 struct argx_option
@@ -95,7 +94,7 @@ struct argx_option
  * - type: the value type. Never NULL. Borrowed.
  * - description: the description, or NULL when none has been set.
  * - default_value: the default value, or NULL when none has been set. Only
- *   the arity ARGX_ARITY_OPTIONAL has one.
+ *   the ARGX_ARITY_OPTIONAL arity has one.
  */
 struct argx_positional
 {
@@ -109,23 +108,23 @@ struct argx_positional
 
 /*
  * Marks the tree that command belongs to as not validated. It is called
- * last in a change that succeeded, and never in one that failed.
+ * as the last step of a successful change, and never in a failed one.
  *
  * Precondition: command is not NULL. It is checked with assert.
  */
 void argx_schema_touch(argx_command_t *command);
 
 /*
- * Copies text and puts the copy in *slot, in the place of the string that
- * was there, which is freed. *slot may be NULL before the call.
+ * Copies text and stores the copy in *slot, replacing and freeing the
+ * string that was there. *slot may be NULL before the call.
  *
  * Returns ARGX_ERROR_NONE, or ARGX_ERROR_OUT_OF_MEMORY when the copy
- * cannot be allocated; *slot and its string are then as they were.
+ * cannot be allocated. In that case *slot and its string are unchanged.
  *
  * The copy is made before the old string is freed, so text may be the
  * string at *slot or a part of it.
  *
- * Preconditions: slot and text are not NULL. Checked with assert.
+ * Preconditions: slot and text are not NULL. They are checked with assert.
  */
 argx_error_t argx_schema_replace_string(char **slot, const char *text);
 

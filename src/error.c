@@ -9,8 +9,8 @@
 const char *argx_error_message(argx_error_t error)
 {
     /*
-     * One case for each error code of the list. There is no default label,
-     * so that a value outside the list falls through to the end.
+     * One case per error code in the list. There is no default label, so a
+     * value outside the list falls through to the end.
      */
     switch (error)
     {

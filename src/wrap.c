@@ -2,8 +2,7 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the wrapping of the help: writes one text broken into lines at
- * the blanks.
+ * ArgX - help wrapping: writes one text broken into lines at blanks.
  */
 #include "wrap.h"
 
@@ -41,8 +40,8 @@ void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
         if (text[position] == '\n')
         {
             /*
-             * The blanks that are remembered, those that lead to column
-             * included, are dropped by the newline.
+             * The newline drops the remembered blanks, including those
+             * that lead to column.
              */
             ++position;
             argx_out_newline(out);
@@ -69,13 +68,14 @@ void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
             word = position - start;
 
             /*
-             * "current + word > width" without the sum: the subtraction
-             * cannot wrap around, because current < width there.
+             * Tests "current + word > width" without the sum. The
+             * subtraction cannot wrap around, because current < width
+             * at that point.
              */
             current = argx_out_column(out);
             if (line_has_word && (width != 0) && ((current >= width) || (word > (width - current))))
             {
-                /* The blanks before the word are dropped by the newline. */
+                /* The newline drops the blanks before the word. */
                 argx_out_newline(out);
                 argx_out_pad_to(out, column);
             }

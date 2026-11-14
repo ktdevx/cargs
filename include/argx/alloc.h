@@ -4,35 +4,35 @@
  *
  * ArgX - the allocator: the functions the library gets its memory from.
  *
- * The library takes all of its memory from one allocator, a set of four
- * functions of the same form as the standard malloc, realloc, calloc and
+ * The library takes all of its memory from one allocator: four functions
+ * with the same signatures as the standard malloc, realloc, calloc and
  * free. Unless an allocator is set, it uses the standard functions.
  *
- * How the library calls the functions of the allocator:
+ * How the library calls the allocator functions:
  *
  * - malloc_fn is called with a size greater than 0.
  * - calloc_fn is called with a count and a size greater than 0 whose product
  *   fits in a size_t.
- * - realloc_fn is called with a pointer that is not NULL and came from the
- *   same allocator, and with a size greater than 0.
- * - free_fn is called with a pointer that is not NULL and came from the same
- *   allocator. No pointer is passed twice.
+ * - realloc_fn is called with a non-NULL pointer from the same allocator
+ *   and a size greater than 0.
+ * - free_fn is called with a non-NULL pointer from the same allocator. No
+ *   pointer is passed twice.
  *
- * What the functions of the allocator must do:
+ * What the allocator functions must do:
  *
  * - malloc_fn, calloc_fn and realloc_fn return memory that is aligned for
  *   an object of any type, or NULL when they fail.
- * - calloc_fn returns count * size bytes that are all 0.
- * - realloc_fn keeps the contents up to the smaller of the old and the new
- *   size when it succeeds. When it fails, it leaves the old memory valid
+ * - calloc_fn returns count * size bytes, all set to 0.
+ * - realloc_fn keeps the contents up to the smaller of the old and new
+ *   sizes when it succeeds. When it fails, it leaves the old memory valid
  *   and unchanged.
  * - The four functions stay valid until another allocator has been set and
- *   every object that was allocated with them has been destroyed.
+ *   every object allocated with them has been destroyed.
  * - If the library is used from several threads, the four functions work
- *   when they are called at the same time.
+ *   when called at the same time.
  *
- * The allocator carries no user data. An allocator that needs state keeps
- * it on its own side.
+ * The allocator carries no user data. An allocator that needs state must
+ * keep it itself.
  */
 #ifndef ARGX_ALLOC_H
 #define ARGX_ALLOC_H
@@ -42,8 +42,8 @@
 #include <stddef.h>
 
 /*
- * The types of the four functions: the same form as the standard malloc,
- * realloc, calloc and free.
+ * The four function types, with the same signatures as the standard
+ * malloc, realloc, calloc and free.
  */
 typedef void *(*argx_malloc_fn_t)(size_t size);
 typedef void *(*argx_realloc_fn_t)(void *ptr, size_t size);
@@ -55,8 +55,8 @@ typedef void (*argx_free_fn_t)(void *ptr);
  *
  *     argx_allocator_t allocator = { malloc, realloc, calloc, free };
  *
- * The layout is fixed: later versions add no field and change neither the
- * order nor the types of the fields.
+ * The layout is fixed. Later versions add no fields and change neither
+ * the field order nor the field types.
  */
 typedef struct argx_allocator
 {
@@ -72,26 +72,27 @@ extern "C"
 #endif
 
 /*
- * Sets the allocator of the whole library. From then on, the library takes
- * and frees all of its memory with the four functions of *allocator.
+ * Sets the allocator for the whole library. From then on, the library
+ * allocates and frees all of its memory with the four functions in
+ * *allocator.
  *
  * If allocator is NULL, the library goes back to the default allocator,
  * which uses the standard malloc, realloc, calloc and free.
  *
- * The structure is copied: it may be discarded as soon as the call returns.
+ * The structure is copied, so it may be discarded as soon as the call
+ * returns.
  * The function allocates no memory and cannot fail.
  *
  * Preconditions:
  *
  * - If allocator is not NULL, none of its four functions is NULL. A
- *   structure that was only filled with zeros breaks this. A Debug build
- *   checks it with assert; a Release build does not check it, and the
- *   behaviour is then undefined.
- * - No object of the library exists, and no other thread is calling a
- *   function of the library. The library cannot check this. Memory that was
- *   taken from one allocator must not be freed with another one, and the
- *   setting is not synchronized. Usually the allocator is set once, when
- *   the program starts.
+ *   structure filled only with zeros breaks this. A Debug build checks it
+ *   with assert. A Release build does not check it, and the behaviour is
+ *   then undefined.
+ * - No library object exists, and no other thread is calling a library
+ *   function. The library cannot check this. Memory taken from one
+ *   allocator must not be freed with another, and the setting is not
+ *   synchronized. Usually the allocator is set once, at program start.
  */
 ARGX_API void argx_set_allocator(const argx_allocator_t *allocator);
 

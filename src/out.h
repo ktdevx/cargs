@@ -2,29 +2,28 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - internal declarations for the output of the help: the part that
- * counts columns while it passes text to a write function.
+ * ArgX - internal declarations for the help output: the layer that counts
+ * columns while it passes text to a write function.
  *
- * Everything the help writes goes through a argx_out_t. It keeps the
- * column of the current line, where one byte is one column, whatever the
- * byte is.
+ * Everything the help writes goes through an argx_out_t. It tracks the
+ * column of the current line. One byte is one column, whatever the byte.
  *
- * Blanks are not written when they are asked for. Their number is
- * remembered, and they are written when a text follows on the same line; a
- * newline drops them. So no line ends with a blank, whatever the callers
- * do. The blanks that are remembered count for the column at once.
+ * Blanks are not written when they are requested. The output remembers
+ * how many there are and writes them when text follows on the same line;
+ * a newline drops them. So no line ends with a blank, whatever the
+ * callers do. Remembered blanks count toward the column at once.
  *
- * After the write function has reported a failure, no function calls it
- * again. The columns are counted as before, so the callers need not check
- * for the failure after every call.
+ * Once the write function has reported a failure, no function calls it
+ * again. Columns are still counted, so callers need not check for the
+ * failure after every call.
  *
- * Without a write function (NULL) nothing is written and nothing fails,
- * and only the columns are counted. That measures the width of a text with
+ * Without a write function (NULL), nothing is written and nothing fails;
+ * only the columns are counted. This measures the width of a text with
  * the same code that writes it.
  *
- * The functions allocate nothing and know nothing about a schema. A
- * argx_out_t is an object of the caller, used for one generation and by
- * one thread.
+ * The functions allocate nothing and know nothing about a schema. An
+ * argx_out_t belongs to the caller and is used for one generation by one
+ * thread.
  *
  * Preconditions of every function: out is not NULL (checked with assert),
  * and, except for argx_out_init(), it was initialised with
@@ -39,38 +38,37 @@
 #include <stddef.h>
 
 /*
- * The state of the output. The members are read and written by the
- * functions of this header only.
+ * The output state. Only the functions in this header read and write its
+ * members.
  */
 typedef struct argx_out
 {
     argx_help_write_fn_t write_fn; /* NULL: only the columns are counted */
-    void *user_data;                 /* passed on to write_fn as it is */
-    size_t column;                   /* the current column, with the blanks not yet written */
-    size_t pending;                  /* the number of blanks not yet written */
-    bool failed;                     /* write_fn has reported a failure */
+    void *user_data;               /* passed to write_fn unchanged */
+    size_t column;                 /* the current column, including unwritten blanks */
+    size_t pending;                /* the number of unwritten blanks */
+    bool failed;                   /* write_fn has reported a failure */
 } argx_out_t;
 
 /*
- * Starts an output at column 0, with no blanks remembered and no failure.
- * write_fn receives the text, together with user_data; when write_fn is
- * NULL, nothing is written and only the columns are counted.
+ * Starts an output at column 0, with no remembered blanks and no failure.
+ * write_fn receives the text along with user_data. When write_fn is NULL,
+ * nothing is written and only the columns are counted.
  */
 void argx_out_init(argx_out_t *out, argx_help_write_fn_t write_fn, void *user_data);
 
 /*
- * Writes the length bytes of text: first the blanks that are remembered,
- * then the text. The column advances by length. When length is 0, nothing
- * happens: the blanks stay remembered.
+ * Writes length bytes of text: first the remembered blanks, then the text.
+ * The column advances by length. When length is 0, nothing happens and
+ * the blanks stay remembered.
  *
  * Preconditions: text is not NULL unless length is 0, and it holds no
- * '\n' (a line is ended with argx_out_newline()). They are checked with
- * assert.
+ * '\n' (argx_out_newline() ends a line). They are checked with assert.
  */
 void argx_out_text(argx_out_t *out, const char *text, size_t length);
 
 /*
- * The same as argx_out_text() with the length of the string text.
+ * Like argx_out_text(), but takes the length from the string text.
  *
  * Preconditions: text is not NULL and holds no '\n'. They are checked with
  * assert.
@@ -84,20 +82,20 @@ void argx_out_string(argx_out_t *out, const char *text);
 void argx_out_spaces(argx_out_t *out, size_t count);
 
 /*
- * When the current column is to the left of column, remembers the blanks
- * that lead to it, as argx_out_spaces() does. Otherwise nothing happens.
+ * When the current column is left of column, remembers the blanks needed
+ * to reach it, as argx_out_spaces() does. Otherwise nothing happens.
  */
 void argx_out_pad_to(argx_out_t *out, size_t column);
 
 /*
- * Ends the line: drops the blanks that are remembered, writes the one byte
- * '\n' and sets the column to 0.
+ * Ends the line: drops the remembered blanks, writes a single '\n' byte
+ * and sets the column to 0.
  */
 void argx_out_newline(argx_out_t *out);
 
 /*
  * Returns the current column: the number of bytes written on this line
- * plus the number of blanks that are remembered.
+ * plus the number of remembered blanks.
  */
 size_t argx_out_column(const argx_out_t *out);
 

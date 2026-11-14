@@ -2,8 +2,8 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - options: the addition of the four kinds of options to a command,
- * the attributes of an option, and the reading of an option.
+ * ArgX - options: adding the four option kinds to a command, setting
+ * option attributes, and reading options.
  */
 #include "schema_internal.h"
 
@@ -18,15 +18,16 @@
 #include <string.h>
 
 /*
- * What a negated name starts with: the negated name of the long name
- * "color" is "no-color".
+ * The prefix of a negated name. For example, the negated name of the long
+ * name "color" is "no-color".
  */
 #define NEGATED_PREFIX "no-"
 #define NEGATED_PREFIX_LENGTH (sizeof(NEGATED_PREFIX) - 1)
 
 /*
  * Whether name, which may be NULL, is the negated name of long_name. The
- * negated name is not built: the check comes before every allocation.
+ * negated name is not built, because the check comes before any
+ * allocation.
  */
 static bool is_negated_name_of(const char *name, const char *long_name)
 {
@@ -57,8 +58,8 @@ static bool negated_name_is_in_use(const argx_command_t *command, const char *lo
 }
 
 /*
- * Returns a new string, "no-" and long_name, or NULL when it cannot be
- * allocated.
+ * Returns a new string, "no-" followed by long_name, or NULL when it
+ * cannot be allocated.
  */
 static char *new_negated_name(const char *long_name)
 {
@@ -76,8 +77,8 @@ static char *new_negated_name(const char *long_name)
 }
 
 /*
- * Allocates an option of command with copies of its names. It is not put in
- * the array of the command. Returns NULL, with nothing left allocated, when
+ * Allocates an option of command with copies of its names. It is not added
+ * to the command's array. Returns NULL, with nothing left allocated, when
  * an allocation fails.
  */
 static argx_option_t *new_option(argx_command_t *command, argx_option_kind_t kind, char short_name,
@@ -126,7 +127,7 @@ static argx_option_t *new_option(argx_command_t *command, argx_option_kind_t kin
     return option;
 }
 
-/* Frees an option that new_option() returned and that is in no array. */
+/* Frees an option returned by new_option() that is not in any array. */
 static void free_new_option(argx_option_t *option)
 {
     argx_free(option->negated_name);
@@ -135,8 +136,8 @@ static void free_new_option(argx_option_t *option)
 }
 
 /*
- * The addition of the four kinds. type is the value type of an option with a
- * value, and NULL for every other kind.
+ * Adds an option of any of the four kinds. type is the value type of an
+ * option with a value, and NULL for every other kind.
  */
 static argx_error_t add_option(argx_command_t *command, argx_option_kind_t kind, char short_name,
                                const char *long_name, const argx_type_t *type, argx_option_t **out)
@@ -151,8 +152,8 @@ static argx_error_t add_option(argx_command_t *command, argx_option_kind_t kind,
     }
 
     /*
-     * The checks come before every allocation, so a wrong definition
-     * touches nothing. Their order is part of the contract.
+     * The checks come before any allocation, so an invalid definition
+     * changes nothing. Their order is part of the contract.
      */
     if ((short_name == '\0') && (long_name == NULL))
     {
@@ -190,8 +191,8 @@ static argx_error_t add_option(argx_command_t *command, argx_option_kind_t kind,
     }
 
     /*
-     * The tree is changed last: a push that fails leaves the array as it
-     * was.
+     * The tree is changed last, and a failed push leaves the array
+     * unchanged.
      */
     if (argx_vec_push(&command->options, &option) != ARGX_ERROR_NONE)
     {
@@ -239,10 +240,10 @@ argx_error_t argx_command_add_value(argx_command_t *command, char short_name, co
 /* ---- Attributes --------------------------------------------------------- */
 
 /*
- * Sets an attribute that is a string: *slot, a member of option, gets a
- * copy of text. only_value tells whether the attribute is one that only an
- * option with a value has. The check of the kind comes before the
- * allocation, so a set on another kind touches nothing.
+ * Sets a string attribute: *slot, a member of option, receives a copy of
+ * text. only_value tells whether only an option with a value has this
+ * attribute. The kind check comes before the allocation, so setting it on
+ * another kind changes nothing.
  */
 static argx_error_t set_string(argx_option_t *option, char **slot, const char *text, bool only_value)
 {

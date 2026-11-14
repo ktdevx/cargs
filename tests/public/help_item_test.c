@@ -160,7 +160,7 @@ static void add_count(argx_command_t *command, char short_name, const char *long
 
 /*
  * Adds an option with a value of type that must succeed. value_name is
- * the display name of the value, or NULL to set none. The option is not
+ * the value name, or NULL to set none. The option is not
  * required and has no default value.
  */
 static void add_value(argx_command_t *command, char short_name, const char *long_name,
@@ -395,10 +395,10 @@ NAOS_TEST(count_heading_ends_with_dots)
 
 /*
  * An option with a value: behind the names, in each of their three forms,
- * a blank and the display name of the value between "<" and ">". The
- * display name that was set is used whatever the value type is.
+ * a blank and the value name between "<" and ">". The value name that
+ * was set is used whatever the value type is.
  */
-NAOS_TEST(value_heading_shows_the_display_name)
+NAOS_TEST(value_heading_shows_the_value_name)
 {
     argx_command_t *root = create_root();
 
@@ -421,11 +421,11 @@ NAOS_TEST(value_heading_shows_the_display_name)
 }
 
 /*
- * An option with a value and without a display name: the name of the value
+ * An option with a value and without a value name: the name of the value
  * type stands in its place, for the built-in types and for a user-defined
  * type.
  */
-NAOS_TEST(value_heading_without_display_name_shows_the_type_name)
+NAOS_TEST(value_heading_without_value_name_shows_the_type_name)
 {
     argx_command_t *root = create_root();
     argx_type_t *port = create_type("port");
@@ -524,9 +524,9 @@ NAOS_TEST(help_flag_of_the_schema_is_listed_and_none_is_added)
 
 /*
  * The strings of the schema are written as they are: upper and lower case
- * in the names, in a display name and in the name of a user-defined type
- * stay, a blank in a display name stays, and bytes that are not ASCII pass
- * through. A width is a number of bytes: the three bytes of the display
+ * in the names, in a value name and in the name of a user-defined type
+ * stay, a blank in a value name stays, and bytes that are not ASCII pass
+ * through. A width is a number of bytes: the three bytes of the value
  * name of "-x" count as three columns.
  */
 NAOS_TEST(bytes_of_the_schema_are_written_unchanged)
@@ -559,7 +559,7 @@ NAOS_TEST(bytes_of_the_schema_are_written_unchanged)
 
 /*
  * The width of the heading of an option is the number of all its bytes,
- * also when the display name holds a newline: "-o <A\nB>" counts as 8
+ * also when the value name holds a newline: "-o <A\nB>" counts as 8
  * columns, not as the 2 of "B>", so the description column is 2 + 8 + 2.
  */
 NAOS_TEST(option_heading_with_newline_inside_counts_all_its_bytes)
@@ -733,11 +733,11 @@ NAOS_TEST(option_with_choices_shows_them)
 }
 
 /*
- * An option with a value, a choice type and no display name: the name of
+ * An option with a value, a choice type and no value name: the name of
  * the type, "choice", stands in the heading, and the choices stand in the
  * annotation of the same line.
  */
-NAOS_TEST(choice_heading_without_display_name_shows_the_type_name_and_the_choices)
+NAOS_TEST(choice_heading_without_value_name_shows_the_type_name_and_the_choices)
 {
     static const char *const whens[] = {"auto", "always", "never"};
     argx_command_t *root = create_root();
@@ -1112,15 +1112,15 @@ NAOS_SUITE(help_item,
     NAOS_ADD_TEST(long_name_alone_keeps_its_four_blanks),
     NAOS_ADD_TEST(negatable_flag_heading_shows_the_negated_form),
     NAOS_ADD_TEST(count_heading_ends_with_dots),
-    NAOS_ADD_TEST(value_heading_shows_the_display_name),
-    NAOS_ADD_TEST(value_heading_without_display_name_shows_the_type_name),
+    NAOS_ADD_TEST(value_heading_shows_the_value_name),
+    NAOS_ADD_TEST(value_heading_without_value_name_shows_the_type_name),
     NAOS_ADD_TEST(all_kinds_stand_in_one_list),
     NAOS_ADD_TEST(help_flag_of_the_schema_is_listed_and_none_is_added),
     NAOS_ADD_TEST(bytes_of_the_schema_are_written_unchanged),
     NAOS_ADD_TEST(option_heading_with_newline_inside_counts_all_its_bytes),
     NAOS_ADD_TEST(option_description_is_written_whole),
     NAOS_ADD_TEST(option_with_choices_shows_them),
-    NAOS_ADD_TEST(choice_heading_without_display_name_shows_the_type_name_and_the_choices),
+    NAOS_ADD_TEST(choice_heading_without_value_name_shows_the_type_name_and_the_choices),
     NAOS_ADD_TEST(option_with_default_shows_it),
     NAOS_ADD_TEST(required_option_shows_it),
     NAOS_ADD_TEST(annotations_stand_in_their_order),

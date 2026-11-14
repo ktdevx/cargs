@@ -1003,7 +1003,7 @@ NAOS_TEST(a_description_is_set_on_every_kind)
 }
 
 /*
- * An option with a value has a display name of the value, can be required
+ * An option with a value has a value name, can be required
  * and has a default value. Each attribute is set alone and leaves the
  * others, and the rest of the option, as they were.
  */
@@ -1164,7 +1164,7 @@ static void check_takes_no_initial_state(argx_option_t *option)
 }
 
 /*
- * The display name of the value, required and the default value are for an
+ * The value name, required and the default value are for an
  * option with a value only, and the initial state is for a negatable flag
  * only. On another kind the set is an inconsistent definition and changes
  * nothing.

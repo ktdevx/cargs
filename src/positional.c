@@ -2,8 +2,8 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - positionals: the addition of a positional to a command, the
- * attributes of a positional, and the reading of a positional.
+ * ArgX - positionals: adding a positional to a command, setting positional
+ * attributes, and reading positionals.
  */
 #include "schema_internal.h"
 
@@ -17,7 +17,7 @@
 #include <string.h>
 
 /*
- * Whether command has a positional with the name name. The whole name is
+ * Whether command has a positional named name. The whole name is
  * compared, byte by byte.
  */
 static bool name_is_in_use(const argx_command_t *command, const char *name)
@@ -36,8 +36,8 @@ static bool name_is_in_use(const argx_command_t *command, const char *name)
 }
 
 /*
- * Allocates a positional of command with a copy of its name. It is not put
- * in the array of the command. Returns NULL, with nothing left allocated,
+ * Allocates a positional of command with a copy of its name. It is not
+ * added to the command's array. Returns NULL, with nothing left allocated,
  * when an allocation fails.
  */
 static argx_positional_t *new_positional(argx_command_t *command, const char *name,
@@ -67,8 +67,8 @@ static argx_positional_t *new_positional(argx_command_t *command, const char *na
 }
 
 /*
- * Frees a positional that new_positional() returned and that is in no
- * array: it has no string but its name.
+ * Frees a positional returned by new_positional() that is not in any
+ * array. Its name is the only string it has.
  */
 static void free_new_positional(argx_positional_t *positional)
 {
@@ -96,8 +96,8 @@ argx_error_t argx_command_add_positional(argx_command_t *command, const char *na
     }
 
     /*
-     * The checks come before every allocation, so a wrong definition
-     * touches nothing. Their order is part of the contract.
+     * The checks come before any allocation, so an invalid definition
+     * changes nothing. Their order is part of the contract.
      */
     if (name[0] == '\0')
     {
@@ -119,8 +119,8 @@ argx_error_t argx_command_add_positional(argx_command_t *command, const char *na
     }
 
     /*
-     * The tree is changed last: a push that fails leaves the array as it
-     * was.
+     * The tree is changed last, and a failed push leaves the array
+     * unchanged.
      */
     if (argx_vec_push(&command->positionals, &positional) != ARGX_ERROR_NONE)
     {
@@ -140,8 +140,8 @@ argx_error_t argx_command_add_positional(argx_command_t *command, const char *na
 /* ---- Attributes --------------------------------------------------------- */
 
 /*
- * Sets an attribute that is a string: *slot, a member of positional, gets a
- * copy of text.
+ * Sets a string attribute: *slot, a member of positional, receives a copy
+ * of text.
  */
 static argx_error_t set_string(argx_positional_t *positional, char **slot, const char *text)
 {
@@ -170,8 +170,8 @@ argx_error_t argx_positional_set_default(argx_positional_t *positional, const ch
     assert(value != NULL);
 
     /*
-     * The check of the arity comes before the allocation, so a set on
-     * another arity touches nothing.
+     * The arity check comes before the allocation, so setting a default on
+     * another arity changes nothing.
      */
     if (positional->arity != ARGX_ARITY_OPTIONAL)
     {

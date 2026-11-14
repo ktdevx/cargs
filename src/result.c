@@ -2,11 +2,11 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the result of a parse: its creation and destruction, the copy
- * of the arguments, the selected commands, the values, the parse error and
- * the functions that read it.
+ * ArgX - the parse result: its creation and destruction, the copy of the
+ * arguments, the selected commands, the values, the parse error, and the
+ * functions that read a result.
  *
- * This is the only source that reads and writes the fields of a result.
+ * This is the only source that reads and writes a result's fields.
  */
 #include "parse_internal.h"
 
@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <string.h>
 
-/* Returns the frame of the selected command at index. */
+/* Returns the frame for the selected command at index. */
 static argx_result_frame_t *frame_at(const argx_result_t *result, size_t index)
 {
     return (argx_result_frame_t *)argx_vec_at(&result->frames, index);
@@ -27,13 +27,13 @@ static argx_result_frame_t *frame_at(const argx_result_t *result, size_t index)
 /* ---- The copy of the arguments ------------------------------------------ */
 
 /*
- * Copies the count strings of argv into one allocation, the array of the
- * pointers first and the strings after it, and writes it to *out. The bytes
- * are copied as they are. With a count of 0, nothing is allocated and *out
+ * Copies the count strings of argv into one allocation, with the pointer
+ * array first and the strings after it, and writes it to *out. The bytes
+ * are copied unchanged. With a count of 0, nothing is allocated and *out
  * is NULL.
  *
  * Returns ARGX_ERROR_OUT_OF_MEMORY when the allocation fails or the size
- * of the copy does not fit in size_t; *out is NULL then.
+ * of the copy does not fit in size_t; *out is then NULL.
  */
 static argx_error_t copy_args(size_t count, char *const *argv, char ***out)
 {
@@ -96,17 +96,17 @@ static argx_error_t copy_args(size_t count, char *const *argv, char ***out)
  * The same for the count wide strings of argv, which are converted to
  * UTF-8 ("utf8.h"): each unit that cannot be converted becomes U+FFFD.
  * *first_invalid is set to the index of the first string after argv[0]
- * that has such a unit, or to 0 when there is none; a unit of argv[0] that
- * cannot be converted is replaced and not reported.
+ * that has such a unit, or to 0 when there is none; a unit in argv[0] that
+ * cannot be converted is replaced but not reported.
  *
- * The length of one string in UTF-8 is not checked against size_t. A unit
- * gives four bytes at most where it has four itself, so the count is not
- * more than the size of the wide string, an object that exists. Where a
- * unit has two bytes it gives three at most, which is more than it has:
- * there the count stays in range because an object has PTRDIFF_MAX bytes
- * at most, so a string has SIZE_MAX / 4 units at most, and three times
- * that is less than SIZE_MAX. The sum over the strings is checked as in
- * copy_args().
+ * The UTF-8 length of a single string is not checked against size_t.
+ * Where a unit is four bytes wide, it gives at most four bytes, so the
+ * count is no more than the size of the wide string, an object that
+ * exists. Where a unit is two bytes wide, it gives at most three bytes,
+ * which is more than its own size. There the count stays in range because
+ * an object has at most PTRDIFF_MAX bytes, so a string has at most
+ * SIZE_MAX / 4 units, and three times that is less than SIZE_MAX. The sum
+ * over the strings is checked as in copy_args().
  */
 static argx_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***out, size_t *first_invalid)
 {
@@ -171,9 +171,9 @@ static argx_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***o
 /* ---- Creation and destruction ------------------------------------------- */
 
 /*
- * Allocates a result of root with no argument, no selected command and no
- * parse error, and writes it to *out. Returns ARGX_ERROR_OUT_OF_MEMORY
- * when the allocation fails; *out is NULL then.
+ * Allocates a result for root with no arguments, no selected command and
+ * no parse error, and writes it to *out. Returns ARGX_ERROR_OUT_OF_MEMORY
+ * when the allocation fails; *out is then NULL.
  */
 static argx_error_t new_result(const argx_command_t *root, argx_result_t **out)
 {
@@ -205,11 +205,11 @@ static argx_error_t new_result(const argx_command_t *root, argx_result_t **out)
 }
 
 /*
- * Ends the creation of result, whose copy of count arguments was made with
- * the outcome error: selects root and writes result to *out. When the copy
+ * Finishes creating result, whose copy of count arguments ended with the
+ * outcome error: selects root and writes result to *out. When the copy
  * failed, or root cannot be selected, result is destroyed as a whole and
- * *out stays NULL. The two functions that create a result differ in the
- * copy of the arguments only.
+ * *out stays NULL. The two functions that create a result differ only in
+ * how they copy the arguments.
  */
 static argx_error_t finish_result(argx_result_t *result, argx_error_t error, size_t count,
                                   argx_result_t **out)
@@ -276,8 +276,8 @@ argx_error_t argx_result_create_wide(const argx_command_t *root, int argc, wchar
 }
 
 /*
- * Cleans up the value of type in the area value, and frees the area. This
- * is the one place that releases a value.
+ * Cleans up the value of type in the area value, then frees the area.
+ * This is the only place that releases a value.
  */
 static void destroy_value(const argx_type_t *type, void *value)
 {
@@ -286,7 +286,7 @@ static void destroy_value(const argx_type_t *type, void *value)
 }
 
 /*
- * Cleans up every value that the slots of frame hold, once, and frees the
+ * Cleans up every value held in frame's slots, once each, and frees the
  * slots.
  */
 static void destroy_frame(argx_result_frame_t *frame)
@@ -356,7 +356,7 @@ size_t argx_result_first_invalid_arg(const argx_result_t *result)
 
 /* ---- The selected commands ---------------------------------------------- */
 
-/* Puts slot in the state of option when it is not given. */
+/* Sets slot to the "not given" state of option. */
 static void init_option_slot(argx_option_slot_t *slot, const argx_option_t *option)
 {
     slot->source = ARGX_SOURCE_NONE;
@@ -382,7 +382,7 @@ static void init_option_slot(argx_option_slot_t *slot, const argx_option_t *opti
 
 /*
  * Fills frame for command: allocates and initializes one slot for each of
- * its options and positionals. An array of no slots is not allocated.
+ * its options and positionals. An empty slot array is not allocated.
  * Returns ARGX_ERROR_OUT_OF_MEMORY when an allocation fails; nothing is
  * left allocated then.
  */
@@ -455,11 +455,11 @@ argx_error_t argx_result_push_command(argx_result_t *result, const argx_command_
     return ARGX_ERROR_NONE;
 }
 
-/* ---- The slots of the options ------------------------------------------- */
+/* ---- Option slots ------------------------------------------------------- */
 
 /*
- * Returns the root of the schema of command: the command that has no
- * parent, reached from command through the parents.
+ * Returns the root of command's schema: the command that has no parent,
+ * reached from command by following the parents.
  */
 static const argx_command_t *root_of(const argx_command_t *command)
 {
@@ -474,11 +474,11 @@ static const argx_command_t *root_of(const argx_command_t *command)
 }
 
 /*
- * Returns the slot of option in result, or NULL when the command of option
- * is not a selected command of result.
+ * Returns option's slot in result, or NULL when option's command is not a
+ * selected command of result.
  *
- * The frame is that of the command of option, and the slot has the index
- * that option has in that command. A command of another schema is never
+ * The frame is that of option's command, and the slot has the index that
+ * option has in that command. A command of another schema is never
  * selected, so its options have no slot.
  */
 static argx_option_slot_t *find_option_slot(const argx_result_t *result,
@@ -617,9 +617,9 @@ argx_source_t argx_result_option_source(const argx_result_t *result,
 /* ---- The values --------------------------------------------------------- */
 
 /*
- * Returns the slot of positional in result, or NULL when the command of
- * positional is not a selected command of result. The slot is found as
- * that of an option is; see find_option_slot().
+ * Returns positional's slot in result, or NULL when positional's command
+ * is not a selected command of result. The slot is found the same way as
+ * an option's; see find_option_slot().
  */
 static argx_positional_slot_t *find_positional_slot(const argx_result_t *result,
                                                     const argx_positional_t *positional)
@@ -654,15 +654,18 @@ static argx_positional_slot_t *find_positional_slot(const argx_result_t *result,
 }
 
 /*
- * Allocates the area of a value of type, converts text into it and writes
- * the area to *out. text is passed to the value type as it is. This is the
- * one place that converts a value.
+ * Allocates the area for a value of type, converts text into it and
+ * writes the area to *out. text is passed to the value type unchanged.
+ * This is the only place that converts a value.
  *
  * Returns ARGX_ERROR_NONE on success; the caller then owns the area and
- * the value in it (destroy_value()). Returns ARGX_ERROR_OUT_OF_MEMORY
- * when the allocation of the area fails, and what argx_type_convert()
- * returned when the conversion fails; the area is freed, without a cleanup
- * of the value, and *out is NULL then.
+ * the value in it (destroy_value()). On failure, *out is NULL and
+ * nothing stays allocated:
+ *
+ * - ARGX_ERROR_OUT_OF_MEMORY when allocating the area fails. No area
+ *   exists, and the value type is not called.
+ * - What argx_type_convert() returned when the conversion fails. The area
+ *   is freed without cleaning up the value.
  */
 static argx_error_t convert_value(const argx_type_t *type, const char *text, void **out)
 {
@@ -689,16 +692,16 @@ static argx_error_t convert_value(const argx_type_t *type, const char *text, voi
 /* ---- The parse error ---------------------------------------------------- */
 
 /*
- * Records the parse error failure in result: builds its message and, when
- * that succeeded, writes the fields of the error. This is the one place
- * that makes a result one of a parse error.
+ * Records the parse error failure in result: builds its message and, if
+ * that succeeds, writes the error's fields. This is the only place that
+ * gives a result a parse error.
  *
- * The message is built first, so a lack of memory leaves result as it was:
- * no part of the error is recorded, and result still reports
+ * The message is built first, so running out of memory leaves result as
+ * it was: no part of the error is recorded, and result still reports
  * ARGX_ERROR_NONE.
  *
  * Returns ARGX_ERROR_INVALID_COMMAND_LINE when the error was recorded
- * and ARGX_ERROR_OUT_OF_MEMORY when the allocation of the message fails.
+ * and ARGX_ERROR_OUT_OF_MEMORY when allocating the message fails.
  */
 static argx_error_t record_error(argx_result_t *result, const argx_result_failure_t *failure)
 {
@@ -718,7 +721,7 @@ static argx_error_t record_error(argx_result_t *result, const argx_result_failur
     if (failure->kind == ARGX_PARSE_ERROR_INVALID_VALUE)
     {
         /*
-         * The value type is that of the option or the positional that the
+         * The value type is that of the option or positional that the
          * value is for.
          */
         parts.type_name = argx_type_name((failure->positional != NULL) ?
@@ -736,7 +739,7 @@ static argx_error_t record_error(argx_result_t *result, const argx_result_failur
     result->error_kind = failure->kind;
     result->error_source = where->source;
     result->error_index = where->index;
-    /* Only an error on the command line is in an argument. */
+    /* Only an error on the command line has an argument. */
     result->error_argument =
         (where->source == ARGX_SOURCE_COMMAND_LINE) ? argx_result_arg(result, where->index) : NULL;
     result->error_value = failure->value;
@@ -763,10 +766,10 @@ argx_error_t argx_result_fail(argx_result_t *result, const argx_result_failure_t
 }
 
 /*
- * What a record of a value returns when convert_value() failed with error
- * for text, at where: the lack of memory as it is and, for every other
- * failure, the parse error of a value that its value type does not take,
- * which is recorded in result as argx_result_fail() does. option or
+ * What recording a value returns when convert_value() failed with error
+ * for text at where. ARGX_ERROR_OUT_OF_MEMORY is returned as it is. Every
+ * other failure becomes the parse error for a value that its value type
+ * does not take, recorded in result as argx_result_fail() does. option or
  * positional is the one that the value is for; the other is NULL.
  */
 static argx_error_t conversion_failure(argx_result_t *result, argx_error_t error, const char *text,
@@ -809,7 +812,7 @@ argx_error_t argx_result_record_option_value(argx_result_t *result, const argx_o
     assert(slot != NULL);
 
     /*
-     * The new value is converted before the old one is touched: when the
+     * The new value is converted before the old one is touched: if the
      * conversion fails, the old value stays.
      */
     type = argx_option_type(option);
@@ -864,7 +867,7 @@ argx_error_t argx_result_record_positional_value(argx_result_t *result,
 }
 
 /*
- * Takes back the default values in the slots of frame: see
+ * Takes back the default values in frame's slots; see
  * argx_result_discard_defaults().
  */
 static void discard_frame_defaults(argx_result_frame_t *frame)
@@ -877,8 +880,8 @@ static void discard_frame_defaults(argx_result_frame_t *frame)
         argx_option_slot_t *slot = &frame->options[i];
 
         /*
-         * A flag, a count and a negatable flag that were not given have
-         * the source of a default value too, but never a value.
+         * A flag, count or negatable flag that was not given also has the
+         * source of a default value, but never a value.
          */
         if ((slot->source != ARGX_SOURCE_DEFAULT) || (slot->value == NULL))
         {
@@ -903,7 +906,7 @@ static void discard_frame_defaults(argx_result_frame_t *frame)
         {
             destroy_value(type, *(void **)argx_vec_at(&slot->values, k));
         }
-        /* The slot is as it was when the frame was made. */
+        /* The slot is now as it was when the frame was made. */
         argx_vec_destroy(&slot->values);
         argx_vec_init(&slot->values, sizeof(void *));
         slot->source = ARGX_SOURCE_NONE;
@@ -923,7 +926,7 @@ void argx_result_discard_defaults(argx_result_t *result)
 }
 
 /*
- * Returns the area of the value of option in result, or NULL when option
+ * Returns the area holding option's value in result, or NULL when option
  * has no value or its command is not a selected command of result.
  */
 static const void *option_value(const argx_result_t *result, const argx_option_t *option)
@@ -1062,8 +1065,8 @@ argx_source_t argx_result_positional_source(const argx_result_t *result,
 }
 
 /*
- * Returns the area of the value of positional at index in result, or NULL
- * when there is no value at index or the command of positional is not a
+ * Returns the area holding positional's value at index in result, or NULL
+ * when there is no value at index or positional's command is not a
  * selected command of result.
  */
 static const void *positional_value(const argx_result_t *result, const argx_positional_t *positional,
@@ -1200,11 +1203,11 @@ const argx_command_t *argx_result_command(const argx_result_t *result)
     return frame_at(result, result->frames.count - 1)->command;
 }
 
-/* ---- The information of the parse error --------------------------------- */
+/* ---- Parse error details ------------------------------------------------ */
 
 /*
- * The fields below have the values of "none" until record_error() writes
- * them, so a result without a parse error needs no case of its own.
+ * The fields below hold their "none" values until record_error() writes
+ * them, so a result without a parse error needs no special case.
  */
 
 argx_parse_error_kind_t argx_result_error_kind(const argx_result_t *result)

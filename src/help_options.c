@@ -2,7 +2,7 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the help options: the settings of the layout of a help text.
+ * ArgX - the help options: the layout settings of a help text.
  */
 #include "help_internal.h"
 
@@ -11,7 +11,7 @@
 #include <assert.h>
 
 /*
- * The value that is kept for a setting: value, or the limit if value is
+ * Returns the value stored for a setting: value, or the limit if value is
  * greater.
  */
 static size_t clamp_setting(size_t value)

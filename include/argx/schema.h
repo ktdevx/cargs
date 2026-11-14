@@ -8,39 +8,39 @@
  * A schema is a tree of commands. The root command stands for the program;
  * each command can have subcommands, to any depth. A command also has
  * options and positionals. The schema only tells what the command line
- * looks like: it knows nothing of an argv.
+ * looks like: it knows nothing about an argv.
  *
  * Ownership:
  *
  * - The root command owns the whole tree: every subcommand, option and
- *   positional and every string in it. argx_command_destroy() of the root
- *   frees all of it; nothing else in the tree is destroyed on its own.
- * - Every string that is passed in is copied. The caller may change or free
- *   its string after the call.
- * - The handles and the strings that the functions return are valid until
- *   the root is destroyed, with one exception: a string read from an
- *   attribute that can be set again (the description of a command; the
- *   description, the value name and the default value of an option; the
- *   description and the default value of a positional) is valid until the
- *   root is destroyed or that attribute is set again, whichever comes first.
- *   Setting an attribute again frees the string it had. Names are never
- *   replaced. The caller does not free what is returned. A handle does not
- *   change when more is added to the tree.
+ *   positional, and every string in it. Calling argx_command_destroy() on
+ *   the root frees all of it; nothing else in the tree is destroyed on its
+ *   own.
+ * - Every string passed in is copied. The caller may change or free its
+ *   string after the call.
+ * - Returned handles and strings are valid until the root is destroyed,
+ *   with one exception. A string read from an attribute that can be set
+ *   again (a command's description; an option's description, value name
+ *   and default value; a positional's description and default value) is
+ *   valid until the root is destroyed or that attribute is set again,
+ *   whichever comes first. Setting an attribute again frees its old
+ *   string. Names are never replaced. The caller does not free what is
+ *   returned. A handle does not change when more is added to the tree.
  *
  * Errors:
  *
- * - A function that adds or sets something returns a argx_error_t. When
- *   it fails, the schema is exactly as it was before the call, and an
+ * - A function that adds or sets something returns an argx_error_t. When
+ *   it fails, the schema is exactly as it was before the call, and any
  *   output is NULL.
- * - A function that only reads takes a const handle, changes nothing and
- *   cannot fail. As long as the schema is not being changed, such functions
- *   may be called from several threads at the same time. Changing one
- *   schema from several threads at the same time is not supported.
- * - A NULL pointer where none is allowed and an index that is out of range
- *   are errors of the program, not error codes: see the preconditions of
- *   each function.
+ * - A read-only function takes a const handle, changes nothing and cannot
+ *   fail. While the schema is not being changed, such functions may be
+ *   called from several threads at the same time. Changing one schema from
+ *   several threads at the same time is not supported.
+ * - A NULL pointer where none is allowed and an out-of-range index are
+ *   programming errors, not error codes: see each function's
+ *   preconditions.
  *
- * Names are compared byte by byte: upper and lower case are different.
+ * Names are compared byte by byte, so they are case-sensitive.
  */
 #ifndef ARGX_SCHEMA_H
 #define ARGX_SCHEMA_H
@@ -100,12 +100,11 @@ extern "C"
 /* ---- Commands ----------------------------------------------------------- */
 
 /*
- * Creates a root command with the name name and writes it to *out. The new
- * command is empty: it has no description, no option, no positional and no
- * subcommand.
+ * Creates a root command named name and writes it to *out. The new command
+ * is empty: it has no description, options, positionals or subcommands.
  *
- * The name is copied. Any string that is not empty is the name of a root;
- * the rule of the names of subcommands does not apply to it.
+ * The name is copied. Any non-empty string is a valid root name; the
+ * naming rule for subcommands does not apply to it.
  *
  * The caller owns the root and destroys it with argx_command_destroy().
  *
@@ -123,45 +122,45 @@ extern "C"
 ARGX_API argx_error_t argx_command_create(const char *name, argx_command_t **out);
 
 /*
- * Destroys a root command and everything below it: its subcommands, to any
- * depth, the options, the positionals and all the strings. Every handle and
- * every string that was read from the tree is invalid afterwards. Does
- * nothing for NULL.
+ * Destroys a root command and everything below it: its subcommands to any
+ * depth, the options, the positionals and all the strings. Afterwards,
+ * every handle and string read from the tree is invalid. Does nothing for
+ * NULL.
  *
- * The value types that the tree uses are not destroyed; they belong to the
+ * The value types the tree uses are not destroyed; they belong to the
  * caller.
  *
- * The depth of the recursion is the depth of the tree.
+ * The recursion depth equals the tree depth.
  *
  * Preconditions:
  *
- * - root is NULL, or a root that argx_command_create() created and that
- *   has not been destroyed. A subcommand is never passed: it is destroyed
- *   with its root. That root is not a subcommand is checked with assert.
+ * - root is NULL, or a root created by argx_command_create() that has not
+ *   been destroyed. Never pass a subcommand: it is destroyed with its
+ *   root. That root is not a subcommand is checked with assert.
  */
 ARGX_API void argx_command_destroy(argx_command_t *root);
 
 /*
- * Adds a subcommand with the name name to command, after the subcommands
- * that command has already, and writes it to *out if out is not NULL. The
- * new subcommand is empty, like a new root, and can get subcommands of its
- * own: the depth has no limit.
+ * Adds a subcommand named name to command, after its existing
+ * subcommands, and writes it to *out if out is not NULL. The new
+ * subcommand is empty, like a new root, and can have subcommands of its
+ * own: there is no depth limit.
  *
- * The name is copied. It has one character or more; the first is an ASCII
- * letter or digit, the others are ASCII letters, digits, '-' or '_'.
+ * The name is copied. It has at least one character; the first is an ASCII
+ * letter or digit, and the rest are ASCII letters, digits, '-' or '_'.
  *
  * The subcommand belongs to the tree and is destroyed with the root.
  *
  * Returns ARGX_ERROR_NONE on success. On failure, the tree is as it was
- * before the call, nothing of the call stays allocated, and *out is NULL.
- * The conditions are checked in this order:
+ * before the call, nothing from the call stays allocated, and *out is
+ * NULL. The conditions are checked in this order:
  *
- * - ARGX_ERROR_INVALID_NAME: name does not follow the rule; the empty
- *   string does not.
+ * - ARGX_ERROR_INVALID_NAME: name breaks the naming rule. The empty string
+ *   breaks it.
  * - ARGX_ERROR_INVALID_DEFINITION: command has a positional. A command
  *   has positionals or subcommands, not both.
- * - ARGX_ERROR_NAME_CONFLICT: command has a subcommand of the same name
- *   already. The same name can be used in another command.
+ * - ARGX_ERROR_NAME_CONFLICT: command already has a subcommand with that
+ *   name. The same name can be used in another command.
  * - ARGX_ERROR_OUT_OF_MEMORY: an allocation failed.
  *
  * Preconditions:
@@ -174,9 +173,9 @@ ARGX_API argx_error_t argx_command_add_subcommand(argx_command_t *command, const
                                                   argx_command_t **out);
 
 /*
- * Sets the description of command to a copy of text. A description that
- * was set before is replaced. The empty string can be set; it is not the
- * same as no description.
+ * Sets command's description to a copy of text, replacing any earlier
+ * description. The empty string can be set; it is not the same as no
+ * description.
  *
  * Returns ARGX_ERROR_NONE on success, and ARGX_ERROR_OUT_OF_MEMORY when
  * the allocation fails; the command then keeps the description it had.
@@ -217,15 +216,15 @@ ARGX_API const char *argx_command_description(const argx_command_t *command);
 ARGX_API const argx_command_t *argx_command_parent(const argx_command_t *command);
 
 /*
- * Return the number of the options, positionals and subcommands of command
- * itself (not of its subcommands), and the one at index, counted from 0.
- * The order is the order in which they were added.
+ * Return the number of options, positionals and subcommands of command
+ * itself (not of its subcommands), and the one at index, counting from 0.
+ * They are in the order they were added.
  *
  * Preconditions:
  *
  * - command is not NULL. Checked with assert.
  * - For the functions that take an index: index is less than the matching
- *   number. Checked with assert.
+ *   count. Checked with assert.
  */
 ARGX_API size_t argx_command_option_count(const argx_command_t *command);
 ARGX_API const argx_option_t *argx_command_option_at(const argx_command_t *command, size_t index);
@@ -238,9 +237,9 @@ ARGX_API const argx_command_t *argx_command_subcommand_at(const argx_command_t *
 
 /*
  * Returns the option of command whose short name is name, or NULL when
- * there is none. Only the options of command itself are looked at, not
- * those of its parent or of its subcommands. Upper and lower case are
- * different. For '\0', which is not a name, the result is NULL.
+ * there is none. Only command's own options are searched, not those of
+ * its parent or its subcommands. The match is case-sensitive. For '\0',
+ * which is not a name, the result is NULL.
  *
  * Preconditions:
  *
@@ -249,16 +248,16 @@ ARGX_API const argx_command_t *argx_command_subcommand_at(const argx_command_t *
 ARGX_API const argx_option_t *argx_command_find_short(const argx_command_t *command, char name);
 
 /*
- * Returns the option of command whose long name, or whose negated name
- * ("no-" and the long name, for a negatable flag), is the first length
- * bytes of name, or NULL when there is none. The string at name does not
- * have to end after length bytes, so a name can be looked up in place in a
- * longer string such as "name=value". The whole name is compared, byte by
- * byte: upper and lower case are different, and neither a part of a name
+ * Returns the option of command whose long name, or negated name ("no-"
+ * followed by the long name, for a negatable flag), equals the first
+ * length bytes of name, or NULL when there is none. The string at name
+ * need not end after length bytes, so a name can be looked up in place
+ * inside a longer string such as "name=value". The whole name is compared
+ * byte by byte: the match is case-sensitive, and neither part of a name
  * nor a longer string matches.
  *
- * Only the options of command itself are looked at, not those of its parent
- * or of its subcommands.
+ * Only command's own options are searched, not those of its parent or its
+ * subcommands.
  *
  * When an option is found and negated is not NULL, *negated is false if
  * the long name matched and true if the negated name matched. When no
@@ -276,10 +275,10 @@ ARGX_API const argx_option_t *argx_command_find_long(const argx_command_t *comma
                                                      bool *negated);
 
 /*
- * Returns the subcommand of command whose name is name, or NULL when there
- * is none. Only the subcommands of command itself are looked at, not those
- * of its subcommands. The whole name is compared, byte by byte: upper and
- * lower case are different.
+ * Returns the subcommand of command named name, or NULL when there is
+ * none. Only command's direct subcommands are searched, not their
+ * subcommands. The whole name is compared byte by byte, so the match is
+ * case-sensitive.
  *
  * Preconditions:
  *
@@ -292,48 +291,48 @@ ARGX_API const argx_command_t *argx_command_find_subcommand(const argx_command_t
 /* ---- Options ------------------------------------------------------------ */
 
 /*
- * Add an option to command, after the options that command has already,
- * and write it to *out if out is not NULL. There is one function for each
- * kind of option:
+ * Add an option to command, after its existing options, and write it to
+ * *out if out is not NULL. There is one function per option kind:
  *
  * - argx_command_add_flag(): a flag, ARGX_OPTION_FLAG.
  * - argx_command_add_negatable(): a negatable flag,
- *   ARGX_OPTION_NEGATABLE. Its negated name, "no-" and the long name, is
- *   made here; a long name "color" gives the negated name "no-color".
+ *   ARGX_OPTION_NEGATABLE. Its negated name, "no-" followed by the long
+ *   name, is built here; the long name "color" gives the negated name
+ *   "no-color".
  * - argx_command_add_count(): a count, ARGX_OPTION_COUNT.
  * - argx_command_add_value(): an option that takes one value,
- *   ARGX_OPTION_VALUE. It is the only one with a value type, type. The
+ *   ARGX_OPTION_VALUE. It is the only kind with a value type, type. The
  *   value type is borrowed, not copied: the caller keeps it valid until the
- *   root of the tree is destroyed, and destroys it afterwards.
+ *   tree's root is destroyed, and destroys it afterwards.
  *
  * An option has a short name, a long name, or both. short_name is '\0' for
  * an option without a short name, and long_name is NULL for an option
  * without a long name. A short name is one ASCII letter or digit. A long
- * name has two characters or more; the first is an ASCII letter or digit,
- * the others are ASCII letters, digits, '-' or '_'. The long name is
+ * name has at least two characters; the first is an ASCII letter or digit,
+ * and the rest are ASCII letters, digits, '-' or '_'. The long name is
  * copied. A negatable flag always has a long name.
  *
  * The option belongs to the tree and is destroyed with the root.
  *
  * Return ARGX_ERROR_NONE on success. On failure, the tree is as it was
- * before the call, nothing of the call stays allocated, and *out is NULL.
- * The conditions are checked in this order:
+ * before the call, nothing from the call stays allocated, and *out is
+ * NULL. The conditions are checked in this order:
  *
  * - ARGX_ERROR_INVALID_NAME: there is neither a short name nor a long
  *   name.
  * - ARGX_ERROR_INVALID_NAME: a negatable flag has no long name.
- * - ARGX_ERROR_INVALID_NAME: the short name or the long name does not
- *   follow the rule; the empty string is not a long name.
- * - ARGX_ERROR_NAME_CONFLICT: command has an option with the same short
- *   name already.
+ * - ARGX_ERROR_INVALID_NAME: the short name or the long name breaks the
+ *   naming rule; the empty string is not a long name.
+ * - ARGX_ERROR_NAME_CONFLICT: command already has an option with the same
+ *   short name.
  * - ARGX_ERROR_NAME_CONFLICT: command has an option whose long name or
- *   negated name is the long name.
+ *   negated name equals the long name.
  * - ARGX_ERROR_NAME_CONFLICT: for a negatable flag, command has an option
- *   whose long name or negated name is the negated name.
+ *   whose long name or negated name equals the negated name.
  * - ARGX_ERROR_OUT_OF_MEMORY: an allocation failed.
  *
- * The same names can be used in another command, also in the parent and in
- * a subcommand of command.
+ * The same names can be used in other commands, including command's
+ * parent and its subcommands.
  *
  * Preconditions:
  *
@@ -390,8 +389,8 @@ ARGX_API char argx_option_short_name(const argx_option_t *option);
 ARGX_API const char *argx_option_long_name(const argx_option_t *option);
 
 /*
- * Returns the negated name of option, "no-" and its long name, when option
- * is a negatable flag, and NULL for every other kind.
+ * Returns option's negated name ("no-" followed by its long name) when
+ * option is a negatable flag, and NULL for every other kind.
  *
  * Preconditions:
  *
@@ -400,8 +399,8 @@ ARGX_API const char *argx_option_long_name(const argx_option_t *option);
 ARGX_API const char *argx_option_negated_name(const argx_option_t *option);
 
 /*
- * Returns the value type of option when option takes a value, and NULL for
- * every other kind. It is the value type that was passed to
+ * Returns option's value type when option takes a value, and NULL for
+ * every other kind. It is the value type passed to
  * argx_command_add_value(); it belongs to the caller of that function.
  *
  * Preconditions:
@@ -411,41 +410,41 @@ ARGX_API const char *argx_option_negated_name(const argx_option_t *option);
 ARGX_API const argx_type_t *argx_option_type(const argx_option_t *option);
 
 /*
- * Set an attribute of option. An option has the attributes that its kind
- * takes; every attribute is optional, and each is set on its own, in any
- * order, after the option was added:
+ * Set an attribute of option. An option has the attributes its kind
+ * takes. Every attribute is optional, and each is set separately, in any
+ * order, after the option has been added:
  *
  * - argx_option_set_description(): the description. Every kind has one.
- * - argx_option_set_value_name(): the display name of the value, such as
- *   "FILE". Only an option that takes a value, ARGX_OPTION_VALUE.
+ * - argx_option_set_value_name(): the value name, the name the help
+ *   shows for the value, such as "FILE". Only for an option that takes a
+ *   value, ARGX_OPTION_VALUE.
  * - argx_option_set_required(): whether the option must be given. Only
- *   an option that takes a value.
- * - argx_option_set_default(): the default value, as a string of the form
- *   in which the value is written on a command line. Only an option that
- *   takes a value. The string is kept as it is; whether the value type of
- *   the option takes it is not checked here.
+ *   for an option that takes a value.
+ * - argx_option_set_default(): the default value, as a string in the form
+ *   the value takes on a command line. Only for an option that takes a
+ *   value. The string is stored as is; whether the option's value
+ *   type takes it is not checked here.
  * - argx_option_set_initial(): the initial state of a negatable flag,
- *   ARGX_OPTION_NEGATABLE: the state it has when it is not given, true
- *   for on and false for off. Only a negatable flag.
+ *   ARGX_OPTION_NEGATABLE, which is its state when it is not given: true
+ *   for on and false for off. Only for a negatable flag.
  *
- * A string is copied. The empty string can be set; it is not the same as an
- * attribute that is not set. An attribute that was set before is replaced.
- * An attribute that is set cannot be made unset again.
+ * Strings are copied. The empty string can be set; it is not the same as
+ * an unset attribute. Setting an attribute again replaces its earlier
+ * value. Once set, an attribute cannot be unset.
  *
  * Return ARGX_ERROR_NONE on success. On failure, the option and the rest
- * of the tree are as they were before the call, the attribute keeps the
- * value it had, and nothing of the call stays allocated. The conditions are
- * checked in this order:
+ * of the tree are as they were before the call, the attribute keeps its
+ * previous value, and nothing from the call stays allocated. The
+ * conditions are checked in this order:
  *
- * - ARGX_ERROR_INVALID_DEFINITION: the kind of option is not one that
- *   takes the attribute, whatever the value is.
- * - ARGX_ERROR_OUT_OF_MEMORY: for a string, the allocation of the copy
- *   failed.
+ * - ARGX_ERROR_INVALID_DEFINITION: option's kind does not take the
+ *   attribute, whatever the value.
+ * - ARGX_ERROR_OUT_OF_MEMORY: for a string, allocating the copy failed.
  *
  * Preconditions:
  *
- * - option is not NULL (checked with assert) and is a handle that one of
- *   the functions that add an option wrote.
+ * - option is not NULL (checked with assert) and is a handle written by
+ *   one of the functions that add an option.
  * - text, name and value are not NULL. Checked with assert.
  */
 ARGX_API argx_error_t argx_option_set_description(argx_option_t *option, const char *text);
@@ -464,8 +463,8 @@ ARGX_API argx_error_t argx_option_set_initial(argx_option_t *option, bool on);
 ARGX_API const char *argx_option_description(const argx_option_t *option);
 
 /*
- * Returns the display name of the value of option, or NULL when none has
- * been set. It is always NULL for an option that takes no value.
+ * Returns option's value name, or NULL when none has been set. It is
+ * always NULL for an option that takes no value.
  *
  * Preconditions:
  *
@@ -474,8 +473,8 @@ ARGX_API const char *argx_option_description(const argx_option_t *option);
 ARGX_API const char *argx_option_value_name(const argx_option_t *option);
 
 /*
- * Returns whether option is required. It is false until it is set, and
- * always false for an option that takes no value.
+ * Returns whether option is required. It is false until set, and always
+ * false for an option that takes no value.
  *
  * Preconditions:
  *
@@ -484,9 +483,8 @@ ARGX_API const char *argx_option_value_name(const argx_option_t *option);
 ARGX_API bool argx_option_is_required(const argx_option_t *option);
 
 /*
- * Returns the default value of option, the string that was set, or NULL
- * when none has been set. It is always NULL for an option that takes no
- * value.
+ * Returns option's default value (the string that was set), or NULL when
+ * none has been set. It is always NULL for an option that takes no value.
  *
  * Preconditions:
  *
@@ -495,9 +493,8 @@ ARGX_API bool argx_option_is_required(const argx_option_t *option);
 ARGX_API const char *argx_option_default(const argx_option_t *option);
 
 /*
- * Returns the initial state of option: true for on, false for off. It is
- * off until it is set, and always false for an option that is not a
- * negatable flag.
+ * Returns option's initial state: true for on, false for off. It is off
+ * until set, and always false for an option that is not a negatable flag.
  *
  * Preconditions:
  *
@@ -508,36 +505,36 @@ ARGX_API bool argx_option_initial(const argx_option_t *option);
 /* ---- Positionals -------------------------------------------------------- */
 
 /*
- * Adds a positional with the name name, the value type type and the arity
- * arity to command, after the positionals that command has already, and
- * writes it to *out if out is not NULL. The positionals of a command take
- * the arguments of a command line in the order in which they were added.
+ * Adds a positional named name, with value type type and arity arity, to
+ * command, after its existing positionals, and writes it to *out if out is
+ * not NULL. A command's positionals take the command line arguments in the
+ * order they were added.
  *
- * The name is for display and for telling the positionals apart; it never
- * appears on a command line. Any string that is not empty is a name: there
- * is no rule of characters. The name is copied.
+ * The name is used for display and to tell positionals apart; it never
+ * appears on a command line. Any non-empty string is a valid name: there
+ * is no character rule. The name is copied.
  *
  * The value type is borrowed, not copied: the caller keeps it valid until
- * the root of the tree is destroyed, and destroys it afterwards.
+ * the tree's root is destroyed, and destroys it afterwards.
  *
  * The positional belongs to the tree and is destroyed with the root.
  *
  * Returns ARGX_ERROR_NONE on success. On failure, the tree is as it was
- * before the call, nothing of the call stays allocated, and *out is NULL.
- * The conditions are checked in this order:
+ * before the call, nothing from the call stays allocated, and *out is
+ * NULL. The conditions are checked in this order:
  *
  * - ARGX_ERROR_INVALID_NAME: name is the empty string.
  * - ARGX_ERROR_INVALID_DEFINITION: command has a subcommand. A command
  *   has positionals or subcommands, not both. (It can have options with
  *   either.)
- * - ARGX_ERROR_NAME_CONFLICT: command has a positional of the same name
- *   already. The same name can be used in another command.
+ * - ARGX_ERROR_NAME_CONFLICT: command already has a positional with that
+ *   name. The same name can be used in another command.
  * - ARGX_ERROR_OUT_OF_MEMORY: an allocation failed.
  *
- * Whether the arities of the positionals of a command follow each other in
- * an order that a command line can follow (nothing required after an
- * optional one, nothing after one that takes any number) is not checked
- * here. The validation of the tree checks it.
+ * This call does not check whether the arities of a command's positionals
+ * come in an order a command line can follow (nothing required after an
+ * optional one, nothing after one that takes any number). Tree validation
+ * checks it.
  *
  * Preconditions:
  *
@@ -553,34 +550,34 @@ ARGX_API argx_error_t argx_command_add_positional(argx_command_t *command, const
                                                   argx_positional_t **out);
 
 /*
- * Set an attribute of positional. Both attributes are optional, and each is
- * set on its own, in any order, after the positional was added:
+ * Set an attribute of positional. Both attributes are optional, and each
+ * is set separately, in any order, after the positional has been added:
  *
  * - argx_positional_set_description(): the description. Every arity has
  *   one.
- * - argx_positional_set_default(): the default value, as a string of the
- *   form in which the value is written on a command line. Only a positional
- *   that takes none or one argument, ARGX_ARITY_OPTIONAL. The string is
- *   kept as it is; whether the value type of the positional takes it is not
- *   checked here.
+ * - argx_positional_set_default(): the default value, as a string in the
+ *   form the value takes on a command line. Only for a positional that
+ *   takes zero or one argument, ARGX_ARITY_OPTIONAL. The string is stored
+ *   as is; whether the positional's value type takes it is not checked
+ *   here.
  *
  * The string is copied. The empty string can be set; it is not the same as
- * an attribute that is not set. An attribute that was set before is
- * replaced. An attribute that is set cannot be made unset again.
+ * an unset attribute. Setting an attribute again replaces its earlier
+ * value. Once set, an attribute cannot be unset.
  *
  * Return ARGX_ERROR_NONE on success. On failure, the positional and the
  * rest of the tree are as they were before the call, the attribute keeps
- * the value it had, and nothing of the call stays allocated. The conditions
- * are checked in this order:
+ * its previous value, and nothing from the call stays allocated. The
+ * conditions are checked in this order:
  *
- * - ARGX_ERROR_INVALID_DEFINITION: for the default value, the arity of
- *   positional is not ARGX_ARITY_OPTIONAL, whatever the value is.
- * - ARGX_ERROR_OUT_OF_MEMORY: the allocation of the copy failed.
+ * - ARGX_ERROR_INVALID_DEFINITION: for the default value, positional's
+ *   arity is not ARGX_ARITY_OPTIONAL, whatever the value.
+ * - ARGX_ERROR_OUT_OF_MEMORY: allocating the copy failed.
  *
  * Preconditions:
  *
- * - positional is not NULL (checked with assert) and is a handle that
- *   argx_command_add_positional() wrote.
+ * - positional is not NULL (checked with assert) and is a handle written
+ *   by argx_command_add_positional().
  * - text and value are not NULL. Checked with assert.
  */
 ARGX_API argx_error_t argx_positional_set_description(argx_positional_t *positional,
@@ -616,9 +613,9 @@ ARGX_API const char *argx_positional_name(const argx_positional_t *positional);
 ARGX_API argx_arity_t argx_positional_arity(const argx_positional_t *positional);
 
 /*
- * Returns the value type of positional. Never NULL. It is the value type
- * that was passed to argx_command_add_positional(); it belongs to the
- * caller of that function.
+ * Returns positional's value type. Never NULL. It is the value type passed
+ * to argx_command_add_positional(); it belongs to the caller of that
+ * function.
  *
  * Preconditions:
  *
@@ -636,9 +633,9 @@ ARGX_API const argx_type_t *argx_positional_type(const argx_positional_t *positi
 ARGX_API const char *argx_positional_description(const argx_positional_t *positional);
 
 /*
- * Returns the default value of positional, the string that was set, or NULL
- * when none has been set. It is always NULL for a positional whose arity is
- * not ARGX_ARITY_OPTIONAL.
+ * Returns positional's default value (the string that was set), or NULL
+ * when none has been set. It is always NULL for a positional whose arity
+ * is not ARGX_ARITY_OPTIONAL.
  *
  * Preconditions:
  *
@@ -649,73 +646,72 @@ ARGX_API const char *argx_positional_default(const argx_positional_t *positional
 /* ---- Validation --------------------------------------------------------- */
 
 /*
- * Validates the tree of root: checks, in root and in every subcommand below
- * it, what the functions that add and set cannot check because it depends
+ * Validates root's tree. It checks root and every subcommand below it for
+ * what the add and set functions cannot check, because each check depends
  * on more than one definition. A tree that passes is marked as validated.
  *
- * The commands are checked from the root down: a command first, then its
- * subcommands in the order in which they were added, each with everything
- * below it before the next. Within one command, the checks are made in this
- * order:
+ * Commands are checked from the root down: a command first, then its
+ * subcommands in the order they were added, each with everything below it
+ * before the next. Within one command, the checks run in this order:
  *
- * 1. The positionals, in the order in which they were added. A positional
- *    is faulty when
+ * 1. The positionals, in the order they were added. A positional is
+ *    faulty when
  *    - it needs an argument (ARGX_ARITY_REQUIRED,
- *      ARGX_ARITY_ONE_OR_MORE) and a positional before it can do without
+ *      ARGX_ARITY_ONE_OR_MORE) and an earlier positional can do without
  *      one (ARGX_ARITY_OPTIONAL, ARGX_ARITY_ZERO_OR_MORE), or
- *    - a positional before it takes any number of arguments
+ *    - an earlier positional takes any number of arguments
  *      (ARGX_ARITY_ZERO_OR_MORE, ARGX_ARITY_ONE_OR_MORE).
- * 2. The options, in the order in which they were added, each with both
- *    of its checks before the next option. An option is faulty when
+ * 2. The options, in the order they were added, running both checks on
+ *    each option before the next. An option is faulty when
  *    - it is required and has a default value
  *      (ARGX_ERROR_INVALID_DEFINITION), or
  *    - its value type does not take its default value
  *      (ARGX_ERROR_INVALID_DEFAULT).
- * 3. The default values of the positionals, in the order in which the
- *    positionals were added. A positional is faulty when its value type
- *    does not take its default value (ARGX_ERROR_INVALID_DEFAULT).
+ * 3. The positionals' default values, in the order the positionals were
+ *    added. A positional is faulty when its value type does not take its
+ *    default value (ARGX_ERROR_INVALID_DEFAULT).
  *
- * The validation stops at the first fault. The order is fixed, so the same
- * definition gives the same result every time.
+ * Validation stops at the first fault. The order is fixed, so the same
+ * definition always gives the same result.
  *
- * A default value is checked by converting it: for each default value, the
+ * A default value is checked by converting it. For each default value,
  * validation allocates an area for the value, calls argx_type_convert()
- * with the value type of the option or positional, calls
- * argx_type_release() if the conversion succeeded, and frees the area.
- * So the conversion function and the cleanup function of a user-defined
- * value type are called during the validation, once for each default value
- * of that type that is reached, in every validation. The values are cleaned
- * up before the validation returns; none is kept. Any failure of a
- * conversion other than ARGX_ERROR_OUT_OF_MEMORY, whatever its code, is a
- * default value that the value type does not take.
+ * with the option's or positional's value type, calls argx_type_release()
+ * if the conversion succeeded, and frees the area. So a user-defined value
+ * type's conversion and cleanup functions are called during validation,
+ * once for each default value of that type that is reached, in every
+ * validation. The values are cleaned up before validation returns; none is
+ * kept. Any conversion failure other than ARGX_ERROR_OUT_OF_MEMORY,
+ * whatever its code, counts as a default value the value type does not
+ * take.
  *
  * Returns ARGX_ERROR_NONE when the tree has no fault. The tree is then
  * validated, and NULL is written to *command, *option and *positional.
  *
  * Returns ARGX_ERROR_INVALID_DEFINITION or ARGX_ERROR_INVALID_DEFAULT
- * for a fault, as given with the checks above. The command that the faulty
- * option or positional belongs to is written to *command, the faulty option
- * to *option or the faulty positional to *positional, and NULL to the other
- * of the two. The handles are those of the tree: they are valid until the
- * root is destroyed and can be read with the reading functions. The tree
- * stays not validated.
+ * for a fault, as listed with the checks above. The command that owns the
+ * faulty option or positional is written to *command. The faulty option
+ * is written to *option, or the faulty positional to *positional, and NULL
+ * to the other one. The handles belong to the tree: they are valid until
+ * the root is destroyed and can be read with the reading functions. The
+ * tree stays unvalidated.
  *
  * Returns ARGX_ERROR_OUT_OF_MEMORY when the area for a value cannot be
- * allocated or a conversion returns that code. NULL is written to *command,
- * *option and *positional, nothing stays allocated, and the state of the
- * tree is as it was before the call.
+ * allocated or a conversion returns that code. NULL is written to
+ * *command, *option and *positional, nothing stays allocated, and the
+ * tree's state is as it was before the call.
  *
- * The validation never changes a definition: whatever it returns, the
+ * Validation never changes a definition: whatever it returns, the
  * commands, options, positionals and their attributes are as they were
- * before the call. The depth of the recursion is the depth of the tree.
+ * before the call. The recursion depth equals the tree depth.
  *
  * Preconditions:
  *
  * - root is not NULL and is a root, not a subcommand. Both are checked with
  *   assert.
- * - command, option and positional may each be NULL, when that part of the
- *   place of a fault is not needed. An output that is not NULL is written
- *   by every call.
+ * - command, option and positional may each be NULL when that part of the
+ *   fault location is not needed. Every call writes each output that is
+ *   not NULL.
  */
 ARGX_API argx_error_t argx_command_validate(argx_command_t *root,
                                             const argx_command_t **command,
@@ -723,14 +719,14 @@ ARGX_API argx_error_t argx_command_validate(argx_command_t *root,
                                             const argx_positional_t **positional);
 
 /*
- * Returns whether the tree that command belongs to is validated: whether
- * argx_command_validate() succeeded on its root and nothing was added to
- * the tree or set in it since. Any command of the tree can be passed; the
+ * Returns whether command's tree is validated: whether
+ * argx_command_validate() succeeded on its root and nothing has been added
+ * to or set in the tree since. Any command in the tree can be passed; the
  * result is the same for all of them.
  *
- * A new root is not validated. Every addition and every set that succeeds,
- * anywhere in the tree, takes the tree back to not validated, also when it
- * sets the value that was there. One that fails leaves the state as it was.
+ * A new root is not validated. Every successful addition or set, anywhere
+ * in the tree, makes the tree unvalidated again, even when it sets the
+ * value that was already there. A failed one leaves the state as it was.
  *
  * Preconditions:
  *

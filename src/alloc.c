@@ -2,11 +2,11 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - the allocator that is set, the default allocator and the internal
+ * ArgX - the current allocator, the default allocator and the internal
  * memory functions.
  *
- * This is the only source file of the library that uses the standard
- * malloc, realloc, calloc and free.
+ * This is the only library source file that uses the standard malloc,
+ * realloc, calloc and free.
  */
 #include <argx/alloc.h>
 
@@ -19,9 +19,9 @@
 
 /*
  * The default allocator. Its functions wrap the standard ones instead of
- * naming them in the initializers below: with the DLL runtime of MSVC the
- * standard functions are imported, and the address of an imported function
- * is not a constant that a static initializer may use.
+ * naming them directly in the initializers below. With the MSVC DLL
+ * runtime, the standard functions are imported, and the address of an
+ * imported function is not a constant that a static initializer may use.
  */
 static void *default_malloc(size_t size)
 {
@@ -48,8 +48,8 @@ static void default_free(void *ptr)
 static const argx_allocator_t default_allocator = DEFAULT_ALLOCATOR;
 
 /*
- * The allocator that is set. This is the only mutable global state of the
- * library. Only argx_set_allocator() writes it.
+ * The current allocator. This is the library's only mutable global state.
+ * Only argx_set_allocator() writes it.
  */
 static argx_allocator_t current_allocator = DEFAULT_ALLOCATOR;
 

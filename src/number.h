@@ -2,15 +2,15 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - internal declarations for the conversion of numbers.
+ * ArgX - internal declarations for number conversion.
  *
- * The conversion of a string to a signed 64-bit integer and to a finite
- * double. The whole string must be the number: nothing is skipped, neither
- * white space in front nor anything after the number.
+ * Converts a string to a signed 64-bit integer or to a finite double. The
+ * whole string must be the number. Nothing is skipped: neither leading
+ * white space nor anything after the number.
  *
  * Neither function keeps state, prints anything or ends the process, and
- * both leave errno as it was before the call. The result does not depend on
- * the locale.
+ * both leave errno as it was before the call. The result does not depend
+ * on the locale.
  */
 #ifndef ARGX_NUMBER_H
 #define ARGX_NUMBER_H
@@ -20,14 +20,14 @@
 #include <stdint.h>
 
 /*
- * Converts text to a signed 64-bit integer. The only shape that is taken
- * is [+-]?[0-9]+: decimal digits, with one sign in front or none. INT64_MIN
- * and INT64_MAX are taken.
+ * Converts text to a signed 64-bit integer. The only accepted form is
+ * [+-]?[0-9]+: decimal digits with an optional leading sign. INT64_MIN and
+ * INT64_MAX are accepted.
  *
  * On success, writes the integer to *out and returns ARGX_ERROR_NONE.
- * Returns ARGX_ERROR_INVALID_VALUE and leaves *out as it was when text is
- * empty, has a character that the shape does not allow (white space
- * included), or is a value outside the range of a signed 64-bit integer.
+ * Returns ARGX_ERROR_INVALID_VALUE and leaves *out unchanged when text is
+ * empty, contains a character the form does not allow (including white
+ * space), or is outside the signed 64-bit integer range.
  *
  * Allocates nothing.
  *
@@ -36,24 +36,24 @@
 argx_error_t argx_number_parse_int(const char *text, int64_t *out);
 
 /*
- * Converts text to a finite double. The only shape that is taken is
+ * Converts text to a finite double. The only accepted form is
  *
  *     [+-]? ( [0-9]+ ( "." [0-9]* )? | "." [0-9]+ ) ( [eE] [+-]? [0-9]+ )?
  *
- * the decimal notation, with an exponent or without. The decimal point is
- * '.', whatever the locale is. White space, the spellings of infinity and
- * of not-a-number, the hexadecimal notation and ',' are not taken.
+ * that is, decimal notation with an optional exponent. The decimal point
+ * is '.' in every locale. White space, spellings of infinity and
+ * not-a-number, hexadecimal notation and ',' are not accepted.
  *
  * On success, writes the value to *out and returns ARGX_ERROR_NONE. An
- * input that is too close to 0 for a double succeeds with the value that
- * strtod gives for it. Otherwise leaves *out as it was and returns:
+ * input too close to 0 for a double succeeds with the value strtod gives
+ * for it. Otherwise leaves *out unchanged and returns:
  *
- * - ARGX_ERROR_INVALID_VALUE when text does not have the shape, or when
+ * - ARGX_ERROR_INVALID_VALUE when text does not match the form, or when
  *   its value is beyond the finite range of a double.
  * - ARGX_ERROR_OUT_OF_MEMORY when the copy of a long input cannot be
- *   allocated. The value is computed from a copy of text; the copy of a
- *   short input needs no allocation, and the copy of a long one is freed
- *   before the function returns.
+ *   allocated. The value is computed from a copy of text. A short input's
+ *   copy needs no allocation, and a long input's copy is freed before the
+ *   function returns.
  *
  * Preconditions: text and out are not NULL. Both are checked with assert.
  */
