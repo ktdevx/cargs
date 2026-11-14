@@ -46,13 +46,6 @@ The example prints the help of `fetch`, a made-up program, to the standard outpu
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Keeps the result of a call in *error and tells whether the call failed. */
-static bool failed(argx_error_t *error, argx_error_t result)
-{
-    *error = result;
-    return result != ARGX_ERROR_NONE;
-}
-
 /*
  * The write function: writes one part of the text to the stream that
  * user_data points to. The part is not terminated, so it is written with
@@ -71,48 +64,106 @@ int main(void)
     argx_error_t error;
     int status = EXIT_FAILURE;
 
-    /* The schema. The help is generated from it, so it must be validated. */
-    if (failed(&error, argx_command_create("fetch", &root)) ||
-        failed(&error, argx_command_set_description(root, "Download a file.")) ||
-        failed(&error, argx_command_add_flag(root, 'q', "quiet", &option)) ||
-        failed(&error, argx_option_set_description(option, "Print nothing.")) ||
-        failed(&error,
-               argx_command_add_value(root, 'o', "output", argx_type_string(), &option)) ||
-        failed(&error, argx_option_set_description(option, "The file to write.")) ||
-        failed(&error, argx_option_set_value_name(option, "FILE")) ||
-        failed(&error, argx_option_set_required(option, true)) ||
-        failed(&error, argx_command_add_value(root, 'r', "retries", argx_type_int(), &option)) ||
-        failed(&error, argx_option_set_description(option, "How often to try again.")) ||
-        failed(&error, argx_option_set_default(option, "3")) ||
-        failed(&error, argx_command_add_positional(root, "url", argx_type_string(),
-                                                   ARGX_ARITY_REQUIRED, &positional)) ||
-        failed(&error, argx_positional_set_description(positional, "The address to read.")) ||
-        failed(&error, argx_command_validate(root, NULL, NULL, NULL)))
+    /*
+     * The schema. The help is generated from it, so it must be validated.
+     * Each call is checked; on a failure, the code jumps to the message.
+     */
+    error = argx_command_create("fetch", &root);
+    if (error != ARGX_ERROR_NONE)
     {
-        fprintf(stderr, "fetch: cannot define the command line: %s\n", argx_error_message(error));
+        goto define_failed;
+    }
+    error = argx_command_set_description(root, "Download a file.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_add_flag(root, 'q', "quiet", &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_description(option, "Print nothing.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_add_value(root, 'o', "output", argx_type_string(), &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_description(option, "The file to write.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_value_name(option, "FILE");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_required(option, true);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_add_value(root, 'r', "retries", argx_type_int(), &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_description(option, "How often to try again.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_default(option, "3");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_add_positional(root, "url", argx_type_string(), ARGX_ARITY_REQUIRED,
+                                        &positional);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_positional_set_description(positional, "The address to read.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_validate(root, NULL, NULL, NULL);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+
+    /* The help of the root, with the default settings (NULL). */
+    error = argx_help_write(root, NULL, write_to_stream, stdout);
+    if (error == ARGX_ERROR_NONE)
+    {
+        /* The usage line alone: the first line of the help. */
+        printf("----\n");
+        error = argx_help_write_usage(root, NULL, write_to_stream, stdout);
+    }
+
+    if (error != ARGX_ERROR_NONE)
+    {
+        fprintf(stderr, "fetch: cannot print the help: %s\n", argx_error_message(error));
     }
     else
     {
-        /* The help of the root, with the default settings (NULL). */
-        error = argx_help_write(root, NULL, write_to_stream, stdout);
-
-        if (error == ARGX_ERROR_NONE)
-        {
-            /* The usage line alone: the first line of the help. */
-            printf("----\n");
-            error = argx_help_write_usage(root, NULL, write_to_stream, stdout);
-        }
-
-        if (error != ARGX_ERROR_NONE)
-        {
-            fprintf(stderr, "fetch: cannot print the help: %s\n", argx_error_message(error));
-        }
-        else
-        {
-            status = EXIT_SUCCESS;
-        }
+        status = EXIT_SUCCESS;
     }
+    goto cleanup;
 
+define_failed:
+    fprintf(stderr, "fetch: cannot define the command line: %s\n", argx_error_message(error));
+
+cleanup:
+    /* Destroying NULL does nothing, so this is also right after a failure. */
     argx_command_destroy(root);
 
     return status;
@@ -167,13 +218,6 @@ typedef struct pack_schema
     argx_command_t *list;
 } pack_schema_t;
 
-/* Keeps the result of a call in *error and tells whether the call failed. */
-static bool failed(argx_error_t *error, argx_error_t result)
-{
-    *error = result;
-    return result != ARGX_ERROR_NONE;
-}
-
 /*
  * Adds -h, --help to command. The library adds no such option by itself,
  * and an option is only known where its command is the current command, so
@@ -184,7 +228,8 @@ static argx_error_t add_help(argx_command_t *command)
     argx_option_t *option = NULL;
     argx_error_t error;
 
-    if (failed(&error, argx_command_add_flag(command, 'h', "help", &option)))
+    error = argx_command_add_flag(command, 'h', "help", &option);
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -203,50 +248,156 @@ static argx_error_t define_schema(pack_schema_t *schema)
 
     schema->root = NULL;
 
-    if (failed(&error, argx_command_create("pack", &schema->root)) ||
-        failed(&error, argx_command_set_description(schema->root,
-                                                    "Pack files into an archive.")) ||
-        failed(&error, add_help(schema->root)) ||
-        failed(&error, argx_command_add_count(schema->root, 'v', "verbose", &option)) ||
-        failed(&error, argx_option_set_description(option, "Print more; can be repeated.")) ||
-        failed(&error, argx_command_add_negatable(schema->root, '\0', "color", &option)) ||
-        failed(&error, argx_option_set_description(option, "Color the output.")) ||
-        failed(&error, argx_option_set_initial(option, true)))
+    /* The root: pack [-h] [-v] [--[no-]color] [COMMAND]. */
+    error = argx_command_create("pack", &schema->root);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_set_description(schema->root, "Pack files into an archive.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = add_help(schema->root);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_count(schema->root, 'v', "verbose", &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "Print more; can be repeated.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_negatable(schema->root, '\0', "color", &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "Color the output.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_initial(option, true);
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
-    if (failed(&error, argx_command_add_subcommand(schema->root, "create", &schema->create)) ||
-        failed(&error, argx_command_set_description(schema->create, "Create an archive.")) ||
-        failed(&error, add_help(schema->create)) ||
-        failed(&error, argx_command_add_value(schema->create, 'o', "output", argx_type_string(),
-                                              &option)) ||
-        failed(&error, argx_option_set_description(option, "The archive to write.")) ||
-        failed(&error, argx_option_set_value_name(option, "FILE")) ||
-        failed(&error, argx_option_set_required(option, true)) ||
-        failed(&error,
-               argx_command_add_value(schema->create, 'l', "level", argx_type_int(), &option)) ||
-        failed(&error, argx_option_set_description(option, "The compression level.")) ||
-        failed(&error, argx_option_set_value_name(option, "LEVEL")) ||
-        failed(&error, argx_option_set_default(option, "6")) ||
-        failed(&error, argx_command_add_positional(schema->create, "file", argx_type_string(),
-                                                   ARGX_ARITY_ONE_OR_MORE, &positional)) ||
-        failed(&error, argx_positional_set_description(positional, "The files to pack.")))
+    /* The subcommand create. */
+    error = argx_command_add_subcommand(schema->root, "create", &schema->create);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_set_description(schema->create, "Create an archive.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = add_help(schema->create);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_value(schema->create, 'o', "output", argx_type_string(), &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "The archive to write.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_value_name(option, "FILE");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_required(option, true);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_value(schema->create, 'l', "level", argx_type_int(), &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "The compression level.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_value_name(option, "LEVEL");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_default(option, "6");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_positional(schema->create, "file", argx_type_string(),
+                                        ARGX_ARITY_ONE_OR_MORE, &positional);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_description(positional, "The files to pack.");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
-    if (failed(&error, argx_command_add_subcommand(schema->root, "list", &schema->list)) ||
-        failed(&error,
-               argx_command_set_description(schema->list, "List the files of an archive.")) ||
-        failed(&error, add_help(schema->list)) ||
-        failed(&error, argx_command_add_positional(schema->list, "archive", argx_type_string(),
-                                                   ARGX_ARITY_REQUIRED, &positional)) ||
-        failed(&error, argx_positional_set_description(positional, "The archive to read.")) ||
-        failed(&error, argx_command_add_positional(schema->list, "pattern", argx_type_string(),
-                                                   ARGX_ARITY_OPTIONAL, &positional)) ||
-        failed(&error, argx_positional_set_description(positional, "The files to list.")) ||
-        failed(&error, argx_positional_set_default(positional, "*")))
+    /* The subcommand list. */
+    error = argx_command_add_subcommand(schema->root, "list", &schema->list);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_set_description(schema->list, "List the files of an archive.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = add_help(schema->list);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_positional(schema->list, "archive", argx_type_string(),
+                                        ARGX_ARITY_REQUIRED, &positional);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_description(positional, "The archive to read.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_positional(schema->list, "pattern", argx_type_string(),
+                                        ARGX_ARITY_OPTIONAL, &positional);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_description(positional, "The files to list.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_default(positional, "*");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -296,53 +447,57 @@ int main(int argc, char **argv)
     argx_error_t error;
     int status = EXIT_FAILURE;
 
-    if (failed(&error, define_schema(&schema)))
+    error = define_schema(&schema);
+    if (error != ARGX_ERROR_NONE)
     {
         fprintf(stderr, "pack: cannot define the command line: %s\n", argx_error_message(error));
+        goto cleanup;
     }
-    else
-    {
-        error = argx_parse(schema.root, argc, argv, &result);
 
-        if (result == NULL)
+    error = argx_parse(schema.root, argc, argv, &result);
+
+    if (result == NULL)
+    {
+        /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
+        fprintf(stderr, "pack: %s\n", argx_error_message(error));
+    }
+    else if (help_was_given(result))
+    {
+        /*
+         * --help first: "pack create --help" leaves out what create
+         * requires, and that must not hide the help. The help is the one
+         * of the command that the command line ends in. Ending the
+         * program is up to this code: the library never exits.
+         */
+        if (argx_help_write(argx_result_command(result), NULL, write_to_stream, stdout) ==
+            ARGX_ERROR_NONE)
         {
-            /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
-            fprintf(stderr, "pack: %s\n", argx_error_message(error));
-        }
-        else if (help_was_given(result))
-        {
-            /*
-             * --help first: "pack create --help" leaves out what create
-             * requires, and that must not hide the help. The help is the one
-             * of the command that the command line ends in. Ending the
-             * program is up to this code: the library never exits.
-             */
-            if (argx_help_write(argx_result_command(result), NULL, write_to_stream, stdout) ==
-                ARGX_ERROR_NONE)
-            {
-                status = EXIT_SUCCESS;
-            }
-        }
-        else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-        {
-            /*
-             * The message, then the usage line of the command in which the
-             * error was found, both to the standard error stream.
-             */
-            fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
-            argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream,
-                                  stderr);
-            fprintf(stderr, "Try 'pack --help' for more information.\n");
-        }
-        else
-        {
-            /* The values are read here; see docs/parse.md. */
-            printf("pack: nothing to show in this example\n");
             status = EXIT_SUCCESS;
         }
     }
+    else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
+    {
+        /*
+         * The message, then the usage line of the command in which the
+         * error was found, both to the standard error stream.
+         */
+        fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
+        argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream,
+                              stderr);
+        fprintf(stderr, "Try 'pack --help' for more information.\n");
+    }
+    else
+    {
+        /* The values are read here; see docs/parse.md. */
+        printf("pack: nothing to show in this example\n");
+        status = EXIT_SUCCESS;
+    }
 
-    /* The result first, then the schema it was made from. */
+cleanup:
+    /*
+     * The result first, then the schema it was made from. Destroying NULL
+     * does nothing, so this is also right after a failure.
+     */
     argx_result_destroy(result);
     argx_command_destroy(schema.root);
 

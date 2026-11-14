@@ -95,13 +95,6 @@ static argx_error_t convert_size(const char *text, void *value, void *context)
     return ARGX_ERROR_NONE;
 }
 
-/* Keeps the result of a call in *error and tells whether the call failed. */
-static bool failed(argx_error_t *error, argx_error_t result)
-{
-    *error = result;
-    return result != ARGX_ERROR_NONE;
-}
-
 /* The options of the root: they stand in front of the subcommand. */
 static argx_error_t define_common_options(argx_command_t *root)
 {
@@ -109,15 +102,25 @@ static argx_error_t define_common_options(argx_command_t *root)
     argx_error_t error;
 
     /* A count: -v, -vv, --verbose. */
-    if (failed(&error, argx_command_add_count(root, 'v', "verbose", &option)) ||
-        failed(&error, argx_option_set_description(option, "Print more; can be repeated.")))
+    error = argx_command_add_count(root, 'v', "verbose", &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "Print more; can be repeated.");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
     /* A flag: -q, --quiet. */
-    if (failed(&error, argx_command_add_flag(root, 'q', "quiet", &option)) ||
-        failed(&error, argx_option_set_description(option, "Print nothing.")))
+    error = argx_command_add_flag(root, 'q', "quiet", &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "Print nothing.");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -126,9 +129,18 @@ static argx_error_t define_common_options(argx_command_t *root)
      * A negatable flag without a short name: --color and --no-color. It is
      * on when neither is given.
      */
-    if (failed(&error, argx_command_add_negatable(root, '\0', "color", &option)) ||
-        failed(&error, argx_option_set_description(option, "Color the output.")) ||
-        failed(&error, argx_option_set_initial(option, true)))
+    error = argx_command_add_negatable(root, '\0', "color", &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "Color the output.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_initial(option, true);
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -145,18 +157,35 @@ static argx_error_t define_create(argx_command_t *root, const argx_type_t *forma
     argx_positional_t *positional;
     argx_error_t error;
 
-    if (failed(&error, argx_command_add_subcommand(root, "create", &create)) ||
-        failed(&error, argx_command_set_description(create, "Create an archive.")))
+    error = argx_command_add_subcommand(root, "create", &create);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_set_description(create, "Create an archive.");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
     /* A required option with the built-in value type string. */
-    if (failed(&error, argx_command_add_value(create, 'o', "output", argx_type_string(),
-                                              &option)) ||
-        failed(&error, argx_option_set_description(option, "The archive to write.")) ||
-        failed(&error, argx_option_set_value_name(option, "FILE")) ||
-        failed(&error, argx_option_set_required(option, true)))
+    error = argx_command_add_value(create, 'o', "output", argx_type_string(), &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "The archive to write.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_value_name(option, "FILE");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_required(option, true);
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -165,46 +194,97 @@ static argx_error_t define_create(argx_command_t *root, const argx_type_t *forma
      * The built-in value type integer, with a default value. A default
      * value is a string, written as on a command line.
      */
-    if (failed(&error, argx_command_add_value(create, 'l', "level", argx_type_int(),
-                                              &option)) ||
-        failed(&error, argx_option_set_description(option, "The compression level.")) ||
-        failed(&error, argx_option_set_value_name(option, "LEVEL")) ||
-        failed(&error, argx_option_set_default(option, "6")))
+    error = argx_command_add_value(create, 'l', "level", argx_type_int(), &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "The compression level.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_value_name(option, "LEVEL");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_default(option, "6");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
     /* The built-in value type float; only a long name. */
-    if (failed(&error, argx_command_add_value(create, '\0', "ratio", argx_type_float(),
-                                              &option)) ||
-        failed(&error, argx_option_set_description(option, "Stop below this ratio.")) ||
-        failed(&error, argx_option_set_value_name(option, "RATIO")) ||
-        failed(&error, argx_option_set_default(option, "0.5")))
+    error = argx_command_add_value(create, '\0', "ratio", argx_type_float(), &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "Stop below this ratio.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_value_name(option, "RATIO");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_default(option, "0.5");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
     /* A choice. */
-    if (failed(&error, argx_command_add_value(create, '\0', "format", format, &option)) ||
-        failed(&error, argx_option_set_description(option, "The format of the archive.")) ||
-        failed(&error, argx_option_set_default(option, "tar")))
+    error = argx_command_add_value(create, '\0', "format", format, &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "The format of the archive.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_default(option, "tar");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
     /* A user-defined value type. */
-    if (failed(&error, argx_command_add_value(create, '\0', "block-size", size, &option)) ||
-        failed(&error, argx_option_set_description(option, "The size of a block.")) ||
-        failed(&error, argx_option_set_value_name(option, "SIZE")) ||
-        failed(&error, argx_option_set_default(option, "64k")))
+    error = argx_command_add_value(create, '\0', "block-size", size, &option);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_description(option, "The size of a block.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_value_name(option, "SIZE");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_default(option, "64k");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
     /* One or more files. */
-    if (failed(&error, argx_command_add_positional(create, "file", argx_type_string(),
-                                                   ARGX_ARITY_ONE_OR_MORE, &positional)) ||
-        failed(&error, argx_positional_set_description(positional, "The files to pack.")))
+    error = argx_command_add_positional(create, "file", argx_type_string(),
+                                        ARGX_ARITY_ONE_OR_MORE, &positional);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_description(positional, "The files to pack.");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -219,24 +299,43 @@ static argx_error_t define_list(argx_command_t *root)
     argx_positional_t *positional;
     argx_error_t error;
 
-    if (failed(&error, argx_command_add_subcommand(root, "list", &list)) ||
-        failed(&error, argx_command_set_description(list, "List the files of an archive.")))
+    error = argx_command_add_subcommand(root, "list", &list);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_set_description(list, "List the files of an archive.");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
-    if (failed(&error, argx_command_add_positional(list, "archive", argx_type_string(),
-                                                   ARGX_ARITY_REQUIRED, &positional)) ||
-        failed(&error, argx_positional_set_description(positional, "The archive to read.")))
+    error = argx_command_add_positional(list, "archive", argx_type_string(),
+                                        ARGX_ARITY_REQUIRED, &positional);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_description(positional, "The archive to read.");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
     /* Only an optional positional can have a default value. */
-    if (failed(&error, argx_command_add_positional(list, "pattern", argx_type_string(),
-                                                   ARGX_ARITY_OPTIONAL, &positional)) ||
-        failed(&error, argx_positional_set_description(positional, "The files to list.")) ||
-        failed(&error, argx_positional_set_default(positional, "*")))
+    error = argx_command_add_positional(list, "pattern", argx_type_string(),
+                                        ARGX_ARITY_OPTIONAL, &positional);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_description(positional, "The files to list.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_default(positional, "*");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -294,33 +393,68 @@ int main(void)
     argx_error_t error;
     int status = EXIT_FAILURE;
 
-    /* The value types come first: the schema borrows them. */
-    if (failed(&error, argx_type_create_choice(formats, 2, &format)) ||
-        failed(&error, argx_type_create("size", sizeof(unsigned long), convert_size, NULL,
-                                        &limit, &size)) ||
-        failed(&error, argx_command_create("pack", &root)) ||
-        failed(&error, argx_command_set_description(root, "Pack files into an archive.")) ||
-        failed(&error, define_common_options(root)) ||
-        failed(&error, define_create(root, format, size)) ||
-        failed(&error, define_list(root)))
+    /*
+     * The value types come first: the schema borrows them. Each call is
+     * checked; on a failure, the code jumps to the message.
+     */
+    error = argx_type_create_choice(formats, 2, &format);
+    if (error != ARGX_ERROR_NONE)
     {
-        /*
-         * An addition or a set failed. The schema is as it was before the
-         * call that failed, and it can still be destroyed.
-         */
-        fprintf(stderr, "pack: cannot define the command line: %s\n",
-                argx_error_message(error));
-    } else if (failed(&error, argx_command_validate(root, &faulty_command, &faulty_option,
-                                                    &faulty_positional)))
+        goto define_failed;
+    }
+    error = argx_type_create("size", sizeof(unsigned long), convert_size, NULL, &limit, &size);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_create("pack", &root);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_set_description(root, "Pack files into an archive.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = define_common_options(root);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = define_create(root, format, size);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = define_list(root);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+
+    error = argx_command_validate(root, &faulty_command, &faulty_option, &faulty_positional);
+    if (error != ARGX_ERROR_NONE)
     {
         report_fault(error, faulty_command, faulty_option, faulty_positional);
+        goto cleanup;
     }
-    else if (argx_command_is_validated(root))
+
+    if (argx_command_is_validated(root))
     {
         printf("the schema of %s is valid\n", argx_command_name(root));
         status = EXIT_SUCCESS;
     }
+    goto cleanup;
 
+define_failed:
+    /*
+     * An addition or a set failed. The schema is as it was before the call
+     * that failed, and it can still be destroyed.
+     */
+    fprintf(stderr, "pack: cannot define the command line: %s\n", argx_error_message(error));
+
+cleanup:
     /*
      * The schema first, then the value types it borrowed. Destroying NULL
      * does nothing, so this is also right after a failure.
@@ -337,7 +471,7 @@ Key points of the example:
 
 - It creates two value types (a choice and a user-defined one) and one root command. These three are also the only things it destroys. The subcommands, options and positionals are freed when the root is destroyed.
 - The handles that the add functions write (`option`, `positional`, `create`) are used to set attributes. You do not destroy them.
-- Every function returns a value other than `ARGX_ERROR_NONE` when it fails. The example relies on `||` evaluating from left to right and stopping at the first failure, so that it never passes a `NULL` handle written by a failed addition to the next set function.
+- Every function returns a value other than `ARGX_ERROR_NONE` when it fails. The example checks the return value of each call and stops at the first failure: the `define_` functions return the error, and `main` jumps with `goto` to the code that prints the message and destroys what was created. So it never passes a `NULL` handle written by a failed addition to the next set function.
 - Validation is called once, after the definition is complete. If it fails, the example passes the handles written to the three output parameters to the read functions to find which definition has the error (`report_fault`).
 - The schema is destroyed first, and the value types after it.
 

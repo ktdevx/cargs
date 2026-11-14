@@ -29,13 +29,6 @@ The following example is a complete program that accepts a command line of the f
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Keeps the result of a call in *error and tells whether the call failed. */
-static bool failed(argx_error_t *error, argx_error_t result)
-{
-    *error = result;
-    return result != ARGX_ERROR_NONE;
-}
-
 /*
  * The write function: the library passes the text of the help to it, part
  * by part. This one writes each part to the stream in user_data.
@@ -59,76 +52,130 @@ int main(int argc, char **argv)
     /*
      * The schema: greet [-h] [-l] [-n COUNT] name. The descriptions are
      * for the help. The schema is validated before it is parsed with.
+     * Each call is checked; on a failure, the code jumps to the message.
      */
-    if (failed(&error, argx_command_create("greet", &root)) ||
-        failed(&error, argx_command_set_description(root, "Greet somebody.")) ||
-        failed(&error, argx_command_add_flag(root, 'h', "help", &help)) ||
-        failed(&error, argx_option_set_description(help, "Print this help.")) ||
-        failed(&error, argx_command_add_flag(root, 'l', "loud", &loud)) ||
-        failed(&error, argx_option_set_description(loud, "Add an exclamation mark.")) ||
-        failed(&error, argx_command_add_value(root, 'n', "count", argx_type_int(), &count)) ||
-        failed(&error, argx_option_set_description(count, "How often to greet.")) ||
-        failed(&error, argx_option_set_value_name(count, "COUNT")) ||
-        failed(&error, argx_option_set_default(count, "1")) ||
-        failed(&error, argx_command_add_positional(root, "name", argx_type_string(),
-                                                   ARGX_ARITY_REQUIRED, &name)) ||
-        failed(&error, argx_positional_set_description(name, "Whom to greet.")) ||
-        failed(&error, argx_command_validate(root, NULL, NULL, NULL)))
+    error = argx_command_create("greet", &root);
+    if (error != ARGX_ERROR_NONE)
     {
-        fprintf(stderr, "greet: cannot define the command line: %s\n", argx_error_message(error));
+        goto define_failed;
+    }
+    error = argx_command_set_description(root, "Greet somebody.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_add_flag(root, 'h', "help", &help);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_description(help, "Print this help.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_add_flag(root, 'l', "loud", &loud);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_description(loud, "Add an exclamation mark.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_add_value(root, 'n', "count", argx_type_int(), &count);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_description(count, "How often to greet.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_value_name(count, "COUNT");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_option_set_default(count, "1");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_add_positional(root, "name", argx_type_string(), ARGX_ARITY_REQUIRED,
+                                        &name);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_positional_set_description(name, "Whom to greet.");
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+    error = argx_command_validate(root, NULL, NULL, NULL);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
+    }
+
+    /* argc and argv go in as main() received them. */
+    error = argx_parse(root, argc, argv, &result);
+
+    if (result == NULL)
+    {
+        /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
+        fprintf(stderr, "greet: %s\n", argx_error_message(error));
+    }
+    else if (argx_result_flag(result, help))
+    {
+        /*
+         * --help first: "greet --help" leaves out the name, and that must
+         * not hide the help. The text is made from the schema.
+         */
+        if (argx_help_write(root, NULL, write_to_stream, stdout) == ARGX_ERROR_NONE)
+        {
+            status = EXIT_SUCCESS;
+        }
+    }
+    else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
+    {
+        /* The message is one line with no prefix and no line break. */
+        fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
     }
     else
     {
-        /* argc and argv go in as main() received them. */
-        error = argx_parse(root, argc, argv, &result);
+        const char *text = NULL;
+        int64_t times = 0;
+        int64_t i;
 
-        if (result == NULL)
+        /*
+         * The name is required and --count has a default value: after a
+         * parse that succeeded, both have a value.
+         */
+        if (argx_result_positional_string(result, name, 0, &text) &&
+            argx_result_option_int(result, count, &times))
         {
-            /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
-            fprintf(stderr, "greet: %s\n", argx_error_message(error));
-        }
-        else if (argx_result_flag(result, help))
-        {
-            /*
-             * --help first: "greet --help" leaves out the name, and that
-             * must not hide the help. The text is made from the schema.
-             */
-            if (argx_help_write(root, NULL, write_to_stream, stdout) == ARGX_ERROR_NONE)
+            for (i = 0; i < times; ++i)
             {
-                status = EXIT_SUCCESS;
+                printf("hello, %s%s\n", text, argx_result_flag(result, loud) ? "!" : "");
             }
-        }
-        else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-        {
-            /* The message is one line with no prefix and no line break. */
-            fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
-        }
-        else
-        {
-            const char *text = NULL;
-            int64_t times = 0;
-            int64_t i;
-
-            /*
-             * The name is required and --count has a default value: after
-             * a parse that succeeded, both have a value.
-             */
-            if (argx_result_positional_string(result, name, 0, &text) &&
-                argx_result_option_int(result, count, &times))
-            {
-                for (i = 0; i < times; ++i)
-                {
-                    printf("hello, %s%s\n", text, argx_result_flag(result, loud) ? "!" : "");
-                }
-                printf("greeted %" PRId64 " time(s)\n", times);
-                status = EXIT_SUCCESS;
-            }
+            printf("greeted %" PRId64 " time(s)\n", times);
+            status = EXIT_SUCCESS;
         }
     }
+    goto cleanup;
 
+define_failed:
+    fprintf(stderr, "greet: cannot define the command line: %s\n", argx_error_message(error));
+
+cleanup:
     /*
      * The result first, then the schema it was made from. A parse error
-     * also leaves a result to destroy. Destroying NULL does nothing.
+     * also leaves a result to destroy. Destroying NULL does nothing, so
+     * this is also right after a failure.
      */
     argx_result_destroy(result);
     argx_command_destroy(root);
@@ -168,6 +215,7 @@ Options:
 - The help text is made from the definitions in the schema (names, descriptions, value names, default values). You do not need to write the help text in your program.
 - Printing the help is up to your code. The library does not add `--help` to the schema, and it does not print the help and exit.
 - On a parse error (the arguments do not match the schema), you still get a result, and you destroy it. Destroy the result before the schema.
+- Every function that can fail returns an `argx_error_t`. The example checks each return value, and on a failure jumps with `goto` to the code that prints the message and destroys what was created.
 - The detailed usage is described in the documents listed in [Documentation](#documentation).
 
 ## Documentation
