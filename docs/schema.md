@@ -4,20 +4,6 @@ A schema describes, with function calls, which command lines your program accept
 
 A schema knows nothing about argv. Parsing argv with a validated schema is in [Parsing](parse.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public headers `include/argx/schema.h` and `include/argx/type.h`.
 
-## Contents
-
-- [Overview](#overview)
-- [A short example](#a-short-example)
-- [Commands](#commands)
-- [Options](#options)
-- [Positionals](#positionals)
-- [Rules common to all definitions](#rules-common-to-all-definitions)
-- [Value types](#value-types)
-- [Writing a user-defined value type](#writing-a-user-defined-value-type)
-- [Borrowed value types and the order of destruction](#borrowed-value-types-and-the-order-of-destruction)
-- [Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure)
-- [Reference](#reference): [Definition errors](#definition-errors), [Errors when adding and setting](#errors-when-adding-and-setting), [Errors found by validation](#errors-found-by-validation), [Order of the checks](#order-of-the-checks), [Guarantees of a validated schema](#guarantees-of-a-validated-schema), [Reading a schema](#reading-a-schema), [Preconditions](#preconditions)
-
 ## Overview
 
 Every program goes through the same four steps:
