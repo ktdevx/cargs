@@ -128,6 +128,6 @@ argx_error_t argx_help_item_option_notes(argx_vec_t *text, const argx_option_t *
  * Returns and preconditions: as argx_help_item_text_append().
  */
 argx_error_t argx_help_item_positional_notes(argx_vec_t *text,
-                                                 const argx_positional_t *positional);
+                                             const argx_positional_t *positional);
 
 #endif /* ARGX_HELP_ITEM_H */

@@ -9,8 +9,8 @@
 #
 #   ARGX_SOURCE_ROOT    The root of the source tree under test.
 #   ARGX_TEST_WORK_DIR  A directory the test owns. Including this file empties
-#                         it, so every run starts from nothing. The test writes
-#                         only there.
+#                       it, so every run starts from nothing. The test writes
+#                       only there.
 #
 # Including this file also includes tools/release/ArgXReadBytes.cmake, so
 # that a test writes the files whose bytes it checks with argx_write_bytes(),

@@ -145,8 +145,8 @@ cmake/
 ├── ArgXConfig.cmake.in          # find_package 用 Config のひな形
 └── argx.pc.in                   # pkg-config のひな形
 include/
-└── argx/                        # 公開ヘッダはすべてここ。インストールされる
-    ├── argx.h                   # 利用者が取り込む唯一の入口。ほかの公開ヘッダを取り込む
+└── argx/                          # 公開ヘッダはすべてここ。インストールされる
+    ├── argx.h                     # 利用者が取り込む唯一の入口。ほかの公開ヘッダを取り込む
     ├── export.h                   # ARGX_API
     └── version.h                  # バージョンのマクロと argx_version() の宣言
 src/                               # 実装と内部ヘッダ。インストールされない

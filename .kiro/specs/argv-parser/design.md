@@ -486,7 +486,7 @@ size_t argx_utf8_write(const wchar_t *text, char *out);
 /* src/message.h */
 typedef struct argx_message_parts {
     argx_parse_error_kind_t kind;
-    argx_source_t source;     /* ARGX_SOURCE_DEFAULT なら「既定値」の文面 */
+    argx_source_t source;       /* ARGX_SOURCE_DEFAULT なら「既定値」の文面 */
     bool for_positional;        /* INVALID_VALUE で、位置引数の文面を選ぶ */
     const char *name_prefix;    /* "--"、"-"、または ""。NULL にしない */
     const char *name;           /* 名前。使わない種類では NULL */
@@ -577,9 +577,9 @@ typedef enum argx_parse_error_kind {
 
 ```c
 ARGX_API argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
-                                       argx_result_t **out);
+                                 argx_result_t **out);
 ARGX_API argx_error_t argx_parse_wide(const argx_command_t *root, int argc,
-                                            wchar_t *const *argv, argx_result_t **out);
+                                      wchar_t *const *argv, argx_result_t **out);
 ```
 
 | 戻り値 | `*out` | 意味 |
@@ -673,40 +673,40 @@ ARGX_API size_t argx_result_count(const argx_result_t *result, const argx_option
 
 /* どの種類のオプションにも使える。 */
 ARGX_API argx_source_t argx_result_option_source(const argx_result_t *result,
-                                                       const argx_option_t *option);
+                                                 const argx_option_t *option);
 
 /* 値付きオプション。値があれば *out に書いて true、なければ *out を変えずに false。 */
 ARGX_API bool argx_result_option_string(const argx_result_t *result, const argx_option_t *option,
-                                            const char **out);
+                                        const char **out);
 ARGX_API bool argx_result_option_int(const argx_result_t *result, const argx_option_t *option,
-                                         int64_t *out);
+                                     int64_t *out);
 ARGX_API bool argx_result_option_float(const argx_result_t *result, const argx_option_t *option,
-                                           double *out);
+                                       double *out);
 ARGX_API bool argx_result_option_choice(const argx_result_t *result, const argx_option_t *option,
-                                            size_t *out);
+                                        size_t *out);
 /* 値型が書き込んだ値の領域。値がなければ NULL。どの種類の値型にも使える。 */
 ARGX_API const void *argx_result_option_value(const argx_result_t *result,
-                                                  const argx_option_t *option);
+                                              const argx_option_t *option);
 
 /* 位置引数。個数は、必須と任意では 0 または 1、可変個では割り当てられた個数。 */
 ARGX_API size_t argx_result_positional_count(const argx_result_t *result,
-                                                 const argx_positional_t *positional);
+                                             const argx_positional_t *positional);
 ARGX_API argx_source_t argx_result_positional_source(const argx_result_t *result,
-                                                           const argx_positional_t *positional);
+                                                     const argx_positional_t *positional);
 ARGX_API bool argx_result_positional_string(const argx_result_t *result,
-                                                const argx_positional_t *positional, size_t index,
-                                                const char **out);
+                                            const argx_positional_t *positional, size_t index,
+                                            const char **out);
 ARGX_API bool argx_result_positional_int(const argx_result_t *result,
-                                             const argx_positional_t *positional, size_t index,
-                                             int64_t *out);
+                                         const argx_positional_t *positional, size_t index,
+                                         int64_t *out);
 ARGX_API bool argx_result_positional_float(const argx_result_t *result,
-                                               const argx_positional_t *positional, size_t index,
-                                               double *out);
+                                           const argx_positional_t *positional, size_t index,
+                                           double *out);
 ARGX_API bool argx_result_positional_choice(const argx_result_t *result,
-                                                const argx_positional_t *positional, size_t index,
-                                                size_t *out);
+                                            const argx_positional_t *positional, size_t index,
+                                            size_t *out);
 ARGX_API const void *argx_result_positional_value(const argx_result_t *result,
-                                                      const argx_positional_t *positional, size_t index);
+                                                  const argx_positional_t *positional, size_t index);
 
 /* 解析エラーの情報。解析が成功した結果では、NONE、NULL、0、'\0' を返す。 */
 ARGX_API argx_parse_error_kind_t argx_result_error_kind(const argx_result_t *result);
@@ -755,9 +755,9 @@ ARGX_API char argx_result_error_short_name(const argx_result_t *result);
 ```c
 /* 結果を作り、root を並びに加える。argc と argv を複製する。 */
 argx_error_t argx_result_create(const argx_command_t *root, int argc, char *const *argv,
-                                    argx_result_t **out);
+                                argx_result_t **out);
 argx_error_t argx_result_create_wide(const argx_command_t *root, int argc, wchar_t *const *argv,
-                                         argx_result_t **out);
+                                     argx_result_t **out);
 
 /* 複製した要素。index は argv の添字。 */
 const char *argx_result_arg(const argx_result_t *result, size_t index);
@@ -773,7 +773,7 @@ void argx_result_record_count(argx_result_t *result, const argx_option_t *option
 /* 値を変換して保持する。失敗は「変換の結果」の表のとおり。
  * where は、INVALID_VALUE を記録するときのエラーの位置。 */
 typedef struct argx_result_where {
-    argx_source_t source;   /* COMMAND_LINE または DEFAULT */
+    argx_source_t source;     /* COMMAND_LINE または DEFAULT */
     size_t index;             /* 値を含む要素の添字。DEFAULT では 0 */
     char short_name;          /* 束の中の値付きオプションなら、その文字。ほかは '\0' */
     const char *name_prefix;  /* メッセージ用: 書かれた形の接頭辞 */
@@ -782,10 +782,10 @@ typedef struct argx_result_where {
 } argx_result_where_t;
 
 argx_error_t argx_result_record_option_value(argx_result_t *result, const argx_option_t *option,
-                                                 const char *text, const argx_result_where_t *where);
+                                             const char *text, const argx_result_where_t *where);
 argx_error_t argx_result_record_positional_value(argx_result_t *result,
-                                                     const argx_positional_t *positional,
-                                                     const char *text, const argx_result_where_t *where);
+                                                 const argx_positional_t *positional,
+                                                 const char *text, const argx_result_where_t *where);
 
 /* 適用した既定値をすべて取り消す（後始末して、値なしに戻す）。 */
 void argx_result_discard_defaults(argx_result_t *result);
@@ -889,8 +889,8 @@ struct argx_result {
     char **args;               /* 要素の複製。配列と文字列で 1 回の確保。argc が 0 なら NULL */
     size_t arg_count;
     size_t first_invalid_arg;  /* 変換できない並びを含む最初の要素の添字。なければ 0 */
-    argx_vec_t frames;       /* argx_result_frame_t の並び */
-    argx_error_t error;      /* ARGX_ERROR_NONE または ARGX_ERROR_INVALID_COMMAND_LINE */
+    argx_vec_t frames;         /* argx_result_frame_t の並び */
+    argx_error_t error;        /* ARGX_ERROR_NONE または ARGX_ERROR_INVALID_COMMAND_LINE */
     argx_parse_error_kind_t error_kind;
     argx_source_t error_source;
     size_t error_index;

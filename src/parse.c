@@ -60,8 +60,8 @@ static void enter_command(scan_t *scan, const argx_command_t *command)
  * has no option. Returns what argx_result_fail() returns.
  */
 static argx_error_t fail_at(argx_result_t *result, const scan_t *scan, argx_parse_error_kind_t kind,
-                              const argx_result_where_t *where, const char *value,
-                              const argx_option_t *option)
+                            const argx_result_where_t *where, const char *value,
+                            const argx_option_t *option)
 {
     argx_result_failure_t failure;
 
@@ -117,7 +117,7 @@ static argx_error_t check_encoding(argx_result_t *result, const scan_t *scan)
  * checked before it is taken (check_encoding()).
  */
 static argx_error_t record_option(argx_result_t *result, scan_t *scan, const argx_option_t *option,
-                                    bool on, const char *value, argx_result_where_t *where)
+                                  bool on, const char *value, argx_result_where_t *where)
 {
     const argx_option_kind_t kind = argx_option_kind(option);
     argx_error_t error;
@@ -411,7 +411,7 @@ static argx_error_t scan_arguments(argx_result_t *result, const argx_command_t *
  * memory is destroyed, and NULL is written to *out.
  */
 static argx_error_t parse_result(argx_result_t *result, const argx_command_t *root, size_t count,
-                                   argx_result_t **out)
+                                 argx_result_t **out)
 {
     argx_error_t error = scan_arguments(result, root, count);
 
@@ -431,7 +431,7 @@ static argx_error_t parse_result(argx_result_t *result, const argx_command_t *ro
 }
 
 argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
-                            argx_result_t **out)
+                        argx_result_t **out)
 {
     argx_result_t *result = NULL;
     argx_error_t error;
@@ -454,7 +454,7 @@ argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
 }
 
 argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *const *argv,
-                                 argx_result_t **out)
+                             argx_result_t **out)
 {
     argx_result_t *result = NULL;
     argx_error_t error;

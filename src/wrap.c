@@ -11,7 +11,7 @@
 #include <stddef.h>
 
 void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
-                       size_t column, size_t width)
+                     size_t column, size_t width)
 {
     size_t position = 0;
     bool line_has_word = false; /* a word was written on this line of the output */

@@ -101,10 +101,10 @@ static void add_two_positionals(argx_command_t *command)
     argx_positional_t *positional = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, "input", argx_type_string(),
-                                                    ARGX_ARITY_REQUIRED, &positional)
+                                                  ARGX_ARITY_REQUIRED, &positional)
                       == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, "rest", argx_type_int(),
-                                                    ARGX_ARITY_ZERO_OR_MORE, &positional)
+                                                  ARGX_ARITY_ZERO_OR_MORE, &positional)
                       == ARGX_ERROR_NONE);
 }
 
@@ -849,7 +849,7 @@ NAOS_TEST(recording_and_reading_allocate_nothing)
  * *pushed is the number of pushes that succeeded.
  */
 static argx_error_t create_and_push(argx_command_t *const *commands, size_t count,
-                                      argx_result_t **out, size_t *pushed)
+                                    argx_result_t **out, size_t *pushed)
 {
     char a0[] = "app";
     char a1[] = "sub";
@@ -1106,7 +1106,7 @@ static void create_types(value_types_t *types)
     types->custom = NULL;
     NAOS_REQUIRE_TRUE(argx_type_create_choice(choices, 3, &types->choice) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_type_create("item", sizeof(custom_value_t), custom_convert, custom_release,
-                                         &types->counts, &types->custom)
+                                       &types->counts, &types->custom)
                       == ARGX_ERROR_NONE);
 }
 
@@ -1154,19 +1154,19 @@ static void add_value_positionals(argx_command_t *command, const value_types_t *
     argx_positional_t *positional = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, "text", argx_type_string(),
-                                                    ARGX_ARITY_REQUIRED, &positional)
+                                                  ARGX_ARITY_REQUIRED, &positional)
                       == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, "num", argx_type_int(),
-                                                    ARGX_ARITY_REQUIRED, &positional)
+                                                  ARGX_ARITY_REQUIRED, &positional)
                       == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, "ratio", argx_type_float(),
-                                                    ARGX_ARITY_REQUIRED, &positional)
+                                                  ARGX_ARITY_REQUIRED, &positional)
                       == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, "mode", types->choice,
-                                                    ARGX_ARITY_REQUIRED, &positional)
+                                                  ARGX_ARITY_REQUIRED, &positional)
                       == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, "items", types->custom,
-                                                    ARGX_ARITY_ZERO_OR_MORE, &positional)
+                                                  ARGX_ARITY_ZERO_OR_MORE, &positional)
                       == ARGX_ERROR_NONE);
 }
 
@@ -1208,7 +1208,7 @@ static argx_result_where_t in_default(void)
  * command at index, and returns what the record returns.
  */
 static argx_error_t record_option(argx_result_t *result, const argx_command_t *command,
-                                    size_t index, const char *text)
+                                  size_t index, const char *text)
 {
     argx_result_where_t where = on_command_line();
 
@@ -1217,7 +1217,7 @@ static argx_error_t record_option(argx_result_t *result, const argx_command_t *c
 
 /* The same for a value of the positional of command at index. */
 static argx_error_t record_positional(argx_result_t *result, const argx_command_t *command,
-                                        size_t index, const char *text)
+                                      size_t index, const char *text)
 {
     argx_result_where_t where = on_command_line();
 
@@ -1522,7 +1522,7 @@ NAOS_TEST(second_value_of_an_option_replaces_the_first)
         argx_result_where_t where = in_default();
 
         NAOS_CHECK_INT_EQ(argx_result_record_option_value(result, option_of(root, V_RATIO), "0.25",
-                                                            &where),
+                                                          &where),
                           ARGX_ERROR_NONE);
     }
     NAOS_CHECK_INT_EQ(argx_result_option_source(result, option_of(root, V_RATIO)), ARGX_SOURCE_DEFAULT);
@@ -1592,7 +1592,7 @@ NAOS_TEST(failed_conversion_keeps_the_value_of_an_option)
             argx_result_where_t where = in_default();
 
             NAOS_CHECK_INT_EQ(argx_result_record_option_value(result, option_of(root, V_ITEM), "kept",
-                                                                &where),
+                                                              &where),
                               ARGX_ERROR_NONE);
         }
         live = argx_test_allocator_live();
@@ -1823,7 +1823,7 @@ NAOS_TEST(positional_default_value_has_the_source_default)
     result = create_result(root, 0, NULL);
 
     NAOS_CHECK_INT_EQ(argx_result_record_positional_value(result, positional_of(root, V_NUM), "10",
-                                                            &where),
+                                                          &where),
                       ARGX_ERROR_NONE);
     NAOS_CHECK_INT_EQ(argx_result_positional_source(result, positional_of(root, V_NUM)),
                       ARGX_SOURCE_DEFAULT);
@@ -1836,7 +1836,7 @@ NAOS_TEST(positional_default_value_has_the_source_default)
      * is the one conversion of the result that fails, and its last record.
      */
     NAOS_CHECK_INT_EQ(argx_result_record_positional_value(result, positional_of(root, V_RATIO), "",
-                                                            &where),
+                                                          &where),
                       ARGX_ERROR_INVALID_COMMAND_LINE);
     NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, positional_of(root, V_RATIO)), 0);
     NAOS_CHECK_INT_EQ(argx_result_positional_source(result, positional_of(root, V_RATIO)),
@@ -1956,7 +1956,7 @@ static const value_step_t value_steps[VALUE_STEPS] = {
  * *live the number of live blocks before the step that failed.
  */
 static argx_error_t record_values(argx_result_t *result, const argx_command_t *command,
-                                    size_t *done, size_t *live)
+                                  size_t *done, size_t *live)
 {
     size_t i;
 
@@ -2028,7 +2028,7 @@ static void check_recorded_values(const argx_result_t *result, const argx_comman
     for (i = 0; i < item_count; ++i)
     {
         item = (const custom_value_t *)argx_result_positional_value(result,
-                                                                      positional_of(command, V_ITEM), i);
+                                                                    positional_of(command, V_ITEM), i);
         NAOS_REQUIRE_TRUE(item != NULL);
         NAOS_CHECK_TRUE(item->text == items[i]);
     }
@@ -2500,7 +2500,7 @@ NAOS_TEST(failed_conversion_of_an_option_is_recorded_as_an_invalid_value)
         live = argx_test_allocator_live();
 
         NAOS_CHECK_INT_EQ(argx_result_record_option_value(result, option_of(sub, options[i]), inputs[i],
-                                                            &where),
+                                                          &where),
                           ARGX_ERROR_INVALID_COMMAND_LINE);
 
         /*
@@ -2576,7 +2576,7 @@ NAOS_TEST(failed_conversion_of_a_positional_is_recorded_as_an_invalid_value)
         live = argx_test_allocator_live();
 
         NAOS_CHECK_INT_EQ(argx_result_record_positional_value(result, positional_of(sub, positionals[i]),
-                                                                inputs[i], &where),
+                                                              inputs[i], &where),
                           ARGX_ERROR_INVALID_COMMAND_LINE);
 
         check_invalid_value(result, &where, inputs[i], sub, NULL, positional_of(sub, positionals[i]),
@@ -2617,7 +2617,7 @@ NAOS_TEST(failed_conversion_of_a_default_value_has_no_argument)
     result = create_result(root, 0, NULL);
     where = in_default();
     NAOS_CHECK_INT_EQ(argx_result_record_option_value(result, option_of(root, V_ITEM), item,
-                                                        &where),
+                                                      &where),
                       ARGX_ERROR_INVALID_COMMAND_LINE);
     check_invalid_value(result, &where, item, root, option_of(root, V_ITEM), NULL,
                         "invalid default value '!default' for option '--name' (expected item)");
@@ -2632,7 +2632,7 @@ NAOS_TEST(failed_conversion_of_a_default_value_has_no_argument)
     where.name = "num";
     where.name_length = 3;
     NAOS_CHECK_INT_EQ(argx_result_record_positional_value(result, positional_of(root, V_NUM), number,
-                                                            &where),
+                                                          &where),
                       ARGX_ERROR_INVALID_COMMAND_LINE);
     check_invalid_value(result, &where, number, root, NULL, positional_of(root, V_NUM),
                         "invalid default value 'ten' for argument 'num' (expected integer)");
@@ -2666,7 +2666,7 @@ NAOS_TEST(lack_of_memory_of_a_value_type_is_not_recorded)
         argx_result_where_t where = in_default();
 
         NAOS_CHECK_INT_EQ(argx_result_record_option_value(result, option_of(root, V_ITEM), "#memory",
-                                                            &where),
+                                                          &where),
                           ARGX_ERROR_OUT_OF_MEMORY);
     }
     check_no_error(result);
@@ -2692,7 +2692,7 @@ NAOS_TEST(lack_of_memory_of_a_value_type_is_not_recorded)
 
 /* Records text as a default value of the option of command at index. */
 static argx_error_t default_option(argx_result_t *result, const argx_command_t *command,
-                                     size_t index, const char *text)
+                                   size_t index, const char *text)
 {
     argx_result_where_t where = in_default();
 
@@ -2701,7 +2701,7 @@ static argx_error_t default_option(argx_result_t *result, const argx_command_t *
 
 /* The same for the positional of command at index. */
 static argx_error_t default_positional(argx_result_t *result, const argx_command_t *command,
-                                         size_t index, const char *text)
+                                       size_t index, const char *text)
 {
     argx_result_where_t where = in_default();
 

@@ -209,7 +209,7 @@ static argx_error_t new_result(const argx_command_t *root, argx_result_t **out)
  * copy of the arguments only.
  */
 static argx_error_t finish_result(argx_result_t *result, argx_error_t error, size_t count,
-                                    argx_result_t **out)
+                                  argx_result_t **out)
 {
     if (error == ARGX_ERROR_NONE)
     {
@@ -227,7 +227,7 @@ static argx_error_t finish_result(argx_result_t *result, argx_error_t error, siz
 }
 
 argx_error_t argx_result_create(const argx_command_t *root, int argc, char *const *argv,
-                                    argx_result_t **out)
+                                argx_result_t **out)
 {
     argx_result_t *result;
     argx_error_t error;
@@ -250,7 +250,7 @@ argx_error_t argx_result_create(const argx_command_t *root, int argc, char *cons
 }
 
 argx_error_t argx_result_create_wide(const argx_command_t *root, int argc, wchar_t *const *argv,
-                                         argx_result_t **out)
+                                     argx_result_t **out)
 {
     argx_result_t *result;
     argx_error_t error;
@@ -410,7 +410,7 @@ static argx_error_t init_frame(argx_result_frame_t *frame, const argx_command_t 
     if (frame->positional_count > 0)
     {
         frame->positionals = (argx_positional_slot_t *)argx_calloc(frame->positional_count,
-                                                                       sizeof(*frame->positionals));
+                                                                   sizeof(*frame->positionals));
         if (frame->positionals == NULL)
         {
             argx_free(frame->options);
@@ -479,7 +479,7 @@ static const argx_command_t *root_of(const argx_command_t *command)
  * selected, so its options have no slot.
  */
 static argx_option_slot_t *find_option_slot(const argx_result_t *result,
-                                              const argx_option_t *option)
+                                            const argx_option_t *option)
 {
     const argx_command_t *command = argx_option_command(option);
     size_t i;
@@ -595,7 +595,7 @@ size_t argx_result_count(const argx_result_t *result, const argx_option_t *optio
 }
 
 argx_source_t argx_result_option_source(const argx_result_t *result,
-                                            const argx_option_t *option)
+                                        const argx_option_t *option)
 {
     const argx_option_slot_t *slot;
 
@@ -619,7 +619,7 @@ argx_source_t argx_result_option_source(const argx_result_t *result,
  * that of an option is; see find_option_slot().
  */
 static argx_positional_slot_t *find_positional_slot(const argx_result_t *result,
-                                                      const argx_positional_t *positional)
+                                                    const argx_positional_t *positional)
 {
     const argx_command_t *command = argx_positional_command(positional);
     size_t i;
@@ -719,8 +719,8 @@ static argx_error_t record_error(argx_result_t *result, const argx_result_failur
          * value is for.
          */
         parts.type_name = argx_type_name((failure->positional != NULL) ?
-                                           argx_positional_type(failure->positional) :
-                                           argx_option_type(failure->option));
+                                         argx_positional_type(failure->positional) :
+                                         argx_option_type(failure->option));
     }
 
     error = argx_message_build(&parts, &message);
@@ -767,9 +767,9 @@ argx_error_t argx_result_fail(argx_result_t *result, const argx_result_failure_t
  * positional is the one that the value is for; the other is NULL.
  */
 static argx_error_t conversion_failure(argx_result_t *result, argx_error_t error, const char *text,
-                                         const argx_result_where_t *where,
-                                         const argx_option_t *option,
-                                         const argx_positional_t *positional)
+                                       const argx_result_where_t *where,
+                                       const argx_option_t *option,
+                                       const argx_positional_t *positional)
 {
     argx_result_failure_t failure;
 
@@ -789,7 +789,7 @@ static argx_error_t conversion_failure(argx_result_t *result, argx_error_t error
 }
 
 argx_error_t argx_result_record_option_value(argx_result_t *result, const argx_option_t *option,
-                                                 const char *text, const argx_result_where_t *where)
+                                             const char *text, const argx_result_where_t *where)
 {
     const argx_type_t *type;
     argx_option_slot_t *slot;
@@ -826,8 +826,8 @@ argx_error_t argx_result_record_option_value(argx_result_t *result, const argx_o
 }
 
 argx_error_t argx_result_record_positional_value(argx_result_t *result,
-                                                     const argx_positional_t *positional,
-                                                     const char *text, const argx_result_where_t *where)
+                                                 const argx_positional_t *positional,
+                                                 const char *text, const argx_result_where_t *where)
 {
     const argx_type_t *type;
     argx_positional_slot_t *slot;
@@ -935,7 +935,7 @@ static const void *option_value(const argx_result_t *result, const argx_option_t
 }
 
 bool argx_result_option_string(const argx_result_t *result, const argx_option_t *option,
-                                 const char **out)
+                               const char **out)
 {
     const void *value;
 
@@ -1042,7 +1042,7 @@ size_t argx_result_positional_count(const argx_result_t *result, const argx_posi
 }
 
 argx_source_t argx_result_positional_source(const argx_result_t *result,
-                                                const argx_positional_t *positional)
+                                            const argx_positional_t *positional)
 {
     const argx_positional_slot_t *slot;
 
@@ -1076,7 +1076,7 @@ static const void *positional_value(const argx_result_t *result, const argx_posi
 }
 
 bool argx_result_positional_string(const argx_result_t *result, const argx_positional_t *positional,
-                                     size_t index, const char **out)
+                                   size_t index, const char **out)
 {
     const void *value;
 
@@ -1096,7 +1096,7 @@ bool argx_result_positional_string(const argx_result_t *result, const argx_posit
 }
 
 bool argx_result_positional_int(const argx_result_t *result, const argx_positional_t *positional,
-                                  size_t index, int64_t *out)
+                                size_t index, int64_t *out)
 {
     const void *value;
 
@@ -1116,7 +1116,7 @@ bool argx_result_positional_int(const argx_result_t *result, const argx_position
 }
 
 bool argx_result_positional_float(const argx_result_t *result, const argx_positional_t *positional,
-                                    size_t index, double *out)
+                                  size_t index, double *out)
 {
     const void *value;
 
@@ -1136,7 +1136,7 @@ bool argx_result_positional_float(const argx_result_t *result, const argx_positi
 }
 
 bool argx_result_positional_choice(const argx_result_t *result, const argx_positional_t *positional,
-                                     size_t index, size_t *out)
+                                   size_t index, size_t *out)
 {
     const void *value;
 
@@ -1156,7 +1156,7 @@ bool argx_result_positional_choice(const argx_result_t *result, const argx_posit
 }
 
 const void *argx_result_positional_value(const argx_result_t *result,
-                                           const argx_positional_t *positional, size_t index)
+                                         const argx_positional_t *positional, size_t index)
 {
     assert(result != NULL);
     assert(positional != NULL);

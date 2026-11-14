@@ -125,7 +125,7 @@ static argx_result_t *parse_ok(const fixture_t *fixture, int argc, char *const *
  * with the index, with the message. Returns the result.
  */
 static argx_result_t *parse_bad(const fixture_t *fixture, int argc, char *const *argv,
-                                  argx_parse_error_kind_t kind, size_t index, const char *message)
+                                argx_parse_error_kind_t kind, size_t index, const char *message)
 {
     argx_result_t *result = parse(fixture, argc, argv, ARGX_ERROR_INVALID_COMMAND_LINE);
 
@@ -943,8 +943,8 @@ static argx_result_t *parse_short_ok(const short_fixture_t *fixture, int argc, c
  * the result.
  */
 static argx_result_t *parse_short_bad(const short_fixture_t *fixture, int argc, char *const *argv,
-                                        argx_parse_error_kind_t kind, size_t index, char short_name,
-                                        const char *message)
+                                      argx_parse_error_kind_t kind, size_t index, char short_name,
+                                      const char *message)
 {
     argx_result_t *result = NULL;
 

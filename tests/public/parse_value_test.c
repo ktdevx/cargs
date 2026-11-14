@@ -76,7 +76,7 @@ static argx_command_t *add_subcommand(argx_command_t *command, const char *name)
  * NULL: the option has no default value then.
  */
 static argx_option_t *add_value(argx_command_t *command, char short_name, const char *long_name,
-                                  const argx_type_t *type, const char *default_value)
+                                const argx_type_t *type, const char *default_value)
 {
     argx_option_t *option = NULL;
 
@@ -92,7 +92,7 @@ static argx_option_t *add_value(argx_command_t *command, char short_name, const 
 
 /* Adds an option that takes a value and must be given to command. */
 static argx_option_t *add_required(argx_command_t *command, char short_name, const char *long_name,
-                                     const argx_type_t *type)
+                                   const argx_type_t *type)
 {
     argx_option_t *option = add_value(command, short_name, long_name, type, NULL);
 
@@ -105,8 +105,8 @@ static argx_option_t *add_required(argx_command_t *command, char short_name, con
  * has no default value then.
  */
 static argx_positional_t *add_positional(argx_command_t *command, const char *name,
-                                           const argx_type_t *type, argx_arity_t arity,
-                                           const char *default_value)
+                                         const argx_type_t *type, argx_arity_t arity,
+                                         const char *default_value)
 {
     argx_positional_t *positional = NULL;
 
@@ -154,7 +154,7 @@ static argx_result_t *parse_ok(const argx_command_t *root, int argc, char *const
  * Returns the result, which the caller destroys.
  */
 static argx_result_t *parse_bad(const argx_command_t *root, int argc, char *const *argv,
-                                  argx_parse_error_kind_t kind, const char *message)
+                                argx_parse_error_kind_t kind, const char *message)
 {
     argx_result_t *result = NULL;
 
@@ -767,7 +767,7 @@ NAOS_TEST(a_default_value_that_its_type_does_not_take_is_a_parse_error_without_d
     argx_result_t *result;
 
     NAOS_REQUIRE_TRUE(argx_type_create("word", sizeof(const char *), picky_convert, NULL, &picky,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
     first = add_value(root, '\0', "first", argx_type_string(), "good");
     second = add_value(root, '\0', "second", type, "bad");
     third = add_value(root, '\0', "third", argx_type_string(), "late");
@@ -1147,13 +1147,13 @@ NAOS_TEST(a_positional_that_takes_several_values_of_every_value_type_reads_each_
     argx_type_t *color_type = create_color_type();
     argx_type_t *word_type = create_word_type(&log);
     argx_positional_t *texts = add_positional(add_subcommand(root, "texts"), "ITEM", argx_type_string(),
-                                                ARGX_ARITY_ZERO_OR_MORE, NULL);
+                                              ARGX_ARITY_ZERO_OR_MORE, NULL);
     argx_positional_t *nums = add_positional(add_subcommand(root, "nums"), "ITEM", argx_type_int(),
-                                               ARGX_ARITY_ONE_OR_MORE, NULL);
+                                             ARGX_ARITY_ONE_OR_MORE, NULL);
     argx_positional_t *ratios = add_positional(add_subcommand(root, "ratios"), "ITEM", argx_type_float(),
-                                                 ARGX_ARITY_ZERO_OR_MORE, NULL);
+                                               ARGX_ARITY_ZERO_OR_MORE, NULL);
     argx_positional_t *colors = add_positional(add_subcommand(root, "colors"), "ITEM", color_type,
-                                                 ARGX_ARITY_ONE_OR_MORE, NULL);
+                                               ARGX_ARITY_ONE_OR_MORE, NULL);
     argx_positional_t *words =
         add_positional(add_subcommand(root, "words"), "ITEM", word_type, ARGX_ARITY_ZERO_OR_MORE, NULL);
     char *text_argv[] = { "tool", "texts", "b", "", "a", "b" };

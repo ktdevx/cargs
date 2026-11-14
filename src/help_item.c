@@ -298,7 +298,7 @@ static argx_error_t item_default_note(argx_vec_t *text, const char *value)
  * the choices of type, then default_value when it is not NULL.
  */
 static argx_error_t item_value_notes(argx_vec_t *text, const argx_type_t *type,
-                                       const char *default_value)
+                                     const char *default_value)
 {
     argx_error_t error = item_choices_note(text, type);
 
@@ -342,7 +342,7 @@ argx_error_t argx_help_item_option_notes(argx_vec_t *text, const argx_option_t *
 }
 
 argx_error_t argx_help_item_positional_notes(argx_vec_t *text,
-                                                 const argx_positional_t *positional)
+                                             const argx_positional_t *positional)
 {
     assert(text != NULL);
     assert(text->item_size == 1);

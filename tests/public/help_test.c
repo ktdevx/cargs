@@ -119,7 +119,7 @@ static void describe(argx_command_t *command, const char *description)
  * description, or NULL to set none.
  */
 static argx_command_t *add_sub(argx_command_t *command, const char *name,
-                                 const char *description)
+                               const char *description)
 {
     argx_command_t *sub = NULL;
 
@@ -142,7 +142,7 @@ static void add_positional(argx_command_t *command, const char *name, argx_arity
     argx_positional_t *positional = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, argx_type_string(), arity,
-                                                    &positional) == ARGX_ERROR_NONE);
+                                                  &positional) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     if (description != NULL)
     {
@@ -199,7 +199,7 @@ static void add_value(argx_command_t *command, char short_name, const char *long
     argx_option_t *option = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, argx_type_string(),
-                                               &option) == ARGX_ERROR_NONE);
+                                             &option) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, value_name) == ARGX_ERROR_NONE);
     if (description != NULL)

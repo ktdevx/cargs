@@ -6,17 +6,17 @@
 #         [-D ARGX_RELEASE_OUTPUT=<file>] -P tools/release/publish.cmake
 #
 #   ARGX_RELEASE_VERSION  The version to publish, such as 0.2.0 or
-#                           0.2.0-rc.1, without a leading "v" (the release
-#                           workflow takes it from the name of the branch
-#                           release/v<version>).
+#                         0.2.0-rc.1, without a leading "v" (the release
+#                         workflow takes it from the name of the branch
+#                         release/v<version>).
 #   ARGX_RELEASE_REPO_URL https://github.com/<owner>/<repo>, for the links to
-#                           earlier pre-releases in the notes.
+#                         earlier pre-releases in the notes.
 #   ARGX_SOURCE_DIR       The root of the source tree of the merged commit: it
-#                           holds include/argx/version.h and CHANGELOG.md.
+#                         holds include/argx/version.h and CHANGELOG.md.
 #   ARGX_RELEASE_NOTES    The file to write the notes of the release to. Its
-#                           directory is made when it does not exist.
+#                         directory is made when it does not exist.
 #   ARGX_RELEASE_OUTPUT   Optional. A file to append the results to, one
-#                           "key=value" line each, such as $GITHUB_OUTPUT:
+#                         "key=value" line each, such as $GITHUB_OUTPUT:
 #                             prerelease=<true|false>
 #                             title=v<version>
 #

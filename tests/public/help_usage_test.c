@@ -132,7 +132,7 @@ static void add_value(argx_command_t *command, char short_name, const char *long
 static void add_positional(argx_command_t *command, const char *name, argx_arity_t arity)
 {
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, argx_type_string(), arity,
-                                                    NULL) == ARGX_ERROR_NONE);
+                                                  NULL) == ARGX_ERROR_NONE);
 }
 
 /* Validates the tree of root; it must have no fault. */
@@ -344,7 +344,7 @@ NAOS_TEST(required_option_without_value_name_uses_type_name)
 
     NAOS_REQUIRE_TRUE(argx_type_create_choice(choices, 2, &choice) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_type_create("Port number", sizeof(int), convert_nothing, NULL, NULL,
-                                         &port) == ARGX_ERROR_NONE);
+                                       &port) == ARGX_ERROR_NONE);
 
     add_value(root, '\0', "name", argx_type_string(), NULL, true);
     add_value(root, 'n', NULL, argx_type_int(), NULL, true);

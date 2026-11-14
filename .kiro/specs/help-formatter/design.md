@@ -479,7 +479,7 @@ bool argx_out_failed(const argx_out_t *out);
 ```c
 /* src/wrap.h */
 void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
-                       size_t column, size_t width);
+                     size_t column, size_t width);
 ```
 
 - Preconditions: `out` は `NULL` でない。`text` は、`length` が 0 でなければ `NULL` でない。`out` の現在の桁は `column` 以下である。`width` が 0 なら、制限なしである。
@@ -522,7 +522,7 @@ void argx_help_item_usage_option(argx_out_t *out, const argx_option_t *option);
 argx_error_t argx_help_item_text_append(argx_vec_t *text, const char *part, size_t length);
 argx_error_t argx_help_item_option_notes(argx_vec_t *text, const argx_option_t *option);
 argx_error_t argx_help_item_positional_notes(argx_vec_t *text,
-                                                 const argx_positional_t *positional);
+                                             const argx_positional_t *positional);
 ```
 
 - Preconditions: どの引数も `NULL` でない。`text` は、項目の大きさが 1 で初期化された `argx_vec_t` である。`argx_help_item_usage_option()` の `option` は、値付きオプションである。
@@ -619,18 +619,18 @@ ARGX_API void argx_help_options_set_max_column(argx_help_options_t *options, siz
 typedef bool (*argx_help_write_fn_t)(void *user_data, const char *text, size_t length);
 
 ARGX_API argx_error_t argx_help_write(const argx_command_t *command,
+                                      const argx_help_options_t *options,
+                                      argx_help_write_fn_t write_fn, void *user_data);
+ARGX_API argx_error_t argx_help_write_usage(const argx_command_t *command,
                                             const argx_help_options_t *options,
                                             argx_help_write_fn_t write_fn, void *user_data);
-ARGX_API argx_error_t argx_help_write_usage(const argx_command_t *command,
-                                                  const argx_help_options_t *options,
-                                                  argx_help_write_fn_t write_fn, void *user_data);
 
 ARGX_API argx_error_t argx_help_format(const argx_command_t *command,
+                                       const argx_help_options_t *options,
+                                       char *buffer, size_t size, size_t *length);
+ARGX_API argx_error_t argx_help_format_usage(const argx_command_t *command,
                                              const argx_help_options_t *options,
                                              char *buffer, size_t size, size_t *length);
-ARGX_API argx_error_t argx_help_format_usage(const argx_command_t *command,
-                                                   const argx_help_options_t *options,
-                                                   char *buffer, size_t size, size_t *length);
 ```
 
 **書き込み関数の契約**（`argx_help_write_fn_t`）

@@ -85,7 +85,7 @@ static void locate(argx_result_where_t *where, argx_source_t source, const eleme
  * command and was not given. Returns what argx_result_fail() returns.
  */
 static argx_error_t fail_missing(argx_result_t *result, const argx_command_t *command,
-                                   const argx_option_t *option, const argx_positional_t *positional)
+                                 const argx_option_t *option, const argx_positional_t *positional)
 {
     argx_result_failure_t failure;
     element_name_t name;

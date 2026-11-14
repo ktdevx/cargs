@@ -160,7 +160,7 @@ static void add_file(argx_command_t *command, char short_name, const char *long_
     argx_option_t *option = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, argx_type_string(),
-                                               &option) == ARGX_ERROR_NONE);
+                                             &option) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, "FILE") == ARGX_ERROR_NONE);
     if (default_value != NULL)
@@ -260,8 +260,8 @@ static const char default_usage[] = "Usage: tool [OPTIONS] --config <FILE> [COMM
 
 /* Has the text of the kind passed to a write function. */
 static argx_error_t write_text(text_kind_t kind, const argx_command_t *command,
-                                 const argx_help_options_t *options,
-                                 argx_help_write_fn_t write_fn, void *user_data)
+                               const argx_help_options_t *options,
+                               argx_help_write_fn_t write_fn, void *user_data)
 {
     if (kind == TEXT_USAGE)
     {
@@ -272,8 +272,8 @@ static argx_error_t write_text(text_kind_t kind, const argx_command_t *command,
 
 /* Has the text of the kind put into an array. */
 static argx_error_t format_text(text_kind_t kind, const argx_command_t *command,
-                                  const argx_help_options_t *options, char *buffer, size_t size,
-                                  size_t *length)
+                                const argx_help_options_t *options, char *buffer, size_t size,
+                                size_t *length)
 {
     if (kind == TEXT_USAGE)
     {
@@ -787,7 +787,7 @@ static void check_out_of_memory(const argx_command_t *command,
 
     argx_test_allocator_fail_at(argx_test_allocator_requests() + 1);
     error = argx_help_format(command, options, call.null_buffer ? NULL : (area + GUARD_SIZE),
-                               call.size, call.with_length ? &length : NULL);
+                             call.size, call.with_length ? &length : NULL);
     argx_test_allocator_fail_at(0);
 
     NAOS_CHECK_TRUE(error == ARGX_ERROR_OUT_OF_MEMORY);

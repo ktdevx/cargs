@@ -195,7 +195,7 @@ void argx_command_destroy(argx_command_t *root)
 }
 
 argx_error_t argx_command_add_subcommand(argx_command_t *command, const char *name,
-                                             argx_command_t **out)
+                                         argx_command_t **out)
 {
     argx_command_t *subcommand;
 
@@ -364,7 +364,7 @@ const argx_option_t *argx_command_find_short(const argx_command_t *command, char
 }
 
 const argx_option_t *argx_command_find_long(const argx_command_t *command, const char *name,
-                                                size_t length, bool *negated)
+                                            size_t length, bool *negated)
 {
     size_t index;
 
