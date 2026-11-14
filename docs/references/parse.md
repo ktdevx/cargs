@@ -1,8 +1,20 @@
 # Parsing
 
-Parsing reads argv with a validated schema and gives you a result, from which you read the values. This document covers parsing, reading the result, parse errors and destroying the result, and the command-line syntax that the users of your program can write. Parsing prints nothing, does not end the process, and does not read environment variables.
+Parsing reads argv with a validated schema and gives you a result, from which you read the values. This document covers parsing, reading the result, parse errors and destroying the result. Parsing prints nothing, does not end the process, and does not read environment variables.
 
-This document is a reference; how a program uses these functions is in the [Guide](guide.md). Defining a schema is in [Schemas](schema.md), the help in [Help and Usage](help.md), the rules for memory in [Ownership and Lifetime](ownership.md), and the description and preconditions of each function in the comments of `include/argx/parse.h`.
+This document is the API reference of `include/argx/parse.h`; the comments of the header describe each function in detail, and how a program uses them is in the [Guide](../guides/guide.md). The command lines that parsing accepts are specified in [Command-Line Syntax](syntax.md). Defining a schema is in [Schemas](schema.md), the help in [Help and Usage](help.md), and the rules for memory in [Ownership and Lifetime](ownership.md).
+
+## Functions
+
+| Functions | Section |
+| --- | --- |
+| `argx_parse`, `argx_parse_wide` | [Entry points](#entry-points) |
+| `argx_result_error`, `argx_result_command_count`, `argx_result_command_at`, `argx_result_command` | [Reading the result](#reading-the-result) |
+| `argx_result_flag`, `argx_result_count`, `argx_result_option_source`, `argx_result_option_string`, `argx_result_option_int`, `argx_result_option_float`, `argx_result_option_choice`, `argx_result_option_value` | [Reading the result](#reading-the-result) |
+| `argx_result_positional_count`, `argx_result_positional_source`, `argx_result_positional_string`, `argx_result_positional_int`, `argx_result_positional_float`, `argx_result_positional_choice`, `argx_result_positional_value` | [Reading the result](#reading-the-result) |
+| `argx_result_error_kind`, `argx_result_error_message` | [Kinds and messages](#kinds-and-messages) |
+| `argx_result_error_argument`, `argx_result_error_value`, `argx_result_error_source`, `argx_result_error_index`, `argx_result_error_command`, `argx_result_error_option`, `argx_result_error_positional`, `argx_result_error_short_name` | [Parse error details](#parse-error-details) |
+| `argx_result_destroy` | [Lifetime rules](#lifetime-rules) |
 
 ## Entry points
 
@@ -141,20 +153,20 @@ The library prints nothing. Your code prints the message:
 fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
 ```
 
-Anything more, such as adding the usage line, pointing at the offending element or changing the wording for each kind, is done in your code by reading the [Parse error details](#parse-error-details). An example that prints the usage line of the command where the error was found, with the message, is in the [Guide](guide.md#5-print-the-help-or-the-parse-error). The messages are in English only.
+Anything more, such as adding the usage line, pointing at the offending element or changing the wording for each kind, is done in your code by reading the [Parse error details](#parse-error-details). An example that prints the usage line of the command where the error was found, with the message, is in the [Guide](../guides/guide.md#5-print-the-help-or-the-parse-error). The messages are in English only.
 
 ## `--help`
 
 The library does not treat `--help` specially. `--help` is a flag that is defined in the schema like any other option, and it is read from the result with `argx_result_flag`. Parsing neither generates nor prints the help; generating it is in [Help and Usage](help.md).
 
-- An option is recognized only while its command is the current command ([Subcommands](#subcommands)). With `--help` defined only on the root, `pack --help` and `pack --help create` are accepted, but `pack create --help` is an unknown option, because `create` has no `--help`.
+- An option is recognized only while its command is the current command ([Subcommands](syntax.md#subcommands)). With `--help` defined only on the root, `pack --help` and `pack --help create` are accepted, but `pack create --help` is an unknown option, because `create` has no `--help`.
 - A result with a parse error holds what was read before the error ([The result of a parse error](#the-result-of-a-parse-error)). `pack create --help` does not give `--output`, a required option of `create`, so `argx_parse` returns a parse error for a missing required option; `--help` was read before that error was found, so it reads as given.
 - If an element before `--help` causes a parse error, parsing stops there and `--help` is not read (`pack create --bogus --help` is an unknown option error).
 - The `--help` of a command that was not selected reads as `false`. `argx_result_command` returns the last selected command, and passing it to `argx_help_write` generates the help of that command.
 
 ## Wide-character argv
 
-`argx_parse_wide` parses a wide-character argv, such as the one that `wmain` receives. On Windows, it is the way to receive arguments that contain non-ASCII characters without losing any of them to the code page. An example with `wmain` is in the [Guide](guide.md#wide-character-argv-with-wmain).
+`argx_parse_wide` parses a wide-character argv, such as the one that `wmain` receives. On Windows, it is the way to receive arguments that contain non-ASCII characters without losing any of them to the code page. An example with `wmain` is in the [Guide](../guides/guide.md#wide-character-argv-with-wmain).
 
 - **`argx_parse_wide` is provided on every platform,** not only on Windows.
 - How a wide string is read depends on the width of `wchar_t`, not on the locale:
@@ -174,121 +186,6 @@ The library does not treat `--help` specially. `--help` is a flag that is define
 - The return values, `*out`, ownership and preconditions are the same as for `argx_parse`.
 - The library does not call operating system APIs. Making the console display the UTF-8 strings (on Windows, setting the output code page of the console, and so on) is up to the program.
 
-## Command-line syntax
-
-These are the forms that the users of your program can write on the command line. They are the same for `argx_parse` and `argx_parse_wide`.
-
-### Terms
-
-- An **element** is one string of argv (`argv[1]` onward).
-- The **terminator** is the first `--` that is read as an element on its own. Every element after it is a value.
-- The **current command** is the root at first. It becomes a subcommand each time the name of that subcommand appears. **Options are looked up only in the current command**: the options of the parent and of the subcommands are not looked at ([Subcommands](#subcommands)).
-- An **operand** is an element that is neither an option nor the terminator. If the current command has subcommands, an operand is the name of a subcommand; if it does not, it is the value of a positional. In a validated schema, no command has both subcommands and positionals.
-
-### How elements are classified
-
-Each element is classified by the first row that matches.
-
-| Form of the element | Condition | Classified as |
-| --- | --- | --- |
-| Any | After the terminator | The value of a positional (for a command that has subcommands, an `UNEXPECTED_POSITIONAL` parse error) |
-| `--` | — | The terminator. It does not become a value |
-| `--x…` | — | A long option. It is split into the name and the value at the first `=` |
-| `-` | — | An operand |
-| `-N…`, `-.N…` (N is a digit) | The current command has no short name that is a digit | An operand |
-| `-x…` | — | A bundle of short options |
-| Anything else (including the empty string) | — | An operand |
-
-- Every element after the terminator is a value, whatever its form: `-v`, `--name` and a second `--` too. The terminator stays in effect after parsing switches to a subcommand.
-- An element that is taken as the value of an option with a value is not classified. The `-x` of `--name -x` and the `--` of `--name --` are both values.
-- Option names and subcommand names are compared as whole names, byte by byte. Uppercase and lowercase letters make different names, and a prefix of a name does not match.
-
-Edge cases:
-
-- An element in the form of a negative number (`-1`, `-.5`) is an operand only if the current command has no option whose short name is a digit. If it has even one, every such element is read as a bundle (in `-.5`, the `.` is an unknown option). To pass a negative number to a positional of such a command, write it after the terminator.
-
-### How options take values
-
-A long option is matched against the long names and the negated names. In a bundle of short options, the characters after the `-` are matched one at a time, from the first, against the short names.
-
-| Form | Kind of option | Behavior |
-| --- | --- | --- |
-| `--name=value` | With a value | The text right after the `=` is the value (it may be empty) |
-| `--name` | With a value | The next element is the value, whatever it contains. If there is none, `MISSING_VALUE` |
-| `--name=value`, `--no-name=value` | Flag, negatable flag, count | `UNEXPECTED_VALUE` |
-| Characters remain after `-o` | With a value | All of the remaining characters are the value. This ends the bundle |
-| `-o` is the last in the bundle | With a value | The next element is the value, whatever it contains. If there is none, `MISSING_VALUE` |
-
-Forms of options that take no value:
-
-| Form | Kind of option | Behavior |
-| --- | --- | --- |
-| `--name`, `-n` | Flag | Given |
-| `--name`, `-n` | Count | The count goes up by 1 |
-| `--name`, `-n` | Negatable flag | On |
-| `--no-name` | Negatable flag | Off |
-
-- `-abc` is the same as `-a -b -c`, and `-vvv` gives a count 3 times. `-abovalue` is the same as `-a -b -ovalue`, and `-abo value` is the same as `-a -b -o value`.
-- The name of a long option ends before the first `=`, so the value of `--name=a=b` is `a=b`.
-- A value is passed to the value type as it was written, without changes; white space at the start and the end is kept. The input that each value type accepts is in [Schemas](schema.md#value-types).
-
-Edge cases:
-
-- In a bundle, the value of an option with a value is all of the remaining characters, so the value of `-o=value` is `=value`. The `=` is not removed.
-- After an option that takes no value, every character is matched as a short name. The second `-` of `-a-b` and the `=` of `-a=1` cannot be short names, so they are unknown options (`unknown option '--'` and `unknown option '-='`).
-
-### Repeated options
-
-The same option can be given any number of times, by its short name or by its long name.
-
-| Kind of option | Result of giving it more than once |
-| --- | --- |
-| Flag | Stays given |
-| Count | The number of times it was given (`-v --verbose -vv` is 4) |
-| Negatable flag | The last one given (`--color --no-color` is off; in the reverse order, on) |
-| With a value | The last value (`--out a --out b` is `b`) |
-
-Each value of an option with a value is converted by the value type as it is read, including a value that is later replaced. So `--num x --num 5` is a parse error for the failed conversion of `x`.
-
-### Assigning positionals
-
-In a command that has no subcommands, operands are assigned in the order they appear to the positionals, in the order the positionals were added.
-
-| Arity of the positional | Assignment |
-| --- | --- |
-| `ARGX_ARITY_REQUIRED`, `ARGX_ARITY_OPTIONAL` | One value is assigned. The next operand goes to the next positional |
-| `ARGX_ARITY_ZERO_OR_MORE`, `ARGX_ARITY_ONE_OR_MORE` | The value is assigned, and so is every later operand |
-
-- Options can be written before, between or after the values of positionals. The assignment does not change.
-- An operand that is left over after every positional has its values is an `UNEXPECTED_POSITIONAL` parse error. So is any operand in a command that has no positionals.
-- A lone `-` and the empty string become values of positionals. To pass a value that starts with `-`, write it after the terminator `--`.
-- A value is converted by the value type of its positional as it is read.
-
-### Subcommands
-
-In a command that has subcommands, an operand is matched against the names of its subcommands.
-
-- The matching subcommand is selected and becomes the current command. The elements after its name are read with the options, positionals and subcommands of that subcommand. There is no limit to the depth of nesting.
-- A name that matches none of the subcommands of the current command is an `UNKNOWN_SUBCOMMAND` parse error.
-- **Write an option after the name of the command that defines it, and before the name of that command's subcommand.** The `-v` of `pack -v create …` is an option of `pack`. The `-v` of `pack create -v …` is looked up in `create`; if `create` has no `-v`, it is an unknown option. Subcommands do not inherit the options of their parent.
-- When a parent and a child have options with the same name, each option belongs to its own command, at its own position.
-- A command line that ends without the name of a subcommand is not a parse error. `argx_result_command` then returns the command that has subcommands. A program that requires a subcommand checks this itself, as `run` in [examples/pack.c](../examples/pack.c) does.
-- An element after the terminator does not become the name of a subcommand. A command that has subcommands has no positionals, so it is an `UNEXPECTED_POSITIONAL` parse error.
-- The options and positionals of subcommands that were not selected read as not given ([Rules for reading](#rules-for-reading)).
-
-### Required checks and default values
-
-When parsing has read the last element without a parse error, two steps are done for the selected commands. The options and positionals of commands that were not selected are neither checked nor given default values, even if they are required.
-
-1. **The required checks.** A required option with a value (`argx_option_set_required`) with no value, or a positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` with no value at all, is a `MISSING_OPTION` or `MISSING_POSITIONAL` parse error. When two or more are missing, the first one is reported: commands closer to the root first, and within one command, options before positionals, each in the order they were added.
-2. **Applying the default values,** only when nothing is missing. Each option with a value and each positional of `ARGX_ARITY_OPTIONAL` that was not given and has a default value gets the default value, converted by its value type. Its source becomes `ARGX_SOURCE_DEFAULT`.
-
-- After a parse that succeeded, every required option with a value of the selected commands has a value, and every positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` has at least one.
-- An option with a value or an optional positional that was not given and has no default value has no value (its source is `ARGX_SOURCE_NONE`). A positional of `ARGX_ARITY_ZERO_OR_MORE` that was not given has 0 values.
-- A flag that was not given is "not given", a count is 0, and a negatable flag is in its initial state (`argx_option_set_initial`). Their source is `ARGX_SOURCE_DEFAULT`.
-- The only sources of a value are the command line and the default values. Environment variables and the like are not read.
-- If the conversion of a default value fails, it is an `INVALID_VALUE` parse error. Validation of the schema has already checked the default values, so this happens only when a user-defined value type gives a different answer for the same input.
-
 ## Lifetime rules
 
 | Object | Owner | How long it is valid |
@@ -300,12 +197,12 @@ When parsing has read the last element without a parse error, two steps are done
 | The argv array and strings | You | They need to be valid only during the call to `argx_parse` |
 | The schema and the value types it uses | You | Do not change or destroy them until all of their results have been destroyed |
 
-- **Destroy the result before the schema.** A result borrows the schema and the value types: destroying it cleans up the values it holds with the release functions of the value types. The order of destruction is in [Schemas](schema.md#borrowed-value-types-and-the-order-of-destruction).
+- **Destroy the result before the schema.** A result borrows the schema and the value types: destroying it cleans up the values it holds with the release functions of the value types. The order of destruction is in [Value Types](types.md#borrowed-value-types-and-the-order-of-destruction).
 - **Do not change the schema while a result exists.** While even one result is left, do not add options, positionals or subcommands to the schema, or set attributes.
 - **You may change or free argv after parsing.** The result holds copies of all the strings of argv, and refers to neither the argv array nor its strings after `argx_parse` returns.
 - **Strings and values read from the result are valid until the result is destroyed.** To use one after that, copy it first.
 - On an allocation failure (`ARGX_ERROR_OUT_OF_MEMORY`), `*out` is `NULL` and there is nothing to destroy. All the memory allocated for that call, and the converted values, have been cleaned up.
-- `argx_result_destroy(NULL)` does nothing. If you initialize `result` to `NULL`, as [examples/pack.c](../examples/pack.c) does, the cleanup is the same on every path.
+- `argx_result_destroy(NULL)` does nothing. If you initialize `result` to `NULL`, as [examples/pack.c](../../examples/pack.c) does, the cleanup is the same on every path.
 - Destroying a result neither changes nor destroys the schema and the value types, so you can parse with the same schema any number of times. Results are independent of each other and can be destroyed in any order.
 - All memory is allocated from the allocator set for the library (`argx_set_allocator`). Do not set the allocator again while a result is left ([Ownership and Lifetime](ownership.md#5-allocator)).
 - The library does not detect destroying the schema before a result, or changing the schema while a result exists.

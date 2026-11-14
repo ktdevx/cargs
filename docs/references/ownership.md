@@ -2,7 +2,7 @@
 
 This document defines who allocates memory and who frees it, and how long the things you pass and the things you get back stay valid. Every public function of ArgX follows these rules. It is written for you as a user of the library: it tells you what you free yourself and what you must not free.
 
-This document covers the rules themselves and how they apply to schemas, parsing, results and help. How a program puts these together is in the [Guide](guide.md), and how to define a schema, parse argv and generate help is in [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md). The detailed description and the preconditions of each function are in the comments of the public headers under `include/argx/`. How the library code implements these rules is in [Development Conventions](conventions.md#applying-the-ownership-rules).
+This document specifies these rules. Where each API page applies them is in [Where the rules are applied](#where-the-rules-are-applied), and why some of them were chosen is in [Design](../guides/design.md). The detailed description and the preconditions of each function are in the comments of the public headers under `include/argx/`. How the library code implements these rules is in [Development Conventions](../development/conventions.md#applying-the-ownership-rules).
 
 In the examples of this document, names that start with `argx_example_` are placeholders used for explanation; they do not exist in the library. The other names (`argx_set_allocator`, `argx_error_message`, `argx_strdup` and so on) are real.
 
@@ -28,8 +28,6 @@ The rules divide failures into two kinds. Every rule assumes this division.
 | Runtime failure | Something that can happen even in a correct program | Memory allocation failure. Schema definition errors that come from the content of strings or from the relation between definitions (the table below). Errors in the input of the user of your program, and so on | Returned as `argx_error_t` ([rule 7](#7-how-failures-are-returned)) |
 | Programming error | Something that always happens until the calling code is fixed, and that cannot be handled at run time | `NULL` for a required argument, an allocator with a missing function, an index out of range, use of an object that was already destroyed | A precondition of the function. No error code is assigned |
 
-Programming errors get no error code because the caller cannot handle them at run time, and making the caller write code that checks for them would be pointless.
-
 Schema definition errors are divided into these two kinds by where they come from.
 
 | Where the error comes from | Examples | Handling |
@@ -38,13 +36,7 @@ Schema definition errors are divided into these two kinds by where they come fro
 | The relation between definitions | A name conflict within the same command, positionals used together with subcommands, required used together with a default value, a contradiction in the order of positionals, setting an attribute on a kind of definition element it does not apply to, a list of choices that is empty or has duplicates | Runtime failure. Returned as `argx_error_t` |
 | The form of an argument | `NULL` for a required argument, an index out of range, a value that is not in the enumeration | Programming error. Stays a precondition |
 
-Most definition errors are also fixed by fixing the calling code. Even so, the errors that come from the content of strings and from the relation between definitions are error codes, for these reasons:
-
-- Names, default values and the strings of choices can be built from data decided at run time, such as a configuration file or a plug-in. In that case they can happen even in a correct program.
-- If the caller tried to check them before calling the library, it would have to implement the naming rules and the comparison with the definitions added so far in the same way as the library. Only the library can check them.
-- In the Release configuration, `assert` does not check anything. If these were preconditions, a wrong definition would remain undetected, and later parsing and help would behave in undefined ways. With an error code, the caller receives the kind of error in every configuration.
-
-Errors in the form of an argument are none of these. Whether a pointer is not `NULL`, whether an index is less than the count, and whether an enumeration value is a defined one are decided only by the calling code, and you can check them by looking at the call site. So they stay preconditions.
+Why definition errors are error codes and errors in the form of an argument are preconditions is in [Design](../guides/design.md#runtime-failures-are-error-codes-programming-errors-are-preconditions).
 
 Preconditions are handled as follows:
 
@@ -54,8 +46,6 @@ Preconditions are handled as follows:
 - Preconditions that cannot be checked (such as setting the allocator only while no object exists) are only written in comments and documents.
 
 On a runtime failure, the library does not abort the process, prints nothing, and does not set `errno`. In the Debug configuration, only programming errors cause an abort.
-
-During development, we recommend that you use the library built in the Debug configuration. In the Release configuration, errors go undetected and can turn into crashes or memory corruption.
 
 What the library guarantees:
 
@@ -105,7 +95,7 @@ argx_example_destroy(example);
 - When the library uses a string after the call returns, the library duplicates it. Once the call returns, you may change or free the string.
 - Functions that borrow a string without duplicating it are the exception. The comment of such a function says so, and says how long you must keep the string valid. A function whose comment does not say so duplicates.
 
-Duplicating is the default so that you do not have to think about the lifetime of strings. It is safe to pass a local array or a buffer that you overwrite later.
+It is safe to pass a local array or a buffer that you overwrite later.
 
 ```c
 char name[32];
@@ -141,50 +131,7 @@ argx_example_destroy(example);
 
 - There is one allocator for the whole library. Public functions do not take an allocator as an argument. If you do not set one, the standard `malloc`, `realloc`, `calloc` and `free` are used.
 - Call `argx_set_allocator()` while no object of the library exists and no other thread is calling the library. Usually you call it once, at the start of the program.
-- The library keeps a copy of the `argx_allocator_t` you pass. Once the call returns, you may discard the structure.
-- Keep the four functions you set valid until you set a different allocator, and until every object allocated with that allocator has been destroyed.
-
-The time when you may set it is limited so that memory allocated with one allocator is never freed with another. If you change the setting while objects exist, memory from the old allocator is freed with the new one. The library does not detect this mistake. It does not synchronize changes to the setting either.
-
-```c
-#include <argx/argx.h>
-
-/* Your functions. Give them the same form as the standard malloc, realloc, calloc and free. */
-void *my_malloc(size_t size);
-void *my_realloc(void *ptr, size_t size);
-void *my_calloc(size_t count, size_t size);
-void my_free(void *ptr);
-
-int main(void)
-{
-    /* The order of the fields is malloc_fn, realloc_fn, calloc_fn, free_fn. */
-    argx_allocator_t allocator = { my_malloc, my_realloc, my_calloc, my_free };
-
-    /* Set it once, before calling any other function of the library. */
-    argx_set_allocator(&allocator);
-
-    /* Use the library from here. Destroy every object you create. */
-
-    /* To go back to the default, pass NULL after destroying every object. */
-    argx_set_allocator(NULL);
-    return 0;
-}
-```
-
-That none of the four functions is `NULL` is a precondition of `argx_set_allocator()`. You cannot pass a structure that was only initialized with zeros.
-
-What your functions must do (the full text is in the comments of `include/argx/alloc.h`):
-
-- `malloc_fn`, `calloc_fn` and `realloc_fn` return memory that is aligned for an object of any type. They return `NULL` when they fail.
-- `calloc_fn` returns memory with all of its `count * size` bytes set to 0.
-- `realloc_fn`, when it succeeds, keeps the content up to the smaller of the old size and the new size. When it fails, it keeps the original memory valid as it is.
-- If you use the library from several threads, the four functions work correctly when they are called at the same time.
-
-The library does not check these. On its side, the library never requests a size of 0 or a count of 0, never passes `NULL` to reallocation or freeing, and never frees the same pointer twice.
-
-The allocator does not carry user data (a context). If your allocator needs state, keep that state on your side.
-
-There is one setting inside the library. If you link the static library into several modules (for example, an executable and a DLL) separately, each module has its own setting.
+- The type `argx_allocator_t`, `argx_set_allocator()` and what the four functions must do are in [Allocator](alloc.md).
 
 ## 6. Whoever allocates frees
 
@@ -218,15 +165,9 @@ How these rules apply to each kind of object, with the details, is in the refere
 
 | Objects | Where |
 | --- | --- |
-| Schemas and value types, and the order of destruction | [Rules common to all definitions](schema.md#rules-common-to-all-definitions), [Borrowed value types and the order of destruction](schema.md#borrowed-value-types-and-the-order-of-destruction) |
+| Schemas and value types, and the order of destruction | [Rules common to all definitions](schema.md#rules-common-to-all-definitions), [Borrowed value types and the order of destruction](types.md#borrowed-value-types-and-the-order-of-destruction) |
 | Results, argv and parse errors | [Entry points](parse.md#entry-points), [Lifetime rules](parse.md#lifetime-rules) of Parsing |
 | Help options, write functions and buffers | [On failure](help.md#on-failure), [Lifetime rules](help.md#lifetime-rules) of Help and Usage |
+| The allocator | [Allocator](alloc.md) |
+| Error codes and their messages | [Error Codes](errors.md) |
 
-## Allocator and error functions
-
-The public functions for the allocator and for errors also follow these rules.
-
-| Function | How it follows the rules |
-| --- | --- |
-| `void argx_set_allocator(const argx_allocator_t *allocator)` | It cannot fail at run time, so it returns nothing (rule 7). It allocates no memory. `NULL` goes back to the default (rule 4). It copies the structure (rule 5). That none of the four functions is `NULL` is a precondition, checked with `assert`. The preconditions are in the comments of `include/argx/alloc.h` |
-| `const char *argx_error_message(argx_error_t error)` | It cannot fail at run time, so it returns the string directly (rule 7). The string stays valid until the program ends, and you do not free it (rule 3). It allocates no memory. It has no preconditions. For a value that is not in the list, it returns `"unknown error code"` |

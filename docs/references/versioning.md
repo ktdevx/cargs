@@ -1,8 +1,8 @@
 # Versioning
 
-This document describes how ArgX numbers its versions, what a new version may change, and how a program can check the version it uses. It is meant for users of the library and for contributors.
+This document specifies how ArgX numbers its versions and what a new version may change. It is meant for users of the library and for contributors. How a program checks the version it uses is in [Version](version.md).
 
-Changes in each version are listed in the [changelog](../CHANGELOG.md). How a version is released is described in [the release process](releasing.md).
+Changes in each version are listed in the [changelog](../../CHANGELOG.md). How a version is released is described in [the release process](../development/releasing.md).
 
 ## Version numbers and tags
 
@@ -62,45 +62,5 @@ Under Semantic Versioning 2.0.0, a pre-release has a lower precedence than its r
 
 ## Supported versions
 
-Which versions receive fixes is described in the [security policy](../SECURITY.md#supported-versions).
+Which versions receive fixes is described in the [security policy](../../SECURITY.md#supported-versions).
 
-## Checking the version in code
-
-The header `<argx/version.h>` describes the version of the headers:
-
-| Name | Value |
-| --- | --- |
-| `ARGX_VERSION_MAJOR`, `ARGX_VERSION_MINOR`, `ARGX_VERSION_PATCH` | The numeric parts, as integers |
-| `ARGX_VERSION_PRERELEASE` | The pre-release identifiers without the leading hyphen, such as `"rc.1"`, as a string literal; `""` for a release |
-| `ARGX_MAKE_VERSION(major, minor, patch)` | Packs a version into one number, `0x00MMmmpp` |
-| `ARGX_VERSION_NUMBER` | The version of the headers, packed with `ARGX_MAKE_VERSION` |
-
-`argx_version()` returns the version of the library that is linked, packed like `ARGX_VERSION_NUMBER`. Compare the two to check that the headers and the library match:
-
-```c
-if (argx_version() != ARGX_VERSION_NUMBER)
-{
-    /* The headers and the library are different versions. */
-}
-```
-
-The packed number holds only the numeric part. It is the same for `0.2.0-rc.1` and `0.2.0`.
-
-`ARGX_VERSION_NUMBER` and `ARGX_MAKE_VERSION()` contain casts, so they cannot be used in `#if`. In `#if`, compare the numeric macros one by one:
-
-```c
-#if ARGX_VERSION_MAJOR > 0 || ARGX_VERSION_MINOR >= 2
-/* Code for 0.2.0 or later. */
-#endif
-```
-
-The installed package files hold the version as well:
-
-| Where | Value |
-| --- | --- |
-| `ArgX_VERSION`, set by `find_package(ArgX)` | The numeric part, such as `0.2.0` |
-| `ArgX_VERSION_FULL`, set by `find_package(ArgX)` | The full version, such as `0.2.0-rc.1`; equal to `ArgX_VERSION` for a release |
-| `ArgX_VERSION_PRERELEASE`, set by `find_package(ArgX)` | The pre-release identifiers, such as `rc.1`; empty for a release |
-| `Version` in `argx.pc` (`pkg-config --modversion argx`) | The full version, such as `0.2.0-rc.1` |
-
-These variables are set only by `find_package`. A project that adds ArgX with `FetchContent` or `add_subdirectory` reads the version from the header.

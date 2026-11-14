@@ -1,6 +1,6 @@
 # Releasing
 
-This document describes how a maintainer releases a new version of ArgX, the repository settings the release process needs, and how to recover when something goes wrong. How version numbers are chosen is described in [the versioning policy](versioning.md). The changes of each version are listed in [the changelog](../CHANGELOG.md).
+This document describes how a maintainer releases a new version of ArgX, the repository settings the release process needs, and how to recover when something goes wrong. How version numbers are chosen is described in [the versioning policy](../references/versioning.md). The changes of each version are listed in [the changelog](../../CHANGELOG.md).
 
 ## Overview
 
@@ -31,7 +31,7 @@ These settings are made by hand, once, by a maintainer with admin access. The wo
 
    Do not add a rule that stops the creation of branches named `release/v*`: the **Release PR** workflow creates them.
 4. **Protecting tags (optional).** If a ruleset protects the tags `v*`, it must still let GitHub Actions create them, since the **Release** workflow pushes the tag. Restrict updates and deletions of the tags, which the workflows never do, but not their creation; or, if your ruleset lets you add GitHub Actions to its bypass list, add it there. A tag that cannot be pushed makes the **Release** workflow fail before the GitHub Release is created.
-5. **Enable private vulnerability reporting.** In Settings > Code security, enable **Private vulnerability reporting**. [SECURITY.md](../SECURITY.md) and the issue template configuration (`.github/ISSUE_TEMPLATE/config.yml`) send vulnerability reports to this form, which does not work until it is enabled.
+5. **Enable private vulnerability reporting.** In Settings > Code security, enable **Private vulnerability reporting**. [SECURITY.md](../../SECURITY.md) and the issue template configuration (`.github/ISSUE_TEMPLATE/config.yml`) send vulnerability reports to this form, which does not work until it is enabled.
 
 ## Permissions and secrets
 
@@ -54,7 +54,7 @@ The **Release** workflow runs on `pull_request`, not `pull_request_target`, and 
 
 ## Keeping the changelog
 
-Every pull request with a change visible to users adds an entry under `Unreleased` in [CHANGELOG.md](../CHANGELOG.md), in the matching category (Added, Changed, Deprecated, Removed, Fixed or Security). The pull request template asks for it. The changelog follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
+Every pull request with a change visible to users adds an entry under `Unreleased` in [CHANGELOG.md](../../CHANGELOG.md), in the matching category (Added, Changed, Deprecated, Removed, Fixed or Security). The pull request template asks for it. The changelog follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 The entries under `Unreleased` become the section of the next version and the notes of its GitHub Release. Before starting a release:
 
@@ -66,7 +66,7 @@ Do not write the section of the new version, its date or the links at the end of
 
 ## Making a release
 
-1. Choose the version, as described in [the versioning policy](versioning.md), for example `0.2.0`. Write it without a leading `v`.
+1. Choose the version, as described in [the versioning policy](../references/versioning.md), for example `0.2.0`. Write it without a leading `v`.
 2. Open the Actions tab, select the workflow **Release PR**, and select **Run workflow**. Keep the branch `main` and enter the version in the input `version`. The workflow can also be started from the command line:
 
    ```sh

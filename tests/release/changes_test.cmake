@@ -72,18 +72,18 @@ endfunction()
 # --- Documentation only ------------------------------------------------------
 
 string(CONCAT all_list
-    "README.md\nCHANGELOG.md\nCONTRIBUTING.md\ndocs/versioning.md\ndocs/releasing.md\n"
+    "README.md\nCHANGELOG.md\nCONTRIBUTING.md\ndocs/references/versioning.md\ndocs/development/releasing.md\n"
     "docs/images/diagram.png\nLICENSE\n.github/pull_request_template.md\n"
     ".github/ISSUE_TEMPLATE/bug_report.yml\n.github/ISSUE_TEMPLATE/config.yml\n")
 expect_docs_only(all "every kind of documentation" all "${all_list}" "true")
 expect_docs_only(markdown "Markdown at the root, under docs/ and under .github/" markdown
-    "CHANGELOG.md\ndocs/conventions.md\n.github/SUPPORT.md\n" "true")
+    "CHANGELOG.md\ndocs/development/conventions.md\n.github/SUPPORT.md\n" "true")
 expect_docs_only(docs "files under docs/ only" docs
-    "docs/releasing.md\ndocs/images/logo.svg\ndocs/data/example.json\n" "true")
+    "docs/development/releasing.md\ndocs/images/logo.svg\ndocs/data/example.json\n" "true")
 expect_docs_only(image "an image under docs/" image "docs/images/diagram.png\n" "true")
 expect_docs_only(one "a single path without a final newline" one "README.md" "true")
 expect_docs_only(blank "blank lines between the paths" blank "\nREADME.md\n\n\nLICENSE\n\n" "true")
-expect_docs_only(crlf "CRLF line endings" crlf "README.md\r\ndocs/versioning.md\r\nLICENSE\r\n" "true")
+expect_docs_only(crlf "CRLF line endings" crlf "README.md\r\ndocs/references/versioning.md\r\nLICENSE\r\n" "true")
 expect_docs_only(semicolon "a path with a semicolon under docs/" semicolon
     "docs/a;b.png\nREADME.md\n" "true")
 argx_test_expect_contains("${all_STDOUT}" "(10 in all)" "the number of paths is printed")
@@ -91,7 +91,7 @@ argx_test_expect_contains("${all_STDOUT}" "(10 in all)" "the number of paths is 
 # --- Not documentation only --------------------------------------------------
 
 expect_docs_only(mixed "documentation and a source file" mixed
-    "README.md\nsrc/argx.c\ninclude/argx/argx.h\ndocs/versioning.md\n" "false")
+    "README.md\nsrc/argx.c\ninclude/argx/argx.h\ndocs/references/versioning.md\n" "false")
 argx_test_expect_contains("${mixed_STDOUT}" "src/argx.c"
     "mixed: the first path that is not documentation is printed")
 argx_test_expect_not_contains("${mixed_STDOUT}" "include/argx/argx.h"

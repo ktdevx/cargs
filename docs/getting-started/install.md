@@ -1,6 +1,6 @@
 # Installation
 
-This document describes how to build and test ArgX, the build options, and the four ways to use it from your project: `FetchContent`, `add_subdirectory`, `find_package` and pkg-config. It is written for you as a user of the library. How to write a program with ArgX is in the [Guide](guide.md), and the references for each part are [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md).
+This document describes how to build and test ArgX, the build options, and the four ways to use it from your project: `FetchContent`, `add_subdirectory`, `find_package` and pkg-config. It is written for you as a user of the library. How to write a program with ArgX is in the [Guide](../guides/guide.md), and every reference is listed in the [documentation index](../README.md#references).
 
 ## Requirements
 
@@ -53,7 +53,7 @@ ctest --test-dir build
 
 Whichever way you choose, write `#include <argx/argx.h>` in your sources. In CMake, link to `ArgX::argx` (only when you use pkg-config from CMake, link to `PkgConfig::ARGX`). Linking adds the include path and, for a shared library, the required definition (`ARGX_SHARED`) automatically. A static library needs no definition.
 
-Each example below is a complete `CMakeLists.txt` that builds the executable `app` from the program in the [Example](../README.md#example) of the README, saved as `main.c`.
+Each example below is a complete `CMakeLists.txt` that builds the executable `app` from the program in the [Example](../../README.md#example) of the README, saved as `main.c`.
 
 ### FetchContent
 
@@ -118,7 +118,7 @@ target_link_libraries(app PRIVATE ArgX::argx)
 
 - If you installed to a non-standard location, pass `-DCMAKE_PREFIX_PATH=<install-prefix>` when you configure your project.
 - You may later move the installed directory as a whole.
-- To request a version, write `find_package(ArgX <major>.<minor> CONFIG REQUIRED)`. While the major version is 0, only versions with the same minor version are treated as compatible, so write the version down to the minor version. A request with only the major version, or a version range, finds nothing. The compatibility rules are described in [Compatibility before and after 1.0](versioning.md#compatibility-before-and-after-10) in the versioning policy. For contributors, [Version notes](conventions.md#version-notes) in the development conventions describes where the version is defined.
+- To request a version, write `find_package(ArgX <major>.<minor> CONFIG REQUIRED)`. While the major version is 0, only versions with the same minor version are treated as compatible, so write the version down to the minor version. A request with only the major version, or a version range, finds nothing. The compatibility rules are described in [Compatibility before and after 1.0](../references/versioning.md#compatibility-before-and-after-10) in the versioning policy. For contributors, [Version notes](../development/conventions.md#version-notes) in the development conventions describes where the version is defined.
 
 ### pkg-config
 
@@ -146,6 +146,19 @@ target_link_libraries(app PRIVATE PkgConfig::ARGX)
 - If you installed to a non-standard location, add `<install-prefix>/lib/pkgconfig` to the environment variable `PKG_CONFIG_PATH` (on systems where the library directory is `lib64` or similar, the `pkgconfig` directory inside it). From CMake, `-DCMAKE_PREFIX_PATH=<install-prefix>` also works.
 - The usage is the same for a static and a shared library.
 - If you installed a shared library to a non-standard location and built without CMake, make sure the library can be found when the program runs (on Linux, for example, with `LD_LIBRARY_PATH=<install-prefix>/lib`).
+
+### The version of the package
+
+The installed package files hold the version of ArgX:
+
+| Where | Value |
+| --- | --- |
+| `ArgX_VERSION`, set by `find_package(ArgX)` | The numeric part, such as `0.2.0` |
+| `ArgX_VERSION_FULL`, set by `find_package(ArgX)` | The full version, such as `0.2.0-rc.1`; equal to `ArgX_VERSION` for a release |
+| `ArgX_VERSION_PRERELEASE`, set by `find_package(ArgX)` | The pre-release identifiers, such as `rc.1`; empty for a release |
+| `Version` in `argx.pc` (`pkg-config --modversion argx`) | The full version, such as `0.2.0-rc.1` |
+
+These variables are set only by `find_package`. A project that adds ArgX with `FetchContent` or `add_subdirectory` reads the version from the header. The version macros of the header are in [Version](../references/version.md).
 
 ### Running the tests of an embedded ArgX
 

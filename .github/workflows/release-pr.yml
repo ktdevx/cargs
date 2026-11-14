@@ -19,7 +19,7 @@
 #      token of the workflow does not start other workflows by itself.
 #
 # When it fails in steps 1 to 3, nothing is created. When it fails later, the
-# release guide (docs/releasing.md) tells how to recover. Merging the pull
+# release guide (docs/development/releasing.md) tells how to recover. Merging the pull
 # request starts the Release workflow (release-publish.yml), which creates the
 # tag and the GitHub Release.
 #
@@ -169,7 +169,7 @@ jobs:
             {
               echo "## Release PR failed"
               echo
-              echo "$reason No pull request was opened. See docs/releasing.md to recover."
+              echo "$reason No pull request was opened. See docs/development/releasing.md to recover."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
@@ -180,7 +180,7 @@ jobs:
           PRERELEASE: ${{ steps.prepare.outputs.prerelease }}
           DATE: ${{ steps.prepare.outputs.date }}
         run: |
-          guide="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/releasing.md"
+          guide="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/development/releasing.md"
           body="$RUNNER_TEMP/pr-body.md"
           if [ "$PRERELEASE" = true ]; then
             first="This pull request releases ArgX v$VERSION. This is a pre-release."
@@ -214,7 +214,7 @@ jobs:
           - [ ] Make sure the check \`CI result\` has passed on the last commit of this pull request.
           - [ ] If the pull request is merged on a later day than $DATE, the date of the section may be corrected on this branch.
 
-          See the release guide, [docs/releasing.md]($guide), for the whole procedure and for how to recover from a failure.
+          See the release guide, [docs/development/releasing.md]($guide), for the whole procedure and for how to recover from a failure.
           EOF
           if ! url="$(gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "release/v$VERSION" --title "Release v$VERSION" --body-file "$body")"; then
             reason="The branch release/v$VERSION was pushed, but the pull request could not be opened."
@@ -222,7 +222,7 @@ jobs:
             {
               echo "## Release PR failed"
               echo
-              echo "$reason Delete the branch and start the workflow again, as docs/releasing.md tells."
+              echo "$reason Delete the branch and start the workflow again, as docs/development/releasing.md tells."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
@@ -239,7 +239,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # The pull request stays open when this fails: start CI on the branch by
-      # hand, as docs/releasing.md tells.
+      # hand, as docs/development/releasing.md tells.
       - name: Start CI on the release branch
         run: |
           if ! gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "release/v$VERSION"; then
@@ -247,7 +247,7 @@ jobs:
             echo "error: $reason"
             {
               echo
-              echo "$reason Start the CI workflow on the branch by hand, as docs/releasing.md tells."
+              echo "$reason Start the CI workflow on the branch by hand, as docs/development/releasing.md tells."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi

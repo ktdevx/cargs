@@ -1,24 +1,34 @@
 # Guide
 
-This guide walks through a program that uses ArgX, from creating the value types to destroying the result. It follows [examples/pack.c](../examples/pack.c), a complete program for a made-up archiver with two subcommands, `create` and `list`. The program is built and run with the tests, so its code works as shown. The code in this guide is taken from it; each excerpt names the function it comes from.
+This guide walks through a program that uses ArgX, from creating the value types to destroying the result. It follows [examples/pack.c](../../examples/pack.c), a complete program for a made-up archiver with two subcommands, `create` and `list`. The program is built and run with the tests, so its code works as shown. The code in this guide is taken from it; each excerpt names the function it comes from.
 
-To build ArgX and use it from your project, see [Installation](install.md) first.
+To build ArgX and use it from your project, see [Installation](../getting-started/install.md) first.
+
+## Concepts
+
+- A **schema** describes the command lines that your program accepts. It is a tree of commands, built with function calls before parsing ([Schemas](../references/schema.md)).
+- A **command** is a node of that tree: the root, which stands for the program, or a subcommand such as `create` in `pack create` ([Commands](../references/schema.md#commands)).
+- An **option** is a named argument such as `-v` or `--output FILE`. It is a flag, a negatable flag, a count, or an option that takes a value ([Options](../references/schema.md#options)).
+- A **positional** is an argument without a name, such as the files of `pack create`. Its arity says how many values it takes ([Positionals](../references/schema.md#positionals)).
+- A **value type** turns the string of an option or a positional into a value: a string, an integer, a float, a choice, or a type of your own ([Value Types](../references/types.md)).
+- A **handle** is the pointer that an add function writes. You set attributes with it and read values with it, and you never destroy it on its own ([Rules common to all definitions](../references/schema.md#rules-common-to-all-definitions)).
+- A **result** is what parsing gives you: the selected commands, the values, and the parse error, if any. You destroy it when you are done ([Parsing](../references/parse.md)).
 
 ## Overview
 
-Every program goes through the same steps. They are numbered the same way in the comments of `main` in [examples/pack.c](../examples/pack.c).
+Every program goes through the same steps. They are numbered the same way in the comments of `main` in [examples/pack.c](../../examples/pack.c).
 
 | Step | In examples/pack.c | Reference |
 | --- | --- | --- |
-| 1. Create the value types | `create_types`, `convert_size` | [Value types](schema.md#value-types), [User-defined value types](schema.md#user-defined-value-types) |
-| 2. Define the schema | `define_schema`, `define_root`, `define_create`, `define_list`, `add_help` | [Commands](schema.md#commands), [Options](schema.md#options), [Positionals](schema.md#positionals) |
-| 3. Validate it | `main`, `report_fault` | [Validation](schema.md#validation) |
-| 4. Parse argv, and check `--help` first | `main`, `help_was_given` | [Entry points](parse.md#entry-points), [`--help`](parse.md#--help) |
-| 5. Print the help or the parse error | `main`, `write_to_stream` | [Generating functions](help.md#generating-functions), [Parse errors](parse.md#parse-errors) |
-| 6. Read the values | `run`, `run_create`, `run_list` | [Reading the result](parse.md#reading-the-result) |
-| 7. Destroy the result, the schema and the value types | `main` | [Borrowed value types and the order of destruction](schema.md#borrowed-value-types-and-the-order-of-destruction) |
+| 1. Create the value types | `create_types`, `convert_size` | [Value types](../references/types.md#overview), [User-defined value types](../references/types.md#user-defined-value-types) |
+| 2. Define the schema | `define_schema`, `define_root`, `define_create`, `define_list`, `add_help` | [Commands](../references/schema.md#commands), [Options](../references/schema.md#options), [Positionals](../references/schema.md#positionals) |
+| 3. Validate it | `main`, `report_fault` | [Validation](../references/schema.md#validation) |
+| 4. Parse argv, and check `--help` first | `main`, `help_was_given` | [Entry points](../references/parse.md#entry-points), [`--help`](../references/parse.md#--help) |
+| 5. Print the help or the parse error | `main`, `write_to_stream` | [Generating functions](../references/help.md#generating-functions), [Parse errors](../references/parse.md#parse-errors) |
+| 6. Read the values | `run`, `run_create`, `run_list` | [Reading the result](../references/parse.md#reading-the-result) |
+| 7. Destroy the result, the schema and the value types | `main` | [Borrowed value types and the order of destruction](../references/types.md#borrowed-value-types-and-the-order-of-destruction) |
 
-Every function that can fail returns an `argx_error_t`, which is `ARGX_ERROR_NONE` on success. [examples/pack.c](../examples/pack.c) stops at the first failure with the macro `TRY`, which returns the error from the function that uses it.
+Every function that can fail returns an `argx_error_t`, which is `ARGX_ERROR_NONE` on success. [examples/pack.c](../../examples/pack.c) stops at the first failure with the macro `TRY`, which returns the error from the function that uses it.
 
 ## 1. Create the value types
 
@@ -43,7 +53,7 @@ When you write a conversion function:
 
 ## 2. Define the schema
 
-Create the root command, then add options, positionals and subcommands to it. Each add function writes a handle. You set the attributes of what you added with that handle, and later read its value from the result with it, so keep the handles you will read. [examples/pack.c](../examples/pack.c) keeps them in the structure `pack_schema_t`.
+Create the root command, then add options, positionals and subcommands to it. Each add function writes a handle. You set the attributes of what you added with that handle, and later read its value from the result with it, so keep the handles you will read. [examples/pack.c](../../examples/pack.c) keeps them in the structure `pack_schema_t`.
 
 An excerpt of `define_create`:
 
@@ -62,7 +72,7 @@ TRY(argx_option_set_required(schema->output, true));
 
 When an add or set function fails, the handle it writes is `NULL`. Stop at the first failure, as `TRY` does, so that a `NULL` handle is never passed to the next call.
 
-**Define `--help` on every command.** The library adds no `--help` of its own, and an option is recognized only in its own command, so `--help` on the root alone makes `pack create --help` an unknown option ([`--help`](parse.md#--help)). `add_help` adds it to each command:
+**Define `--help` on every command.** The library adds no `--help` of its own, and an option is recognized only in its own command, so `--help` on the root alone makes `pack create --help` an unknown option ([`--help`](../references/parse.md#--help)). `add_help` adds it to each command:
 
 ```c
 static argx_error_t add_help(argx_command_t *command)
@@ -99,7 +109,7 @@ To find the cause of a failure, do what `report_fault` does:
 
 To fix an error, set the attribute again (replace the default value with a correct one, set required to `false`, and so on), then validate again. There are no functions that remove a definition element, so for an error in the sequence of positionals, destroy the schema and build it again.
 
-Use the library built in the Debug configuration during development. It aborts the process when a precondition that can be checked is broken, such as passing a schema that is not validated; the Release configuration does not check them ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)).
+Use the library built in the Debug configuration during development. It aborts the process when a precondition that can be checked is broken, such as passing a schema that is not validated; the Release configuration does not check them ([Ownership and Lifetime](../references/ownership.md#runtime-failures-and-programming-errors)).
 
 ## 4. Parse argv, and check `--help` first
 
@@ -134,7 +144,7 @@ else
 
 **A parse error also gives you a result.** You read the error from it, and you destroy it like any other result.
 
-**Check whether `--help` was given before you look at the parse error.** `pack create --help` leaves out `--output`, which `create` requires, so it is a parse error, but `--help` still reads as given ([`--help`](parse.md#--help)). If you look at the error first, a user who asked for help is shown an error message instead.
+**Check whether `--help` was given before you look at the parse error.** `pack create --help` leaves out `--output`, which `create` requires, so it is a parse error, but `--help` still reads as given ([`--help`](../references/parse.md#--help)). If you look at the error first, a user who asked for help is shown an error message instead.
 
 To find out whether `--help` was given, read the `--help` of each selected command (`help_was_given`):
 
@@ -161,7 +171,7 @@ The library prints nothing by itself. Your code decides what to generate, for wh
 | The help, for `--help` | `argx_result_command`: the last command that the command line selected. `pack create --help` gives the help of `create` | The standard output |
 | The usage line, with the message of a parse error | `argx_result_error_command`: the command that was current when the error was found. It is never `NULL` on a result with a parse error | The standard error stream |
 
-The destination is the `user_data` of the write function; `write_to_stream` writes to the `FILE *` it is given ([Writing to standard output](help.md#writing-to-standard-output)). The usage line already ends with a newline, so do not add one after it.
+The destination is the `user_data` of the write function; `write_to_stream` writes to the `FILE *` it is given ([Writing to standard output](../references/help.md#writing-to-standard-output)). The usage line already ends with a newline, so do not add one after it.
 
 With the code of step 4, the command line `pack create a.txt`, which leaves out the required `--output` of `create`, prints:
 
@@ -171,7 +181,7 @@ Usage: pack create [OPTIONS] --output <FILE> <file>...
 Try 'pack --help' for more information.
 ```
 
-The message of a parse error has no prefix and no line break, so the program adds its own name and the newline. To add more, such as pointing at the offending element, read the [Parse error details](parse.md#parse-error-details).
+The message of a parse error has no prefix and no line break, so the program adds its own name and the newline. To add more, such as pointing at the offending element, read the [Parse error details](../references/parse.md#parse-error-details).
 
 ## 6. Read the values
 
@@ -214,7 +224,7 @@ for (i = 0; i < argx_result_positional_count(result, schema->files); ++i)
 
 ## 7. Destroy
 
-Destroy the result, then the schema, then the value types ([the order of destruction](schema.md#borrowed-value-types-and-the-order-of-destruction)):
+Destroy the result, then the schema, then the value types ([the order of destruction](../references/types.md#borrowed-value-types-and-the-order-of-destruction)):
 
 ```c
 argx_result_destroy(result);
@@ -229,7 +239,7 @@ Destroying `NULL` does nothing. `main` initializes every pointer to `NULL`, so t
 
 ### Getting the help as a string
 
-This is the two calls of [Formatting into a buffer](help.md#formatting-into-a-buffer), first for the length and then for the text:
+This is the two calls of [Formatting into a buffer](../references/help.md#formatting-into-a-buffer), first for the length and then for the text:
 
 ```c
 /*
@@ -300,7 +310,7 @@ static void print_error(const argx_command_t *command, const char *message)
 
 ### Wide-character argv with `wmain`
 
-On Windows, pass the wide argv of `wmain` to `argx_parse_wide` as `wmain` received it ([Wide-character argv](parse.md#wide-character-argv)). Everything read from the result is UTF-8 (`name` is a positional of the schema):
+On Windows, pass the wide argv of `wmain` to `argx_parse_wide` as `wmain` received it ([Wide-character argv](../references/parse.md#wide-character-argv)). Everything read from the result is UTF-8 (`name` is a positional of the schema):
 
 ```c
 int wmain(int argc, wchar_t **argv)
@@ -318,3 +328,7 @@ int wmain(int argc, wchar_t **argv)
 ```
 
 `wmain` is an entry point that Windows compilers provide; other platforms can call `argx_parse_wide`, but have no `wmain`. Writing the UTF-8 strings as they are, as above, does not make the console display them: set the output code page of the console yourself.
+
+## What to read next
+
+The [FAQ](faq.md) answers common questions, [Design](design.md) explains why the library works the way it does, and the references in the [documentation index](../README.md#references) hold every rule.

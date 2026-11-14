@@ -197,7 +197,7 @@ jobs:
               echo "- Tag \`v$VERSION\`: already on the commit, left as is." >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
-            fail "The tag v$VERSION already exists on $peeled, not on the merged commit $SHA. It was not moved. See docs/releasing.md."
+            fail "The tag v$VERSION already exists on $peeled, not on the merged commit $SHA. It was not moved. See docs/development/releasing.md."
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"

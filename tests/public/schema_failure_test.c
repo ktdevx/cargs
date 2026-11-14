@@ -7,8 +7,8 @@
  *
  * Each test takes one operation that is made of many calls and makes its
  * first, second, ... allocation request fail in turn, in the shape that
- * docs/conventions.md gives under the failure of every allocation in turn.
- * The operations are:
+ * docs/development/procedures.md gives under the failure of every
+ * allocation in turn. The operations are:
  *
  * 1. building a tree with subcommands, the four kinds of options, and
  *    positionals,

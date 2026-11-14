@@ -6,8 +6,8 @@
  * argx_parse_wide() of <argx/parse.h>.
  *
  * Each test takes one parse and makes its first, second, ... allocation
- * request fail in turn, in the shape that docs/conventions.md gives under
- * the failure of every allocation in turn. The operations are:
+ * request fail in turn, in the shape that docs/development/procedures.md
+ * gives under the failure of every allocation in turn. The operations are:
  *
  * 1. a parse that succeeds, with two levels of subcommands, the four kinds
  *    of options, values that are replaced, a positional that takes any
