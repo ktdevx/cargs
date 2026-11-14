@@ -123,8 +123,8 @@ static clargs_error_t check_required(clargs_result_t *result, const clargs_comma
     {
         const clargs_option_t *option = clargs_command_option_at(command, index);
 
-        if (clargs_option_kind(option) == CLARGS_OPTION_VALUE && clargs_option_is_required(option) &&
-            clargs_result_option_source(result, option) == CLARGS_SOURCE_NONE)
+        if ((clargs_option_kind(option) == CLARGS_OPTION_VALUE) && clargs_option_is_required(option) &&
+            (clargs_result_option_source(result, option) == CLARGS_SOURCE_NONE))
         {
             return fail_missing(result, command, option, NULL);
         }
@@ -134,8 +134,8 @@ static clargs_error_t check_required(clargs_result_t *result, const clargs_comma
         const clargs_positional_t *positional = clargs_command_positional_at(command, index);
         const clargs_arity_t arity = clargs_positional_arity(positional);
 
-        if ((arity == CLARGS_ARITY_REQUIRED || arity == CLARGS_ARITY_ONE_OR_MORE) &&
-            clargs_result_positional_count(result, positional) == 0)
+        if (((arity == CLARGS_ARITY_REQUIRED) || (arity == CLARGS_ARITY_ONE_OR_MORE)) &&
+            (clargs_result_positional_count(result, positional) == 0))
         {
             return fail_missing(result, command, NULL, positional);
         }
@@ -163,8 +163,8 @@ static clargs_error_t apply_defaults(clargs_result_t *result, const clargs_comma
         const char *value;
         clargs_error_t error;
 
-        if (clargs_option_kind(option) != CLARGS_OPTION_VALUE ||
-            clargs_result_option_source(result, option) != CLARGS_SOURCE_NONE)
+        if ((clargs_option_kind(option) != CLARGS_OPTION_VALUE) ||
+            (clargs_result_option_source(result, option) != CLARGS_SOURCE_NONE))
         {
             continue;
         }

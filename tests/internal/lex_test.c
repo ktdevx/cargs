@@ -97,7 +97,7 @@ NAOS_TEST(negative_number_accepts_hyphen_and_digit)
 
     arg[0] = '-';
     arg[2] = '\0';
-    for (i = 0; i < sizeof digits - 1; ++i)
+    for (i = 0; i < (sizeof digits - 1); ++i)
     {
         arg[1] = digits[i];
         NAOS_CHECK_TRUE(clargs_lex_is_negative_number(arg));
@@ -172,7 +172,7 @@ NAOS_TEST(negative_number_is_classified_as_short)
     const char *const args[] = { "-1", "-.5", "-1x", "-0", "-9.25", "-.0e1" };
     size_t i;
 
-    for (i = 0; i < sizeof args / sizeof args[0]; ++i)
+    for (i = 0; i < (sizeof args / sizeof args[0]); ++i)
     {
         NAOS_CHECK_TRUE(clargs_lex_is_negative_number(args[i]));
         NAOS_CHECK_TRUE(clargs_lex_classify(args[i]) == CLARGS_LEX_SHORT);
@@ -191,7 +191,7 @@ NAOS_TEST(split_long_without_equals)
 
     clargs_lex_split_long(arg, &name, &name_length, &value);
 
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 4);
     NAOS_CHECK_TRUE(value == NULL);
 }
@@ -206,7 +206,7 @@ NAOS_TEST(split_long_one_character)
 
     clargs_lex_split_long(arg, &name, &name_length, &value);
 
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 1);
     NAOS_CHECK_TRUE(value == NULL);
 }
@@ -221,7 +221,7 @@ NAOS_TEST(split_long_triple_hyphen)
 
     clargs_lex_split_long(arg, &name, &name_length, &value);
 
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 1);
     NAOS_CHECK_TRUE(value == NULL);
 }
@@ -236,9 +236,9 @@ NAOS_TEST(split_long_with_one_equals)
 
     clargs_lex_split_long(arg, &name, &name_length, &value);
 
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 4);
-    NAOS_CHECK_TRUE(value == arg + 7);
+    NAOS_CHECK_TRUE(value == (arg + 7));
     NAOS_CHECK_STR_EQ(value, "value");
 }
 
@@ -252,9 +252,9 @@ NAOS_TEST(split_long_with_two_equals)
 
     clargs_lex_split_long(arg, &name, &name_length, &value);
 
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 4);
-    NAOS_CHECK_TRUE(value == arg + 7);
+    NAOS_CHECK_TRUE(value == (arg + 7));
     NAOS_CHECK_STR_EQ(value, "a=b");
 }
 
@@ -268,9 +268,9 @@ NAOS_TEST(split_long_with_empty_value)
 
     clargs_lex_split_long(arg, &name, &name_length, &value);
 
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 4);
-    NAOS_CHECK_TRUE(value == arg + 7);
+    NAOS_CHECK_TRUE(value == (arg + 7));
     NAOS_CHECK_STR_EQ(value, "");
 }
 
@@ -284,9 +284,9 @@ NAOS_TEST(split_long_with_empty_name)
 
     clargs_lex_split_long(arg, &name, &name_length, &value);
 
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 0);
-    NAOS_CHECK_TRUE(value == arg + 3);
+    NAOS_CHECK_TRUE(value == (arg + 3));
     NAOS_CHECK_STR_EQ(value, "x");
 }
 
@@ -302,13 +302,13 @@ NAOS_TEST(split_long_keeps_the_bytes)
     const char *value = NULL;
 
     clargs_lex_split_long(arg, &name, &name_length, &value);
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 3);
     NAOS_CHECK_STR_EQ(value, "-\xC3\xA9 ");
 
     arg = "--a==";
     clargs_lex_split_long(arg, &name, &name_length, &value);
-    NAOS_CHECK_TRUE(name == arg + 2);
+    NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 1);
     NAOS_CHECK_STR_EQ(value, "=");
 }

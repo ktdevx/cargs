@@ -452,9 +452,9 @@ NAOS_TEST(long_strings_are_copied_whole)
     clargs_message_parts_t parts = parts_of(CLARGS_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
     size_t i;
 
-    for (i = 0; i < sizeof value - 1; ++i)
+    for (i = 0; i < (sizeof value - 1); ++i)
     {
-        value[i] = (char)('a' + i % 26);
+        value[i] = (char)('a' + (i % 26));
     }
     value[sizeof value - 1] = '\0';
 
@@ -492,7 +492,7 @@ NAOS_TEST(message_is_one_line_without_a_full_stop)
 
     clargs_test_allocator_install();
 
-    for (i = 0; i < sizeof kinds / sizeof kinds[0]; ++i)
+    for (i = 0; i < (sizeof kinds / sizeof kinds[0]); ++i)
     {
         clargs_message_parts_t parts = parts_of(kinds[i]);
         char *message = NULL;
@@ -510,7 +510,7 @@ NAOS_TEST(message_is_one_line_without_a_full_stop)
         NAOS_CHECK_TRUE(strchr(message, '\n') == NULL);
         NAOS_CHECK_TRUE(strchr(message, '\r') == NULL);
         NAOS_CHECK_TRUE(strchr(message, ':') == NULL);
-        NAOS_CHECK_TRUE(message[0] >= 'a' && message[0] <= 'z');
+        NAOS_CHECK_TRUE((message[0] >= 'a') && (message[0] <= 'z'));
         NAOS_CHECK_TRUE(message[length - 1] != '.');
         NAOS_CHECK_TRUE(message[length - 1] != ' ');
 

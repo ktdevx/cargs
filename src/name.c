@@ -13,13 +13,13 @@
  */
 static bool is_name_start(char c)
 {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+    return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) || ((c >= '0') && (c <= '9'));
 }
 
 /* A character after the first: also '-' and '_'. */
 static bool is_name_continue(char c)
 {
-    return is_name_start(c) || c == '-' || c == '_';
+    return is_name_start(c) || (c == '-') || (c == '_');
 }
 
 /*
@@ -58,7 +58,7 @@ bool clargs_name_is_long(const char *name)
      * is_name() saw a first character, so name[1] exists: it is the second
      * character or the terminator.
      */
-    return is_name(name) && name[1] != '\0';
+    return is_name(name) && (name[1] != '\0');
 }
 
 bool clargs_name_is_subcommand(const char *name)

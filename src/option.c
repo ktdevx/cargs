@@ -27,8 +27,8 @@
  */
 static bool is_negated_name_of(const char *name, const char *long_name)
 {
-    return name != NULL && strncmp(name, NEGATED_PREFIX, NEGATED_PREFIX_LENGTH) == 0 &&
-           strcmp(name + NEGATED_PREFIX_LENGTH, long_name) == 0;
+    return (name != NULL) && (strncmp(name, NEGATED_PREFIX, NEGATED_PREFIX_LENGTH) == 0) &&
+           (strcmp(name + NEGATED_PREFIX_LENGTH, long_name) == 0);
 }
 
 /*
@@ -151,19 +151,19 @@ static clargs_error_t add_option(clargs_command_t *command, clargs_option_kind_t
      * The checks come before every allocation, so a wrong definition
      * touches nothing. Their order is part of the contract.
      */
-    if (short_name == '\0' && long_name == NULL)
+    if ((short_name == '\0') && (long_name == NULL))
     {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (kind == CLARGS_OPTION_NEGATABLE && long_name == NULL)
+    if ((kind == CLARGS_OPTION_NEGATABLE) && (long_name == NULL))
     {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (short_name != '\0' && !clargs_name_is_short(short_name))
+    if ((short_name != '\0') && !clargs_name_is_short(short_name))
     {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (long_name != NULL && !clargs_name_is_long(long_name))
+    if ((long_name != NULL) && !clargs_name_is_long(long_name))
     {
         return CLARGS_ERROR_INVALID_NAME;
     }
@@ -171,11 +171,11 @@ static clargs_error_t add_option(clargs_command_t *command, clargs_option_kind_t
     {
         return CLARGS_ERROR_NAME_CONFLICT;
     }
-    if (long_name != NULL && clargs_command_find_long(command, long_name, strlen(long_name), NULL) != NULL)
+    if ((long_name != NULL) && (clargs_command_find_long(command, long_name, strlen(long_name), NULL) != NULL))
     {
         return CLARGS_ERROR_NAME_CONFLICT;
     }
-    if (kind == CLARGS_OPTION_NEGATABLE && negated_name_is_in_use(command, long_name))
+    if ((kind == CLARGS_OPTION_NEGATABLE) && negated_name_is_in_use(command, long_name))
     {
         return CLARGS_ERROR_NAME_CONFLICT;
     }
@@ -245,7 +245,7 @@ static clargs_error_t set_string(clargs_option_t *option, char **slot, const cha
 {
     clargs_error_t error;
 
-    if (only_value && option->kind != CLARGS_OPTION_VALUE)
+    if (only_value && (option->kind != CLARGS_OPTION_VALUE))
     {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }

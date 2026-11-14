@@ -48,16 +48,16 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0)
+    if ((text == NULL) || (length == 0))
     {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    if ((sink->fail_at != 0) && (sink->calls >= sink->fail_at))
     {
         return false;
     }
-    if (length > SINK_SIZE - sink->length)
+    if (length > (SINK_SIZE - sink->length))
     {
         return false;
     }
@@ -166,7 +166,7 @@ static bool has_blank_at_line_end(const char *text, size_t length)
 
     for (index = 0; index < length; ++index)
     {
-        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n'))
+        if ((text[index] == ' ') && (((index + 1) == length) || (text[index + 1] == '\n')))
         {
             return true;
         }
@@ -829,7 +829,7 @@ NAOS_TEST(default_width_of_80_applies_without_options)
     clargs_command_t *root = create_root();
 
     /* The first line of the expected text has 80 bytes. */
-    NAOS_REQUIRE_TRUE(strchr(expected, '\n') == expected + 80);
+    NAOS_REQUIRE_TRUE(strchr(expected, '\n') == (expected + 80));
 
     add_positionals_beyond_80_columns(root);
     validate(root);

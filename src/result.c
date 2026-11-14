@@ -45,7 +45,7 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
         return CLARGS_ERROR_NONE;
     }
 
-    if (count > SIZE_MAX / sizeof(char *))
+    if (count > (SIZE_MAX / sizeof(char *)))
     {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
@@ -57,7 +57,7 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
         assert(argv[i] != NULL);
 
         length = strlen(argv[i]);
-        if (length > SIZE_MAX - size)
+        if (length > (SIZE_MAX - size))
         {
             return CLARGS_ERROR_OUT_OF_MEMORY;
         }
@@ -75,7 +75,7 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
-    next = (char *)args + count * sizeof(char *);
+    next = (char *)args + (count * sizeof(char *));
     for (i = 0; i < count; ++i)
     {
         size_t length = strlen(argv[i]) + 1;
@@ -119,7 +119,7 @@ static clargs_error_t copy_args_wide(size_t count, wchar_t *const *argv, char **
         return CLARGS_ERROR_NONE;
     }
 
-    if (count > SIZE_MAX / sizeof(char *))
+    if (count > (SIZE_MAX / sizeof(char *)))
     {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
@@ -132,11 +132,11 @@ static clargs_error_t copy_args_wide(size_t count, wchar_t *const *argv, char **
         assert(argv[i] != NULL);
 
         length = clargs_utf8_length(argv[i], &valid);
-        if (!valid && i != 0 && *first_invalid == 0)
+        if (!valid && (i != 0) && (*first_invalid == 0))
         {
             *first_invalid = i;
         }
-        if (length > SIZE_MAX - size)
+        if (length > (SIZE_MAX - size))
         {
             return CLARGS_ERROR_OUT_OF_MEMORY;
         }
@@ -154,7 +154,7 @@ static clargs_error_t copy_args_wide(size_t count, wchar_t *const *argv, char **
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
-    next = (char *)args + count * sizeof(char *);
+    next = (char *)args + (count * sizeof(char *));
     for (i = 0; i < count; ++i)
     {
         args[i] = next;
@@ -236,7 +236,7 @@ clargs_error_t clargs_result_create(const clargs_command_t *root, int argc, char
     assert(out != NULL);
     assert(clargs_command_parent(root) == NULL);
     assert(argc >= 0);
-    assert(argc == 0 || argv != NULL);
+    assert((argc == 0) || (argv != NULL));
 
     *out = NULL;
 
@@ -259,7 +259,7 @@ clargs_error_t clargs_result_create_wide(const clargs_command_t *root, int argc,
     assert(out != NULL);
     assert(clargs_command_parent(root) == NULL);
     assert(argc >= 0);
-    assert(argc == 0 || argv != NULL);
+    assert((argc == 0) || (argv != NULL));
 
     *out = NULL;
 
@@ -433,9 +433,9 @@ clargs_error_t clargs_result_push_command(clargs_result_t *result, const clargs_
 
     assert(result != NULL);
     assert(command != NULL);
-    assert(result->frames.count > 0 || command == result->root);
-    assert(result->frames.count == 0
-           || clargs_command_parent(command) == frame_at(result, result->frames.count - 1)->command);
+    assert((result->frames.count > 0) || (command == result->root));
+    assert((result->frames.count == 0)
+           || (clargs_command_parent(command) == frame_at(result, result->frames.count - 1)->command));
 
     error = init_frame(&frame, command);
     if (error != CLARGS_ERROR_NONE)
@@ -562,8 +562,8 @@ bool clargs_result_flag(const clargs_result_t *result, const clargs_option_t *op
     assert(result != NULL);
     assert(option != NULL);
     assert(root_of(clargs_option_command(option)) == result->root);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_FLAG
-           || clargs_option_kind(option) == CLARGS_OPTION_NEGATABLE);
+    assert((clargs_option_kind(option) == CLARGS_OPTION_FLAG)
+           || (clargs_option_kind(option) == CLARGS_OPTION_NEGATABLE));
 
     slot = find_option_slot(result, option);
     if (slot == NULL)
@@ -707,7 +707,7 @@ static clargs_error_t record_error(clargs_result_t *result, const clargs_result_
     parts.kind = failure->kind;
     parts.source = where->source;
     parts.for_positional = failure->positional != NULL;
-    parts.name_prefix = where->name_prefix != NULL ? where->name_prefix : "";
+    parts.name_prefix = (where->name_prefix != NULL) ? where->name_prefix : "";
     parts.name = where->name;
     parts.name_length = where->name_length;
     parts.value = failure->value;
@@ -718,7 +718,7 @@ static clargs_error_t record_error(clargs_result_t *result, const clargs_result_
          * The value type is that of the option or the positional that the
          * value is for.
          */
-        parts.type_name = clargs_type_name(failure->positional != NULL
+        parts.type_name = clargs_type_name((failure->positional != NULL)
                                                ? clargs_positional_type(failure->positional)
                                                : clargs_option_type(failure->option));
     }
@@ -735,7 +735,7 @@ static clargs_error_t record_error(clargs_result_t *result, const clargs_result_
     result->error_index = where->index;
     /* Only an error on the command line is in an argument. */
     result->error_argument =
-        where->source == CLARGS_SOURCE_COMMAND_LINE ? clargs_result_arg(result, where->index) : NULL;
+        (where->source == CLARGS_SOURCE_COMMAND_LINE) ? clargs_result_arg(result, where->index) : NULL;
     result->error_value = failure->value;
     result->error_command = failure->command;
     result->error_option = failure->option;
@@ -752,9 +752,9 @@ clargs_error_t clargs_result_fail(clargs_result_t *result, const clargs_result_f
     assert(failure->kind != CLARGS_PARSE_ERROR_NONE);
     assert(failure->command != NULL);
     assert(result->error == CLARGS_ERROR_NONE);
-    assert(failure->where.source != CLARGS_SOURCE_COMMAND_LINE || failure->where.index < result->arg_count);
-    assert(failure->kind != CLARGS_PARSE_ERROR_INVALID_VALUE || failure->option != NULL
-           || failure->positional != NULL);
+    assert((failure->where.source != CLARGS_SOURCE_COMMAND_LINE) || (failure->where.index < result->arg_count));
+    assert((failure->kind != CLARGS_PARSE_ERROR_INVALID_VALUE) || (failure->option != NULL)
+           || (failure->positional != NULL));
 
     return record_error(result, failure);
 }
@@ -782,7 +782,7 @@ static clargs_error_t conversion_failure(clargs_result_t *result, clargs_error_t
     failure.where = *where;
     failure.value = text;
     failure.command =
-        positional != NULL ? clargs_positional_command(positional) : clargs_option_command(option);
+        (positional != NULL) ? clargs_positional_command(positional) : clargs_option_command(option);
     failure.option = option;
     failure.positional = positional;
     return clargs_result_fail(result, &failure);
@@ -877,7 +877,7 @@ static void discard_frame_defaults(clargs_result_frame_t *frame)
          * A flag, a count and a negatable flag that were not given have
          * the source of a default value too, but never a value.
          */
-        if (slot->source != CLARGS_SOURCE_DEFAULT || slot->value == NULL)
+        if ((slot->source != CLARGS_SOURCE_DEFAULT) || (slot->value == NULL))
         {
             continue;
         }
@@ -1068,7 +1068,7 @@ static const void *positional_value(const clargs_result_t *result, const clargs_
 {
     const clargs_positional_slot_t *slot = find_positional_slot(result, positional);
 
-    if (slot == NULL || index >= slot->values.count)
+    if ((slot == NULL) || (index >= slot->values.count))
     {
         return NULL;
     }

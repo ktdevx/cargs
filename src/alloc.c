@@ -78,12 +78,12 @@ void *clargs_malloc(size_t size)
 
 void *clargs_calloc(size_t count, size_t size)
 {
-    if (count == 0 || size == 0)
+    if ((count == 0) || (size == 0))
     {
         return NULL;
     }
     /* count * size would not fit in a size_t. */
-    if (count > SIZE_MAX / size)
+    if (count > (SIZE_MAX / size))
     {
         return NULL;
     }

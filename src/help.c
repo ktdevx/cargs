@@ -172,7 +172,7 @@ static void help_usage_item_write(clargs_out_t *out, const help_usage_item_t *it
  */
 static size_t help_add(size_t a, size_t b)
 {
-    return b > (size_t)-1 - a ? (size_t)-1 : a + b;
+    return (b > ((size_t)-1 - a)) ? (size_t)-1 : (a + b);
 }
 
 /*
@@ -244,8 +244,8 @@ static void help_usage_separate(help_context_t *context, const help_usage_item_t
          * could wrap around: the subtraction is done only when item_width
          * is less than the width.
          */
-        if (item_width >= context->width ||
-            clargs_out_column(out) >= context->width - item_width)
+        if ((item_width >= context->width) ||
+            (clargs_out_column(out) >= (context->width - item_width)))
         {
             clargs_out_newline(out);
             clargs_out_spaces(out, HELP_USAGE_INDENT);
@@ -507,7 +507,7 @@ static size_t help_description_column(const help_context_t *context)
     column = help_heading_reach(context, widest);
 
     limit = context->max_column;
-    if (context->width != 0 && context->width / 2 < limit)
+    if ((context->width != 0) && ((context->width / 2) < limit))
     {
         limit = context->width / 2;
     }
@@ -519,7 +519,7 @@ static size_t help_description_column(const help_context_t *context)
         limit = lowest;
     }
 
-    return column > limit ? limit : column;
+    return (column > limit) ? limit : column;
 }
 
 /*
@@ -534,7 +534,7 @@ static bool help_is_blank(const char *text, size_t length)
 
     for (index = 0; index < length; ++index)
     {
-        if (text[index] != ' ' && text[index] != '\n')
+        if ((text[index] != ' ') && (text[index] != '\n'))
         {
             return false;
         }
@@ -568,7 +568,7 @@ static size_t help_whole_length(const char *text, size_t *newlines)
     {
         return 0;
     }
-    while (text[length - 1] == ' ' || text[length - 1] == '\n')
+    while ((text[length - 1] == ' ') || (text[length - 1] == '\n'))
     {
         if (text[length - 1] == '\n')
         {
@@ -596,7 +596,7 @@ static size_t help_first_line_length(const char *text)
     }
 
     end = strchr(text, '\n');
-    length = end != NULL ? (size_t)(end - text) : strlen(text);
+    length = (end != NULL) ? (size_t)(end - text) : strlen(text);
     return help_is_blank(text, length) ? 0 : length;
 }
 
@@ -696,7 +696,7 @@ static clargs_error_t help_cell_start(help_context_t *context, const char *descr
         return CLARGS_ERROR_NONE;
     }
     error = clargs_help_item_text_append(&context->text, description, length);
-    while (error == CLARGS_ERROR_NONE && newlines != 0)
+    while ((error == CLARGS_ERROR_NONE) && (newlines != 0))
     {
         error = clargs_help_item_text_append(&context->text, "\n", 1);
         --newlines;
@@ -712,7 +712,7 @@ static clargs_error_t help_cell_start(help_context_t *context, const char *descr
 static void help_write_cell_item(help_context_t *context, const help_heading_t *heading)
 {
     size_t length = context->text.count;
-    const char *text = length != 0 ? clargs_vec_at(&context->text, 0) : NULL;
+    const char *text = (length != 0) ? clargs_vec_at(&context->text, 0) : NULL;
 
     help_write_item(context, heading, text, length);
 }
@@ -734,7 +734,7 @@ static void help_write_commands(help_context_t *context)
     }
 
     help_write_title(context, "Commands:");
-    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index)
+    for (index = 0; (index < count) && !clargs_out_failed(&context->out); ++index)
     {
         help_heading_t heading = help_subcommand_heading(command, index);
         const char *text = clargs_command_description(heading.subcommand);
@@ -763,7 +763,7 @@ static clargs_error_t help_write_arguments(help_context_t *context)
     }
 
     help_write_title(context, "Arguments:");
-    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index)
+    for (index = 0; (index < count) && !clargs_out_failed(&context->out); ++index)
     {
         help_heading_t heading = help_positional_heading(command, index);
         clargs_error_t error =
@@ -804,7 +804,7 @@ static clargs_error_t help_write_options(help_context_t *context)
     }
 
     help_write_title(context, "Options:");
-    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index)
+    for (index = 0; (index < count) && !clargs_out_failed(&context->out); ++index)
     {
         help_heading_t heading = help_option_heading(command, index);
         clargs_error_t error = help_cell_start(context, clargs_option_description(heading.option));
@@ -886,11 +886,11 @@ static bool help_buffer_write(void *user_data, const char *text, size_t length)
     help_buffer_t *target = user_data;
 
     /* The text may fill the bytes before the index size - 1. */
-    if (target->size != 0 && target->length < target->size - 1)
+    if ((target->size != 0) && (target->length < (target->size - 1)))
     {
         size_t room = target->size - 1 - target->length;
 
-        memcpy(target->buffer + target->length, text, length < room ? length : room);
+        memcpy(target->buffer + target->length, text, (length < room) ? length : room);
     }
     target->length = help_add(target->length, length);
     return true;
@@ -911,7 +911,7 @@ static clargs_error_t help_buffer_finish(help_buffer_t *target, clargs_error_t e
     }
     if (target->size != 0)
     {
-        target->buffer[target->length < target->size - 1 ? target->length : target->size - 1] =
+        target->buffer[(target->length < (target->size - 1)) ? target->length : (target->size - 1)] =
             '\0';
     }
     if (length != NULL)
@@ -927,7 +927,7 @@ clargs_error_t clargs_help_format(const clargs_command_t *command,
 {
     help_buffer_t target;
 
-    assert(buffer != NULL || size == 0);
+    assert((buffer != NULL) || (size == 0));
 
     target.buffer = buffer;
     target.size = size;
@@ -942,7 +942,7 @@ clargs_error_t clargs_help_format_usage(const clargs_command_t *command,
 {
     help_buffer_t target;
 
-    assert(buffer != NULL || size == 0);
+    assert((buffer != NULL) || (size == 0));
 
     target.buffer = buffer;
     target.size = size;

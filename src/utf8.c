@@ -68,7 +68,7 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
      */
     unsigned long unit = (unsigned long)text[0];
 
-    if (unit > 0x10FFFFUL || (unit >= 0xD800UL && unit <= 0xDFFFUL))
+    if ((unit > 0x10FFFFUL) || ((unit >= 0xD800UL) && (unit <= 0xDFFFUL)))
     {
         *code_point = REPLACEMENT;
         *valid = false;

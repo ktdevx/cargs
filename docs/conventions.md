@@ -560,6 +560,22 @@ else
 }
 ```
 
+### Parentheses in expressions
+
+All C code (`include/`, `src/`, `tests/`) makes operator precedence explicit, in the style of MISRA C:2012 Rule 12.1. When an operand of a binary operator or of the conditional operator `?:` is itself a binary or conditional expression, put it in parentheses, unless both operators have the same precedence. This applies inside `assert`, the test assertion macros and macro definitions too.
+
+- No parentheses are needed for operands that are primary or postfix expressions (variables, constants, function calls, `a[i]`, `p->m`), unary expressions (`!x`, `*p`, casts, `sizeof`), or operators of the same precedence (`a + b + c`, `x && y && z`).
+- Do not put the whole right-hand side of an assignment, or the whole expression of a `return`, in parentheses.
+
+```c
+if ((type == NULL) || (type->is_static))
+if (unit > 0x10FFFFUL || ((unit >= 0xD800UL) && (unit <= 0xDFFFUL)))    /* wrong: unit > 0x10FFFFUL needs parentheses */
+if ((unit > 0x10FFFFUL) || ((unit >= 0xD800UL) && (unit <= 0xDFFFUL)))
+if (count > (SIZE_MAX / size))
+length = (end != NULL) ? (size_t)(end - text) : strlen(text);
+return (c >= '0') && (c <= '9');
+```
+
 ### Allocating memory
 
 The library code allocates and frees memory with the internal memory functions (`src/alloc_internal.h`). This makes every allocation go through the allocator that the user set with `clargs_set_allocator()`.

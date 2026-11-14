@@ -13,7 +13,7 @@
  */
 static size_t clamp_setting(size_t value)
 {
-    return value > CLARGS_HELP_SETTING_MAX ? CLARGS_HELP_SETTING_MAX : value;
+    return (value > CLARGS_HELP_SETTING_MAX) ? CLARGS_HELP_SETTING_MAX : value;
 }
 
 clargs_error_t clargs_help_options_create(clargs_help_options_t **out)

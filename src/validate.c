@@ -48,7 +48,7 @@ static const clargs_positional_t *find_positional_fault(const clargs_command_t *
         const clargs_positional_t *positional = clargs_command_positional_at(command, index);
         const clargs_arity_t arity = clargs_positional_arity(positional);
 
-        if (after_optional && (arity == CLARGS_ARITY_REQUIRED || arity == CLARGS_ARITY_ONE_OR_MORE))
+        if (after_optional && ((arity == CLARGS_ARITY_REQUIRED) || (arity == CLARGS_ARITY_ONE_OR_MORE)))
         {
             return positional;
         }
@@ -57,11 +57,11 @@ static const clargs_positional_t *find_positional_fault(const clargs_command_t *
             return positional;
         }
 
-        if (arity == CLARGS_ARITY_OPTIONAL || arity == CLARGS_ARITY_ZERO_OR_MORE)
+        if ((arity == CLARGS_ARITY_OPTIONAL) || (arity == CLARGS_ARITY_ZERO_OR_MORE))
         {
             after_optional = true;
         }
-        if (arity == CLARGS_ARITY_ZERO_OR_MORE || arity == CLARGS_ARITY_ONE_OR_MORE)
+        if ((arity == CLARGS_ARITY_ZERO_OR_MORE) || (arity == CLARGS_ARITY_ONE_OR_MORE))
         {
             after_variadic = true;
         }
@@ -101,7 +101,7 @@ static clargs_error_t check_default(const clargs_type_t *type, const char *text)
     }
     clargs_free(value);
 
-    if (error == CLARGS_ERROR_NONE || error == CLARGS_ERROR_OUT_OF_MEMORY)
+    if ((error == CLARGS_ERROR_NONE) || (error == CLARGS_ERROR_OUT_OF_MEMORY))
     {
         return error;
     }

@@ -159,7 +159,7 @@ clargs_error_t clargs_message_build(const clargs_message_parts_t *parts, char **
     collect(&pieces, parts);
     for (i = 0; i < pieces.count; ++i)
     {
-        if (pieces.items[i].length > SIZE_MAX - length)
+        if (pieces.items[i].length > (SIZE_MAX - length))
         {
             return CLARGS_ERROR_OUT_OF_MEMORY;
         }

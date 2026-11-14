@@ -114,7 +114,7 @@ static void fill(unsigned char *bytes, size_t size, unsigned char seed)
 
     for (i = 0; i < size; ++i)
     {
-        bytes[i] = (unsigned char)(seed + i * 7u);
+        bytes[i] = (unsigned char)(seed + (i * 7u));
     }
 }
 
@@ -482,9 +482,9 @@ NAOS_TEST(calloc_overflow_is_not_forwarded)
     NAOS_CHECK_TRUE(clargs_calloc(2, SIZE_MAX) == NULL);
     NAOS_CHECK_TRUE(clargs_calloc(SIZE_MAX, SIZE_MAX) == NULL);
     /* The smallest products that do not fit. */
-    NAOS_CHECK_TRUE(clargs_calloc(SIZE_MAX / 2 + 1, 2) == NULL);
-    NAOS_CHECK_TRUE(clargs_calloc(2, SIZE_MAX / 2 + 1) == NULL);
-    NAOS_CHECK_TRUE(clargs_calloc(SIZE_MAX / 16 + 1, 16) == NULL);
+    NAOS_CHECK_TRUE(clargs_calloc((SIZE_MAX / 2) + 1, 2) == NULL);
+    NAOS_CHECK_TRUE(clargs_calloc(2, (SIZE_MAX / 2) + 1) == NULL);
+    NAOS_CHECK_TRUE(clargs_calloc((SIZE_MAX / 16) + 1, 16) == NULL);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
 
     clargs_test_allocator_uninstall();
@@ -711,7 +711,7 @@ typedef struct record
 
 static void record_bytes(record_t *record, const unsigned char *bytes, size_t size)
 {
-    if (size > RECORD_CAPACITY - record->size)
+    if (size > (RECORD_CAPACITY - record->size))
     {
         record->overflowed = 1;
         return;

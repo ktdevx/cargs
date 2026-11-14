@@ -110,13 +110,13 @@ static void check_rejected(clargs_command_t *command, char short_name, const cha
     const size_t requests = clargs_test_allocator_requests();
     size_t index;
 
-    for (index = 0; index < sizeof(kinds) / sizeof(kinds[0]); ++index)
+    for (index = 0; index < (sizeof(kinds) / sizeof(kinds[0])); ++index)
     {
         clargs_error_t error = expected;
         clargs_option_t *sentinel = NULL;
         clargs_option_t *option;
 
-        if (kinds[index] == CLARGS_OPTION_NEGATABLE && long_name == NULL)
+        if ((kinds[index] == CLARGS_OPTION_NEGATABLE) && (long_name == NULL))
         {
             error = CLARGS_ERROR_INVALID_NAME;
         }
@@ -338,12 +338,12 @@ NAOS_TEST(the_names_follow_the_rule_of_names)
     clargs_command_t *root = create_root();
     size_t index;
 
-    for (index = 0; index < sizeof(shorts) / sizeof(shorts[0]); ++index)
+    for (index = 0; index < (sizeof(shorts) / sizeof(shorts[0])); ++index)
     {
         check_option(add(CLARGS_OPTION_FLAG, root, shorts[index], NULL), root, CLARGS_OPTION_FLAG,
                      shorts[index], NULL, NULL, NULL);
     }
-    for (index = 0; index < sizeof(longs) / sizeof(longs[0]); ++index)
+    for (index = 0; index < (sizeof(longs) / sizeof(longs[0])); ++index)
     {
         check_option(add(CLARGS_OPTION_COUNT, root, '\0', longs[index]), root, CLARGS_OPTION_COUNT, '\0',
                      longs[index], NULL, NULL);
@@ -534,13 +534,13 @@ NAOS_TEST(a_name_that_breaks_the_rule_is_an_invalid_name)
     clargs_option_t *option;
     size_t index;
 
-    for (index = 0; index < sizeof(shorts) / sizeof(shorts[0]); ++index)
+    for (index = 0; index < (sizeof(shorts) / sizeof(shorts[0])); ++index)
     {
         /* Alone, and with a long name that follows the rule. */
         check_rejected(root, shorts[index], NULL, CLARGS_ERROR_INVALID_NAME);
         check_rejected(root, shorts[index], "valid", CLARGS_ERROR_INVALID_NAME);
     }
-    for (index = 0; index < sizeof(longs) / sizeof(longs[0]); ++index)
+    for (index = 0; index < (sizeof(longs) / sizeof(longs[0])); ++index)
     {
         /* Alone, and with a short name that follows the rule. */
         check_rejected(root, '\0', longs[index], CLARGS_ERROR_INVALID_NAME);
@@ -969,7 +969,7 @@ NAOS_TEST(a_description_is_set_on_every_kind)
     clargs_command_t *root = create_root();
     size_t index;
 
-    for (index = 0; index < sizeof(kinds) / sizeof(kinds[0]); ++index)
+    for (index = 0; index < (sizeof(kinds) / sizeof(kinds[0])); ++index)
     {
         clargs_option_t *option = add(kinds[index], root, '\0', names[index]);
 
@@ -1366,7 +1366,7 @@ static clargs_command_t *build_root_with(size_t existing)
     clargs_command_t *root = NULL;
     size_t index;
 
-    NAOS_REQUIRE_TRUE(existing <= sizeof(names) / sizeof(names[0]));
+    NAOS_REQUIRE_TRUE(existing <= (sizeof(names) / sizeof(names[0])));
     NAOS_REQUIRE_TRUE(clargs_command_create("app", &root) == CLARGS_ERROR_NONE);
     for (index = 0; index < existing; ++index)
     {
@@ -1403,10 +1403,10 @@ static size_t fail_each_allocation_of_an_addition(clargs_option_kind_t kind, siz
         clargs_test_allocator_fail_at(requests + n);
 
         /* What a failure must not leave in the output. */
-        option = existing == 0 ? NULL : (clargs_option_t *)clargs_command_option_at(root, 0);
+        option = (existing == 0) ? NULL : (clargs_option_t *)clargs_command_option_at(root, 0);
         error = add_kind(kind, root, 'n', "new", &option);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < requests + n)
+        if ((error == CLARGS_ERROR_NONE) && (clargs_test_allocator_requests() < (requests + n)))
         {
             /* Every allocation point has been passed. */
             NAOS_CHECK_TRUE(option != NULL);
@@ -1472,7 +1472,7 @@ NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
 
     clargs_test_allocator_install();
 
-    for (index = 0; index < sizeof(kinds) / sizeof(kinds[0]); ++index)
+    for (index = 0; index < (sizeof(kinds) / sizeof(kinds[0])); ++index)
     {
         size_t growing = fail_each_allocation_of_an_addition(kinds[index], 0);
         size_t with_room = fail_each_allocation_of_an_addition(kinds[index], 1);
@@ -1519,7 +1519,7 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
         for (was_set = 0; was_set < 2; ++was_set)
         {
             const text_attribute_t attribute = attributes[index];
-            const char *const old = was_set != 0 ? "old value" : NULL;
+            const char *const old = (was_set != 0) ? "old value" : NULL;
             clargs_command_t *root = NULL;
             clargs_option_t *option;
             size_t requests;
@@ -1576,7 +1576,7 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
             clargs_test_allocator_fail_at(0);
             NAOS_CHECK_INT_EQ(set_text(attribute, option, "a new and longer value"), CLARGS_ERROR_NONE);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 2);
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), old != NULL ? live : live + 1);
+            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), (old != NULL) ? live : (live + 1));
             check_text(get_text(attribute, option), "a new and longer value");
 
             clargs_command_destroy(root);

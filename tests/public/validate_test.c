@@ -994,8 +994,8 @@ static const mutation_t all_mutations[MUTATION_COUNT] = {
 /* Whether the change is made to a target with positionals. */
 static bool mutation_needs_positionals(mutation_t mutation)
 {
-    return mutation == ADD_POSITIONAL || mutation == SET_POSITIONAL_DESCRIPTION ||
-           mutation == SET_POSITIONAL_DEFAULT;
+    return (mutation == ADD_POSITIONAL) || (mutation == SET_POSITIONAL_DESCRIPTION) ||
+           (mutation == SET_POSITIONAL_DEFAULT);
 }
 
 /*
@@ -1201,8 +1201,8 @@ static const refusal_t all_refusals[REFUSAL_COUNT] = {
 /* Whether the change is tried on a target with positionals. */
 static bool refusal_needs_positionals(refusal_t refusal)
 {
-    return refusal == POSITIONAL_WITH_AN_EMPTY_NAME || refusal == POSITIONAL_WITH_A_NAME_IN_USE ||
-           refusal == SUBCOMMAND_NEXT_TO_POSITIONALS || refusal == DEFAULT_OF_A_REQUIRED_POSITIONAL;
+    return (refusal == POSITIONAL_WITH_AN_EMPTY_NAME) || (refusal == POSITIONAL_WITH_A_NAME_IN_USE) ||
+           (refusal == SUBCOMMAND_NEXT_TO_POSITIONALS) || (refusal == DEFAULT_OF_A_REQUIRED_POSITIONAL);
 }
 
 /* The error code that the change is refused with. */
@@ -1346,7 +1346,7 @@ NAOS_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_valid
             size_t failures = 0;
             size_t n;
 
-            for (n = 1; n <= ALLOCATION_LIMIT && !completed; ++n)
+            for (n = 1; (n <= ALLOCATION_LIMIT) && !completed; ++n)
             {
                 fixture_t fixture;
                 clargs_error_t error;
@@ -1365,7 +1365,7 @@ NAOS_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_valid
                 if (error == CLARGS_ERROR_NONE)
                 {
                     /* Every allocation point has been passed. */
-                    NAOS_CHECK_TRUE(clargs_test_allocator_requests() < requests + n);
+                    NAOS_CHECK_TRUE(clargs_test_allocator_requests() < (requests + n));
                     check_state(&fixture, false);
                     completed = true;
                 }
@@ -1524,8 +1524,8 @@ static void probe_release(void *value, void *context)
      * The value is the one that the last conversion wrote, and that
      * conversion succeeded.
      */
-    if (probe->releases > probe->successes || in->marker != PROBE_MARKER || in->text == NULL ||
-        in->fill[0] != PROBE_FILL || in->fill[sizeof(in->fill) - 1] != PROBE_FILL)
+    if ((probe->releases > probe->successes) || (in->marker != PROBE_MARKER) || (in->text == NULL) ||
+        (in->fill[0] != PROBE_FILL) || (in->fill[sizeof(in->fill) - 1] != PROBE_FILL))
     {
         ++probe->mismatches;
     }
@@ -1655,7 +1655,7 @@ NAOS_TEST(a_default_value_that_is_not_a_number_is_rejected_by_the_integer_type)
     (void)add_flag(root, 'v', "verbose");
     jobs = add_typed_value(root, 'j', "jobs", clargs_type_int());
 
-    for (index = 0; index < sizeof(rejected) / sizeof(rejected[0]); ++index)
+    for (index = 0; index < (sizeof(rejected) / sizeof(rejected[0])); ++index)
     {
         set_option_default(jobs, rejected[index]);
 
@@ -2221,7 +2221,7 @@ NAOS_TEST(a_validation_that_cannot_allocate_the_area_of_a_value_fails_for_a_lack
          * counted.
          */
         check_probe(&probe, probe.conversions, probe.successes);
-        NAOS_CHECK_UINT_EQ(probe.successes, successes + (nth == 1 ? 0 : CHECK_VALIDATE_ROUNDS));
+        NAOS_CHECK_UINT_EQ(probe.successes, successes + ((nth == 1) ? 0 : CHECK_VALIDATE_ROUNDS));
     }
 
     /* The same tree is valid when memory is there. */

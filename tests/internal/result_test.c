@@ -928,7 +928,7 @@ NAOS_TEST(fails_at_every_allocation_point)
 
         error = create_and_push(commands, COUNT, &result, &pushed);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < n)
+        if ((error == CLARGS_ERROR_NONE) && (clargs_test_allocator_requests() < n))
         {
             /*
              * The operation ended before the request to fail was reached:
@@ -2033,7 +2033,7 @@ static void check_recorded_values(const clargs_result_t *result, const clargs_co
         NAOS_CHECK_TRUE(item->text == items[i]);
     }
     NAOS_CHECK_INT_EQ(clargs_result_positional_source(result, positional_of(command, V_ITEM)),
-                      item_count == 0 ? CLARGS_SOURCE_NONE : CLARGS_SOURCE_COMMAND_LINE);
+                      (item_count == 0) ? CLARGS_SOURCE_NONE : CLARGS_SOURCE_COMMAND_LINE);
 
     /* The first and the last step. */
     NAOS_CHECK_TRUE((clargs_result_option_value(result, option_of(command, V_TEXT)) != NULL)
@@ -2084,7 +2084,7 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
 
         error = record_values(result, sub, &done, &live);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < first + n)
+        if ((error == CLARGS_ERROR_NONE) && (clargs_test_allocator_requests() < (first + n)))
         {
             /*
              * The operation ended before the request to fail was reached:

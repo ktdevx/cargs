@@ -79,7 +79,7 @@ static void put(picture_t *picture, const char *text)
 {
     const size_t length = strlen(text);
 
-    if (length >= sizeof(picture->text) - picture->length)
+    if (length >= (sizeof(picture->text) - picture->length))
     {
         picture->overflow = true;
         return;
@@ -181,7 +181,7 @@ static void put_command(picture_t *picture, const clargs_command_t *command)
     size_t index;
 
     put_text(picture, "command ", clargs_command_name(command));
-    put_text(picture, " parent=", parent != NULL ? clargs_command_name(parent) : NULL);
+    put_text(picture, " parent=", (parent != NULL) ? clargs_command_name(parent) : NULL);
     put_text(picture, " description=", clargs_command_description(command));
     put_count(picture, " options=", clargs_command_option_count(command));
     put_count(picture, " positionals=", clargs_command_positional_count(command));
@@ -306,11 +306,11 @@ static clargs_error_t port_convert(const char *text, void *value, void *context)
     }
     for (index = 0; text[index] != '\0'; ++index)
     {
-        if (text[index] < '0' || text[index] > '9')
+        if ((text[index] < '0') || (text[index] > '9'))
         {
             return CLARGS_ERROR_INVALID_VALUE;
         }
-        port = port * 10 + (text[index] - '0');
+        port = (port * 10) + (text[index] - '0');
         if (port > 65535)
         {
             return CLARGS_ERROR_INVALID_VALUE;
@@ -381,7 +381,7 @@ static void arm_sweep(sweep_t *sweep, size_t nth, bool validates)
  */
 static void begin_call(sweep_t *sweep)
 {
-    if (sweep->validates && sweep->root != NULL)
+    if (sweep->validates && (sweep->root != NULL))
     {
         NAOS_REQUIRE_TRUE(clargs_command_validate(sweep->root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
         NAOS_REQUIRE_TRUE(clargs_command_is_validated(sweep->root));
@@ -429,7 +429,7 @@ static bool end_call(sweep_t *sweep, clargs_error_t error, bool outputs_are_null
     /* The value types and the tree are as they were before the call. */
     draw(sweep, &after);
     NAOS_CHECK_STR_EQ(after.text, sweep->before.text);
-    if (sweep->validates && sweep->root != NULL)
+    if (sweep->validates && (sweep->root != NULL))
     {
         NAOS_CHECK_TRUE(clargs_command_is_validated(sweep->root));
     }
@@ -455,7 +455,7 @@ static bool create_choice_type(sweep_t *sweep)
     {
         return false;
     }
-    NAOS_REQUIRE_TRUE(type != NULL && type != sweep->other_type);
+    NAOS_REQUIRE_TRUE((type != NULL) && (type != sweep->other_type));
     sweep->choice = type;
     return true;
 }
@@ -471,7 +471,7 @@ static bool create_custom_type(sweep_t *sweep)
     {
         return false;
     }
-    NAOS_REQUIRE_TRUE(type != NULL && type != sweep->other_type);
+    NAOS_REQUIRE_TRUE((type != NULL) && (type != sweep->other_type));
     sweep->custom = type;
     return true;
 }
@@ -487,7 +487,7 @@ static bool create_root(sweep_t *sweep)
     {
         return false;
     }
-    NAOS_REQUIRE_TRUE(root != NULL && root != sweep->other);
+    NAOS_REQUIRE_TRUE((root != NULL) && (root != sweep->other));
     sweep->root = root;
     return true;
 }
@@ -504,7 +504,7 @@ static bool add_subcommand(sweep_t *sweep, clargs_command_t *command, const char
     {
         return false;
     }
-    NAOS_REQUIRE_TRUE(sub != NULL && sub != sweep->other);
+    NAOS_REQUIRE_TRUE((sub != NULL) && (sub != sweep->other));
     if (out != NULL)
     {
         *out = sub;
@@ -546,7 +546,7 @@ static bool add_option(sweep_t *sweep, clargs_command_t *command, clargs_option_
     {
         return false;
     }
-    NAOS_REQUIRE_TRUE(option != NULL && option != sweep->other_option);
+    NAOS_REQUIRE_TRUE((option != NULL) && (option != sweep->other_option));
     if (out != NULL)
     {
         *out = option;
@@ -567,7 +567,7 @@ static bool add_positional(sweep_t *sweep, clargs_command_t *command, const char
     {
         return false;
     }
-    NAOS_REQUIRE_TRUE(positional != NULL && positional != sweep->other_positional);
+    NAOS_REQUIRE_TRUE((positional != NULL) && (positional != sweep->other_positional));
     if (out != NULL)
     {
         *out = positional;
@@ -717,11 +717,11 @@ static bool validate_tree(sweep_t *sweep)
 
     begin_call(sweep);
     error = clargs_command_validate(sweep->root, &command, &option, &positional);
-    if (!end_call(sweep, error, command == NULL && option == NULL && positional == NULL))
+    if (!end_call(sweep, error, (command == NULL) && (option == NULL) && (positional == NULL)))
     {
         return false;
     }
-    NAOS_CHECK_TRUE(command == NULL && option == NULL && positional == NULL);
+    NAOS_CHECK_TRUE((command == NULL) && (option == NULL) && (positional == NULL));
     NAOS_CHECK_TRUE(clargs_command_is_validated(sweep->root));
     return true;
 }
@@ -957,7 +957,7 @@ static void fail_every_allocation_of(operation_t operation)
         /* The operation. */
         succeeded = run_operation(&sweep, operation, n, &least);
 
-        if (succeeded && sweep.used < n)
+        if (succeeded && (sweep.used < n))
         {
             /*
              * The operation ended before the request to fail was reached:

@@ -108,7 +108,7 @@ NAOS_TEST(a_root_takes_any_name_that_is_not_empty)
 
     clargs_test_allocator_install();
 
-    for (index = 0; index < sizeof(names) / sizeof(names[0]); ++index)
+    for (index = 0; index < (sizeof(names) / sizeof(names[0])); ++index)
     {
         clargs_command_t *root = NULL;
 
@@ -308,7 +308,7 @@ NAOS_TEST(a_subcommand_name_follows_the_rule_of_names)
     size_t requests;
     size_t index;
 
-    for (index = 0; index < sizeof(valid) / sizeof(valid[0]); ++index)
+    for (index = 0; index < (sizeof(valid) / sizeof(valid[0])); ++index)
     {
         clargs_command_t *sub = NULL;
 
@@ -318,7 +318,7 @@ NAOS_TEST(a_subcommand_name_follows_the_rule_of_names)
     NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(root), sizeof(valid) / sizeof(valid[0]));
 
     requests = clargs_test_allocator_requests();
-    for (index = 0; index < sizeof(invalid) / sizeof(invalid[0]); ++index)
+    for (index = 0; index < (sizeof(invalid) / sizeof(invalid[0])); ++index)
     {
         clargs_command_t *sub = root;
 
@@ -407,7 +407,7 @@ NAOS_TEST(subcommands_nest_deeply)
     for (level = 0; level < depth; ++level)
     {
         NAOS_REQUIRE_TRUE(up != NULL);
-        NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(up), level == 0 ? 0u : 1u);
+        NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(up), (level == 0) ? 0u : 1u);
         up = clargs_command_parent(up);
     }
     NAOS_CHECK_TRUE(up == root);
@@ -536,7 +536,7 @@ NAOS_TEST(creation_frees_everything_when_an_allocation_fails)
 
         error = clargs_command_create("app", &root);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < n)
+        if ((error == CLARGS_ERROR_NONE) && (clargs_test_allocator_requests() < n))
         {
             /* Every allocation point has been passed. */
             NAOS_CHECK_TRUE(root != NULL);
@@ -571,7 +571,7 @@ static clargs_command_t *build_root_with(size_t existing)
     clargs_command_t *root = NULL;
     size_t index;
 
-    NAOS_REQUIRE_TRUE(existing <= sizeof(names) / sizeof(names[0]));
+    NAOS_REQUIRE_TRUE(existing <= (sizeof(names) / sizeof(names[0])));
     NAOS_REQUIRE_TRUE(clargs_command_create("app", &root) == CLARGS_ERROR_NONE);
     for (index = 0; index < existing; ++index)
     {
@@ -610,7 +610,7 @@ static size_t fail_each_allocation_of_an_addition(size_t existing)
         sub = root;
         error = clargs_command_add_subcommand(root, "new", &sub);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < requests + n)
+        if ((error == CLARGS_ERROR_NONE) && (clargs_test_allocator_requests() < (requests + n)))
         {
             /* Every allocation point has been passed. */
             NAOS_CHECK_TRUE(sub != NULL);

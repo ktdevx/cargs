@@ -84,8 +84,8 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
     assert(command != NULL);
     assert(name != NULL);
     assert(type != NULL);
-    assert(arity == CLARGS_ARITY_REQUIRED || arity == CLARGS_ARITY_OPTIONAL ||
-           arity == CLARGS_ARITY_ZERO_OR_MORE || arity == CLARGS_ARITY_ONE_OR_MORE);
+    assert((arity == CLARGS_ARITY_REQUIRED) || (arity == CLARGS_ARITY_OPTIONAL) ||
+           (arity == CLARGS_ARITY_ZERO_OR_MORE) || (arity == CLARGS_ARITY_ONE_OR_MORE));
 
     if (out != NULL)
     {
