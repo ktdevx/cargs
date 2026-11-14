@@ -1,115 +1,89 @@
 # Command-Line Syntax
 
-This document specifies the command lines that a program using ArgX accepts: how each element of argv is read, how options take values, how positionals and subcommands are matched, and when required items are checked and default values applied. The rules are the same for `argx_parse` and `argx_parse_wide`. What parsing returns, and the parse errors named here, are in [Parsing](parse.md).
+The command lines a program using ArgX accepts, for both `argx_parse` and `argx_parse_wide`. Results and parse errors are in [Parsing](parse.md).
 
 ## Terms
 
 - An **element** is one string of argv (`argv[1]` onward).
-- The **terminator** is the first `--` that is read as an element on its own. Every element after it is a value.
-- The **current command** is the root at first. It becomes a subcommand each time the name of that subcommand appears. **Options are looked up only in the current command**: the options of the parent and of the subcommands are not looked at ([Subcommands](#subcommands)).
-- An **operand** is an element that is neither an option nor the terminator. If the current command has subcommands, an operand is the name of a subcommand; if it does not, it is the value of a positional. In a validated schema, no command has both subcommands and positionals.
+- The **terminator** is the first `--` read as an element on its own. Every element after it is a value.
+- The **current command** is the root, then each subcommand whose name appears. **Options are looked up only in the current command.**
+- An **operand** is an element that is neither an option nor the terminator: a subcommand name if the current command has subcommands, otherwise a positional value. No validated command has both.
 
 ## How elements are classified
 
-Each element is classified by the first row that matches.
+Each element is classified by the first matching row.
 
 | Form of the element | Condition | Classified as |
 | --- | --- | --- |
-| Any | After the terminator | The value of a positional (for a command that has subcommands, an `UNEXPECTED_POSITIONAL` parse error) |
-| `--` | — | The terminator. It does not become a value |
-| `--x…` | — | A long option. It is split into the name and the value at the first `=` |
+| Any | After the terminator | A positional value (`UNEXPECTED_POSITIONAL` in a command with subcommands) |
+| `--` | — | The terminator. Not a value |
+| `--x…` | — | A long option, split into name and value at the first `=` |
 | `-` | — | An operand |
-| `-N…`, `-.N…` (N is a digit) | The current command has no short name that is a digit | An operand |
+| `-N…`, `-.N…` (N is a digit) | The current command has no digit short name | An operand |
 | `-x…` | — | A bundle of short options |
-| Anything else (including the empty string) | — | An operand |
+| Anything else, including `""` | — | An operand |
 
-- Every element after the terminator is a value, whatever its form: `-v`, `--name` and a second `--` too. The terminator stays in effect after parsing switches to a subcommand.
-- An element that is taken as the value of an option with a value is not classified. The `-x` of `--name -x` and the `--` of `--name --` are both values.
-- Option names and subcommand names are compared as whole names, byte by byte. Uppercase and lowercase letters make different names, and a prefix of a name does not match.
-
-Edge cases:
-
-- An element in the form of a negative number (`-1`, `-.5`) is an operand only if the current command has no option whose short name is a digit. If it has even one, every such element is read as a bundle (in `-.5`, the `.` is an unknown option). To pass a negative number to a positional of such a command, write it after the terminator.
+- The terminator stays in effect across subcommands.
+- An element taken as the value of an option is not classified: in `--name -x` and `--name --`, `-x` and `--` are values.
+- Names are compared whole, byte by byte, and case-sensitively. Prefixes do not match.
+- If the current command has a digit short name, `-1` and `-.5` are bundles; write negative numbers after the terminator.
 
 ## How options take values
 
-A long option is matched against the long names and the negated names. In a bundle of short options, the characters after the `-` are matched one at a time, from the first, against the short names.
+Long options are matched against long and negated names; each character of a bundle is matched against short names in turn.
 
 | Form | Kind of option | Behavior |
 | --- | --- | --- |
-| `--name=value` | With a value | The text right after the `=` is the value (it may be empty) |
-| `--name` | With a value | The next element is the value, whatever it contains. If there is none, `MISSING_VALUE` |
+| `--name=value` | With a value | The text after `=` is the value (may be empty) |
+| `--name` | With a value | The next element is the value, whatever it is; `MISSING_VALUE` if none |
 | `--name=value`, `--no-name=value` | Flag, negatable flag, count | `UNEXPECTED_VALUE` |
-| Characters remain after `-o` | With a value | All of the remaining characters are the value. This ends the bundle |
-| `-o` is the last in the bundle | With a value | The next element is the value, whatever it contains. If there is none, `MISSING_VALUE` |
-
-Forms of options that take no value:
-
-| Form | Kind of option | Behavior |
-| --- | --- | --- |
+| `-ovalue` | With a value | The rest of the bundle is the value |
+| `-o` last in the bundle | With a value | The next element is the value; `MISSING_VALUE` if none |
 | `--name`, `-n` | Flag | Given |
-| `--name`, `-n` | Count | The count goes up by 1 |
+| `--name`, `-n` | Count | Count goes up by 1 |
 | `--name`, `-n` | Negatable flag | On |
 | `--no-name` | Negatable flag | Off |
 
-- `-abc` is the same as `-a -b -c`, and `-vvv` gives a count 3 times. `-abovalue` is the same as `-a -b -ovalue`, and `-abo value` is the same as `-a -b -o value`.
-- The name of a long option ends before the first `=`, so the value of `--name=a=b` is `a=b`.
-- A value is passed to the value type as it was written, without changes; white space at the start and the end is kept. The input that each value type accepts is in [Value Types](types.md#accepted-input).
-
-Edge cases:
-
-- In a bundle, the value of an option with a value is all of the remaining characters, so the value of `-o=value` is `=value`. The `=` is not removed.
-- After an option that takes no value, every character is matched as a short name. The second `-` of `-a-b` and the `=` of `-a=1` cannot be short names, so they are unknown options (`unknown option '--'` and `unknown option '-='`).
+- `-abc` is `-a -b -c`; `-abovalue` is `-a -b -ovalue`; `-abo value` is `-a -b -o value`.
+- The value of `--name=a=b` is `a=b`, and of `-o=value` is `=value`.
+- Values are passed to the value type unchanged, white space included ([Accepted input](types.md#accepted-input)).
+- In `-a-b` and `-a=1`, `-` and `=` are matched as short names, giving `unknown option '--'` and `unknown option '-='`.
 
 ## Repeated options
 
-The same option can be given any number of times, by its short name or by its long name.
-
-| Kind of option | Result of giving it more than once |
+| Kind of option | Given more than once |
 | --- | --- |
 | Flag | Stays given |
-| Count | The number of times it was given (`-v --verbose -vv` is 4) |
-| Negatable flag | The last one given (`--color --no-color` is off; in the reverse order, on) |
+| Count | The number of times (`-v --verbose -vv` is 4) |
+| Negatable flag | The last one (`--color --no-color` is off) |
 | With a value | The last value (`--out a --out b` is `b`) |
 
-Each value of an option with a value is converted by the value type as it is read, including a value that is later replaced. So `--num x --num 5` is a parse error for the failed conversion of `x`.
+Every value is converted as it is read, so `--num x --num 5` is a parse error.
 
 ## Assigning positionals
 
-In a command that has no subcommands, operands are assigned in the order they appear to the positionals, in the order the positionals were added.
+Operands are assigned in order to the positionals in the order they were added. A positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_OPTIONAL` takes one value; one of `ARGX_ARITY_ZERO_OR_MORE` or `ARGX_ARITY_ONE_OR_MORE` takes the rest.
 
-| Arity of the positional | Assignment |
-| --- | --- |
-| `ARGX_ARITY_REQUIRED`, `ARGX_ARITY_OPTIONAL` | One value is assigned. The next operand goes to the next positional |
-| `ARGX_ARITY_ZERO_OR_MORE`, `ARGX_ARITY_ONE_OR_MORE` | The value is assigned, and so is every later operand |
-
-- Options can be written before, between or after the values of positionals. The assignment does not change.
-- An operand that is left over after every positional has its values is an `UNEXPECTED_POSITIONAL` parse error. So is any operand in a command that has no positionals.
-- A lone `-` and the empty string become values of positionals. To pass a value that starts with `-`, write it after the terminator `--`.
-- A value is converted by the value type of its positional as it is read.
+- Options may appear anywhere among the positional values.
+- A leftover operand, or any operand in a command without positionals, is `UNEXPECTED_POSITIONAL`.
+- `-` and `""` are positional values. A value starting with `-` goes after the terminator.
 
 ## Subcommands
 
-In a command that has subcommands, an operand is matched against the names of its subcommands.
-
-- The matching subcommand is selected and becomes the current command. The elements after its name are read with the options, positionals and subcommands of that subcommand. There is no limit to the depth of nesting.
-- A name that matches none of the subcommands of the current command is an `UNKNOWN_SUBCOMMAND` parse error.
-- **Write an option after the name of the command that defines it, and before the name of that command's subcommand.** The `-v` of `pack -v create …` is an option of `pack`. The `-v` of `pack create -v …` is looked up in `create`; if `create` has no `-v`, it is an unknown option. Subcommands do not inherit the options of their parent.
-- When a parent and a child have options with the same name, each option belongs to its own command, at its own position.
-- A command line that ends without the name of a subcommand is not a parse error. `argx_result_command` then returns the command that has subcommands. A program that requires a subcommand checks this itself, as `run` in [examples/pack.c](../../examples/pack.c) does.
-- An element after the terminator does not become the name of a subcommand. A command that has subcommands has no positionals, so it is an `UNEXPECTED_POSITIONAL` parse error.
-- The options and positionals of subcommands that were not selected read as not given ([Rules for reading](parse.md#rules-for-reading)).
+- An operand matching a subcommand name makes it the current command, at any depth. Any other name is `UNKNOWN_SUBCOMMAND`.
+- **An option goes after the name of its command and before the name of that command's subcommand.** In `pack -v create`, `-v` belongs to `pack`; in `pack create -v`, to `create`. Subcommands do not inherit options, and same-named options in parent and child are separate.
+- Ending without a subcommand name is not a parse error; `argx_result_command` then returns the command with subcommands.
+- Elements after the terminator never name a subcommand.
+- Options and positionals of unselected commands read as not given ([Rules for reading](parse.md#rules-for-reading)).
 
 ## Required checks and default values
 
-When parsing has read the last element without a parse error, two steps are done for the selected commands. The options and positionals of commands that were not selected are neither checked nor given default values, even if they are required.
+After the last element is read without a parse error, for the selected commands only:
 
-1. **The required checks.** A required option with a value (`argx_option_set_required`) with no value, or a positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` with no value at all, is a `MISSING_OPTION` or `MISSING_POSITIONAL` parse error. When two or more are missing, the first one is reported: commands closer to the root first, and within one command, options before positionals, each in the order they were added.
-2. **Applying the default values,** only when nothing is missing. Each option with a value and each positional of `ARGX_ARITY_OPTIONAL` that was not given and has a default value gets the default value, converted by its value type. Its source becomes `ARGX_SOURCE_DEFAULT`.
+1. **Required checks.** A required option with a value that has no value, or a positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` with no value, is `MISSING_OPTION` or `MISSING_POSITIONAL`. The first one is reported: commands nearer the root first, then options before positionals, in the order added.
+2. **Default values,** if nothing is missing. An option with a value or an `ARGX_ARITY_OPTIONAL` positional that was not given gets its converted default, with the source `ARGX_SOURCE_DEFAULT`.
 
-- After a parse that succeeded, every required option with a value of the selected commands has a value, and every positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` has at least one.
-- An option with a value or an optional positional that was not given and has no default value has no value (its source is `ARGX_SOURCE_NONE`). A positional of `ARGX_ARITY_ZERO_OR_MORE` that was not given has 0 values.
-- A flag that was not given is "not given", a count is 0, and a negatable flag is in its initial state (`argx_option_set_initial`). Their source is `ARGX_SOURCE_DEFAULT`.
-- The only sources of a value are the command line and the default values. Environment variables and the like are not read.
-- If the conversion of a default value fails, it is an `INVALID_VALUE` parse error. Validation of the schema has already checked the default values, so this happens only when a user-defined value type gives a different answer for the same input.
-
+- Without a default, such an item has no value (`ARGX_SOURCE_NONE`); a `ARGX_ARITY_ZERO_OR_MORE` positional has 0 values.
+- A flag not given is not given, a count is 0, and a negatable flag has its initial state (`argx_option_set_initial`), all with `ARGX_SOURCE_DEFAULT`.
+- Values come only from the command line and defaults, never from the environment.
+- A failed default conversion is `INVALID_VALUE`. Validation already checked the defaults, so only a user-defined value type that answers inconsistently can cause it.
