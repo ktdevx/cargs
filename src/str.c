@@ -32,5 +32,6 @@ char *argx_strdup(const char *str)
     }
 
     memcpy(copy, str, size);
+
     return copy;
 }

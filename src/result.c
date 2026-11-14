@@ -52,6 +52,7 @@ static argx_error_t copy_args(size_t count, char *const *argv, char ***out)
     {
         return ARGX_ERROR_OUT_OF_MEMORY;
     }
+
     size = count * sizeof(char *);
     for (i = 0; i < count; ++i)
     {
@@ -64,11 +65,13 @@ static argx_error_t copy_args(size_t count, char *const *argv, char ***out)
         {
             return ARGX_ERROR_OUT_OF_MEMORY;
         }
+
         size += length;
         if (size == SIZE_MAX)
         {
             return ARGX_ERROR_OUT_OF_MEMORY;
         }
+
         size += 1;
     }
 
@@ -89,6 +92,7 @@ static argx_error_t copy_args(size_t count, char *const *argv, char ***out)
     }
 
     *out = args;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -126,6 +130,7 @@ static argx_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***o
     {
         return ARGX_ERROR_OUT_OF_MEMORY;
     }
+
     size = count * sizeof(char *);
     for (i = 0; i < count; ++i)
     {
@@ -139,15 +144,18 @@ static argx_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***o
         {
             *first_invalid = i;
         }
+
         if (length > (SIZE_MAX - size))
         {
             return ARGX_ERROR_OUT_OF_MEMORY;
         }
+
         size += length;
         if (size == SIZE_MAX)
         {
             return ARGX_ERROR_OUT_OF_MEMORY;
         }
+
         size += 1;
     }
 
@@ -165,6 +173,7 @@ static argx_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***o
     }
 
     *out = args;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -201,6 +210,7 @@ static argx_error_t new_result(const argx_command_t *root, argx_result_t **out)
     result->error_positional = NULL;
     result->error_short_name = '\0';
     result->error_message = NULL;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -219,6 +229,7 @@ static argx_error_t finish_result(argx_result_t *result, argx_error_t error, siz
         result->arg_count = count;
         error = argx_result_push_command(result, result->root);
     }
+
     if (error != ARGX_ERROR_NONE)
     {
         argx_result_destroy(result);
@@ -226,6 +237,7 @@ static argx_error_t finish_result(argx_result_t *result, argx_error_t error, siz
     }
 
     *out = result;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -248,7 +260,9 @@ argx_error_t argx_result_create(const argx_command_t *root, int argc, char *cons
     {
         return error;
     }
+
     error = copy_args((size_t)argc, argv, &result->args);
+
     return finish_result(result, error, (size_t)argc, out);
 }
 
@@ -271,7 +285,9 @@ argx_error_t argx_result_create_wide(const argx_command_t *root, int argc, wchar
     {
         return error;
     }
+
     error = copy_args_wide((size_t)argc, argv, &result->args, &result->first_invalid_arg);
+
     return finish_result(result, error, (size_t)argc, out);
 }
 
@@ -302,6 +318,7 @@ static void destroy_frame(argx_result_frame_t *frame)
                           frame->options[i].value);
         }
     }
+
     for (i = 0; i < frame->positional_count; ++i)
     {
         argx_vec_t *values = &frame->positionals[i].values;
@@ -312,8 +329,10 @@ static void destroy_frame(argx_result_frame_t *frame)
         {
             destroy_value(type, *(void **)argx_vec_at(values, k));
         }
+
         argx_vec_destroy(values);
     }
+
     argx_free(frame->positionals);
     argx_free(frame->options);
 }
@@ -331,6 +350,7 @@ void argx_result_destroy(argx_result_t *result)
     {
         destroy_frame(frame_at(result, i));
     }
+
     argx_vec_destroy(&result->frames);
     argx_free(result->error_message);
     argx_free(result->args);
@@ -404,6 +424,7 @@ static argx_error_t init_frame(argx_result_frame_t *frame, const argx_command_t 
         {
             return ARGX_ERROR_OUT_OF_MEMORY;
         }
+
         for (i = 0; i < frame->option_count; ++i)
         {
             init_option_slot(&frame->options[i], argx_command_option_at(command, i));
@@ -419,6 +440,7 @@ static argx_error_t init_frame(argx_result_frame_t *frame, const argx_command_t 
             argx_free(frame->options);
             return ARGX_ERROR_OUT_OF_MEMORY;
         }
+
         for (i = 0; i < frame->positional_count; ++i)
         {
             frame->positionals[i].source = ARGX_SOURCE_NONE;
@@ -452,6 +474,7 @@ argx_error_t argx_result_push_command(argx_result_t *result, const argx_command_
         destroy_frame(&frame);
         return error;
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -470,6 +493,7 @@ static const argx_command_t *root_of(const argx_command_t *command)
         command = parent;
         parent = argx_command_parent(command);
     }
+
     return command;
 }
 
@@ -501,6 +525,7 @@ static argx_option_slot_t *find_option_slot(const argx_result_t *result,
         {
             continue;
         }
+
         for (k = 0; k < frame->option_count; ++k)
         {
             if (argx_command_option_at(command, k) == option)
@@ -508,8 +533,10 @@ static argx_option_slot_t *find_option_slot(const argx_result_t *result,
                 return &frame->options[k];
             }
         }
+
         return NULL;
     }
+
     return NULL;
 }
 
@@ -577,6 +604,7 @@ bool argx_result_flag(const argx_result_t *result, const argx_option_t *option)
          */
         return argx_option_initial(option);
     }
+
     return slot->on;
 }
 
@@ -594,6 +622,7 @@ size_t argx_result_count(const argx_result_t *result, const argx_option_t *optio
     {
         return 0;
     }
+
     return slot->count;
 }
 
@@ -611,6 +640,7 @@ argx_source_t argx_result_option_source(const argx_result_t *result,
     {
         return ARGX_SOURCE_NONE;
     }
+
     return slot->source;
 }
 
@@ -641,6 +671,7 @@ static argx_positional_slot_t *find_positional_slot(const argx_result_t *result,
         {
             continue;
         }
+
         for (k = 0; k < frame->positional_count; ++k)
         {
             if (argx_command_positional_at(command, k) == positional)
@@ -648,8 +679,10 @@ static argx_positional_slot_t *find_positional_slot(const argx_result_t *result,
                 return &frame->positionals[k];
             }
         }
+
         return NULL;
     }
+
     return NULL;
 }
 
@@ -686,6 +719,7 @@ static argx_error_t convert_value(const argx_type_t *type, const char *text, voi
     }
 
     *out = value;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -791,6 +825,7 @@ static argx_error_t conversion_failure(argx_result_t *result, argx_error_t error
         (positional != NULL) ? argx_positional_command(positional) : argx_option_command(option);
     failure.option = option;
     failure.positional = positional;
+
     return argx_result_fail(result, &failure);
 }
 
@@ -826,8 +861,10 @@ argx_error_t argx_result_record_option_value(argx_result_t *result, const argx_o
     {
         destroy_value(type, slot->value);
     }
+
     slot->value = value;
     slot->source = where->source;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -862,7 +899,9 @@ argx_error_t argx_result_record_positional_value(argx_result_t *result,
         destroy_value(type, value);
         return error;
     }
+
     slot->source = where->source;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -887,6 +926,7 @@ static void discard_frame_defaults(argx_result_frame_t *frame)
         {
             continue;
         }
+
         destroy_value(argx_option_type(argx_command_option_at(frame->command, i)), slot->value);
         slot->value = NULL;
         slot->source = ARGX_SOURCE_NONE;
@@ -901,11 +941,13 @@ static void discard_frame_defaults(argx_result_frame_t *frame)
         {
             continue;
         }
+
         type = argx_positional_type(argx_command_positional_at(frame->command, i));
         for (k = 0; k < slot->values.count; ++k)
         {
             destroy_value(type, *(void **)argx_vec_at(&slot->values, k));
         }
+
         /* The slot is now as it was when the frame was made. */
         argx_vec_destroy(&slot->values);
         argx_vec_init(&slot->values, sizeof(void *));
@@ -937,6 +979,7 @@ static const void *option_value(const argx_result_t *result, const argx_option_t
     {
         return NULL;
     }
+
     return slot->value;
 }
 
@@ -957,7 +1000,9 @@ bool argx_result_option_string(const argx_result_t *result, const argx_option_t 
     {
         return false;
     }
+
     *out = *(const char *const *)value;
+
     return true;
 }
 
@@ -977,7 +1022,9 @@ bool argx_result_option_int(const argx_result_t *result, const argx_option_t *op
     {
         return false;
     }
+
     *out = *(const int64_t *)value;
+
     return true;
 }
 
@@ -997,7 +1044,9 @@ bool argx_result_option_float(const argx_result_t *result, const argx_option_t *
     {
         return false;
     }
+
     *out = *(const double *)value;
+
     return true;
 }
 
@@ -1017,7 +1066,9 @@ bool argx_result_option_choice(const argx_result_t *result, const argx_option_t 
     {
         return false;
     }
+
     *out = *(const size_t *)value;
+
     return true;
 }
 
@@ -1044,6 +1095,7 @@ size_t argx_result_positional_count(const argx_result_t *result, const argx_posi
     {
         return 0;
     }
+
     return slot->values.count;
 }
 
@@ -1061,6 +1113,7 @@ argx_source_t argx_result_positional_source(const argx_result_t *result,
     {
         return ARGX_SOURCE_NONE;
     }
+
     return slot->source;
 }
 
@@ -1078,6 +1131,7 @@ static const void *positional_value(const argx_result_t *result, const argx_posi
     {
         return NULL;
     }
+
     return *(void *const *)argx_vec_at(&slot->values, index);
 }
 
@@ -1097,7 +1151,9 @@ bool argx_result_positional_string(const argx_result_t *result, const argx_posit
     {
         return false;
     }
+
     *out = *(const char *const *)value;
+
     return true;
 }
 
@@ -1117,7 +1173,9 @@ bool argx_result_positional_int(const argx_result_t *result, const argx_position
     {
         return false;
     }
+
     *out = *(const int64_t *)value;
+
     return true;
 }
 
@@ -1137,7 +1195,9 @@ bool argx_result_positional_float(const argx_result_t *result, const argx_positi
     {
         return false;
     }
+
     *out = *(const double *)value;
+
     return true;
 }
 
@@ -1157,7 +1217,9 @@ bool argx_result_positional_choice(const argx_result_t *result, const argx_posit
     {
         return false;
     }
+
     *out = *(const size_t *)value;
+
     return true;
 }
 

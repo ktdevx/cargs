@@ -32,11 +32,12 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
     unsigned long unit = (unsigned long)text[0];
     unsigned long next;
 
-    if (unit < 0xD800UL || unit > 0xDFFFUL)
+    if ((unit < 0xD800UL) || (unit > 0xDFFFUL))
     {
         *code_point = unit;
         return 1;
     }
+
     if (unit <= 0xDBFFUL)
     {
         /*
@@ -44,18 +45,20 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
          * the terminator, and the terminator is not a low surrogate.
          */
         next = (unsigned long)text[1];
-        if (next >= 0xDC00UL && next <= 0xDFFFUL)
+        if ((next >= 0xDC00UL) && (next <= 0xDFFFUL))
         {
             *code_point = 0x10000UL + ((unit - 0xD800UL) << 10) + (next - 0xDC00UL);
             return 2;
         }
     }
+
     /*
      * A high surrogate without a low one after it, or a low surrogate
      * without a high one before it.
      */
     *code_point = REPLACEMENT;
     *valid = false;
+
     return 1;
 }
 
@@ -77,7 +80,9 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
         *valid = false;
         return 1;
     }
+
     *code_point = unit;
+
     return 1;
 }
 
@@ -95,12 +100,14 @@ static size_t encode(unsigned long code_point, unsigned char bytes[UTF8_MAX_BYTE
         bytes[0] = (unsigned char)code_point;
         return 1;
     }
+
     if (code_point < 0x800UL)
     {
         bytes[0] = (unsigned char)(0xC0UL | (code_point >> 6));
         bytes[1] = (unsigned char)(0x80UL | (code_point & 0x3FUL));
         return 2;
     }
+
     if (code_point < 0x10000UL)
     {
         bytes[0] = (unsigned char)(0xE0UL | (code_point >> 12));
@@ -108,6 +115,7 @@ static size_t encode(unsigned long code_point, unsigned char bytes[UTF8_MAX_BYTE
         bytes[2] = (unsigned char)(0x80UL | (code_point & 0x3FUL));
         return 3;
     }
+
     bytes[0] = (unsigned char)(0xF0UL | (code_point >> 18));
     bytes[1] = (unsigned char)(0x80UL | ((code_point >> 12) & 0x3FUL));
     bytes[2] = (unsigned char)(0x80UL | ((code_point >> 6) & 0x3FUL));
@@ -135,6 +143,7 @@ size_t argx_utf8_length(const wchar_t *text, bool *valid)
         text += decode(text, &code_point, valid);
         length += encode(code_point, bytes);
     }
+
     return length;
 }
 
@@ -161,5 +170,6 @@ size_t argx_utf8_write(const wchar_t *text, char *out)
         length += count;
     }
     out[length] = '\0';
+
     return length;
 }

@@ -61,6 +61,7 @@ static argx_error_t convert_choice(const char *text, void *value, void *context)
             return ARGX_ERROR_NONE;
         }
     }
+
     return ARGX_ERROR_INVALID_VALUE;
 }
 
@@ -83,6 +84,7 @@ static bool has_duplicate(const char *const *choices, size_t count)
             }
         }
     }
+
     return false;
 }
 
@@ -184,6 +186,7 @@ argx_error_t argx_type_create_choice(const char *const *choices, size_t count, a
     }
 
     *out = type;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -229,6 +232,7 @@ argx_error_t argx_type_create(const char *name, size_t value_size, argx_convert_
     type->is_static = false;
 
     *out = type;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -249,6 +253,7 @@ void argx_type_destroy(argx_type_t *type)
         }
         argx_free(type->choices);
     }
+
     /* Only a copied name is freed; the other names are fixed strings. */
     if (type->owned_name != NULL)
     {
