@@ -23,6 +23,9 @@
 #   - find_package: the installed version is found when it is asked for, and
 #     a version with another minor (another major from 1.0 on) is not;
 #   - pkg_config: the version that pkg-config reports equals the headers';
+#   - find_package, pkg_config: the full version that the package reports,
+#     "<major>.<minor>.<patch>[-<pre-release>]", equals the headers' too,
+#     the pre-release identifiers included (CLARGS_VERSION_PRERELEASE);
 #   - add_subdirectory, fetch_content: CLArgs keeps the defaults of an
 #     embedded project: no tests, no Naos, no install rules, no warnings as
 #     errors.
@@ -178,6 +181,22 @@ if(CLARGS_CONSUME_MODE STREQUAL "find_package")
 
     # What a user writes: ask for the version, link to CLArgs::clargs.
     find_package(CLArgs ${consumer_package_version} CONFIG REQUIRED)
+
+    # CLArgs_VERSION has only the numeric part, which the compatibility check
+    # needs. The full version, with the pre-release identifiers, is in
+    # CLArgs_VERSION_FULL. Its numeric part must be CLArgs_VERSION.
+    if(NOT DEFINED CLArgs_VERSION_FULL)
+        message(FATAL_ERROR
+            "find_package(CLArgs) does not set CLArgs_VERSION_FULL, "
+            "the full version of the package.")
+    endif()
+    if(NOT CLArgs_VERSION_FULL MATCHES "^([0-9]+\\.[0-9]+\\.[0-9]+)(-[0-9A-Za-z.-]+)?$"
+            OR NOT CMAKE_MATCH_1 STREQUAL consumer_package_version)
+        message(FATAL_ERROR
+            "find_package(CLArgs) reports the full version \"${CLArgs_VERSION_FULL}\", "
+            "which is not ${consumer_package_version}[-<pre-release>].")
+    endif()
+    set(consumer_package_version "${CLArgs_VERSION_FULL}")
 elseif(CLARGS_CONSUME_MODE STREQUAL "pkg_config")
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(CLARGS REQUIRED IMPORTED_TARGET clargs)
@@ -199,18 +218,21 @@ endif()
 add_executable(clargs_consumer main.c)
 target_link_libraries(clargs_consumer PRIVATE ${consumer_library})
 
-# The version that the package reported, for main.c to compare with the
-# headers. The embedded modes have no package.
+# The full version that the package reported, for main.c to compare with the
+# headers: the numbers, and the pre-release identifiers as a string (empty for
+# a release). The embedded modes have no package.
 if(consumer_package_version)
-    if(NOT consumer_package_version MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
+    if(NOT consumer_package_version MATCHES
+            "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([0-9A-Za-z.-]+))?$")
         message(FATAL_ERROR
             "The package reports the version \"${consumer_package_version}\", "
-            "which is not <major>.<minor>.<patch>.")
+            "which is not <major>.<minor>.<patch>[-<pre-release>].")
     endif()
     target_compile_definitions(clargs_consumer PRIVATE
         "CONSUMER_PACKAGE_VERSION_MAJOR=${CMAKE_MATCH_1}"
         "CONSUMER_PACKAGE_VERSION_MINOR=${CMAKE_MATCH_2}"
         "CONSUMER_PACKAGE_VERSION_PATCH=${CMAKE_MATCH_3}"
+        "CONSUMER_PACKAGE_VERSION_PRERELEASE=\"${CMAKE_MATCH_5}\""
     )
 endif()
 

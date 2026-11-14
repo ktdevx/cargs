@@ -1,0 +1,258 @@
+# Release PR of CLArgs.
+#
+# Started by hand on main, from the Actions tab, with the version to release
+# (such as 0.2.0 or 0.2.0-rc.1, without a leading "v"). It:
+#
+#   1. fails unless it was started on main;
+#   2. fails when the branch release/v<version> already exists;
+#   3. checks the release and rewrites include/clargs/version.h and
+#      CHANGELOG.md (tools/release/prepare.cmake), which fails, with the
+#      reason, when the version is not valid, when the tag v<version> exists,
+#      when the version is not higher than every release tag, when it is lower
+#      than the version in the header, or when the changelog has no entry
+#      under [Unreleased];
+#   4. commits the two files, and nothing else, on the new branch
+#      release/v<version> and pushes it;
+#   5. opens the pull request "Release v<version>" to main;
+#   6. starts the CI workflow on the branch, so that the check "CI result"
+#      shows on the pull request. A push or a pull request made with the
+#      token of the workflow does not start other workflows by itself.
+#
+# When it fails in steps 1 to 3, nothing is created. When it fails later, the
+# release guide (docs/releasing.md) tells how to recover. Merging the pull
+# request starts the Release workflow (release-publish.yml), which creates the
+# tag and the GitHub Release.
+#
+# Only one run at a time: a second run waits for the first one to end.
+#
+# The version is passed to the shell through env:, never written into the
+# command lines. Before prepare.cmake has checked it, it is used only as a
+# quoted string. The workflow uses the token of the run (GITHUB_TOKEN) and no
+# other secret, and does not change any setting of the repository.
+
+name: Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, without a leading "v", such as 0.2.0 or 0.2.0-rc.1
+        required: true
+        type: string
+
+concurrency:
+  group: release-pr
+  cancel-in-progress: false
+
+# No access by default. The job below asks for what it needs.
+permissions: {}
+
+jobs:
+  release-pr:
+    name: release-pr
+    runs-on: ubuntu-latest
+    # contents: push the release branch. pull-requests: open the pull request.
+    # actions: start the CI workflow on the branch.
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check the branch
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            reason="The workflow was started on $GITHUB_REF. Start it on main."
+            echo "error: $reason"
+            {
+              echo "## Release PR failed"
+              echo
+              echo "$reason Nothing was created."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      # Every commit and every tag, for the list of tags below.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check that the release branch does not exist
+        run: |
+          branch="release/v$VERSION"
+          status=0
+          git ls-remote --exit-code --heads origin "refs/heads/release/v$VERSION" || status=$?
+          if [ "$status" -eq 2 ]; then
+            echo "The branch $branch does not exist."
+            exit 0
+          fi
+          if [ "$status" -eq 0 ]; then
+            reason="The branch $branch already exists. Close its pull request and delete the branch, or release another version."
+          else
+            reason="git ls-remote failed with exit code $status while looking for the branch $branch."
+          fi
+          echo "error: $reason"
+          {
+            echo "## Release PR failed"
+            echo
+            echo "$reason Nothing was created."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: List the tags
+        run: |
+          git tag --list 'v*' > "$RUNNER_TEMP/tags.txt"
+          echo "Tags that start with v:"
+          cat "$RUNNER_TEMP/tags.txt"
+
+      # Checks the release and rewrites the version header and the changelog.
+      # The date of the release is the day in UTC. The outputs are version,
+      # tag and prerelease (from prepare.cmake), and date.
+      - name: Prepare the release
+        id: prepare
+        run: |
+          DATE="$(date -u +%F)"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          log="$RUNNER_TEMP/prepare.log"
+          if ! cmake -D CLARGS_RELEASE_VERSION="$VERSION" -D CLARGS_RELEASE_DATE="$DATE" -D CLARGS_RELEASE_REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" -D CLARGS_SOURCE_DIR="$GITHUB_WORKSPACE" -D CLARGS_RELEASE_TAGS_FILE="$RUNNER_TEMP/tags.txt" -D CLARGS_RELEASE_OUTPUT="$GITHUB_OUTPUT" -P tools/release/prepare.cmake 2>&1 | tee "$log"; then
+            {
+              echo "## Release PR failed"
+              echo
+              echo "The release of $VERSION was refused. Nothing was created. The output of tools/release/prepare.cmake:"
+              echo
+              echo '```text'
+              cat "$log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      # Only the two files that prepare.cmake rewrites may change. Any other
+      # change, or a file that did not change, stops the workflow before the
+      # push.
+      - name: Commit and push the release branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git switch -c "release/v$VERSION"
+          git add include/clargs/version.h CHANGELOG.md
+          changes="$(git status --porcelain --untracked-files=all)"
+          # CHANGELOG.md always changes. The version header changes too, except
+          # for a release of the version it already holds (the first release).
+          sorted="$(printf '%s\n' "$changes" | LC_ALL=C sort)"
+          with_header="$(printf '%s\n' 'M  CHANGELOG.md' 'M  include/clargs/version.h')"
+          if [ "$sorted" != "$with_header" ] && [ "$sorted" != 'M  CHANGELOG.md' ]; then
+            reason="The working tree does not hold only the changes of CHANGELOG.md and include/clargs/version.h."
+            echo "error: $reason"
+            printf '%s\n' "$changes"
+            {
+              echo "## Release PR failed"
+              echo
+              echo "$reason Nothing was pushed. git status --porcelain:"
+              echo
+              echo '```text'
+              printf '%s\n' "$changes"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          git commit -m "Release v$VERSION"
+          # Not forced: the push fails if the branch was created meanwhile.
+          if ! git push origin "HEAD:refs/heads/release/v$VERSION"; then
+            reason="The push of the branch release/v$VERSION failed."
+            echo "error: $reason"
+            {
+              echo "## Release PR failed"
+              echo
+              echo "$reason No pull request was opened. See docs/releasing.md to recover."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Open the pull request
+        id: pr
+        env:
+          PRERELEASE: ${{ steps.prepare.outputs.prerelease }}
+          DATE: ${{ steps.prepare.outputs.date }}
+        run: |
+          guide="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/releasing.md"
+          body="$RUNNER_TEMP/pr-body.md"
+          if [ "$PRERELEASE" = true ]; then
+            first="This pull request releases CLArgs v$VERSION. This is a pre-release."
+            kind="It is marked as a pre-release, and not as the latest release."
+          else
+            first="This pull request releases CLArgs v$VERSION."
+            kind="It is a full release, not a pre-release."
+          fi
+          if git diff --quiet HEAD~1 HEAD -- include/clargs/version.h; then
+            header="the version macros already hold $VERSION, so this file is not changed."
+          else
+            header="the version macros are set to $VERSION."
+          fi
+          cat > "$body" <<EOF
+          $first
+
+          ## What this pull request changes
+
+          - \`include/clargs/version.h\`: $header
+          - \`CHANGELOG.md\`: the entries under [Unreleased] move to the new section [$VERSION] - $DATE, [Unreleased] is left empty, and the links at the end of the file are updated.
+
+          No other file is changed.
+
+          ## What happens on merge
+
+          The Release workflow creates the annotated tag \`v$VERSION\` on the merge commit, and the GitHub Release \`v$VERSION\` with the section of $VERSION in CHANGELOG.md as its notes. $kind
+
+          ## Before merging
+
+          - [ ] Read the section of $VERSION in CHANGELOG.md again, and fix it on this branch if needed.
+          - [ ] Make sure the check \`CI result\` has passed on the last commit of this pull request.
+          - [ ] If the pull request is merged on a later day than $DATE, the date of the section may be corrected on this branch.
+
+          See the release guide, [docs/releasing.md]($guide), for the whole procedure and for how to recover from a failure.
+          EOF
+          if ! url="$(gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "release/v$VERSION" --title "Release v$VERSION" --body-file "$body")"; then
+            reason="The branch release/v$VERSION was pushed, but the pull request could not be opened."
+            echo "error: $reason"
+            {
+              echo "## Release PR failed"
+              echo
+              echo "$reason Delete the branch and start the workflow again, as docs/releasing.md tells."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Opened $url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Release PR"
+            echo
+            echo "Opened the pull request for v$VERSION: $url"
+            if [ "$PRERELEASE" = true ]; then
+              echo
+              echo "This is a pre-release."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The pull request stays open when this fails: start CI on the branch by
+      # hand, as docs/releasing.md tells.
+      - name: Start CI on the release branch
+        run: |
+          if ! gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "release/v$VERSION"; then
+            reason="The pull request is open, but CI could not be started on release/v$VERSION."
+            echo "error: $reason"
+            {
+              echo
+              echo "$reason Start the CI workflow on the branch by hand, as docs/releasing.md tells."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Started CI on release/v$VERSION."
+          {
+            echo
+            echo "Started CI on release/v$VERSION. The check \"CI result\" shows on the pull request when it ends."
+          } >> "$GITHUB_STEP_SUMMARY"

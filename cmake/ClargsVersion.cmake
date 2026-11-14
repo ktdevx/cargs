@@ -4,9 +4,12 @@
 # version. This module reads it as text, so the build, the package files and
 # the library all use the same numbers.
 #
-#   clargs_read_version(<header-path> <out-var>)
+#   clargs_read_version(<header-path> <out-var> [<prerelease-out-var>])
 #
-# Sets <out-var> to "<major>.<minor>.<patch>".
+# Sets <out-var> to "<major>.<minor>.<patch>", the numeric part of the
+# version, and <prerelease-out-var>, when given, to the pre-release
+# identifiers without the leading hyphen ("rc.1"), or to an empty string for a
+# release.
 #
 # <header-path> must contain each of CLARGS_VERSION_MAJOR, CLARGS_VERSION_MINOR
 # and CLARGS_VERSION_PATCH exactly once, on one line, in the form
@@ -14,13 +17,21 @@
 #   #define CLARGS_VERSION_<PART> <integer>
 #
 # where <integer> is a decimal literal in the range 0-255 without a sign, a
-# suffix or leading zeros (the compiler reads a leading zero as octal). Blanks
-# around the tokens and comments are ignored, as the compiler ignores them. A
-# relative <header-path> is taken from CMAKE_CURRENT_SOURCE_DIR.
+# suffix or leading zeros (the compiler reads a leading zero as octal). It must
+# also contain CLARGS_VERSION_PRERELEASE exactly once, on one line, in the form
 #
-# Stops with a FATAL_ERROR that names the header and every macro at fault if
+#   #define CLARGS_VERSION_PRERELEASE "<identifiers>"
+#
+# where <identifiers> is empty or SemVer 2.0.0 pre-release identifiers: one or
+# more identifiers separated by dots, each made of the characters [0-9A-Za-z-],
+# and none that is all digits starting with 0 (other than "0" itself). The
+# header is checked the same way whether <prerelease-out-var> is given or not.
+# Blanks around the tokens and comments are ignored, as the compiler ignores
+# them. A relative <header-path> is taken from CMAKE_CURRENT_SOURCE_DIR.
+#
+# Stops with one FATAL_ERROR that names the header and every macro at fault if
 # the header cannot be read, a macro is missing or defined more than once, or
-# a value is not such an integer.
+# a value is not of its form.
 #
 # Does not depend on anything project() sets: call it before project(), or
 # from a script run with "cmake -P".
@@ -33,9 +44,10 @@ cmake_policy(PUSH)
 cmake_policy(VERSION 3.21)
 
 function(clargs_read_version header out_var)
-    if(NOT ARGC EQUAL 2)
+    if(NOT ARGC EQUAL 2 AND NOT ARGC EQUAL 3)
         message(FATAL_ERROR
-            "clargs_read_version: expected 2 arguments (<header-path> <out-var>), got ${ARGC}.")
+            "clargs_read_version: expected 2 or 3 arguments "
+            "(<header-path> <out-var> [<prerelease-out-var>]), got ${ARGC}.")
     endif()
 
     get_filename_component(path "${header}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -92,7 +104,8 @@ function(clargs_read_version header out_var)
 
     set(problems "")
     set(version "")
-    foreach(part IN ITEMS MAJOR MINOR PATCH)
+    set(prerelease "")
+    foreach(part IN ITEMS MAJOR MINOR PATCH PRERELEASE)
         set(macro "CLARGS_VERSION_${part}")
         set(line_regex "\n[ \t]*#[ \t]*define[ \t]+${macro}([ \t][^\n]*)?\n")
 
@@ -109,6 +122,38 @@ function(clargs_read_version header out_var)
         string(SUBSTRING "${text}" ${after} -1 rest)
         if(rest MATCHES "${line_regex}")
             string(APPEND problems "  ${macro} is defined more than once.\n")
+            continue()
+        endif()
+
+        if(part STREQUAL "PRERELEASE")
+            if(value STREQUAL "")
+                string(APPEND problems "  ${macro} has no value.\n")
+            elseif(NOT value MATCHES "^\"([^\"]*)\"$")
+                string(APPEND problems
+                    "  ${macro} is ${value}, which is not a string literal.\n")
+            else()
+                set(identifiers "${CMAKE_MATCH_1}")
+                set(valid TRUE)
+                if(NOT identifiers STREQUAL "")
+                    # The characters exclude ";", so the identifiers make a list.
+                    if(NOT identifiers MATCHES "^[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*$")
+                        set(valid FALSE)
+                    else()
+                        string(REPLACE "." ";" identifier_list "${identifiers}")
+                        foreach(identifier IN LISTS identifier_list)
+                            if(identifier MATCHES "^0[0-9]+$")
+                                set(valid FALSE)
+                            endif()
+                        endforeach()
+                    endif()
+                endif()
+                if(valid)
+                    set(prerelease "${identifiers}")
+                else()
+                    string(APPEND problems
+                        "  ${macro} is \"${identifiers}\", which are not valid pre-release identifiers.\n")
+                endif()
+            endif()
             continue()
         endif()
 
@@ -130,12 +175,18 @@ function(clargs_read_version header out_var)
             "clargs_read_version: cannot read the version from\n"
             "  ${path}\n"
             "${problems}"
-            "Each macro must be on one line, in the form\n"
+            "Each macro must be on one line, in one of the forms\n"
             "  #define CLARGS_VERSION_<PART> <integer>\n"
-            "where <integer> is in the range 0-255, in decimal, without leading zeros.")
+            "  #define CLARGS_VERSION_PRERELEASE \"<identifiers>\"\n"
+            "where <integer> is in the range 0-255, in decimal, without leading zeros, "
+            "and <identifiers> is empty for a release, or SemVer pre-release identifiers "
+            "without the leading hyphen, such as \"rc.1\".")
     endif()
 
     set(${out_var} "${version}" PARENT_SCOPE)
+    if(ARGC EQUAL 3)
+        set(${ARGV2} "${prerelease}" PARENT_SCOPE)
+    endif()
 endfunction()
 
 cmake_policy(POP)

@@ -1,0 +1,7 @@
+# Disables blank issues: every issue uses one of the forms in this directory.
+# Vulnerabilities go to private reporting instead of a public issue.
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/ktdevx/cargs/security/advisories/new
+    about: Report vulnerabilities privately. Do not open a public issue. See SECURITY.md.

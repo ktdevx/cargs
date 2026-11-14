@@ -1,0 +1,81 @@
+name: Bug report
+description: Report a problem with CLArgs (a wrong result, a crash, a build failure).
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+        For a security vulnerability, do not use this form: see SECURITY.md.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened, and what did you expect to happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: |
+        A minimal program and the command line that shows the problem, or the
+        commands that fail to build. Paste code and output as text.
+      placeholder: |
+        1. Build this program: ...
+        2. Run it with: ./app --name=value
+        3. clargs_parse() returns ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: CLArgs version
+      description: A release (for example v0.1.0) or a commit hash.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and compiler
+      placeholder: Ubuntu 24.04, GCC 13.2
+    validations:
+      required: true
+  - type: dropdown
+    id: shape
+    attributes:
+      label: Library type
+      options:
+        - Static
+        - Shared
+        - Both
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: integration
+    attributes:
+      label: How CLArgs is included
+      options:
+        - FetchContent
+        - add_subdirectory
+        - find_package
+        - pkg-config
+        - Other
+    validations:
+      required: false
+  - type: input
+    id: cmake
+    attributes:
+      label: CMake version
+      description: Output of `cmake --version`, if CMake is involved.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Logs, build options, or anything else that may help.
+    validations:
+      required: false

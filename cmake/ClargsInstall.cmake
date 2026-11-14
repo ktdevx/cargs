@@ -15,8 +15,16 @@
 #   clargs.pc                                    ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 #
 # A consumer calls find_package(CLArgs [<version>]) and links to
-# CLArgs::clargs, or asks pkg-config for clargs. The file names and these
-# steps are the same for a static and a shared library.
+# CLArgs::clargs, or asks pkg-config for clargs.
+#
+# The version of the package files comes from the top-level CMakeLists.txt,
+# which reads include/clargs/version.h. clargs.pc and CLArgsConfig.cmake
+# (CLArgs_VERSION_FULL, CLArgs_VERSION_PRERELEASE) hold the full version,
+# with the pre-release identifiers: clargs_version_full and
+# clargs_version_prerelease. CLArgsConfigVersion.cmake, which decides
+# compatibility, holds the numeric part, PROJECT_VERSION, like the
+# SOVERSION. The file names and these steps are the same for a static and a
+# shared library.
 #
 # Only the target clargs and the public headers are installed. The internal
 # headers in src/, the tests and the targets that exist for the tests are not.
@@ -137,8 +145,8 @@ endif()
 # The name to link to is the name of the library that this configuration
 # installs: the Debug library has a postfix. So there is one clargs.pc for
 # each configuration, and the install step takes the one of its
-# configuration. The version comes from project(), which has it from
-# include/clargs/version.h.
+# configuration. The version is the full version, clargs_version_full, with
+# the pre-release identifiers.
 set(clargs_pc_library "$<TARGET_LINKER_FILE_BASE_NAME:clargs>")
 
 configure_file(

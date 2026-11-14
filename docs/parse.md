@@ -1,34 +1,34 @@
-# CLArgs の解析の使い方
+# Parsing
 
-検証済みのスキーマと argv を渡して解析し、結果から値を読み、破棄する方法をまとめる。プログラムの利用者がコマンドラインに書ける形（引数の書き方）と、引数がスキーマに合わないときに返る解析エラーも、ここにまとめる。
+This document explains how to parse argv with a validated schema, read the values from the result, and destroy the result. It also describes the forms that the user of your program can write on the command line (the command-line syntax), and the parse errors that are returned when the arguments do not match the schema.
 
-この文書が扱うのは、解析、結果の読み取り、解析エラー、結果の破棄である。スキーマの定義と検証は、[スキーマの使い方](schema.md)にある。ヘルプと usage 行の文面の生成は、[ヘルプの使い方](help.md)にある。解析は、何も出力せず、プロセスを終了させず、環境変数を読まない。
+This document covers parsing, reading the result, parse errors and destroying the result. Defining and validating a schema is in [Schemas](schema.md). Generating the help text and the usage line is in [Help and Usage](help.md). Parsing prints nothing, does not end the process, and does not read environment variables.
 
-関数ごとの詳しい説明と前提条件は、公開ヘッダ `include/clargs/parse.h` のコメントにある。メモリの持ち方の決まりは、[所有権と寿命の規約](ownership.md)にある。
+The detailed description and the preconditions of each function are in the comments of the public header `include/clargs/parse.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
 
-目次:
+Contents:
 
-- [一連の例](#一連の例)
-- [解析の入口](#解析の入口)
-- [引数の書き方](#引数の書き方)
-- [必須の検査と既定値](#必須の検査と既定値)
-- [結果の読み取り](#結果の読み取り)
-- [解析エラー](#解析エラー)
-- [`--help` の扱い](#--help-の扱い)
-- [ワイド文字の argv](#ワイド文字の-argv)
-- [寿命の規則](#寿命の規則)
-- [前提条件](#前提条件)
+- [A complete example](#a-complete-example)
+- [Entry points](#entry-points)
+- [Command-line syntax](#command-line-syntax)
+- [Required checks and default values](#required-checks-and-default-values)
+- [Reading the result](#reading-the-result)
+- [Parse errors](#parse-errors)
+- [Handling `--help`](#handling---help)
+- [Wide-character argv](#wide-character-argv)
+- [Lifetime rules](#lifetime-rules)
+- [Preconditions](#preconditions)
 
-## 一連の例
+## A complete example
 
-`pack` という架空のプログラムで、スキーマの検証から、解析、`--help` の確認、解析エラーの表示、値の読み取り、破棄までを行う。次の形のコマンドラインを受け付ける。
+The example uses `pack`, a made-up program. It validates the schema, parses, checks for `--help`, prints parse errors, reads the values and destroys everything. It accepts command lines of this form:
 
 ```
 pack [-h] [-v]... [--color | --no-color] create [-h] -o FILE [-l LEVEL] file...
 pack [-h] [-v]... [--color | --no-color] list [-h] archive [pattern]
 ```
 
-例は 1 つの翻訳単位で、取り込むのは `<clargs/clargs.h>` と標準ヘッダだけである。取り出して、そのままコンパイルできる。
+The example is one translation unit, and it includes only `<clargs/clargs.h>` and standard headers. You can copy it out and compile it as it is.
 
 ```c
 #include <clargs/clargs.h>
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 }
 ```
 
-実行の例（`$` の行が入力、次の行からが出力）:
+Example runs (the `$` lines are the input, and the lines after them are the output):
 
 ```
 $ pack -vv create -o out.tar a.txt b.txt
@@ -271,17 +271,17 @@ $ pack create --help
 usage: pack create -o FILE [-l LEVEL] file...
 ```
 
-例の要点:
+Notes on the example:
 
-- 解析に渡すのは、検証済みのスキーマのルートと、`main` が受け取った `argc` と `argv` である。加工もキャストも要らない。
-- 戻り値は 3 通りである。`CLARGS_ERROR_NONE`（成功）と `CLARGS_ERROR_INVALID_COMMAND_LINE`（解析エラー）では、`result` に結果が書かれる。`CLARGS_ERROR_OUT_OF_MEMORY` では `NULL` が書かれる。
-- 解析エラーを見る前に、`--help` が指定されたかを見る。解析エラーの結果からも、エラーまでに読んだ分は読める（[`--help` の扱い](#--help-の扱い)）。
-- 例の `print_usage` は、解析の説明のために、usage の文面を自分で書いている。スキーマからヘルプと usage 行を生成する方法は、[ヘルプの使い方](help.md)にある。
-- 解析エラーのメッセージは、`clargs_result_error_message` が返す 1 行である。プログラム名などの接頭辞と改行は、表示する側が付ける。
-- 値は、スキーマを定義したときに受け取ったハンドル（`schema.output` など）を指定して読む。名前の文字列では指定しない。
-- 破棄は、結果が先、スキーマが後である。解析エラーの結果も、利用者が破棄する。
+- What you pass to the parse is the root of a validated schema, and the `argc` and `argv` that `main` received. No conversion or cast is needed.
+- There are three possible return values. With `CLARGS_ERROR_NONE` (success) and `CLARGS_ERROR_INVALID_COMMAND_LINE` (a parse error), a result is written to `result`. With `CLARGS_ERROR_OUT_OF_MEMORY`, `NULL` is written.
+- Check whether `--help` was given before you look at the parse error. Even from a result with a parse error, you can read what was read before the error ([Handling `--help`](#handling---help)).
+- The `print_usage` of the example writes the usage text by hand, to keep the example about parsing. How to generate the help and the usage line from the schema is in [Help and Usage](help.md).
+- The message of a parse error is the one line that `clargs_result_error_message` returns. The code that prints it adds a prefix such as the program name, and the line break.
+- A value is read by the handle that you received when you defined the schema (such as `schema.output`), not by a name string.
+- Destroy the result first, then the schema. You also destroy a result that has a parse error.
 
-## 解析の入口
+## Entry points
 
 ```
 clargs_error_t clargs_parse(const clargs_command_t *root, int argc, char *const *argv,
@@ -290,279 +290,279 @@ clargs_error_t clargs_parse_wide(const clargs_command_t *root, int argc, wchar_t
                                  clargs_result_t **out);
 ```
 
-`clargs_parse` は、`char` の argv を解析する。`clargs_parse_wide` は、ワイド文字の argv を UTF-8 に変換してから、同じ解析を行う（[ワイド文字の argv](#ワイド文字の-argv)）。
+`clargs_parse` parses a `char` argv. `clargs_parse_wide` converts a wide-character argv to UTF-8 and then parses it in the same way ([Wide-character argv](#wide-character-argv)).
 
-| 戻り値 | `*out` | 意味 |
+| Return value | `*out` | Meaning |
 |---|---|---|
-| `CLARGS_ERROR_NONE` | 結果 | 成功。値の解決まで済んでいる |
-| `CLARGS_ERROR_INVALID_COMMAND_LINE` | 結果 | 解析エラー。結果から、エラーの情報と、エラーまでに読んだ分を読める |
-| `CLARGS_ERROR_OUT_OF_MEMORY` | `NULL` | 確保の失敗。何も残らない |
+| `CLARGS_ERROR_NONE` | A result | Success. The values have been resolved |
+| `CLARGS_ERROR_INVALID_COMMAND_LINE` | A result | A parse error. From the result, you can read the details of the error and what was read before the error |
+| `CLARGS_ERROR_OUT_OF_MEMORY` | `NULL` | An allocation failed. Nothing is left |
 
-- `*out` が `NULL` でなければ、利用者が `clargs_result_destroy` で破棄する。**解析エラーのときも結果が渡る。** これは、「失敗したら出力先は `NULL`」という、ほかの関数の決まりの例外である。
-- 値型の変換関数が `CLARGS_ERROR_OUT_OF_MEMORY` を返したときも、確保の失敗として扱う。
-- `argv[0]` はプログラム名で、解析しない。`argc` が 0 または 1 なら、何も指定されなかったコマンドラインとして解析する。`argv[argc]` は読まない。
-- `root` に渡すのは、検証済みのスキーマのルートである。検証を済ませていないスキーマと、サブコマンドを渡すのは、エラーコードにならない[前提条件](#前提条件)の違反である。
-- 解析は、スキーマ、値型、argv の配列、argv の文字列を変更しない。呼び出しの間に持ち越す状態はなく、同じスキーマと同じ argv には、いつも同じ結果を返す。スキーマが変更されていない間は、複数のスレッドから同じスキーマで同時に解析できる。
-- 要素は、先頭から順に 1 回ずつ読む。スキーマに合わない最初の要素で、解析をやめる。
+- If `*out` is not `NULL`, you destroy it with `clargs_result_destroy`. **A result is passed to you on a parse error too.** This is an exception to the rule of the other functions, "on failure, the output is `NULL`".
+- When the conversion function of a value type returns `CLARGS_ERROR_OUT_OF_MEMORY`, it is also treated as an allocation failure.
+- `argv[0]` is the program name, and it is not parsed. If `argc` is 0 or 1, the command line is parsed as one in which nothing was given. `argv[argc]` is not read.
+- What you pass as `root` is the root of a validated schema. Passing a schema that has not been validated, or a subcommand, breaks a [precondition](#preconditions), and no error code is returned for it.
+- The parse does not change the schema, the value types, the argv array or the argv strings. No state is kept between calls, and the same schema and the same argv always give the same result. While the schema is not changed, several threads can parse with the same schema at the same time.
+- Elements are read once each, from the first to the last. The parse stops at the first element that does not match the schema.
 
-## 引数の書き方
+## Command-line syntax
 
-プログラムの利用者がコマンドラインに書ける形である。「要素」は argv の 1 つの文字列、「現在のコマンド」は、最初はルートで、サブコマンドの名前が現れるたびに、そのサブコマンドに替わる。
+These are the forms that the user of your program can write on the command line. An "element" is one string of argv. The "current command" is the root at first, and it becomes a subcommand each time the name of that subcommand appears.
 
-### 要素の分類
+### How elements are classified
 
-上の行から順に当てはめる。
+The rows are tried from the top.
 
-| 要素の形 | 条件 | 扱い |
+| Form of the element | Condition | Treatment |
 |---|---|---|
-| `--` | 終端より前 | 終端。以後はすべて位置引数 |
-| `--x…` | 終端より前 | 長いオプション。最初の `=` で名前と値に分ける |
-| `-` | — | オプションではない要素 |
-| `-N…`、`-.N…`（N は数字） | 現在のコマンドに数字の短い名前がない | オプションではない要素 |
-| `-x…` | 上のどれでもない | 短いオプションの束 |
-| それ以外（空の文字列を含む） | — | オプションではない要素 |
-| すべて | 終端より後ろ | 位置引数（サブコマンドを持つコマンドでは、余分な位置引数のエラー） |
+| `--` | Before the terminator | The terminator. Everything after it is a positional |
+| `--x…` | Before the terminator | A long option. It is split into the name and the value at the first `=` |
+| `-` | — | An element that is not an option |
+| `-N…`, `-.N…` (N is a digit) | The current command has no short name that is a digit | An element that is not an option |
+| `-x…` | None of the above | A bundle of short options |
+| Anything else (including the empty string) | — | An element that is not an option |
+| Any | After the terminator | A positional (for a command that has subcommands, an unexpected positional error) |
 
-- オプションではない要素は、現在のコマンドがサブコマンドを持てばサブコマンドの名前、持たなければ位置引数の値として扱う。検証済みのスキーマでは、1 つのコマンドがサブコマンドと位置引数の両方を持つことはない。
-- 終端の `--` は、値にならない。終端より後ろの要素は、`-v` も `--name` も 2 つ目の `--` も、形にかかわらず値である。終端は、サブコマンドに切り替わった後も有効である。
-- 負の数の形（`-1`、`-.5` など）の要素は、現在のコマンドに、数字を短い名前とするオプションが 1 つもなければ、オプションではない要素である。1 つでもあれば、負の数の形の要素はすべて束として読む（`-.5` は、`.` が未知のオプションになる）。そういうコマンドで負の数を位置引数に渡すには、終端の後ろに書く。
-- 値付きオプションの値として取り込まれた要素は、分類されない。`--name -x` の `-x` も、`--name --` の `--` も、値である。
-- オプションの名前とサブコマンドの名前は、名前の全体を、バイト単位で比べる。大文字と小文字は別の名前で、名前の一部（前方一致）は一致しない。
-- オプションは、現在のコマンドの定義だけから探す。親のコマンドと、サブコマンドのオプションは見ない（[サブコマンド](#サブコマンド)）。
+- An element that is not an option is the name of a subcommand if the current command has subcommands, and the value of a positional if it does not. In a validated schema, no command has both subcommands and positionals.
+- The terminator `--` does not become a value. Every element after the terminator is a value, whatever its form: `-v`, `--name` and a second `--` too. The terminator stays in effect after the parse switches to a subcommand.
+- An element in the form of a negative number (`-1`, `-.5` and so on) is an element that is not an option if the current command has no option whose short name is a digit. If it has even one, every element in the form of a negative number is read as a bundle (in `-.5`, the `.` is an unknown option). To pass a negative number to a positional of such a command, write it after the terminator.
+- An element that is taken as the value of an option with a value is not classified. The `-x` of `--name -x` and the `--` of `--name --` are both values.
+- Option names and subcommand names are compared as whole names, byte by byte. Uppercase and lowercase letters make different names, and part of a name (a prefix) does not match.
+- Options are looked up only in the definition of the current command. The options of the parent command and of subcommands are not looked at ([Subcommands](#subcommands)).
 
-### 値の取り方
+### How options take values
 
-長いオプションは、長い名前と否定名で照合する。短いオプションの束は、`-` の後ろの文字を、先頭から 1 文字ずつ、短い名前で照合する。
+A long option is matched against the long names and the negated names. In a bundle of short options, the characters after the `-` are matched one at a time, from the first, against the short names.
 
-| 書き方 | オプションの種類 | 動作 |
+| Form | Kind of option | Behavior |
 |---|---|---|
-| `--name=value` | 値付き | `=` の直後を値にする（空でもよい） |
-| `--name` | 値付き | 次の要素を、内容にかかわらず値にする。なければ `MISSING_VALUE` |
-| `--name=value`、`--no-name=value` | フラグ、否定、カウント | `UNEXPECTED_VALUE` |
-| `-o` の後ろに文字が残る | 値付き | 残りの全体を値にする。束の解釈を終える |
-| `-o` が束の最後 | 値付き | 次の要素を、内容にかかわらず値にする。なければ `MISSING_VALUE` |
+| `--name=value` | With a value | The text right after the `=` is the value (it may be empty) |
+| `--name` | With a value | The next element is the value, whatever it contains. If there is none, `MISSING_VALUE` |
+| `--name=value`, `--no-name=value` | Flag, negatable flag, count | `UNEXPECTED_VALUE` |
+| Characters remain after `-o` | With a value | All of the remaining characters are the value. This ends the reading of the bundle |
+| `-o` is the last in the bundle | With a value | The next element is the value, whatever it contains. If there is none, `MISSING_VALUE` |
 
-値を取らないオプションの書き方:
+Forms of options that take no value:
 
-| 書き方 | オプションの種類 | 動作 |
+| Form | Kind of option | Behavior |
 |---|---|---|
-| `--name`、`-n` | フラグ | 指定された |
-| `--name`、`-n` | カウント | 回数が 1 増える |
-| `--name`、`-n` | 否定できるフラグ | オンになる |
-| `--no-name` | 否定できるフラグ | オフになる |
+| `--name`, `-n` | Flag | Given |
+| `--name`, `-n` | Count | The count goes up by 1 |
+| `--name`, `-n` | Negatable flag | On |
+| `--no-name` | Negatable flag | Off |
 
-- 長いオプションの名前は、最初の `=` の手前までである。`--name=a=b` の値は `a=b` である。
-- `-abc` は `-a -b -c` と同じである。`-vvv` は、カウントを 3 回指定する。`-abovalue` は `-a -b -ovalue` と、`-abo value` は `-a -b -o value` と同じである。
-- 束の中の値付きオプションの値は、残りの文字の全体である。`-o=value` の値は `=value` で、`=` は取り除かれない。
-- 値を取らないオプションの後ろの文字は、どの文字も、束の 1 文字として照合する。`-a-b` の 2 つ目の `-` と、`-a=1` の `=` は、短い名前にならない文字なので、未知のオプションになる（メッセージは `unknown option '--'`、`unknown option '-='`）。
-- 値は、加工せずに、書かれたとおりに値型へ渡る。前後の空白も取り除かない。値型が受け付ける入力は、[スキーマの使い方](schema.md#値型)にある。
+- The name of a long option ends before the first `=`. The value of `--name=a=b` is `a=b`.
+- `-abc` is the same as `-a -b -c`. `-vvv` gives a count 3 times. `-abovalue` is the same as `-a -b -ovalue`, and `-abo value` is the same as `-a -b -o value`.
+- The value of an option with a value in a bundle is all of the remaining characters. The value of `-o=value` is `=value`; the `=` is not removed.
+- Every character after an option that takes no value is matched as one character of the bundle. The second `-` of `-a-b` and the `=` of `-a=1` are characters that cannot be short names, so they are unknown options (the messages are `unknown option '--'` and `unknown option '-='`).
+- A value is passed to the value type as it was written, without changes. White space at the start and the end is not removed either. The input that each value type accepts is in [Schemas](schema.md#value-types).
 
-### 複数回の指定
+### Repeated options
 
-同じオプションは、短い名前と長い名前のどちらででも、何度でも指定できる。
+The same option can be given any number of times, by its short name or by its long name.
 
-| オプションの種類 | 複数回の指定の結果 |
+| Kind of option | Result of giving it more than once |
 |---|---|
-| フラグ | 指定された、のままである |
-| カウント | 指定された回数（`-v --verbose -vv` は 4 回） |
-| 否定できるフラグ | 最後の指定（`--color --no-color` はオフ、逆順ならオン） |
-| 値付き | 最後の値（`--out a --out b` は `b`） |
+| Flag | Stays given |
+| Count | The number of times it was given (`-v --verbose -vv` is 4) |
+| Negatable flag | The last one given (`--color --no-color` is off; in the reverse order, on) |
+| With a value | The last value (`--out a --out b` is `b`) |
 
-値付きオプションの値は、読んだ時点で、1 つずつ値型で変換する。後で置き換えられる値も変換するので、`--num x --num 5` は、`x` の変換の失敗の解析エラーになる。
+The values of an option with a value are converted by the value type one at a time, as they are read. A value that is later replaced is converted too, so `--num x --num 5` is a parse error for the failed conversion of `x`.
 
-### 位置引数の割り当て
+### Assigning positionals
 
-サブコマンドを持たないコマンドでは、オプションではない要素を、現れた順に、位置引数を足した順に割り当てる。
+In a command that has no subcommands, the elements that are not options are assigned, in the order they appear, to the positionals in the order the positionals were added.
 
-| 位置引数の個数の種類 | 割り当て |
+| Arity of the positional | Assignment |
 |---|---|
-| `CLARGS_ARITY_REQUIRED`、`CLARGS_ARITY_OPTIONAL` | 値を 1 個割り当てる。次の要素は、次の位置引数に進む |
-| `CLARGS_ARITY_ZERO_OR_MORE`、`CLARGS_ARITY_ONE_OR_MORE` | 値を割り当てる。以後の要素も、すべてこの位置引数の値になる |
+| `CLARGS_ARITY_REQUIRED`, `CLARGS_ARITY_OPTIONAL` | One value is assigned. The next element goes to the next positional |
+| `CLARGS_ARITY_ZERO_OR_MORE`, `CLARGS_ARITY_ONE_OR_MORE` | The value is assigned. Every later element is also a value of this positional |
 
-- すべての位置引数に値を割り当て終えた後の要素と、位置引数を持たないコマンドでのオプションではない要素は、余分な位置引数の解析エラー（`UNEXPECTED_POSITIONAL`）になる。
-- オプションは、位置引数の値の前、間、後ろのどこに書いてもよい。割り当ては変わらない。
-- 単独の `-` と空の文字列は、位置引数の値になる。`-` で始まる値を渡すには、終端の `--` の後ろに書く。
-- 値は、読んだ時点で、その位置引数の値型で変換する。
+- An element after every positional has been assigned its values, and an element that is not an option in a command that has no positionals, is an unexpected positional parse error (`UNEXPECTED_POSITIONAL`).
+- Options can be written before, between or after the values of positionals. The assignment does not change.
+- A lone `-` and the empty string become values of positionals. To pass a value that starts with `-`, write it after the terminator `--`.
+- A value is converted by the value type of its positional as it is read.
 
-### サブコマンド
+### Subcommands
 
-サブコマンドを持つコマンドでは、終端より前のオプションではない要素を、サブコマンドの名前として照合する。
+In a command that has subcommands, an element before the terminator that is not an option is matched against the names of the subcommands.
 
-- 一致したサブコマンドが選ばれ、現在のコマンドになる。その名前より後ろの要素は、そのサブコマンドのオプション、位置引数、サブコマンドで読む。入れ子の深さに制限はない。
-- 現在のコマンドのサブコマンドのどれにも一致しない名前は、未知のサブコマンドの解析エラー（`UNKNOWN_SUBCOMMAND`）になる。
-- **オプションは、それを定義したコマンドの名前の後ろ、そのサブコマンドの名前の前に書く。** `pack -v create …` の `-v` は `pack` のオプションである。`pack create -v …` の `-v` は `create` のオプションとして探すので、`create` に `-v` がなければ、未知のオプションになる。親のオプションは、サブコマンドに引き継がれない。
-- 親と子のコマンドに同じ名前のオプションがあるときは、それぞれの位置で、それぞれのコマンドのものになる。
-- サブコマンドの名前が現れずにコマンドラインが終わっても、解析エラーではない。`clargs_result_command` が、サブコマンドを持つコマンドを返す。サブコマンドを必須にしたいプログラムは、例の `run` のように、自分で確かめる。
-- 終端より後ろの要素は、サブコマンドの名前にならない。サブコマンドを持つコマンドは位置引数を持たないので、余分な位置引数の解析エラーになる。
-- 選ばれなかったサブコマンドのオプションと位置引数は、指定されなかったものとして読める（[読み取りの規則](#読み取りの規則)）。
+- The matching subcommand is selected and becomes the current command. The elements after its name are read with the options, positionals and subcommands of that subcommand. There is no limit to the depth of nesting.
+- A name that matches none of the subcommands of the current command is an unknown subcommand parse error (`UNKNOWN_SUBCOMMAND`).
+- **Write an option after the name of the command that defines it, and before the name of that command's subcommand.** The `-v` of `pack -v create …` is an option of `pack`. The `-v` of `pack create -v …` is looked up as an option of `create`, so if `create` has no `-v`, it is an unknown option. The options of a parent are not inherited by its subcommands.
+- When a parent command and a child command have options with the same name, each option belongs to its own command, at its own position.
+- If the command line ends without the name of a subcommand, it is not a parse error. `clargs_result_command` returns the command that has subcommands. A program that wants to require a subcommand checks this itself, as `run` in the example does.
+- An element after the terminator does not become the name of a subcommand. A command that has subcommands has no positionals, so it is an unexpected positional parse error.
+- The options and positionals of subcommands that were not selected can be read as not given ([Rules for reading](#rules-for-reading)).
 
-## 必須の検査と既定値
+## Required checks and default values
 
-最後の要素まで解析エラーなしに読み終えたら、選ばれたコマンド（ルートと、名前が現れたサブコマンド）について、必須の検査と既定値の適用を行う。選ばれなかったコマンドの定義要素は、必須でも検査せず、既定値も入れない。
+When the parse has read up to the last element without a parse error, the required checks are done and the default values are applied for the selected commands (the root, and the subcommands whose names appeared). The definition elements of commands that were not selected are not checked even if they are required, and they get no default values.
 
-1. 必須の検査。必須の値付きオプション（`clargs_option_set_required`）に値がない、または `CLARGS_ARITY_REQUIRED` か `CLARGS_ARITY_ONE_OR_MORE` の位置引数に値が 1 つもないと、必須の不足の解析エラー（`MISSING_OPTION`、`MISSING_POSITIONAL`）になる。不足が 2 つ以上あるときは、最初の 1 つを報告する。順序は、ルートに近いコマンドから、1 つのコマンドの中ではオプションが先で位置引数が後、それぞれ足した順である。
-2. 既定値の適用。不足が 1 つもないときだけ行う。指定されなかった値付きオプションと `CLARGS_ARITY_OPTIONAL` の位置引数のうち、既定値を持つものに、既定値を値型で変換した値を入れる。出どころは `CLARGS_SOURCE_DEFAULT` になる。
+1. The required checks. If a required option with a value (`clargs_option_set_required`) has no value, or a positional of `CLARGS_ARITY_REQUIRED` or `CLARGS_ARITY_ONE_OR_MORE` has no value at all, it is a parse error for something required that is missing (`MISSING_OPTION`, `MISSING_POSITIONAL`). When two or more are missing, the first one is reported. The order is: commands closer to the root first; within one command, options before positionals, each in the order they were added.
+2. Applying the default values. This is done only when nothing is missing. Each option with a value and each positional of `CLARGS_ARITY_OPTIONAL` that was not given and that has a default value gets the default value, converted by its value type. Its source becomes `CLARGS_SOURCE_DEFAULT`.
 
-- 既定値を持たない、指定されなかった値付きオプションと任意の位置引数は、値を持たない（出どころは `CLARGS_SOURCE_NONE`）。指定されなかった `CLARGS_ARITY_ZERO_OR_MORE` の位置引数は、値が 0 個である。
-- 指定されなかったフラグは「指定されていない」、カウントは 0、否定できるフラグは初期の状態（`clargs_option_set_initial`）である。出どころは `CLARGS_SOURCE_DEFAULT` である。
-- 既定値の変換が失敗すると、値の変換の失敗の解析エラー（`INVALID_VALUE`）になる。スキーマの検証が既定値を確かめているので、これが起こるのは、利用者定義の値型が、同じ入力に違う答えを返したときだけである。
-- 値の出どころは、コマンドラインと既定値だけである。環境変数などは読まない。
-- **解析エラーの結果には、既定値を適用しない。** 指定されなかった値付きオプションと位置引数は、既定値を持つものも、値を持たない。
+- An option with a value or an optional positional that was not given and that has no default value has no value (its source is `CLARGS_SOURCE_NONE`). A positional of `CLARGS_ARITY_ZERO_OR_MORE` that was not given has 0 values.
+- A flag that was not given is "not given", a count is 0, and a negatable flag is in its initial state (`clargs_option_set_initial`). Their source is `CLARGS_SOURCE_DEFAULT`.
+- If the conversion of a default value fails, it is a parse error for a value that failed to convert (`INVALID_VALUE`). Validation of the schema has checked the default values, so this happens only when a user-defined value type gives a different answer for the same input.
+- The only sources of a value are the command line and the default values. Environment variables and the like are not read.
+- **Default values are not applied to a result that has a parse error.** Options with a value and positionals that were not given have no value, even if they have a default value.
 
-## 結果の読み取り
+## Reading the result
 
-結果（`clargs_result_t`）は、成功のときも解析エラーのときも、同じ関数で読む。読み取りの関数は、`const` の結果を取り、何も変更せず、確保せず、失敗しない。1 つの結果を、複数のスレッドから同時に読める。
+A result (`clargs_result_t`) is read with the same functions whether the parse succeeded or ended in a parse error. The reading functions take a `const` result, change nothing, allocate nothing and do not fail. Several threads can read one result at the same time.
 
-| 読むもの | 関数 | 「ない」ときの値 |
+| What is read | Functions | Value when there is "none" |
 |---|---|---|
-| 解析の成否 | `clargs_result_error` | `CLARGS_ERROR_NONE` または `CLARGS_ERROR_INVALID_COMMAND_LINE` を返す |
-| 選ばれたコマンドの並び | `clargs_result_command_count`、`clargs_result_command_at`、`clargs_result_command` | 並びは 1 つ以上である。番号 0 はルート。`clargs_result_command` は最後のコマンド |
-| フラグ、否定できるフラグ | `clargs_result_flag` | `false`（否定できるフラグは初期の状態） |
-| カウント | `clargs_result_count` | 0 |
-| オプションの値の出どころ | `clargs_result_option_source` | `CLARGS_SOURCE_NONE` |
-| 値付きオプションの値 | `clargs_result_option_string`、`_int`、`_float`、`_choice` | `false` を返し、`*out` を変えない |
-| 値付きオプションの値の領域 | `clargs_result_option_value` | `NULL` |
-| 位置引数の値の個数と出どころ | `clargs_result_positional_count`、`clargs_result_positional_source` | 0、`CLARGS_SOURCE_NONE` |
-| 位置引数の値 | `clargs_result_positional_string`、`_int`、`_float`、`_choice` | `false` を返し、`*out` を変えない |
-| 位置引数の値の領域 | `clargs_result_positional_value` | `NULL` |
-| 解析エラーの情報 | `clargs_result_error_kind` など（[解析エラー](#解析エラー)） | `CLARGS_PARSE_ERROR_NONE`、`NULL`、`CLARGS_SOURCE_NONE`、0、`'\0'` |
+| Whether the parse succeeded | `clargs_result_error` | Returns `CLARGS_ERROR_NONE` or `CLARGS_ERROR_INVALID_COMMAND_LINE` |
+| The sequence of selected commands | `clargs_result_command_count`, `clargs_result_command_at`, `clargs_result_command` | The sequence has at least one command. Index 0 is the root. `clargs_result_command` is the last command |
+| Flag, negatable flag | `clargs_result_flag` | `false` (a negatable flag is in its initial state) |
+| Count | `clargs_result_count` | 0 |
+| The source of the value of an option | `clargs_result_option_source` | `CLARGS_SOURCE_NONE` |
+| The value of an option with a value | `clargs_result_option_string`, `_int`, `_float`, `_choice` | Returns `false` and does not change `*out` |
+| The buffer of the value of an option with a value | `clargs_result_option_value` | `NULL` |
+| The number of values and the source of a positional | `clargs_result_positional_count`, `clargs_result_positional_source` | 0, `CLARGS_SOURCE_NONE` |
+| The value of a positional | `clargs_result_positional_string`, `_int`, `_float`, `_choice` | Returns `false` and does not change `*out` |
+| The buffer of the value of a positional | `clargs_result_positional_value` | `NULL` |
+| The details of a parse error | `clargs_result_error_kind` and others ([Parse errors](#parse-errors)) | `CLARGS_PARSE_ERROR_NONE`, `NULL`, `CLARGS_SOURCE_NONE`, 0, `'\0'` |
 
-- 定義要素は、スキーマのオプションまたは位置引数のハンドルそのもので指定する。追加の関数が書いたハンドルでも、スキーマの読み取りと検索の関数が返したハンドルでもよい。
-- 型の付いた読み取りは、値型の種類ごとにある。値の型は、`_string` が `const char *`、`_int` が `int64_t`、`_float` が `double`、`_choice` が `size_t`（一致した選択肢の番号）である。
-- `_value` は、どの種類の値型にも使える。利用者定義の値型の値は、これで読む。返るポインタは、値型が値を書いた領域を指す。領域にあるのは、値型の値の型のオブジェクト（`const char *`、`int64_t`、`double`、`size_t`、または利用者定義の値型の変換関数が書いたもの）である。
-- 位置引数の値は、番号（0 から、コマンドラインに現れた順）を指定して読む。必須と任意の位置引数の個数は 0 または 1、可変個の位置引数の個数は、割り当てられた値の個数である。番号が個数以上のときは、値がないものとして `false` または `NULL` が返る。前提条件の違反ではない。
-- 文字列の値は、結果が持つ引数の複製の中、またはスキーマの既定値を指す。ワイド文字の入口で解析した結果では、UTF-8 である。
+- A definition element is given by the very handle of the option or positional of the schema. It may be the handle that an add function wrote, or a handle that a reading or lookup function of the schema returned.
+- There is a typed reading function for each kind of value type. The types of the values are `const char *` for `_string`, `int64_t` for `_int`, `double` for `_float`, and `size_t` (the index of the matching choice) for `_choice`.
+- `_value` can be used for any kind of value type. The value of a user-defined value type is read with it. The returned pointer points to the buffer that the value type wrote the value to. The buffer holds an object of the C type of the value of the value type (`const char *`, `int64_t`, `double`, `size_t`, or what the conversion function of the user-defined value type wrote).
+- The value of a positional is read by its index (from 0, in the order it appeared on the command line). The number of values of a required or optional positional is 0 or 1. The number of values of a positional with a variable number of values is the number of values assigned to it. When the index is equal to or greater than the number of values, `false` or `NULL` is returned as if there were no value. It does not break a precondition.
+- A string value points into the copy of the arguments that the result holds, or to the default value of the schema. In a result parsed by the wide-character entry point, it is UTF-8.
 
-### 読み取りの規則
+### Rules for reading
 
-定義要素の状態ごとに、読み取りが返すものである。
+What the reading functions return, for each state of a definition element.
 
-| 定義要素の状態 | フラグ | カウント | 否定できるフラグ | 値付きオプション、位置引数 | 出どころ |
+| State of the definition element | Flag | Count | Negatable flag | Option with a value, positional | Source |
 |---|---|---|---|---|---|
-| 並びのコマンドに属し、コマンドラインで指定された | `true` | 回数 | 最後の指定 | 値 | `COMMAND_LINE` |
-| 並びのコマンドに属し、指定されず、既定値が適用された | — | — | — | 既定値 | `DEFAULT` |
-| 並びのコマンドに属し、指定されなかった（上を除く） | `false` | 0 | 初期の状態 | 値なし | フラグ類は `DEFAULT`、値付きと位置引数は `NONE` |
-| 並びに属さないコマンドのもの | `false` | 0 | 初期の状態 | 値なし | `NONE` |
+| Belongs to a command of the sequence, and was given on the command line | `true` | The number of times | The last one given | The value | `COMMAND_LINE` |
+| Belongs to a command of the sequence, was not given, and its default value was applied | — | — | — | The default value | `DEFAULT` |
+| Belongs to a command of the sequence, and was not given (other than above) | `false` | 0 | The initial state | No value | `DEFAULT` for flags, counts and negatable flags; `NONE` for options with a value and positionals |
+| Belongs to a command that is not in the sequence | `false` | 0 | The initial state | No value | `NONE` |
 
-- 「並び」は、選ばれたコマンドの並びである。出どころの列は、`CLARGS_SOURCE_` を省いて書いた。
-- 解析エラーの結果では、既定値を適用していないので、2 行目は現れない。
-- 選ばれなかったコマンドの定義要素を読むのは、失敗でも前提条件の違反でもない。4 行目のとおりに読める。
-- 出どころの列挙 `clargs_source_t` には、後のバージョンで値を足すことがある。`switch` で分けるときは、`default` を書く。
+- The "sequence" is the sequence of selected commands. In the source column, `CLARGS_SOURCE_` is left out.
+- In a result with a parse error, the default values have not been applied, so the second row does not occur.
+- Reading a definition element of a command that was not selected is neither a failure nor a broken precondition. It reads as in the fourth row.
+- Values may be added to the enumeration of sources, `clargs_source_t`, in later versions. When you branch on it with `switch`, write a `default` label.
 
-## 解析エラー
+## Parse errors
 
-引数がスキーマに合わないと、解析は `CLARGS_ERROR_INVALID_COMMAND_LINE` を返し、結果に解析エラーを 1 つ記録する。記録するのは、argv の先頭から見て最初に見つけた 1 つだけである。必須の不足は、最後の要素まで読み終えてから検査するので、コマンドラインの要素についてのどの解析エラーよりも後になる。
+When the arguments do not match the schema, the parse returns `CLARGS_ERROR_INVALID_COMMAND_LINE` and records one parse error in the result. Only the first error found, going from the start of argv, is recorded. Missing required items are checked after the last element has been read, so they come after every parse error about an element of the command line.
 
-### 種類とメッセージ
+### Kinds and messages
 
-種類は `clargs_result_error_kind` が返す `clargs_parse_error_kind_t` で、メッセージは `clargs_result_error_message` が返す。下の表では、種類の `CLARGS_PARSE_ERROR_` を省いて書いた。
+The kind is the `clargs_parse_error_kind_t` that `clargs_result_error_kind` returns, and the message is returned by `clargs_result_error_message`. In the table below, `CLARGS_PARSE_ERROR_` is left out of the kinds.
 
-| 種類 | 文面 | 例 |
+| Kind | Wording | Example |
 |---|---|---|
-| `UNKNOWN_OPTION` | `unknown option '<name>'` | `unknown option '--colour'`、`unknown option '-x'` |
+| `UNKNOWN_OPTION` | `unknown option '<name>'` | `unknown option '--colour'`, `unknown option '-x'` |
 | `UNKNOWN_SUBCOMMAND` | `unknown command '<value>'` | `unknown command 'comit'` |
 | `MISSING_VALUE` | `option '<name>' requires a value` | `option '--output' requires a value` |
 | `UNEXPECTED_VALUE` | `option '<name>' does not take a value` | `option '--no-color' does not take a value` |
-| `INVALID_VALUE`（オプション） | `invalid value '<value>' for option '<name>' (expected <type>)` | `invalid value 'abc' for option '--jobs' (expected integer)` |
-| `INVALID_VALUE`（位置引数） | `invalid value '<value>' for argument '<name>' (expected <type>)` | `invalid value 'x' for argument 'COUNT' (expected integer)` |
-| `INVALID_VALUE`（既定値） | 上の 2 つの `invalid value` を `invalid default value` にしたもの | — |
+| `INVALID_VALUE` (option) | `invalid value '<value>' for option '<name>' (expected <type>)` | `invalid value 'abc' for option '--jobs' (expected integer)` |
+| `INVALID_VALUE` (positional) | `invalid value '<value>' for argument '<name>' (expected <type>)` | `invalid value 'x' for argument 'COUNT' (expected integer)` |
+| `INVALID_VALUE` (default value) | The two wordings above, with `invalid value` replaced by `invalid default value` | — |
 | `MISSING_OPTION` | `missing required option '<name>'` | `missing required option '--output'` |
 | `MISSING_POSITIONAL` | `missing required argument '<name>'` | `missing required argument 'FILE'` |
 | `UNEXPECTED_POSITIONAL` | `unexpected argument '<value>'` | `unexpected argument 'extra'` |
 | `INVALID_ENCODING` | `invalid character encoding in argument '<value>'` | — |
 
-- メッセージは、英語の 1 行である。改行を含まず、プログラム名などの接頭辞も、句点も付かない。そのままプログラムの利用者に見せられる。埋め込む名前と値は、加工せずにそのまま入る。
-- オプションの `<name>` は、接頭辞（`--` または `-`）と名前をつなげたもので、プログラムの利用者が書いた形である。否定名で書かれたら `--no-<name>`、束の中の 1 文字なら `-` とその文字になる。長いオプションに `=` で付いた値は含まない（`--bogus=1` は `unknown option '--bogus'`）。書かれていないオプション（必須の不足、既定値）は、長い名前があれば `--<長い名前>`、なければ `-<短い名前>` である。
-- 既定値の文面は、たとえば `invalid default value '64x' for option '--block-size' (expected size)` となる。
-- 位置引数の `<name>` は、スキーマの位置引数の名前である。`<type>` は、値型の名前（`clargs_type_name`）である。
-- `<value>` は、未知のサブコマンドと余分な位置引数では、その要素である。値の変換の失敗では、値の文字列である。`INVALID_ENCODING` では、変換できない単位を U+FFFD に置き換えた、UTF-8 の要素である。
-- 種類の列挙には、後のバージョンで値を足すことがある。`switch` で分けるときは、`default` を書く。
-- 解析のエラーコード `CLARGS_ERROR_INVALID_COMMAND_LINE` の説明文（`clargs_error_message`）は、`"invalid command line"` である。種類ごとのメッセージは、結果から読む。値型の変換関数が返す `CLARGS_ERROR_INVALID_VALUE` は、解析からは返らない。
+- The message is one line of English. It has no line break, no prefix such as the program name, and no full stop. You can show it to the user of your program as it is. The names and values in it are inserted as they are, without changes.
+- The `<name>` of an option is the prefix (`--` or `-`) joined to the name, in the form that the user of the program wrote. If it was written with the negated name, it is `--no-<name>`; if it is one character of a bundle, it is `-` and that character. A value attached to a long option with `=` is not included (`--bogus=1` gives `unknown option '--bogus'`). For an option that was not written (a missing required option, a default value), it is `--<long name>` if the option has a long name, and `-<short name>` if it does not.
+- The wording for a default value is, for example, `invalid default value '64x' for option '--block-size' (expected size)`.
+- The `<name>` of a positional is the name of the positional in the schema. `<type>` is the name of the value type (`clargs_type_name`).
+- `<value>` is the element itself for an unknown subcommand and an unexpected positional. For a value that failed to convert, it is the value string. For `INVALID_ENCODING`, it is the element in UTF-8, with each unit that cannot be converted replaced by U+FFFD.
+- Values may be added to the enumeration of kinds in later versions. When you branch on it with `switch`, write a `default` label.
+- The description (`clargs_error_message`) of the parse error code `CLARGS_ERROR_INVALID_COMMAND_LINE` is `"invalid command line"`. Read the message for each kind from the result. `CLARGS_ERROR_INVALID_VALUE`, which the conversion function of a value type returns, is never returned by the parse.
 
-### 解析エラーの情報
+### Parse error details
 
-メッセージのほかに、次の関数で、エラーの内容を読める。列の名前は、関数名の `clargs_result_error_` を省いたものである。
+Besides the message, the following functions read the details of the error. The column names are the function names with `clargs_result_error_` left out.
 
-| 種類 | `argument`、`index`、`source` | `value` | `option` / `positional` | `short_name` |
+| Kind | `argument`, `index`, `source` | `value` | `option` / `positional` | `short_name` |
 |---|---|---|---|---|
-| `UNKNOWN_OPTION` | その要素、`COMMAND_LINE` | `NULL` | `NULL` | 束の中なら、その文字 |
-| `UNKNOWN_SUBCOMMAND` | その要素 | その要素 | `NULL` | `'\0'` |
-| `MISSING_VALUE` | オプションを書いた要素 | `NULL` | そのオプション | 束の中なら、その文字 |
-| `UNEXPECTED_VALUE` | その要素 | `=` の直後 | そのオプション | `'\0'` |
-| `INVALID_VALUE`（コマンドライン） | 値を含む要素 | 値の文字列 | 定義要素 | 束の中の値付きオプションなら、その文字 |
-| `INVALID_VALUE`（既定値） | `NULL`、0、`DEFAULT` | 既定値の文字列 | 定義要素 | `'\0'` |
-| `MISSING_OPTION`、`MISSING_POSITIONAL` | `NULL`、0、`NONE` | `NULL` | 定義要素 | `'\0'` |
-| `UNEXPECTED_POSITIONAL` | その要素 | その要素 | `NULL` | `'\0'` |
-| `INVALID_ENCODING` | その要素（U+FFFD に置き換えた UTF-8） | その要素 | `NULL` | `'\0'` |
+| `UNKNOWN_OPTION` | The element, `COMMAND_LINE` | `NULL` | `NULL` | In a bundle, that character |
+| `UNKNOWN_SUBCOMMAND` | The element | The element | `NULL` | `'\0'` |
+| `MISSING_VALUE` | The element that the option was written in | `NULL` | The option | In a bundle, that character |
+| `UNEXPECTED_VALUE` | The element | The text right after the `=` | The option | `'\0'` |
+| `INVALID_VALUE` (command line) | The element that holds the value | The value string | The definition element | For an option with a value in a bundle, that character |
+| `INVALID_VALUE` (default value) | `NULL`, 0, `DEFAULT` | The default value string | The definition element | `'\0'` |
+| `MISSING_OPTION`, `MISSING_POSITIONAL` | `NULL`, 0, `NONE` | `NULL` | The definition element | `'\0'` |
+| `UNEXPECTED_POSITIONAL` | The element | The element | `NULL` | `'\0'` |
+| `INVALID_ENCODING` | The element (UTF-8, with U+FFFD as replacements) | The element | `NULL` | `'\0'` |
 
-- 1 列目に `source` を書いていない行の `source` は、`CLARGS_SOURCE_COMMAND_LINE` である。
-- `argument`（`clargs_result_error_argument`）は、問題の要素の全体である。束の中のエラーでは、束の全体（`-vx`）である。
-- `index`（`clargs_result_error_index`）は、利用者が渡した argv での番号である（`argv[0]` が 0）。`source`（`clargs_result_error_source`）が `CLARGS_SOURCE_COMMAND_LINE` のときにだけ、意味を持つ。
-- `command`（`clargs_result_error_command`）は、エラーを見つけたときの現在のコマンドである。必須の不足と既定値では、その定義要素が属するコマンドである。解析エラーの結果では、`NULL` にならない。
-- `option`（`clargs_result_error_option`）と `positional`（`clargs_result_error_positional`）は、表の「定義要素」が値付きオプションなら `option`、位置引数なら `positional` に入り、もう一方は `NULL` である。
-- `INVALID_VALUE` で値が次の要素から取り込まれたとき（`--jobs many`、`-j many`）、`argument` と `index` は、値の要素のものである。
-- `short_name`（`clargs_result_error_short_name`）は、束の中の 1 文字が原因のときの、その文字である。単独の短いオプション（`-n x`）も、1 文字の束として読むので、その文字（`'n'`）が入る。長いオプションで書かれたときは `'\0'` である。
-- 解析が成功した結果では、どの関数も「ない」ことを表す値（`CLARGS_PARSE_ERROR_NONE`、`NULL`、`CLARGS_SOURCE_NONE`、0、`'\0'`）を返す。
-- 返る文字列は、結果を破棄するまで有効で、利用者は解放しない。コマンド、オプション、位置引数は、スキーマのものである。
+- In the rows whose first column does not give `source`, `source` is `CLARGS_SOURCE_COMMAND_LINE`.
+- `argument` (`clargs_result_error_argument`) is the whole offending element. For an error in a bundle, it is the whole bundle (`-vx`).
+- `index` (`clargs_result_error_index`) is the index in the argv that you passed (`argv[0]` is 0). It has a meaning only when `source` (`clargs_result_error_source`) is `CLARGS_SOURCE_COMMAND_LINE`.
+- `command` (`clargs_result_error_command`) is the current command when the error was found. For a missing required item and a default value, it is the command that the definition element belongs to. In a result with a parse error, it is never `NULL`.
+- `option` (`clargs_result_error_option`) and `positional` (`clargs_result_error_positional`): the "definition element" of the table goes to `option` if it is an option with a value, and to `positional` if it is a positional. The other one is `NULL`.
+- For `INVALID_VALUE`, when the value was taken from the next element (`--jobs many`, `-j many`), `argument` and `index` are those of the element of the value.
+- `short_name` (`clargs_result_error_short_name`) is the character when one character of a bundle is the cause. A lone short option (`-n x`) is also read as a bundle of one character, so that character (`'n'`) is returned. When the option was written as a long option, it is `'\0'`.
+- On a result whose parse succeeded, every function returns the value that means "none" (`CLARGS_PARSE_ERROR_NONE`, `NULL`, `CLARGS_SOURCE_NONE`, 0, `'\0'`).
+- The returned strings are valid until the result is destroyed. Do not free them. The command, option and positional belong to the schema.
 
-### 解析エラーのときの結果
+### The result of a parse error
 
-解析エラーの結果からは、エラーの情報のほかに、エラーを見つけるまでに読んだ分を、成功のときと同じ関数で読める。
+From a result with a parse error, besides the details of the error, you can read what was read before the error was found, with the same functions as on success.
 
-- 選ばれたコマンドの並び、指定されたフラグ、カウント、否定できるフラグ、変換に成功した値が読める。出どころは、どれも `CLARGS_SOURCE_COMMAND_LINE` である。
-- エラーの要素より後ろの要素は、読まれていない。
-- 既定値は適用されていない。指定されなかった値付きオプションと位置引数は、値を持たない。指定されなかったフラグ、カウント、否定できるフラグは、「指定されていない」、0、初期の状態である。
+- You can read the sequence of selected commands, the flags, counts and negatable flags that were given, and the values that were converted successfully. Their source is always `CLARGS_SOURCE_COMMAND_LINE`.
+- The elements after the offending element have not been read.
+- The default values have not been applied. Options with a value and positionals that were not given have no value. Flags, counts and negatable flags that were not given are "not given", 0, and in their initial state.
 
-### メッセージの表示
+### Printing the message
 
-ライブラリは、何も出力しない。表示は、利用者のコードが行う。
+The library prints nothing. Your code prints the message.
 
 ```
 fprintf(stderr, "pack: %s\n", clargs_result_error_message(result));
 ```
 
-usage 行を添える、問題の要素の位置を示す、種類ごとに文面を変える、といったことは、[解析エラーの情報](#解析エラーの情報)を読んで、利用者のコードで行う。エラーを見つけたコマンドの usage 行を生成して添える例は、[ヘルプの使い方](help.md#--help-とエラーの表示)にある。メッセージの文面は英語だけである。
+Adding the usage line, pointing at the position of the offending element, changing the wording for each kind, and so on, are done in your code by reading the [Parse error details](#parse-error-details). An example that generates the usage line of the command where the error was found and prints it with the message is in [Help and Usage](help.md#printing---help-and-errors). The messages are in English only.
 
-## `--help` の扱い
+## Handling `--help`
 
-ライブラリは、`--help` を特別扱いしない。`--help` は、利用者がスキーマに定義するフラグである。指定されたかどうかを結果から読み、ヘルプを表示して終えるのは、利用者のコードである。ヘルプの文面は、スキーマから生成できる。解析は、ヘルプを生成も出力もしない。生成の関数と、`--help` を読み取ってヘルプを出す例は、[ヘルプの使い方](help.md#--help-とエラーの表示)にある。
+The library does not treat `--help` specially. `--help` is a flag that you define in the schema. Your code reads from the result whether it was given, prints the help and exits. The help text can be generated from the schema. The parse neither generates nor prints the help. The generating functions, and an example that reads `--help` and prints the help, are in [Help and Usage](help.md#printing---help-and-errors).
 
-**解析エラーを見る前に、`--help` が指定されたかを見る。** `pack create --help` は、`create` の必須のオプション `--output` を書いていないので、解析は必須の不足の解析エラーを返す。しかし、解析エラーの結果からも、エラーまでに読んだ分は読めるので、`--help` は「指定された」と読める。先にエラーを見ると、ヘルプを求めた利用者に、エラーのメッセージを見せることになる。
+**Check whether `--help` was given before you look at the parse error.** `pack create --help` does not give `--output`, a required option of `create`, so the parse returns a parse error for a missing required option. But from a result with a parse error, you can still read what was read before the error, so `--help` reads as "given". If you look at the error first, a user who asked for help is shown an error message.
 
-順序は、例の `main` のとおりである。
+The order is the one in `main` of the example.
 
-1. `*out` が `NULL` なら、確保の失敗である。結果はない。
-2. `--help` が指定されていたら、ヘルプを表示して終える。どのコマンドのヘルプを表示するかは、`clargs_result_command`（最後に選ばれたコマンド）で決める。そのコマンドを `clargs_help_write` に渡すと、そのコマンドのヘルプが生成される。
-3. 戻り値が `CLARGS_ERROR_INVALID_COMMAND_LINE` なら、解析エラーのメッセージを表示する。
-4. どちらでもなければ、値を読んで、プログラムの処理を行う。
+1. If `*out` is `NULL`, an allocation failed. There is no result.
+2. If `--help` was given, print the help and exit. Choose the command whose help is printed with `clargs_result_command` (the last selected command). Passing that command to `clargs_help_write` generates the help of that command.
+3. If the return value is `CLARGS_ERROR_INVALID_COMMAND_LINE`, print the message of the parse error.
+4. Otherwise, read the values and do the work of the program.
 
-**サブコマンドにも `--help` を定義する。** オプションは、それを定義したコマンドが現在のコマンドである間だけ認識される。ルートにだけ `--help` を定義すると、`pack --help` と `pack --help create` は受け付けるが、`pack create --help` は、`create` に `--help` がないので、未知のオプションの解析エラーになる。`tool sub --help` の形を受け付けるには、例の `add_help` のように、すべてのコマンドに `--help` を定義する。
+**Define `--help` on subcommands too.** An option is recognized only while the command that defines it is the current command. If you define `--help` only on the root, `pack --help` and `pack --help create` are accepted, but `pack create --help` is an unknown option parse error, because `create` has no `--help`. To accept the form `tool sub --help`, define `--help` on every command, as `add_help` in the example does.
 
-- 指定されたかどうかは、選ばれたコマンドの並びを順に見て、それぞれのコマンドの `--help` を `clargs_result_flag` で読めば分かる（例の `help_was_given`）。選ばれなかったコマンドの `--help` は、`false` と読める。
-- `--help` より前の要素に解析エラーがあると、解析はそこで止まるので、`--help` は読まれない（`pack create --bogus --help` は、未知のオプションのエラーになる）。
+- To find out whether it was given, go through the sequence of selected commands and read the `--help` of each command with `clargs_result_flag` (`help_was_given` in the example). The `--help` of a command that was not selected reads as `false`.
+- If an element before `--help` has a parse error, the parse stops there, so `--help` is not read (`pack create --bogus --help` is an unknown option error).
 
-## ワイド文字の argv
+## Wide-character argv
 
-`clargs_parse_wide` は、`wmain` が受け取るような、ワイド文字の argv を解析する。Windows で、ASCII 以外の文字を含む引数を、コードページによる欠落なしに受け取るための入口である。
+`clargs_parse_wide` parses a wide-character argv, such as the one that `wmain` receives. It is the entry point for receiving, on Windows, arguments that contain non-ASCII characters without losing any of them to the code page.
 
-- **`clargs_parse_wide` は、すべての環境で提供する。** Windows だけでなく、Linux と macOS のライブラリにもある。
-- ワイド文字列の読み方は、`wchar_t` の幅で決まる。ロケールには左右されない。
+- **`clargs_parse_wide` is provided on every platform.** It is in the library on Linux and macOS too, not only on Windows.
+- How a wide string is read depends on the width of `wchar_t`. It does not depend on the locale.
 
-  | `wchar_t` の幅 | 環境の例 | 読み方 |
+  | Width of `wchar_t` | Example platforms | How it is read |
   |---|---|---|
-  | 16 ビット | Windows | UTF-16。上位と下位のサロゲートの組を、1 つの文字として読む |
-  | それより広い | Linux、macOS | UTF-32 |
+  | 16 bits | Windows | UTF-16. A pair of a high and a low surrogate is read as one character |
+  | Wider | Linux, macOS | UTF-32 |
 
-- 各要素を UTF-8 に変換してから、`clargs_parse` と同じ解析を行う。同じ内容を UTF-8 で書いた `char` の argv を `clargs_parse` に渡したときと、同じ結果、または同じ解析エラーになる。
-- 結果から読む文字列は、すべて UTF-8 の `char` の文字列である。文字列の値も、解析エラーの問題の要素、値、メッセージも、UTF-8 である。
-- UTF-8 に変換できない並びを含む要素は、解析エラー `CLARGS_PARSE_ERROR_INVALID_ENCODING` になる。変換できない並びとは、UTF-16 では対になっていないサロゲート、UTF-32 では負の値、サロゲートの範囲（U+D800〜U+DFFF）の値、U+10FFFF を超える値である。
-  - このエラーは、その要素を読む直前に見つける。値付きオプションの値として取り込まれる要素でも同じである。それより前の要素に別の解析エラーがあれば、そちらが返る。
-  - 問題の要素と値は、変換できない単位を U+FFFD に置き換えた、UTF-8 の文字列である。
-  - `argv[0]` は解析しないので、このエラーにならない。
-- `clargs_parse` は、`char` の argv の要素を、文字コードを検査も変換もせずに、バイトの並びとしてそのまま扱う。UTF-8 として不正なバイトも、そのまま値になる。
-- 戻り値、`*out`、所有権、前提条件は、`clargs_parse` と同じである。
+- Each element is converted to UTF-8, and then the same parse as `clargs_parse` is done. The result, or the parse error, is the same as when a `char` argv with the same contents written in UTF-8 is passed to `clargs_parse`.
+- Every string read from the result is a UTF-8 `char` string. String values, and the offending element, the value and the message of a parse error, are all UTF-8.
+- An element that contains a sequence that cannot be converted to UTF-8 is the parse error `CLARGS_PARSE_ERROR_INVALID_ENCODING`. A sequence that cannot be converted is, in UTF-16, a surrogate that is not part of a pair, and in UTF-32, a negative value, a value in the surrogate range (U+D800 to U+DFFF), or a value greater than U+10FFFF.
+  - This error is found just before the element is read. This is also true for an element that is taken as the value of an option with a value. If an earlier element has another parse error, that error is returned.
+  - The offending element and the value are UTF-8 strings in which each unit that cannot be converted is replaced by U+FFFD.
+  - `argv[0]` is not parsed, so it never causes this error.
+- `clargs_parse` treats the elements of a `char` argv as byte sequences as they are, without checking or converting their character encoding. Bytes that are invalid in UTF-8 also become values as they are.
+- The return values, `*out`, ownership and preconditions are the same as for `clargs_parse`.
 
-`wmain` での例である。`greet` は、名前を 1 つ受け取る。
+An example with `wmain`. `greet` takes one name.
 
 ```c
 #include <clargs/clargs.h>
@@ -613,58 +613,58 @@ int wmain(int argc, wchar_t **argv)
 }
 ```
 
-- `wmain` は、Windows のコンパイラが用意する入口である。ほかの環境では、`clargs_parse_wide` は使えるが、`wmain` という入口はない。
-- 例は、UTF-8 の文字列をそのまま標準出力に書いている。コンソールが UTF-8 を表示するようにすること（Windows では、コンソールの出力コードページの設定など）は、プログラムの側で行う。ライブラリは、OS の API を呼ばない。
+- `wmain` is an entry point that Windows compilers provide. On other platforms, you can use `clargs_parse_wide`, but there is no `wmain` entry point.
+- The example writes the UTF-8 strings to standard output as they are. Making the console display UTF-8 (on Windows, setting the output code page of the console, and so on) is up to the program. The library does not call operating system APIs.
 
-## 寿命の規則
+## Lifetime rules
 
-| もの | 所有者 | 有効な期間 |
+| Object | Owner | How long it is valid |
 |---|---|---|
-| 結果（`clargs_result_t`） | 解析を呼んだ利用者 | `clargs_result_destroy` で破棄するまで。解析エラーの結果も同じ |
-| 結果から読んだ文字列と、値の領域 | 結果 | 結果を破棄するまで。利用者は、解放も変更もしない |
-| 解析エラーの情報とメッセージ | 結果 | 結果を破棄するまで。利用者は、解放も変更もしない |
-| 結果から読んだコマンド、オプション、位置引数 | スキーマ | スキーマのルートを破棄するまで |
-| argv の配列と文字列 | 利用者 | 解析の呼び出しの間だけ、有効であればよい |
-| スキーマと、それが使う値型 | 利用者 | その結果をすべて破棄し終えるまで、変更も破棄もしない |
+| A result (`clargs_result_t`) | You, who called the parse | Until you destroy it with `clargs_result_destroy`. The same for a result with a parse error |
+| Strings and value buffers read from the result | The result | Until the result is destroyed. Do not free or modify them |
+| The details and message of a parse error | The result | Until the result is destroyed. Do not free or modify them |
+| Commands, options and positionals read from the result | The schema | Until the root of the schema is destroyed |
+| The argv array and strings | You | They need to be valid only during the call to the parse |
+| The schema and the value types it uses | You | Do not change or destroy them until all of their results have been destroyed |
 
-- **結果は、スキーマより先に破棄する。** 結果は、スキーマと値型を借りる。結果の破棄は、保持している値を値型の後始末関数で後始末するので、そのときまで、スキーマも値型も有効でなければならない。破棄の順序は、結果、スキーマ、値型、値型が借りていた利用者のデータである（[スキーマの使い方](schema.md#値型を借りる契約と破棄の順序)）。
-- **結果がある間は、スキーマを変更しない。** そのスキーマの結果が 1 つでも残っている間は、スキーマに定義要素を足さず、属性を設定しない。
-- **argv は、解析の後に変更または解放してよい。** 結果は、argv のすべての文字列を複製して持つ。解析の呼び出しが戻った後は、argv の配列も文字列も参照しない。
-- **結果から読んだ文字列と値は、結果の破棄まで有効である。** 文字列の値は、結果が持つ引数の複製の中、またはスキーマの既定値を指す。結果を破棄した後に使うなら、破棄の前に複製する。
-- **解析エラーのときも結果が渡り、利用者が破棄する。** 確保の失敗（`CLARGS_ERROR_OUT_OF_MEMORY`）では、`*out` は `NULL` で、破棄するものはない。その解析のために確保したメモリと、変換した値は、すべて後始末されている。
-- `clargs_result_destroy(NULL)` は、何もしない。例のように、`result` を `NULL` で初期化しておけば、どの経路でも同じ順序で破棄を書ける。
-- 結果の破棄は、スキーマと値型を、変更も破棄もしない。同じスキーマで、何度でも解析できる。結果どうしは独立で、どの順序で破棄してもよい。
-- メモリは、すべて、ライブラリに設定されたアロケータ（`clargs_set_allocator`）から確保する。結果が残っている間に、アロケータを設定し直してはならない（[所有権と寿命の規約](ownership.md#5-アロケータ)）。
-- ライブラリは、スキーマより先に結果を破棄しない誤り、結果がある間のスキーマの変更を、検出しない。
+- **Destroy the result before the schema.** A result borrows the schema and the value types. Destroying the result cleans up the values it holds with the release functions of the value types, so the schema and the value types must be valid until then. The order of destruction is: the result, the schema, the value types, and then your data that the value types borrowed ([Schemas](schema.md#borrowed-value-types-and-the-order-of-destruction)).
+- **Do not change the schema while a result exists.** While even one result of the schema is left, do not add definition elements to the schema or set attributes.
+- **You may change or free argv after the parse.** The result holds copies of all the strings of argv. After the call to the parse returns, it refers to neither the argv array nor its strings.
+- **Strings and values read from the result are valid until the result is destroyed.** A string value points into the copy of the arguments that the result holds, or to the default value of the schema. If you use it after destroying the result, copy it before the result is destroyed.
+- **A result is passed to you on a parse error too, and you destroy it.** On an allocation failure (`CLARGS_ERROR_OUT_OF_MEMORY`), `*out` is `NULL`, and there is nothing to destroy. All the memory allocated for that parse, and the converted values, have been cleaned up.
+- `clargs_result_destroy(NULL)` does nothing. If you initialize `result` to `NULL`, as the example does, you can write the destruction in the same order on every path.
+- Destroying a result neither changes nor destroys the schema and the value types. You can parse with the same schema any number of times. Results are independent of each other and can be destroyed in any order.
+- All memory is allocated from the allocator set for the library (`clargs_set_allocator`). Do not set the allocator again while a result is left ([Ownership and Lifetime](ownership.md#5-allocator)).
+- The library does not detect the mistakes of not destroying a result before the schema, and of changing the schema while a result exists.
 
-## 前提条件
+## Preconditions
 
-前提条件を破るのは、プログラムの誤りである。エラーコードは返らない。検査できるものは `assert` で検査され、Debug 構成では、破るとプロセスが中断する。Release 構成では検査されず、動作は定まらない（[所有権と寿命の規約](ownership.md#実行時の失敗とプログラムの誤り)）。関数ごとの前提条件は、公開ヘッダ `include/clargs/parse.h` のコメントにも `Preconditions:` として書いてある。
+Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The preconditions of each function are also written in the comments of the public header `include/clargs/parse.h`, under `Preconditions:`.
 
-どの関数にも共通すること:
+What every function has in common:
 
-- ポインタの引数は、`NULL` でない。`NULL` でもよいのは、`clargs_result_destroy` の `result` と、`argc` が 0 のときの `argv` だけである。`assert` で検査する。
-- 結果は、破棄されていない。その結果のスキーマと、スキーマが使う値型は、破棄も変更もされていない。検査しない。
+- Pointer arguments are not `NULL`. The only ones that may be `NULL` are the `result` of `clargs_result_destroy`, and `argv` when `argc` is 0. Checked with `assert`.
+- The result has not been destroyed. The schema of the result, and the value types that the schema uses, have been neither destroyed nor changed. Not checked.
 
-関数ごとの前提条件:
+The preconditions of each function:
 
-| 関数 | `assert` で検査する前提条件 | 検査しない前提条件 |
+| Function | Preconditions checked with `assert` | Preconditions not checked |
 |---|---|---|
-| `clargs_parse`、`clargs_parse_wide` | `root` と `out` は `NULL` でない。`root` はルートコマンドである（サブコマンドでない）。`root` のスキーマは検証済みである（`clargs_command_is_validated`）。`argc` は 0 以上である。`argc` が 0 より大きければ、`argv` は `NULL` でなく、`argv[0]` から `argv[argc - 1]` は `NULL` でない | 結果を破棄するまで、スキーマと、それが使う値型を、変更も破棄もしない |
-| `clargs_result_destroy` | なし | `result` は、`NULL` か、破棄されていない結果である。その結果のスキーマと値型は、破棄も変更もされていない |
-| `clargs_result_error`、`clargs_result_command_count`、`clargs_result_command` | `result` は `NULL` でない | 共通のもの |
-| `clargs_result_command_at` | `result` は `NULL` でない。`index` は `clargs_result_command_count` より小さい | 共通のもの |
-| `clargs_result_flag` | `result` と `option` は `NULL` でない。`option` は、この結果のスキーマに属する。`option` は、フラグまたは否定できるフラグである | 共通のもの |
-| `clargs_result_count` | `result` と `option` は `NULL` でない。`option` は、この結果のスキーマに属する。`option` は、カウントである | 共通のもの |
-| `clargs_result_option_source` | `result` と `option` は `NULL` でない。`option` は、この結果のスキーマに属する（種類は問わない） | 共通のもの |
-| `clargs_result_option_string`、`_int`、`_float`、`_choice` | `result`、`option`、`out` は `NULL` でない。`option` は、この結果のスキーマに属する。`option` は、値付きオプションである。値型の種類が、それぞれ `CLARGS_TYPE_STRING`、`CLARGS_TYPE_INT`、`CLARGS_TYPE_FLOAT`、`CLARGS_TYPE_CHOICE` である | 共通のもの |
-| `clargs_result_option_value` | `result` と `option` は `NULL` でない。`option` は、この結果のスキーマに属する。`option` は、値付きオプションである | 共通のもの。返ったポインタは、値型の値の型で読む |
-| `clargs_result_positional_count`、`clargs_result_positional_source` | `result` と `positional` は `NULL` でない。`positional` は、この結果のスキーマに属する | 共通のもの |
-| `clargs_result_positional_string`、`_int`、`_float`、`_choice` | `result`、`positional`、`out` は `NULL` でない。`positional` は、この結果のスキーマに属する。値型の種類が、それぞれ `CLARGS_TYPE_STRING`、`CLARGS_TYPE_INT`、`CLARGS_TYPE_FLOAT`、`CLARGS_TYPE_CHOICE` である | 共通のもの |
-| `clargs_result_positional_value` | `result` と `positional` は `NULL` でない。`positional` は、この結果のスキーマに属する | 共通のもの。返ったポインタは、値型の値の型で読む |
-| `clargs_result_error_kind`、`_message`、`_argument`、`_value`、`_source`、`_index`、`_command`、`_option`、`_positional`、`_short_name` | `result` は `NULL` でない | 共通のもの |
+| `clargs_parse`, `clargs_parse_wide` | `root` and `out` are not `NULL`. `root` is a root command (not a subcommand). The schema of `root` has been validated (`clargs_command_is_validated`). `argc` is 0 or greater. If `argc` is greater than 0, `argv` is not `NULL`, and `argv[0]` to `argv[argc - 1]` are not `NULL` | The schema and the value types it uses are neither changed nor destroyed until the result is destroyed |
+| `clargs_result_destroy` | None | `result` is `NULL` or a result that has not been destroyed. The schema and the value types of the result have been neither destroyed nor changed |
+| `clargs_result_error`, `clargs_result_command_count`, `clargs_result_command` | `result` is not `NULL` | The common ones |
+| `clargs_result_command_at` | `result` is not `NULL`. `index` is less than `clargs_result_command_count` | The common ones |
+| `clargs_result_flag` | `result` and `option` are not `NULL`. `option` belongs to the schema of this result. `option` is a flag or a negatable flag | The common ones |
+| `clargs_result_count` | `result` and `option` are not `NULL`. `option` belongs to the schema of this result. `option` is a count | The common ones |
+| `clargs_result_option_source` | `result` and `option` are not `NULL`. `option` belongs to the schema of this result (of any kind) | The common ones |
+| `clargs_result_option_string`, `_int`, `_float`, `_choice` | `result`, `option` and `out` are not `NULL`. `option` belongs to the schema of this result. `option` is an option with a value. The kind of its value type is `CLARGS_TYPE_STRING`, `CLARGS_TYPE_INT`, `CLARGS_TYPE_FLOAT` and `CLARGS_TYPE_CHOICE` respectively | The common ones |
+| `clargs_result_option_value` | `result` and `option` are not `NULL`. `option` belongs to the schema of this result. `option` is an option with a value | The common ones. The returned pointer is read with the C type of the value of the value type |
+| `clargs_result_positional_count`, `clargs_result_positional_source` | `result` and `positional` are not `NULL`. `positional` belongs to the schema of this result | The common ones |
+| `clargs_result_positional_string`, `_int`, `_float`, `_choice` | `result`, `positional` and `out` are not `NULL`. `positional` belongs to the schema of this result. The kind of its value type is `CLARGS_TYPE_STRING`, `CLARGS_TYPE_INT`, `CLARGS_TYPE_FLOAT` and `CLARGS_TYPE_CHOICE` respectively | The common ones |
+| `clargs_result_positional_value` | `result` and `positional` are not `NULL`. `positional` belongs to the schema of this result | The common ones. The returned pointer is read with the C type of the value of the value type |
+| `clargs_result_error_kind`, `_message`, `_argument`, `_value`, `_source`, `_index`, `_command`, `_option`, `_positional`, `_short_name` | `result` is not `NULL` | The common ones |
 
-- 「この結果のスキーマに属する」とは、その定義要素のコマンドから親をたどったルートが、解析に渡したルートである、ということである。別のスキーマのオプションや位置引数を渡すのは、前提条件の違反である。
-- 前提条件の違反ではないもの: 選ばれなかったコマンドの定義要素を読むこと。値を持たない値付きオプションや位置引数の値を読むこと。位置引数の値を、個数以上の番号で読むこと。成功した結果から、解析エラーの情報を読むこと。どれも、「ない」ことを表す値が返る（[結果の読み取り](#結果の読み取り)）。
-- 検証を済ませていないスキーマを解析に渡すのは、前提条件の違反である。スキーマに定義要素を足したり、属性を設定したりすると、スキーマは未検証に戻るので、解析の前に、もう一度検証する（[スキーマの使い方](schema.md#検証と失敗の調べ方)）。
-- `_value` が返すポインタを、値型の値の型と違う型で読む誤りは、コンパイラもライブラリも検出しない。
+- "Belongs to the schema of this result" means that the root reached by following the parents from the command of the definition element is the root that was passed to the parse. Passing an option or positional of another schema breaks a precondition.
+- These do not break a precondition: reading a definition element of a command that was not selected; reading the value of an option with a value or a positional that has no value; reading the value of a positional with an index equal to or greater than the number of values; reading the details of a parse error from a result that succeeded. Each of them returns the value that means "none" ([Reading the result](#reading-the-result)).
+- Passing a schema that has not been validated to the parse breaks a precondition. Adding a definition element to a schema or setting an attribute makes the schema not validated again, so validate it again before the parse ([Schemas](schema.md#validation-and-finding-the-cause-of-a-failure)).
+- Neither the compiler nor the library detects the mistake of reading the pointer that `_value` returns with a type other than the C type of the value of the value type.

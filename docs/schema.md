@@ -1,29 +1,29 @@
-# CLArgs のスキーマの使い方
+# Schemas
 
-プログラムがどんなコマンドラインを受け付けるかを、関数呼び出しで定義する方法をまとめる。定義したものをスキーマと呼ぶ。スキーマは、コマンド、オプション、位置引数と、値の変換の仕方を表す値型からなる。
+This document explains how to define, with function calls, which command lines a program accepts. What you define is called a schema. A schema is made of commands, options, positionals, and value types, which describe how values are converted.
 
-この文書が扱うのは、スキーマの定義、検証、読み取り、破棄である。argv の解析と、ヘルプの文面の生成は扱わない。スキーマは argv を知らない。検証したスキーマで argv を解析して値を読む方法は、[解析の使い方](parse.md)にある。検証したスキーマからヘルプと usage 行を生成する方法は、[ヘルプの使い方](help.md)にある。
+This document covers defining, validating, reading and destroying a schema. It does not cover parsing argv or generating help text. A schema knows nothing about argv. How to parse argv with a validated schema and read the values is in [Parsing](parse.md). How to generate help and the usage line from a validated schema is in [Help and Usage](help.md).
 
-関数ごとの詳しい説明と前提条件は、公開ヘッダ `include/clargs/schema.h` と `include/clargs/type.h` のコメントにある。メモリの持ち方の決まりは、[所有権と寿命の規約](ownership.md)にある。
+The detailed description and the preconditions of each function are in the comments of the public headers `include/clargs/schema.h` and `include/clargs/type.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
 
-目次:
+Contents:
 
-- [一連の例](#一連の例)
-- [コマンド](#コマンド)
-- [オプション](#オプション)
-- [位置引数](#位置引数)
-- [値型](#値型)
-- [利用者定義の値型の書き方](#利用者定義の値型の書き方)
-- [値型を借りる契約と破棄の順序](#値型を借りる契約と破棄の順序)
-- [誤りの一覧](#誤りの一覧)
-- [検証と、失敗の調べ方](#検証と失敗の調べ方)
-- [検証済みのスキーマで成り立つこと](#検証済みのスキーマで成り立つこと)
-- [読み取り](#読み取り)
-- [前提条件](#前提条件)
+- [A complete example](#a-complete-example)
+- [Commands](#commands)
+- [Options](#options)
+- [Positionals](#positionals)
+- [Value types](#value-types)
+- [Writing a user-defined value type](#writing-a-user-defined-value-type)
+- [Borrowed value types and the order of destruction](#borrowed-value-types-and-the-order-of-destruction)
+- [Definition errors](#definition-errors)
+- [Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure)
+- [Guarantees of a validated schema](#guarantees-of-a-validated-schema)
+- [Reading a schema](#reading-a-schema)
+- [Preconditions](#preconditions)
 
-## 一連の例
+## A complete example
 
-`pack` という架空のプログラムのコマンドラインを定義し、検証し、破棄する。次の形のコマンドラインを表す。
+The example defines, validates and destroys the command line of `pack`, a made-up program. It describes command lines of this form:
 
 ```
 pack [-v]... [-q] [--color | --no-color] create -o FILE [-l LEVEL] [--ratio RATIO]
@@ -31,7 +31,7 @@ pack [-v]... [-q] [--color | --no-color] create -o FILE [-l LEVEL] [--ratio RATI
 pack [-v]... [-q] [--color | --no-color] list archive [pattern]
 ```
 
-例は 1 つの翻訳単位で、取り込むのは `<clargs/clargs.h>` と標準ヘッダだけである。取り出して、そのままコンパイルできる。検証に成功すれば `the schema of pack is valid` と書いて、終了コード 0 で終わる。
+The example is one translation unit, and it includes only `<clargs/clargs.h>` and standard headers. You can copy it out and compile it as it is. If the validation succeeds, it prints `the schema of pack is valid` and exits with status 0.
 
 ```c
 #include <clargs/clargs.h>
@@ -292,121 +292,121 @@ int main(void)
 }
 ```
 
-例の要点:
+Key points of the example:
 
-- 生成するのは、値型 2 つ（選択肢と利用者定義）と、ルートコマンド 1 つである。破棄するのも、この 3 つだけである。サブコマンド、オプション、位置引数は、ルートの破棄で解放される。
-- 追加の関数が書くハンドル（`option`、`positional`、`create`）は、属性を設定するために使う。利用者は破棄しない。
-- どの関数も、失敗したら `CLARGS_ERROR_NONE` 以外を返す。例では、`||` が左から順に評価して最初の失敗で止まることを使い、失敗した追加が書いた `NULL` のハンドルを、次の設定に渡さないようにしている。
-- 検証は、定義が終わってから 1 度呼ぶ。失敗したら、3 つの出力先に書かれたハンドルを読み取りの関数に渡して、どの定義に誤りがあるかを調べる（`report_fault`）。
-- 破棄は、スキーマが先、値型が後である。
+- It creates two value types (a choice and a user-defined one) and one root command. These three are also the only things it destroys. The subcommands, options and positionals are freed when the root is destroyed.
+- The handles that the add functions write (`option`, `positional`, `create`) are used to set attributes. You do not destroy them.
+- Every function returns a value other than `CLARGS_ERROR_NONE` when it fails. The example relies on `||` evaluating from left to right and stopping at the first failure, so that it never passes a `NULL` handle written by a failed addition to the next set function.
+- Validation is called once, after the definition is complete. If it fails, the example passes the handles written to the three output parameters to the read functions to find which definition has the error (`report_fault`).
+- The schema is destroyed first, and the value types after it.
 
-## コマンド
+## Commands
 
-スキーマは、コマンドの木である。ルートコマンドがプログラムを表し、各コマンドはサブコマンドを持てる。入れ子の深さに制限はない。
+A schema is a tree of commands. The root command represents the program, and every command can have subcommands. There is no limit on the depth of nesting.
 
-| すること | 関数 | 備考 |
+| To do this | Function | Notes |
 |---|---|---|
-| ルートを生成する | `clargs_command_create` | 名前は、空でない任意の文字列。サブコマンド名の規則は当てはまらない |
-| サブコマンドを足す | `clargs_command_add_subcommand` | 名前は 1 文字以上。先頭は ASCII の英字または数字、続きは ASCII の英字、数字、`-`、`_` |
-| 説明文を設定する | `clargs_command_set_description` | 空の文字列も設定できる。設定し直すと置き換わる |
-| 木全体を破棄する | `clargs_command_destroy` | ルートにだけ呼ぶ。`NULL` は何もしない |
+| Create the root | `clargs_command_create` | The name is any non-empty string. The rules for subcommand names do not apply |
+| Add a subcommand | `clargs_command_add_subcommand` | The name has one character or more. The first is an ASCII letter or digit; the rest are ASCII letters, digits, `-` or `_` |
+| Set the description | `clargs_command_set_description` | An empty string can also be set. Setting it again replaces it |
+| Destroy the whole tree | `clargs_command_destroy` | Call it only on the root. `NULL` does nothing |
 
-- ルートが木全体を所有する。サブコマンド、オプション、位置引数を個別に破棄する関数はない。
-- 渡した文字列は、すべて複製される。呼び出しが戻ったら、利用者は文字列を変更しても解放してもよい。
-- 1 つのコマンドは、位置引数とサブコマンドの両方を持てない。オプションは、どちらとも併用できる。
-- 名前は、バイト単位で比べる。大文字と小文字は別の名前である。
-- 名前の衝突は、コマンドごとに判定する。親と子のコマンド、別々のサブコマンドでは、同じ名前を使える。
-- 定義要素を削除する関数と、スキーマを複製する関数はない。
-- コマンドの説明文は、そのコマンドのヘルプに出る。親のコマンドのヘルプの `Commands:` の一覧には、最初の行だけが出る（[ヘルプの使い方](help.md#構成)）。
+- The root owns the whole tree. There are no functions that destroy a subcommand, an option or a positional on its own.
+- Every string you pass is copied. Once the call returns, you may change or free the string.
+- A command cannot have both positionals and subcommands. Options can be used with either.
+- Names are compared byte by byte. Uppercase and lowercase letters make different names.
+- Name conflicts are checked per command. A parent and a child command, or two different subcommands, can use the same names.
+- There are no functions that remove a definition element, and none that copy a schema.
+- The description of a command appears in the help of that command. Only its first line appears in the `Commands:` list of the parent command's help ([Help and Usage](help.md#structure)).
 
-## オプション
+## Options
 
-オプションは 4 種類あり、種類ごとに追加の関数がある。
+There are four kinds of options, and each kind has its own add function.
 
-| 種類 | 追加の関数 | 意味 |
+| Kind | Add function | Meaning |
 |---|---|---|
-| `CLARGS_OPTION_FLAG` | `clargs_command_add_flag` | 指定されたかどうか |
-| `CLARGS_OPTION_NEGATABLE` | `clargs_command_add_negatable` | `--name` と `--no-name` で切り替える |
-| `CLARGS_OPTION_COUNT` | `clargs_command_add_count` | 指定された回数 |
-| `CLARGS_OPTION_VALUE` | `clargs_command_add_value` | 値を 1 つ取る。値型を指定する |
+| `CLARGS_OPTION_FLAG` | `clargs_command_add_flag` | Whether it was given |
+| `CLARGS_OPTION_NEGATABLE` | `clargs_command_add_negatable` | Switched with `--name` and `--no-name` |
+| `CLARGS_OPTION_COUNT` | `clargs_command_add_count` | How many times it was given |
+| `CLARGS_OPTION_VALUE` | `clargs_command_add_value` | Takes one value. You specify a value type |
 
-名前:
+Names:
 
-- オプションは、短い名前、長い名前、またはその両方を持つ。短い名前がないことは `'\0'`、長い名前がないことは `NULL` で表す。追加の関数の引数でも、読み取りの関数の戻り値でも同じである。
-- 短い名前は、ASCII の英字または数字の 1 文字である。
-- 長い名前は 2 文字以上で、先頭は ASCII の英字または数字、続きは ASCII の英字、数字、`-`、`_` である。
-- 否定できるフラグは、長い名前を必ず持つ。否定名は、`no-` に長い名前を続けたもので、追加の時点で作られる（長い名前が `color` なら `no-color`）。否定名も、同じコマンドの中の名前の衝突の判定に加わる。
+- An option has a short name, a long name, or both. A missing short name is written as `'\0'`, and a missing long name as `NULL`. This is the same in the arguments of the add functions and in the return values of the read functions.
+- A short name is one ASCII letter or digit.
+- A long name has two characters or more. The first is an ASCII letter or digit; the rest are ASCII letters, digits, `-` or `_`.
+- A negatable flag always has a long name. Its negated name is `no-` followed by the long name, and it is made when the option is added (if the long name is `color`, it is `no-color`). The negated name also takes part in the name conflict checks within the same command.
 
-属性は、すべて任意である。オプションを足した後に、属性ごとの関数で設定する。
+All attributes are optional. After you add an option, you set each attribute with its own function.
 
-| 属性 | 設定の関数 | 設定できる種類 | 設定しないときの値 |
+| Attribute | Set function | Kinds it can be set on | Value when not set |
 |---|---|---|---|
-| 説明文 | `clargs_option_set_description` | すべて | `NULL` |
-| 値の表示名 | `clargs_option_set_value_name` | `CLARGS_OPTION_VALUE` | `NULL` |
-| 必須 | `clargs_option_set_required` | `CLARGS_OPTION_VALUE` | `false` |
-| 既定値 | `clargs_option_set_default` | `CLARGS_OPTION_VALUE` | `NULL` |
-| 初期の状態 | `clargs_option_set_initial` | `CLARGS_OPTION_NEGATABLE` | `false`（オフ） |
+| Description | `clargs_option_set_description` | All | `NULL` |
+| Value name | `clargs_option_set_value_name` | `CLARGS_OPTION_VALUE` | `NULL` |
+| Required | `clargs_option_set_required` | `CLARGS_OPTION_VALUE` | `false` |
+| Default value | `clargs_option_set_default` | `CLARGS_OPTION_VALUE` | `NULL` |
+| Initial state | `clargs_option_set_initial` | `CLARGS_OPTION_NEGATABLE` | `false` (off) |
 
-- 文字列の属性は複製される。空の文字列も設定でき、設定されていないこと（`NULL`）とは区別される。設定し直すと、前の値と置き換わる。設定を消す関数はない。
-- 既定値は、コマンドラインに書くのと同じ形の文字列で渡す。設定の時点では、値型で変換できるかどうかを確かめない。確かめるのは検証である。
-- 必須と既定値は、どちらも設定できるが、両方を持つオプションは検証で誤りになる。
-- 説明文と値の表示名は、解析には影響しない。ヘルプの文面に使われる。説明文は `Options:` の一覧の説明になり、値の表示名は、見出しと usage 行に `<FILE>` の形で出る。値の表示名を設定しなければ、値型の名前が出る。必須、既定値、初期の状態、選択肢は、注記として出る（[ヘルプの使い方](help.md#文面の規則)）。
-- 値の表示名には、改行を入れない。ヘルプの列が崩れる（[ヘルプの使い方](help.md#制限)）。
+- String attributes are copied. An empty string can also be set, and it is different from not being set (`NULL`). Setting an attribute again replaces the previous value. There are no functions that clear a setting.
+- A default value is passed as a string in the same form as it would be written on the command line. Setting it does not check whether the value type can convert it. Validation checks that.
+- You can set both required and a default value, but an option that has both is an error in validation.
+- The description and the value name do not affect parsing. They are used in the help text. The description becomes the description in the `Options:` list, and the value name appears in the heading and the usage line in the form `<FILE>`. If no value name is set, the name of the value type appears instead. Required, the default value, the initial state and the choices appear as annotations ([Help and Usage](help.md#text-layout-rules)).
+- Do not put a newline in a value name. It breaks the columns of the help ([Help and Usage](help.md#limits)).
 
-## 位置引数
+## Positionals
 
-位置引数は `clargs_command_add_positional` で足す。名前、値型、個数の種類を指定する。コマンドの位置引数は、足した順に、コマンドラインの引数を受け取る。
+A positional is added with `clargs_command_add_positional`. You specify its name, its value type and its arity. The positionals of a command receive the command-line arguments in the order they were added.
 
-| 個数の種類 | 意味 |
+| Arity | Meaning |
 |---|---|
-| `CLARGS_ARITY_REQUIRED` | ちょうど 1 個 |
-| `CLARGS_ARITY_OPTIONAL` | 0 個または 1 個 |
-| `CLARGS_ARITY_ZERO_OR_MORE` | 0 個以上 |
-| `CLARGS_ARITY_ONE_OR_MORE` | 1 個以上 |
+| `CLARGS_ARITY_REQUIRED` | Exactly one |
+| `CLARGS_ARITY_OPTIONAL` | Zero or one |
+| `CLARGS_ARITY_ZERO_OR_MORE` | Zero or more |
+| `CLARGS_ARITY_ONE_OR_MORE` | One or more |
 
-- 名前は、表示と識別のためのもので、コマンドラインには現れない。空でない任意の文字列を使える。同じコマンドの中では、互いに異なる名前にする。名前は、usage 行と `Arguments:` の一覧に、`<name>` や `[name]...` の形で出る（[ヘルプの使い方](help.md#usage-行)）。改行を入れると、ヘルプの列が崩れる（[ヘルプの使い方](help.md#制限)）。
-- 属性は 2 つである。説明文（`clargs_positional_set_description`）は、どの個数の種類にも設定できる。既定値（`clargs_positional_set_default`）は、`CLARGS_ARITY_OPTIONAL` の位置引数にだけ設定できる。文字列の扱いは、オプションの属性と同じである。
-- 個数の種類の並びが成り立つかどうか（任意の後に必須がない、可変個の後に位置引数がない）は、追加の時点では確かめない。確かめるのは検証である。
+- The name is for display and identification, and it does not appear on the command line. Any non-empty string can be used. Within the same command, the names must differ from each other. The name appears in the usage line and in the `Arguments:` list in forms such as `<name>` and `[name]...` ([Help and Usage](help.md#usage-line)). A newline in the name breaks the columns of the help ([Help and Usage](help.md#limits)).
+- There are two attributes. The description (`clargs_positional_set_description`) can be set for any arity. The default value (`clargs_positional_set_default`) can be set only on a positional with `CLARGS_ARITY_OPTIONAL`. Strings are handled in the same way as option attributes.
+- Whether the sequence of arities is consistent (no required positional after an optional one, no positional after a variadic one) is not checked when a positional is added. Validation checks that.
 
-## 値型
+## Value types
 
-値型は、入力の文字列をどう確かめ、どんな値に変換するかを表す。値付きオプションと位置引数は、値型を 1 つ持つ。値型が表すのは変換だけで、変換をいつ求めるか、値をどこに保持するかは表さない。
+A value type describes how an input string is checked and what value it is converted to. An option with a value and a positional each have one value type. A value type describes only the conversion. It does not describe when the conversion is requested or where the value is kept.
 
-値型は、作った後は変更されない。だから、1 つの値型を、複数のオプションと位置引数、複数のスキーマ、複数のスレッドで共有できる。
+A value type does not change after it is created. So one value type can be shared by several options and positionals, several schemas, and several threads.
 
-値型の種類と、変換が領域に書く値の型:
+The kinds of value types, and the type of the value that the conversion writes to the buffer:
 
-| 種類 | 得る方法 | 型の名前 | 値の C の型 | 値 |
+| Kind | How to get it | Type name | C type of the value | Value |
 |---|---|---|---|---|
-| `CLARGS_TYPE_STRING` | `clargs_type_string()` | `"string"` | `const char *` | 入力の文字列へのポインタ（複製ではない） |
-| `CLARGS_TYPE_INT` | `clargs_type_int()` | `"integer"` | `int64_t` | 変換した整数 |
-| `CLARGS_TYPE_FLOAT` | `clargs_type_float()` | `"float"` | `double` | 変換した値 |
-| `CLARGS_TYPE_CHOICE` | `clargs_type_create_choice()` | `"choice"` | `size_t` | 一致した選択肢の番号（0 から） |
-| `CLARGS_TYPE_CUSTOM` | `clargs_type_create()` | 利用者が指定 | 利用者が決める | 利用者の変換関数が書く |
+| `CLARGS_TYPE_STRING` | `clargs_type_string()` | `"string"` | `const char *` | A pointer to the input string (not a copy) |
+| `CLARGS_TYPE_INT` | `clargs_type_int()` | `"integer"` | `int64_t` | The converted integer |
+| `CLARGS_TYPE_FLOAT` | `clargs_type_float()` | `"float"` | `double` | The converted value |
+| `CLARGS_TYPE_CHOICE` | `clargs_type_create_choice()` | `"choice"` | `size_t` | The index of the matching choice (from 0) |
+| `CLARGS_TYPE_CUSTOM` | `clargs_type_create()` | Given by you | Decided by you | Written by your conversion function |
 
-組み込みの値型が受け付ける入力:
+The input that the built-in value types accept:
 
-- 文字列: すべての入力。空の文字列も受け付ける。変換は必ず成功する。
-- 整数: 10 進の数字の並び。先頭に符号（`+` または `-`）を 1 つ付けてもよい。値が符号付き 64 ビットの範囲に収まるものだけを受け付ける。空の文字列、空白、ほかの文字は受け付けない。
-- 浮動小数: 10 進の表記。指数を付けてもよい（`1`、`1.5`、`.5`、`-1.5e-3`）。値が有限のものだけを受け付ける。小数点は、ロケールによらず `.` である。空の文字列、空白、無限大と非数の表記、16 進の表記は受け付けない。
-- 選択肢: 一覧のどれか 1 つと完全に一致する入力。大文字と小文字を区別する。空の文字列も選択肢にできる。
+- String: any input. An empty string is also accepted. The conversion always succeeds.
+- Integer: a sequence of decimal digits. It may start with one sign (`+` or `-`). Only values that fit in a signed 64-bit integer are accepted. An empty string, white space and other characters are not accepted.
+- Float: decimal notation. It may have an exponent (`1`, `1.5`, `.5`, `-1.5e-3`). Only finite values are accepted. The decimal point is `.`, whatever the locale. An empty string, white space, notations for infinity and NaN, and hexadecimal notation are not accepted.
+- Choice: an input that exactly matches one of the choices in the list. The match is case-sensitive. An empty string can also be a choice.
 
-文字列、整数、浮動小数の値型は、関数が毎回同じポインタを返す。確保をしないので、失敗せず、破棄するものもない。選択肢の値型と利用者定義の値型は、利用者が生成し、利用者が `clargs_type_destroy` で破棄する。選択肢の一覧の文字列と、利用者定義の値型の名前は、複製される。
+For the string, integer and float value types, the function returns the same pointer every time. They allocate nothing, so they do not fail, and there is nothing to destroy. You create choice value types and user-defined value types yourself, and you destroy them yourself with `clargs_type_destroy`. The strings in the list of choices and the name of a user-defined value type are copied.
 
-値型は、次の関数で読める: `clargs_type_name`、`clargs_type_kind`、`clargs_type_value_size`、`clargs_type_choice_count`、`clargs_type_choice_at`。選択肢でない値型では、選択肢の個数は 0 である。
+A value type can be read with these functions: `clargs_type_name`, `clargs_type_kind`, `clargs_type_value_size`, `clargs_type_choice_count`, `clargs_type_choice_at`. For a value type that is not a choice, the number of choices is 0.
 
-変換は、`clargs_type_convert` と `clargs_type_release` で求める。どの値型にも同じ呼び方が使える。種類を知る必要があるのは、値を読むときだけである。スキーマを定義するだけなら、利用者がこの 2 つを呼ぶ必要はない（検証が、既定値を確かめるために呼ぶ）。
+A conversion is requested with `clargs_type_convert` and `clargs_type_release`. They are called in the same way for every value type. You need to know the kind only when you read the value. If you only define a schema, you do not need to call these two functions (validation calls them to check the default values).
 
-- 変換を求める側が、値を書く領域を用意する。領域は `clargs_type_value_size()` バイト以上で、どの型のオブジェクトにも使える整列にする。ライブラリは、この領域を確保も解放もしない。
-- 変換が成功したら、領域に値が書かれている。使い終えたら、その値に `clargs_type_release` を 1 度だけ呼ぶ。
-- 変換が失敗したら、領域の内容は不定である。`clargs_type_release` を呼んではならない。
-- 値は、入力の文字列を参照してよい（文字列の値型の値は、入力へのポインタそのものである）。変換を求めた側は、値を後始末するまで、入力の文字列を有効に、変更せずに保つ。
+- The caller that requests a conversion provides the buffer the value is written to. The buffer is at least `clargs_type_value_size()` bytes, with an alignment that is suitable for an object of any type. The library neither allocates nor frees this buffer.
+- If the conversion succeeds, the value has been written to the buffer. When you are done with it, call `clargs_type_release` on that value exactly once.
+- If the conversion fails, the contents of the buffer are undefined. Do not call `clargs_type_release`.
+- The value may refer to the input string (the value of the string value type is the pointer to the input itself). The caller that requested the conversion keeps the input string valid and unchanged until the value has been released.
 
-値は `void *` で受け渡すので、領域の大きさと型の誤りを、コンパイラは検出しない。上の表のとおりの型で読むこと。
+Because values are passed as `void *`, the compiler does not detect a wrong buffer size or a wrong type. Read the value with the type given in the table above.
 
-## 利用者定義の値型の書き方
+## Writing a user-defined value type
 
-`clargs_type_create` に、型の名前、値の大きさ、変換関数、後始末関数、利用者のデータを渡す。
+Pass the type name, the size of the value, the conversion function, the release function and your user data to `clargs_type_create`.
 
 ```
 clargs_error_t clargs_type_create(const char *name, size_t value_size,
@@ -415,123 +415,123 @@ clargs_error_t clargs_type_create(const char *name, size_t value_size,
                                   clargs_type_t **out);
 ```
 
-| 引数 | 内容 |
+| Argument | Contents |
 |---|---|
-| `name` | 型の名前（`"size"` など）。空でない任意の文字列。複製される |
-| `value_size` | 値の大きさ（バイト）。0 より大きい。変換が書く領域は、この大きさ以上である |
-| `convert_fn` | 変換関数。`clargs_error_t (*)(const char *text, void *value, void *context)` |
-| `release_fn` | 後始末関数。`void (*)(void *value, void *context)`。値に後始末が要らなければ `NULL` |
-| `context` | 2 つの関数に渡される利用者のデータ。要らなければ `NULL` |
+| `name` | The type name (such as `"size"`). Any non-empty string. It is copied |
+| `value_size` | The size of the value in bytes. Greater than 0. The buffer that the conversion writes to is at least this size |
+| `convert_fn` | The conversion function. `clargs_error_t (*)(const char *text, void *value, void *context)` |
+| `release_fn` | The release function. `void (*)(void *value, void *context)`. `NULL` if the value needs no release |
+| `context` | User data passed to both functions. `NULL` if not needed |
 
-変換関数が守ること:
+What the conversion function must do:
 
-- `text` を変換し、`value` の指す領域に値を書いて、`CLARGS_ERROR_NONE` を返す。領域は、`value_size` バイト以上で、どの型にも使える整列である。
-- 受け付けない入力には、`CLARGS_ERROR_INVALID_VALUE` を返す。変換の中での確保に失敗したら、`CLARGS_ERROR_OUT_OF_MEMORY` を返す。
-- `CLARGS_ERROR_NONE` 以外の戻り値は、どの値でも失敗として扱われる。`clargs_type_convert` は、変換関数の戻り値をそのまま返す。
-- 失敗するときは、後始末の要るものを残さない。失敗した変換には、後始末関数は呼ばれない。
-- **副作用を持たない。** 変換関数は、検証のたびに、その値型を持つ定義要素の既定値のうち、検証が到達したもの 1 つにつき 1 回呼ばれる。出力する、数える、外部の状態を変える、といったことをすると、検証のたびに起こる。同じ入力には、いつも同じ結果を返すように書く。
-- 値は `text` を参照してよい。
+- Convert `text`, write the value to the buffer that `value` points to, and return `CLARGS_ERROR_NONE`. The buffer is at least `value_size` bytes, with an alignment that is suitable for any type.
+- For an input it does not accept, return `CLARGS_ERROR_INVALID_VALUE`. If an allocation inside the conversion fails, return `CLARGS_ERROR_OUT_OF_MEMORY`.
+- Any return value other than `CLARGS_ERROR_NONE` is treated as a failure. `clargs_type_convert` returns the return value of the conversion function as it is.
+- When it fails, it leaves nothing that needs a release. The release function is not called for a failed conversion.
+- **It has no side effects.** On every validation, the conversion function is called once for each default value that the validation reaches among the definition elements with that value type. If it prints, counts, or changes some outside state, that happens on every validation. Write it so that it always returns the same result for the same input.
+- The value may refer to `text`.
 
-後始末関数が守ること:
+What the release function must do:
 
-- 同じ値型の変換が成功して書いた値を、後始末する（値が持つメモリを解放する、など）。領域そのものは解放しない。
-- 成功した変換 1 回につき、1 回だけ呼ばれる。検証でも呼ばれる: 検証は、既定値の変換が成功するたびに後始末を求め、値を残さない。
+- Release a value that a successful conversion of the same value type wrote (free the memory the value holds, for example). It does not free the buffer itself.
+- It is called exactly once for each successful conversion. It is also called by validation: every time the conversion of a default value succeeds, validation requests its release and keeps no value.
 
-利用者のデータ（`context`）:
+User data (`context`):
 
-- 値型は `context` を借りるだけである。ライブラリは複製も解放もしない。
-- 利用者は、値型を破棄するまで、`context` の指す先を有効に保つ。上の例の `limit` は `main` の局所変数で、値型の破棄より後まで有効である。
-- 値型を複数のスレッドから同時に使うなら、変換関数と後始末関数は、`context` を同時に読んでも正しく動くように書く。
+- A value type only borrows `context`. The library neither copies nor frees it.
+- You keep what `context` points to valid until you destroy the value type. In the example above, `limit` is a local variable of `main`, and it stays valid until after the value type is destroyed.
+- If you use a value type from several threads at the same time, write the conversion function and the release function so that they work correctly when they read `context` at the same time.
 
-値型の生成と破棄は、変換関数も後始末関数も呼ばない。
+Creating and destroying a value type calls neither the conversion function nor the release function.
 
-## 値型を借りる契約と破棄の順序
+## Borrowed value types and the order of destruction
 
-スキーマは、値型を借りる。`clargs_command_add_value` と `clargs_command_add_positional` は、渡された値型を複製せず、ポインタを持つだけである。
+A schema borrows its value types. `clargs_command_add_value` and `clargs_command_add_positional` do not copy the value type they are given. They only keep a pointer to it.
 
-| もの | 所有者 | 有効に保つ期間 |
+| Object | Owner | How long it must stay valid |
 |---|---|---|
-| 文字列、整数、浮動小数の値型 | ライブラリ | プログラムの終了まで有効。破棄しない（`clargs_type_destroy` に渡しても何もしない） |
-| 選択肢の値型、利用者定義の値型 | 生成した利用者 | それを使うスキーマを、すべて破棄し終えるまで |
-| 利用者定義の値型の `context` | 利用者 | 値型を破棄するまで |
-| スキーマ（ルートコマンド） | 生成した利用者 | — |
+| String, integer and float value types | The library | Valid until the program ends. Not destroyed (passing them to `clargs_type_destroy` does nothing) |
+| Choice value types, user-defined value types | The user who created them | Until every schema that uses them has been destroyed |
+| The `context` of a user-defined value type | The user | Until the value type is destroyed |
+| The schema (root command) | The user who created it | — |
 
-破棄の順序:
+The order of destruction:
 
-1. スキーマを破棄する（`clargs_command_destroy`）。値型は破棄されない。
-2. そのスキーマが使っていた値型を破棄する（`clargs_type_destroy`）。
-3. 値型が借りていた `context` を、利用者の方法で片付ける。
+1. Destroy the schema (`clargs_command_destroy`). The value types are not destroyed.
+2. Destroy the value types that the schema used (`clargs_type_destroy`).
+3. Clean up the `context` that the value types borrowed, in your own way.
 
-- 値型を、それを使うスキーマより先に破棄してはならない。ライブラリは、この誤りを検出しない。
-- そのスキーマで解析した結果（`clargs_result_t`）があるなら、スキーマより先に、結果をすべて破棄する。結果が残っている間は、スキーマを変更も破棄もしない（[解析の使い方](parse.md#寿命の規則)）。
-- 1 つの値型を複数のスキーマで使っているなら、そのすべてを破棄してから、値型を破棄する。
-- `clargs_type_destroy(NULL)` と `clargs_command_destroy(NULL)` は、何もしない。生成に失敗した後でも、同じ順序で破棄を書ける。
-- `clargs_option_type` と `clargs_positional_type` が返すのは、追加のときに渡した値型そのものである。利用者のもので、スキーマの破棄では無効にならない。
+- Do not destroy a value type before the schemas that use it. The library does not detect this error.
+- If there are results (`clargs_result_t`) parsed with the schema, destroy all of them before the schema. While a result remains, do not change or destroy the schema ([Parsing](parse.md#lifetime-rules)).
+- If one value type is used by several schemas, destroy all of them before you destroy the value type.
+- `clargs_type_destroy(NULL)` and `clargs_command_destroy(NULL)` do nothing. So you can write the destruction in the same order even after a creation has failed.
+- What `clargs_option_type` and `clargs_positional_type` return is the very value type that was passed when the element was added. It belongs to you, and it does not become invalid when the schema is destroyed.
 
-## 誤りの一覧
+## Definition errors
 
-定義の誤りは、エラーコードで返る。追加と設定の関数が確かめられるものは、その場で返り、木全体を見ないと分からないものは、検証で返る。
+Errors in a definition are returned as error codes. Errors that the add and set functions can check are returned right away. Errors that can only be found by looking at the whole tree are returned by validation.
 
-| エラーコード | 説明文（`clargs_error_message`） | 意味 |
+| Error code | Message (`clargs_error_message`) | Meaning |
 |---|---|---|
-| `CLARGS_ERROR_OUT_OF_MEMORY` | `"out of memory"` | メモリの確保に失敗した |
-| `CLARGS_ERROR_INVALID_NAME` | `"invalid name"` | 名前が規則に合わない、空である、またはない |
-| `CLARGS_ERROR_NAME_CONFLICT` | `"name already in use"` | 同じコマンドの中で、名前が衝突する |
-| `CLARGS_ERROR_INVALID_DEFINITION` | `"inconsistent definition"` | 定義どうしが矛盾する |
-| `CLARGS_ERROR_INVALID_DEFAULT` | `"default value rejected by its value type"` | 検証で、既定値が値型で変換できない |
-| `CLARGS_ERROR_INVALID_VALUE` | `"invalid value"` | 値型の変換で、入力が不正である |
+| `CLARGS_ERROR_OUT_OF_MEMORY` | `"out of memory"` | A memory allocation failed |
+| `CLARGS_ERROR_INVALID_NAME` | `"invalid name"` | A name does not follow the rules, is empty, or is missing |
+| `CLARGS_ERROR_NAME_CONFLICT` | `"name already in use"` | Names conflict within the same command |
+| `CLARGS_ERROR_INVALID_DEFINITION` | `"inconsistent definition"` | Definitions contradict each other |
+| `CLARGS_ERROR_INVALID_DEFAULT` | `"default value rejected by its value type"` | In validation, the value type cannot convert a default value |
+| `CLARGS_ERROR_INVALID_VALUE` | `"invalid value"` | In the conversion of a value type, the input is not valid |
 
-追加または設定の関数が失敗したら、スキーマは呼び出しの前と同じ内容で、検証の状態も変わらない。生成したものを受け取る出力先は `NULL` になる。その呼び出しが確保したメモリは残らない。失敗の後も、スキーマは使い続けられ、同じ名前で足し直すこともできる。
+If an add or set function fails, the schema has the same contents as before the call, and its validation state does not change. The output parameter that receives the created object is set to `NULL`. No memory that the call allocated is left behind. After the failure, you can keep using the schema, and you can add an element again with the same name.
 
-### 追加と設定の時点の誤り
+### Errors when adding and setting
 
-1 つの関数の中では、上の行から順に確かめ、最初に当てはまったものを返す。どの関数も、このほかに、確保に失敗すると `CLARGS_ERROR_OUT_OF_MEMORY` を返す。
+Within one function, the conditions are checked from the top row down, and the first one that applies is returned. Besides these, every function returns `CLARGS_ERROR_OUT_OF_MEMORY` when an allocation fails.
 
-| 関数 | 条件 | エラーコード |
+| Function | Condition | Error code |
 |---|---|---|
-| `clargs_command_create` | 名前が空 | `INVALID_NAME` |
-| `clargs_command_add_subcommand` | 名前が規則に合わない（空を含む） | `INVALID_NAME` |
-| | 足す先のコマンドが位置引数を持つ | `INVALID_DEFINITION` |
-| | 足す先のコマンドに、同じ名前のサブコマンドがある | `NAME_CONFLICT` |
-| `clargs_command_add_flag`、`_add_negatable`、`_add_count`、`_add_value` | 短い名前も長い名前もない | `INVALID_NAME` |
-| | 否定できるフラグに長い名前がない | `INVALID_NAME` |
-| | 短い名前または長い名前が規則に合わない | `INVALID_NAME` |
-| | 同じコマンドに、同じ短い名前のオプションがある | `NAME_CONFLICT` |
-| | 同じコマンドに、長い名前と同じ長い名前または否定名がある | `NAME_CONFLICT` |
-| | 否定できるフラグで、その否定名と同じ長い名前または否定名が、同じコマンドにある | `NAME_CONFLICT` |
-| `clargs_command_add_positional` | 名前が空 | `INVALID_NAME` |
-| | 足す先のコマンドがサブコマンドを持つ | `INVALID_DEFINITION` |
-| | 足す先のコマンドに、同じ名前の位置引数がある | `NAME_CONFLICT` |
-| `clargs_option_set_value_name`、`_set_required`、`_set_default` | 値付きオプションでない | `INVALID_DEFINITION` |
-| `clargs_option_set_initial` | 否定できるフラグでない | `INVALID_DEFINITION` |
-| `clargs_positional_set_default` | 個数の種類が `CLARGS_ARITY_OPTIONAL` でない | `INVALID_DEFINITION` |
-| `clargs_type_create_choice` | 選択肢が 0 個、または同じ文字列が 2 回以上ある | `INVALID_DEFINITION` |
-| `clargs_type_create` | 型の名前が空 | `INVALID_NAME` |
+| `clargs_command_create` | The name is empty | `INVALID_NAME` |
+| `clargs_command_add_subcommand` | The name does not follow the rules (including an empty name) | `INVALID_NAME` |
+| | The command it is added to has positionals | `INVALID_DEFINITION` |
+| | The command it is added to already has a subcommand with the same name | `NAME_CONFLICT` |
+| `clargs_command_add_flag`, `_add_negatable`, `_add_count`, `_add_value` | There is neither a short name nor a long name | `INVALID_NAME` |
+| | A negatable flag has no long name | `INVALID_NAME` |
+| | The short name or the long name does not follow the rules | `INVALID_NAME` |
+| | The same command already has an option with the same short name | `NAME_CONFLICT` |
+| | The same command already has a long name or a negated name equal to the long name | `NAME_CONFLICT` |
+| | For a negatable flag, the same command already has a long name or a negated name equal to its negated name | `NAME_CONFLICT` |
+| `clargs_command_add_positional` | The name is empty | `INVALID_NAME` |
+| | The command it is added to has subcommands | `INVALID_DEFINITION` |
+| | The command it is added to already has a positional with the same name | `NAME_CONFLICT` |
+| `clargs_option_set_value_name`, `_set_required`, `_set_default` | The option is not an option with a value | `INVALID_DEFINITION` |
+| `clargs_option_set_initial` | The option is not a negatable flag | `INVALID_DEFINITION` |
+| `clargs_positional_set_default` | The arity is not `CLARGS_ARITY_OPTIONAL` | `INVALID_DEFINITION` |
+| `clargs_type_create_choice` | There are 0 choices, or the same string appears twice or more | `INVALID_DEFINITION` |
+| `clargs_type_create` | The type name is empty | `INVALID_NAME` |
 
-- 対象でない種類への属性の設定は、設定しようとした値が何であっても（`false` でも）誤りである。
-- 説明文の設定（コマンド、オプション、位置引数）は、確保の失敗のほかには失敗しない。
+- Setting an attribute on a kind it does not apply to is an error, whatever value you try to set (even `false`).
+- Setting a description (on a command, an option or a positional) fails only when an allocation fails.
 
-### 検証の時点の誤り
+### Errors found by validation
 
-`clargs_command_validate` が返す。確かめる順序は、[検証と、失敗の調べ方](#検証と失敗の調べ方)にある。
+These are returned by `clargs_command_validate`. The order of the checks is in [Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure).
 
-| 条件 | エラーコード | 報告される定義要素 |
+| Condition | Error code | Reported definition element |
 |---|---|---|
-| 位置引数の並びで、`OPTIONAL` または `ZERO_OR_MORE` の後に、`REQUIRED` または `ONE_OR_MORE` がある | `INVALID_DEFINITION` | 後ろの位置引数 |
-| 位置引数の並びで、`ZERO_OR_MORE` または `ONE_OR_MORE` の後に、位置引数がある | `INVALID_DEFINITION` | 後ろの位置引数 |
-| オプションが必須で、かつ既定値を持つ | `INVALID_DEFINITION` | そのオプション |
-| オプションの既定値を、その値型が変換できない | `INVALID_DEFAULT` | そのオプション |
-| 位置引数の既定値を、その値型が変換できない | `INVALID_DEFAULT` | その位置引数 |
-| 値の領域の確保に失敗した。または、変換が `CLARGS_ERROR_OUT_OF_MEMORY` を返した | `OUT_OF_MEMORY` | なし |
+| In the sequence of positionals, `REQUIRED` or `ONE_OR_MORE` comes after `OPTIONAL` or `ZERO_OR_MORE` | `INVALID_DEFINITION` | The later positional |
+| In the sequence of positionals, a positional comes after `ZERO_OR_MORE` or `ONE_OR_MORE` | `INVALID_DEFINITION` | The later positional |
+| An option is required and also has a default value | `INVALID_DEFINITION` | That option |
+| The value type of an option cannot convert its default value | `INVALID_DEFAULT` | That option |
+| The value type of a positional cannot convert its default value | `INVALID_DEFAULT` | That positional |
+| The allocation of the value buffer failed, or the conversion returned `CLARGS_ERROR_OUT_OF_MEMORY` | `OUT_OF_MEMORY` | None |
 
-- 既定値の変換が `CLARGS_ERROR_OUT_OF_MEMORY` 以外で失敗したら、変換関数がどのコードを返しても、`CLARGS_ERROR_INVALID_DEFAULT` になる。
-- 追加と設定の時点で返る誤り（不正な名前、名前の衝突、位置引数とサブコマンドの併用、対象でない種類への属性）は、検証では確かめない。追加と設定の関数が、そういうスキーマを作らせないからである。
+- If the conversion of a default value fails with anything other than `CLARGS_ERROR_OUT_OF_MEMORY`, the result is `CLARGS_ERROR_INVALID_DEFAULT`, whatever code the conversion function returned.
+- Validation does not check the errors that are returned when adding and setting (invalid names, name conflicts, positionals together with subcommands, attributes on kinds they do not apply to). This is because the add and set functions never let you build such a schema.
 
-### エラーコードにならないもの
+### What is not an error code
 
-必須の引数の `NULL`、範囲外の添字、列挙にない値、破棄済みのハンドルの使用は、プログラムの誤りである。エラーコードは返らない（[前提条件](#前提条件)）。
+A `NULL` for a required argument, an index out of range, a value that is not in an enumeration, and the use of a destroyed handle are programming errors. No error code is returned ([Preconditions](#preconditions)).
 
-## 検証と、失敗の調べ方
+## Validation and finding the cause of a failure
 
 ```
 clargs_error_t clargs_command_validate(clargs_command_t *root,
@@ -541,101 +541,101 @@ clargs_error_t clargs_command_validate(clargs_command_t *root,
 bool clargs_command_is_validated(const clargs_command_t *command);
 ```
 
-`clargs_command_validate` は、ルートと、その下のすべてのサブコマンドを確かめる。渡すのはルートである。成功すると、木は検証済みになる。
+`clargs_command_validate` checks the root and every subcommand below it. You pass the root. When it succeeds, the tree becomes validated.
 
-確かめる順序は決まっている。最初に見つけた誤りを返して終えるので、定義が同じなら、結果はいつも同じである。
+The order of the checks is fixed. Validation returns the first error it finds and stops, so the same definition always gives the same result.
 
-- コマンドは、ルートから順にたどる。コマンド自身を先に、次にそのサブコマンドを足した順に確かめる。サブコマンドは、その下のすべてを確かめてから、次のサブコマンドへ進む。
-- 1 つのコマンドの中では、次の順である。
-  1. 位置引数の並び。位置引数を足した順に見る。
-  2. オプション。足した順に見て、1 つのオプションにつき、必須と既定値の併用、既定値の変換の順に確かめる。
-  3. 位置引数の既定値の変換。位置引数を足した順に見る。
+- Commands are visited starting from the root. A command itself is checked first, then its subcommands in the order they were added. For each subcommand, everything below it is checked before moving on to the next subcommand.
+- Within one command, the order is:
+  1. The sequence of positionals, in the order they were added.
+  2. The options, in the order they were added. For each option, the combination of required and a default value is checked first, then the conversion of the default value.
+  3. The conversion of the default values of the positionals, in the order they were added.
 
-結果と、3 つの出力先:
+The result and the three output parameters:
 
-| 戻り値 | `*command` | `*option` | `*positional` | 検証の状態 |
+| Return value | `*command` | `*option` | `*positional` | Validation state |
 |---|---|---|---|---|
-| `CLARGS_ERROR_NONE` | `NULL` | `NULL` | `NULL` | 検証済みになる |
-| `CLARGS_ERROR_INVALID_DEFINITION`、`CLARGS_ERROR_INVALID_DEFAULT`（オプションの誤り） | そのオプションが属するコマンド | 誤りのあるオプション | `NULL` | 変わらない |
-| `CLARGS_ERROR_INVALID_DEFINITION`、`CLARGS_ERROR_INVALID_DEFAULT`（位置引数の誤り） | その位置引数が属するコマンド | `NULL` | 誤りのある位置引数 | 変わらない |
-| `CLARGS_ERROR_OUT_OF_MEMORY` | `NULL` | `NULL` | `NULL` | 変わらない |
+| `CLARGS_ERROR_NONE` | `NULL` | `NULL` | `NULL` | Becomes validated |
+| `CLARGS_ERROR_INVALID_DEFINITION`, `CLARGS_ERROR_INVALID_DEFAULT` (error in an option) | The command the option belongs to | The option with the error | `NULL` | Unchanged |
+| `CLARGS_ERROR_INVALID_DEFINITION`, `CLARGS_ERROR_INVALID_DEFAULT` (error in a positional) | The command the positional belongs to | `NULL` | The positional with the error | Unchanged |
+| `CLARGS_ERROR_OUT_OF_MEMORY` | `NULL` | `NULL` | `NULL` | Unchanged |
 
-- 3 つの出力先は、それぞれ `NULL` を渡して省略できる。`NULL` でない出力先には、呼び出しのたびに必ず書かれる。
-- 書かれるハンドルは、木の中のものである。ルートを破棄するまで有効で、利用者は解放しない。
-- 検証は、定義の内容を変えない。何を返しても、コマンド、オプション、位置引数と、その属性は、呼び出しの前のままである。
+- Each of the three output parameters can be omitted by passing `NULL`. An output parameter that is not `NULL` is always written on every call.
+- The handles written are ones in the tree. They stay valid until the root is destroyed, and you do not free them.
+- Validation does not change the definition. Whatever it returns, the commands, options, positionals and their attributes are as they were before the call.
 
-失敗の調べ方（例の `report_fault`）:
+How to find the cause of a failure (`report_fault` in the example):
 
-1. 戻り値を `clargs_error_message` に渡して、誤りの種類を得る。
-2. `*command` を `clargs_command_name` に渡して、どのコマンドの定義かを得る。親をたどるなら `clargs_command_parent` を使う（ルートでは `NULL`）。
-3. `*option` が `NULL` でなければ、`clargs_option_long_name`（なければ `NULL`）、`clargs_option_short_name`（なければ `'\0'`）、`clargs_option_default`、`clargs_option_is_required` などで、どのオプションの何が誤りかを調べる。
-4. `*positional` が `NULL` でなければ、`clargs_positional_name`、`clargs_positional_arity`、`clargs_positional_default` などで調べる。
-5. 3 つとも `NULL` で、戻り値が `CLARGS_ERROR_OUT_OF_MEMORY` なら、定義の誤りではない。定義は元のままなので、メモリが足りるようになれば、もう一度検証できる。
+1. Pass the return value to `clargs_error_message` to get the kind of error.
+2. Pass `*command` to `clargs_command_name` to get which command's definition it is. To walk up to the parents, use `clargs_command_parent` (`NULL` for the root).
+3. If `*option` is not `NULL`, use `clargs_option_long_name` (`NULL` if none), `clargs_option_short_name` (`'\0'` if none), `clargs_option_default`, `clargs_option_is_required` and so on to find which option has which error.
+4. If `*positional` is not `NULL`, use `clargs_positional_name`, `clargs_positional_arity`, `clargs_positional_default` and so on.
+5. If all three are `NULL` and the return value is `CLARGS_ERROR_OUT_OF_MEMORY`, it is not an error in the definition. The definition is unchanged, so you can validate again once enough memory is available.
 
-誤りを直すには、属性を設定し直す（既定値を正しい値に置き換える、必須を `false` にする、など）。定義要素を削除する関数はないので、位置引数の並びの誤りは、スキーマを破棄して作り直す。
+To fix an error, set the attribute again (replace the default value with a correct one, set required to `false`, and so on). There are no functions that remove a definition element, so for an error in the sequence of positionals, destroy the schema and build it again.
 
-検証の状態:
+The validation state:
 
-- 生成した直後のルートは、未検証である。
-- 検証が成功すると、検証済みになる。失敗した検証は、状態を変えない。
-- 成功した追加と設定は、木のどこに対するものでも、木を未検証に戻す。同じ値を設定し直した場合も戻る。失敗した追加と設定は、状態を変えない。
-- `clargs_command_is_validated` には、木のどのコマンドを渡してもよい。結果は同じである。
-- 検証は、何度呼んでもよい。定義を変えた後は、もう一度呼ぶ。
-- 解析（`clargs_parse`、`clargs_parse_wide`）に渡せるのは、検証済みのスキーマだけである。検証を済ませていないスキーマ（`clargs_command_is_validated` が `false` を返すもの。検証に 1 度も成功していないものと、検証の後に追加または設定をしたもの）を解析に渡すのは、前提条件の違反である。エラーコードは返らない。`assert` で検査され、Debug 構成ではプロセスが中断し、Release 構成では動作は定まらない（[前提条件](#前提条件)、[解析の使い方](parse.md#前提条件)）。
+- A root right after it is created is not validated.
+- When validation succeeds, the tree becomes validated. A failed validation does not change the state.
+- A successful addition or set, on any part of the tree, marks the tree as not validated again. This happens even when the same value is set again. A failed addition or set does not change the state.
+- You can pass any command of the tree to `clargs_command_is_validated`. The result is the same.
+- You can call validation as many times as you like. Call it again after you change the definition.
+- Only a validated schema can be passed to parsing (`clargs_parse`, `clargs_parse_wide`). Passing a schema that is not validated (one for which `clargs_command_is_validated` returns `false`: one that has never been validated successfully, or one that was changed by an addition or a set after validation) to parsing violates a precondition. No error code is returned. It is checked with `assert`: in the Debug configuration the process aborts, and in the Release configuration the behavior is undefined ([Preconditions](#preconditions), [Parsing](parse.md#preconditions)).
 
-検証は、到達した既定値 1 つにつき、値の領域を確保し、値型に変換を求め、成功したら後始末を求めて、領域を解放する。だから、利用者定義の値型の変換関数と後始末関数は、検証のたびに呼ばれる（[利用者定義の値型の書き方](#利用者定義の値型の書き方)）。検証の後に、値は残らない。
+For each default value it reaches, validation allocates a value buffer, asks the value type to convert the value, requests its release if the conversion succeeds, and frees the buffer. So the conversion function and the release function of a user-defined value type are called on every validation ([Writing a user-defined value type](#writing-a-user-defined-value-type)). No value is left after validation.
 
-## 検証済みのスキーマで成り立つこと
+## Guarantees of a validated schema
 
-どのスキーマでも、いつも成り立つこと（追加と設定の関数が守る）:
+What always holds for any schema (the add and set functions ensure it):
 
-- 1 つのコマンドの中で、短い名前は互いに異なる。長い名前と否定名は、合わせて互いに異なる。サブコマンド名は互いに異なる。位置引数名は互いに異なる。
-- オプションは、短い名前か長い名前の少なくとも一方を持つ。否定できるフラグは、長い名前と否定名を持つ。
-- 短い名前、長い名前、サブコマンド名は、名前の規則に合う。ルートの名前と位置引数の名前は、空でない。
-- 1 つのコマンドが、位置引数とサブコマンドの両方を持つことはない。
-- 値付きオプションと位置引数は値型を持ち、ほかのオプションは持たない。
-- 属性は、対象の種類の定義要素にだけ付いている。
+- Within one command, short names are all different. Long names and negated names, taken together, are all different. Subcommand names are all different. Positional names are all different.
+- An option has at least one of a short name and a long name. A negatable flag has a long name and a negated name.
+- Short names, long names and subcommand names follow the naming rules. The name of the root and the names of positionals are not empty.
+- A command never has both positionals and subcommands.
+- Options with a value and positionals have a value type, and other options do not.
+- Attributes are set only on definition elements of the kinds they apply to.
 
-検証済みのスキーマ（`clargs_command_is_validated` が `true` を返す木）では、さらに次のことが、すべてのコマンドで成り立つ:
+In a validated schema (a tree for which `clargs_command_is_validated` returns `true`), the following also holds for every command:
 
-- 位置引数の並びは、次のどちらかである。
-  - `CLARGS_ARITY_REQUIRED` が 0 個以上、次に `CLARGS_ARITY_OPTIONAL` が 0 個以上、最後に `CLARGS_ARITY_ZERO_OR_MORE` が高々 1 個。
-  - `CLARGS_ARITY_REQUIRED` が 0 個以上、最後に `CLARGS_ARITY_ONE_OR_MORE` が 1 個。
-- 必須の値付きオプションは、既定値を持たない。
-- すべての既定値は、検証の時点で、その値型の変換に成功した。変換関数が副作用を持たず、同じ入力に同じ結果を返すなら、後で変換しても成功する。
+- The sequence of positionals is one of these:
+  - Zero or more `CLARGS_ARITY_REQUIRED`, then zero or more `CLARGS_ARITY_OPTIONAL`, and last at most one `CLARGS_ARITY_ZERO_OR_MORE`.
+  - Zero or more `CLARGS_ARITY_REQUIRED`, and last exactly one `CLARGS_ARITY_ONE_OR_MORE`.
+- A required option with a value has no default value.
+- Every default value was converted successfully by its value type at the time of validation. If the conversion function has no side effects and returns the same result for the same input, converting it later also succeeds.
 
-スキーマを読む側（解析やヘルプの生成）は、検証済みのスキーマについて、これらを前提にできる。未検証のスキーマでは、前提にできない。だから、解析も、ヘルプの生成も、検証済みであることを前提条件にしている（[検証と、失敗の調べ方](#検証と失敗の調べ方)）。
+Code that reads a schema (parsing and help generation) can rely on these for a validated schema. For a schema that is not validated, it cannot. This is why both parsing and help generation have a validated schema as a precondition ([Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure)).
 
-## 読み取り
+## Reading a schema
 
-読み取りの関数は、`const` のハンドルを取り、何も変更せず、失敗しない。
+The read functions take `const` handles, change nothing, and do not fail.
 
-| 対象 | 関数 |
+| Object | Functions |
 |---|---|
-| コマンド | `clargs_command_name`、`clargs_command_description`、`clargs_command_parent`、`clargs_command_is_validated` |
-| コマンドの中の列挙 | `clargs_command_option_count` と `clargs_command_option_at`、`clargs_command_positional_count` と `clargs_command_positional_at`、`clargs_command_subcommand_count` と `clargs_command_subcommand_at` |
-| 名前からの検索 | `clargs_command_find_short`、`clargs_command_find_long`、`clargs_command_find_subcommand` |
-| オプション | `clargs_option_command`、`clargs_option_kind`、`clargs_option_short_name`、`clargs_option_long_name`、`clargs_option_negated_name`、`clargs_option_type`、`clargs_option_description`、`clargs_option_value_name`、`clargs_option_is_required`、`clargs_option_default`、`clargs_option_initial` |
-| 位置引数 | `clargs_positional_command`、`clargs_positional_name`、`clargs_positional_arity`、`clargs_positional_type`、`clargs_positional_description`、`clargs_positional_default` |
+| Command | `clargs_command_name`, `clargs_command_description`, `clargs_command_parent`, `clargs_command_is_validated` |
+| Enumerating within a command | `clargs_command_option_count` and `clargs_command_option_at`, `clargs_command_positional_count` and `clargs_command_positional_at`, `clargs_command_subcommand_count` and `clargs_command_subcommand_at` |
+| Lookup by name | `clargs_command_find_short`, `clargs_command_find_long`, `clargs_command_find_subcommand` |
+| Option | `clargs_option_command`, `clargs_option_kind`, `clargs_option_short_name`, `clargs_option_long_name`, `clargs_option_negated_name`, `clargs_option_type`, `clargs_option_description`, `clargs_option_value_name`, `clargs_option_is_required`, `clargs_option_default`, `clargs_option_initial` |
+| Positional | `clargs_positional_command`, `clargs_positional_name`, `clargs_positional_arity`, `clargs_positional_type`, `clargs_positional_description`, `clargs_positional_default` |
 
-- 列挙は、足した順である。番号は 0 から数える。
-- 「ない」ことは、文字列とハンドルでは `NULL`、短い名前では `'\0'` で表される。設定されていない説明文、値の表示名、既定値は `NULL` である。空の文字列を設定した属性は、空の文字列として読める。
-- 対象でない種類のオプションでは、否定名、値型、値の表示名、既定値は `NULL`、必須と初期の状態は `false` である。
-- 検索は、渡したコマンドの定義だけを対象にする。親や子のコマンドは見ない。バイト単位で、名前の全体を比べる。
-- `clargs_command_find_long` は、`name` の先頭 `length` バイトを名前として探す。`name=value` のような文字列の中の名前を、複製せずに探せる。否定名にも一致し、どちらに一致したかを `*negated` に書く（見つからなければ書かない）。
-- `clargs_command_find_short` に `'\0'` を渡すと、必ず `NULL` が返る。
-- 返された文字列とハンドルは、ルートを破棄するまで有効である。利用者は解放しない。定義を足しても、ハンドルは変わらない。
-- ただし、設定し直せる属性（コマンドの説明文、オプションの説明文・値の表示名・既定値、位置引数の説明文・既定値）から読んだ文字列は、ルートを破棄するまでか、その属性を設定し直すまでの、早いほうまで有効である。設定し直すと、前の文字列は解放される。名前は置き換わらない。
-- スキーマが変更されていない間は、読み取りの関数を複数のスレッドから同時に呼べる。同じスキーマの変更と検証は、ほかの呼び出しと同時に行えない。利用者が同期する。
+- Enumeration is in the order the elements were added. Indexes start at 0.
+- "None" is represented by `NULL` for strings and handles, and by `'\0'` for short names. A description, value name or default value that is not set is `NULL`. An attribute that was set to an empty string reads as an empty string.
+- For an option of a kind that an attribute does not apply to, the negated name, the value type, the value name and the default value are `NULL`, and required and the initial state are `false`.
+- A lookup covers only the definitions of the command you pass. It does not look at parent or child commands. It compares the whole name, byte by byte.
+- `clargs_command_find_long` looks up the first `length` bytes of `name` as the name. This lets you look up a name inside a string such as `name=value` without copying it. It also matches negated names, and it writes which one matched to `*negated` (it writes nothing if no option is found).
+- Passing `'\0'` to `clargs_command_find_short` always returns `NULL`.
+- The strings and handles returned stay valid until the root is destroyed. You do not free them. Adding definitions does not change the handles.
+- However, a string read from an attribute that can be set again (the description of a command; the description, value name or default value of an option; the description or default value of a positional) stays valid until the root is destroyed or that attribute is set again, whichever comes first. Setting the attribute again frees the previous string. Names are never replaced.
+- While a schema is not being changed, its read functions can be called from several threads at the same time. Changing or validating a schema cannot be done at the same time as any other call on it. You do the synchronization.
 
-## 前提条件
+## Preconditions
 
-関数ごとの前提条件は、公開ヘッダのコメントに `Preconditions:` として書いてある。共通することは、次のとおりである。
+The preconditions of each function are written in the comments of the public headers, under `Preconditions:`. What they have in common is:
 
-- ポインタの引数は、コメントが「`NULL` でもよい」と書いていない限り、`NULL` でない。`NULL` でもよいのは、破棄の関数の引数、追加の関数の `out`、長い名前がないことを表す `long_name`、`clargs_type_create` の `release_fn` と `context`、`count` が 0 のときの `clargs_type_create_choice` の `choices`、`clargs_command_find_long` の `negated`、`clargs_command_validate` の 3 つの出力先である。
-- 番号（`_at` の `index`）は、対応する個数より小さい。
-- 列挙の引数（`clargs_command_add_positional` の `arity`）は、定義された定数である。
-- `clargs_command_destroy` と `clargs_command_validate` に渡すのは、ルートである。サブコマンドは渡さない。
-- ハンドルは、破棄されていない。値型は、それを使うスキーマより先に破棄されていない。
+- Pointer arguments are not `NULL`, unless the comment says they "may be `NULL`". The arguments that may be `NULL` are: the argument of a destroy function, the `out` of an add function, `long_name` to mean that there is no long name, `release_fn` and `context` of `clargs_type_create`, `choices` of `clargs_type_create_choice` when `count` is 0, `negated` of `clargs_command_find_long`, and the three output parameters of `clargs_command_validate`.
+- An index (the `index` of an `_at` function) is less than the corresponding count.
+- An enumeration argument (the `arity` of `clargs_command_add_positional`) is one of the defined constants.
+- What you pass to `clargs_command_destroy` and `clargs_command_validate` is the root. Do not pass a subcommand.
+- Handles have not been destroyed. A value type has not been destroyed before the schemas that use it.
 
-前提条件を破るのは、プログラムの誤りである。エラーコードは返らない。検査できるものは `assert` で検査され、Debug 構成では、破るとプロセスが中断する。Release 構成では検査されず、動作は定まらない。開発中は、Debug 構成のライブラリを使うことを勧める（[所有権と寿命の規約](ownership.md#実行時の失敗とプログラムの誤り)）。
+Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined. During development, we recommend that you use the library built in the Debug configuration ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)).
