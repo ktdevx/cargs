@@ -2,18 +2,18 @@
  * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
- * ArgX - parsing: the two entries, and the scan of the arguments.
+ * ArgX - parsing: the two entry points, and the scan of the arguments.
  *
- * The arguments are read once each, from the first after the name of the
- * program to the last, classified by their shape ("lex.h") and matched
- * with the schema, which is read through <argx/schema.h> only. Everything
- * that is read is recorded through the functions of "parse_internal.h":
- * this source never reads or writes the fields of a result, and it reads
- * the arguments from the copy that the result holds, so that every string
- * the result keeps a pointer to is in that copy.
+ * Each argument is read once, from the first after the program name to
+ * the last. It is classified by its shape ("lex.h") and matched against
+ * the schema, which is read only through <argx/schema.h>. Everything that
+ * is read is recorded through the functions of "parse_internal.h". This
+ * source never reads or writes a result's fields. It reads the arguments
+ * from the result's copy, so that every string the result keeps a pointer
+ * to is in that copy.
  *
- * The state of the scan is an automatic variable of the scan. Nothing is
- * kept between two parses.
+ * The scan state is an automatic variable of the scan. Nothing is kept
+ * between two parses.
  */
 #include <argx/parse.h>
 
@@ -29,11 +29,11 @@
 typedef struct scan
 {
     const argx_command_t *command; /* The current command: the last selected command. */
-    size_t index;                  /* The index of the argument that is being read. */
-    size_t count;                  /* The number of arguments, the name of the program included. */
-    bool options_ended;            /* Whether the terminator of the options was read. */
+    size_t index;                  /* The index of the argument being read. */
+    size_t count;                  /* The number of arguments, including the program name. */
+    bool options_ended;            /* Whether the terminator ("--") was read. */
     /*
-     * The index of the positional of command that takes the next
+     * The index of the command's positional that takes the next
      * argument that is not an option.
      */
     size_t positional;
@@ -58,9 +58,9 @@ static void enter_command(scan_t *scan, const argx_command_t *command)
 }
 
 /*
- * Records a parse error at where, in the current command of scan. value
- * and option may be NULL: an error of an argument that is not an option
- * has no option. Returns what argx_result_fail() returns.
+ * Records a parse error at where, in scan's current command. value and
+ * option may be NULL: an error about an argument that is not an option has
+ * no option. Returns what argx_result_fail() returns.
  */
 static argx_error_t fail_at(argx_result_t *result, const scan_t *scan, argx_parse_error_kind_t kind,
                             const argx_result_where_t *where, const char *value,
@@ -78,20 +78,20 @@ static argx_error_t fail_at(argx_result_t *result, const scan_t *scan, argx_pars
 }
 
 /*
- * Checks the argument that scan is at before it is read: a wide argument
+ * Checks the argument that scan is at before it is read. A wide argument
  * with a sequence that could not be converted to UTF-8 is a parse error,
- * whatever it would be read as. The argument and the value of the error
- * are the argument as the result holds it, with U+FFFD for each unit that
+ * however it would otherwise be read. The error's argument and value are
+ * the argument as the result holds it, with U+FFFD for each unit that
  * could not be converted; the error has no option and no letter.
  *
- * The result remembers the first such argument only. That is enough: the
- * scan stops there, so no later one is ever read.
+ * The result remembers only the first such argument. That is enough: the
+ * scan stops there, so it never reads a later one.
  */
 static argx_error_t check_encoding(argx_result_t *result, const scan_t *scan)
 {
     argx_result_where_t where;
 
-    /* The scan starts after the name of the program, and 0 is "none". */
+    /* The scan starts after the program name, and 0 means "none". */
     if (scan->index != argx_result_first_invalid_arg(result))
     {
         return ARGX_ERROR_NONE;
@@ -108,16 +108,15 @@ static argx_error_t check_encoding(argx_result_t *result, const scan_t *scan)
 }
 
 /*
- * Records that option, an option of the current command of scan, was given
- * by the argument that scan is at. where tells how it was written. on is
- * the state that a negatable flag was given with. value is the value that
- * was written with the option, in the same argument, or NULL when there is
- * none.
+ * Records that option, an option of scan's current command, was given by
+ * the argument that scan is at. where tells how it was written. on is the
+ * state that a negatable flag was given with. value is the value written
+ * with the option in the same argument, or NULL when there is none.
  *
- * An option that takes a value without one takes the next argument,
- * whatever it looks like, and scan moves on to it; where->index is then
- * set to that argument, the one that holds the value. The argument is
- * checked before it is taken (check_encoding()).
+ * An option that takes a value but was given none takes the next
+ * argument, whatever it looks like, and scan moves on to it; where->index
+ * is then set to that argument, the one that holds the value. The argument
+ * is checked before it is taken (check_encoding()).
  */
 static argx_error_t record_option(argx_result_t *result, scan_t *scan, const argx_option_t *option,
                                   bool on, const char *value, argx_result_where_t *where)
@@ -163,9 +162,9 @@ static argx_error_t record_option(argx_result_t *result, scan_t *scan, const arg
     case ARGX_OPTION_VALUE:
     default:
         /*
-         * An option that takes a value was recorded above. A kind that a
-         * later version adds is passed over, on purpose, until the scan
-         * learns what giving it means: nothing is recorded for it.
+         * An option that takes a value was recorded above. A kind added by
+         * a later version is skipped on purpose until the scan learns what
+         * giving it means: nothing is recorded for it.
          */
         break;
     }
@@ -199,13 +198,13 @@ static argx_error_t scan_long(argx_result_t *result, scan_t *scan, const char *a
 
 /*
  * Reads arg, the argument that scan is at, as a bundle of short options of
- * the current command: each character after the '-' is a short name, from
- * the first to the last.
+ * the current command: each character after the '-' is a short name, read
+ * from first to last.
  *
- * An option that takes a value ends the bundle: the characters after its
- * letter, whatever they are, are its value, and when it is the last letter
- * it takes the next argument (record_option()). The options before a letter
- * that fails stay recorded.
+ * An option that takes a value ends the bundle. The characters after its
+ * letter, whatever they are, are its value; when it is the last letter, it
+ * takes the next argument (record_option()). Options before a letter that
+ * fails stay recorded.
  */
 static argx_error_t scan_bundle(argx_result_t *result, scan_t *scan, const char *arg)
 {
@@ -218,8 +217,8 @@ static argx_error_t scan_bundle(argx_result_t *result, scan_t *scan, const char 
         argx_error_t error;
 
         /*
-         * The argument of an error is the whole bundle; the name of its
-         * message is the letter.
+         * An error's argument is the whole bundle; the name in its message
+         * is the letter.
          */
         where.source = ARGX_SOURCE_COMMAND_LINE;
         where.index = scan->index;
@@ -250,20 +249,20 @@ static argx_error_t scan_bundle(argx_result_t *result, scan_t *scan, const char 
  * option.
  *
  * For a command that has subcommands, arg is the name of one of them,
- * compared as a whole and with its case: that subcommand is added to the
- * selected commands of result and becomes the current command of scan, so
- * that the arguments that follow are read with its options, its
- * positionals from the first, and its subcommands, to any depth. A name
- * that is no subcommand of the current command is a parse error. After the
- * terminator of the options, arg is not a name: such a command has no
- * positional, and arg is one argument too many.
- *
- * For a command that has no subcommand, arg is a value of the positional
- * of the current command that the cursor of scan is at. A positional that
- * takes one argument at most moves the cursor on; one that takes any
- * number keeps it, and so takes every argument that follows. With the
- * cursor after the last positional, also for a command that has none, arg
+ * compared as a whole and case-sensitively. That subcommand is appended to
+ * result's selected commands and becomes scan's current command, so the
+ * arguments that follow are read with its options, its positionals from
+ * the first, and its subcommands, to any depth. A name that is not a
+ * subcommand of the current command is a parse error. After the
+ * terminator, arg is not a name: such a command has no positional, so arg
  * is one argument too many.
+ *
+ * For a command that has no subcommands, arg is a value of the current
+ * command's positional at scan's cursor. A positional that takes at most
+ * one argument moves the cursor on; one that takes any number keeps it,
+ * and so takes every argument that follows. When the cursor is past the
+ * last positional, including for a command that has none, arg is one
+ * argument too many.
  */
 static argx_error_t scan_plain(argx_result_t *result, scan_t *scan, const char *arg)
 {
@@ -319,8 +318,8 @@ static argx_error_t scan_plain(argx_result_t *result, scan_t *scan, const char *
     }
 
     /*
-     * The name of the message of a value that the value type does not
-     * take is the name of the positional.
+     * For a value that the value type does not take, the name in the
+     * message is the positional's name.
      */
     where.name = argx_positional_name(positional);
     where.name_length = strlen(where.name);
@@ -328,12 +327,12 @@ static argx_error_t scan_plain(argx_result_t *result, scan_t *scan, const char *
 }
 
 /*
- * Reads the arguments of result, which has count of them and root as its
- * only selected command, from the first after the name of the program.
- * The current command is root at first and then the subcommand that was
- * named last: an option is looked up in the current command only, never in
- * its parent or its subcommands. Each argument is checked before it is
- * read (check_encoding()). Stops at the first error.
+ * Reads the arguments of result, which has count arguments and root as
+ * its only selected command, starting with the first after the program
+ * name. The current command is root at first, then the subcommand named
+ * last. An option is looked up in the current command only, never in its
+ * parent or its subcommands. Each argument is checked before it is read
+ * (check_encoding()). Stops at the first error.
  *
  * Returns ARGX_ERROR_NONE when all the arguments were read,
  * ARGX_ERROR_INVALID_COMMAND_LINE when a parse error was recorded, and
@@ -360,8 +359,8 @@ static argx_error_t scan_arguments(argx_result_t *result, const argx_command_t *
         {
             /*
              * After the terminator, an argument is not classified: it is
-             * not an option, whatever it looks like, a second "--"
-             * included. The terminator stays read after a subcommand was
+             * not an option, whatever it looks like, including a second
+             * "--". The terminator stays in effect after a subcommand is
              * selected.
              */
             error = scan_plain(result, &scan, arg);
@@ -375,7 +374,7 @@ static argx_error_t scan_arguments(argx_result_t *result, const argx_command_t *
                 break;
             case ARGX_LEX_SHORT:
                 /*
-                 * An argument with the form of a negative number is a
+                 * An argument that looks like a negative number is a
                  * bundle only for a command that has a digit as a short
                  * name. For any other command it is not an option.
                  */
@@ -407,11 +406,11 @@ static argx_error_t scan_arguments(argx_result_t *result, const argx_command_t *
 }
 
 /*
- * Parses the arguments of result, a new result of root with count
- * arguments, and writes result to *out: scans the arguments and, when the
- * scan ends without a parse error, resolves the values that were not given
- * ("parse_internal.h"). A result that cannot be completed for a lack of
- * memory is destroyed, and NULL is written to *out.
+ * Parses the arguments of result, a new result for root with count
+ * arguments, and writes result to *out. It scans the arguments and, if the
+ * scan ends without a parse error, resolves the values that were not
+ * given ("parse_internal.h"). A result that cannot be completed because
+ * memory runs out is destroyed, and NULL is written to *out.
  */
 static argx_error_t parse_result(argx_result_t *result, const argx_command_t *root, size_t count,
                                  argx_result_t **out)
@@ -439,7 +438,7 @@ argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
     argx_result_t *result = NULL;
     argx_error_t error;
 
-    /* That no argument is NULL is checked by argx_result_create(). */
+    /* argx_result_create() checks that no argument is NULL. */
     assert(root != NULL);
     assert(out != NULL);
     assert(argx_command_parent(root) == NULL);
@@ -462,7 +461,7 @@ argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *cons
     argx_result_t *result = NULL;
     argx_error_t error;
 
-    /* That no argument is NULL is checked by argx_result_create_wide(). */
+    /* argx_result_create_wide() checks that no argument is NULL. */
     assert(root != NULL);
     assert(out != NULL);
     assert(argx_command_parent(root) == NULL);
@@ -471,8 +470,8 @@ argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *cons
     assert((argc == 0) || (argv != NULL));
 
     /*
-     * The arguments are converted to UTF-8 here. From here on the two
-     * entries are the same.
+     * The arguments are converted to UTF-8 here. From here on, the two
+     * entry points are the same.
      */
     error = argx_result_create_wide(root, argc, argv, &result);
     if (error != ARGX_ERROR_NONE)

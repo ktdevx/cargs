@@ -9,9 +9,9 @@
 #include <assert.h>
 
 /*
- * An ASCII digit. The comparison is with the ASCII range, not with
- * <ctype.h>, which follows the locale. A byte outside ASCII is not in the
- * range, whether char is signed or not.
+ * Tests for an ASCII digit. It compares against the ASCII range instead of
+ * using <ctype.h>, which follows the locale. A byte outside ASCII is not
+ * in the range, whether char is signed or not.
  */
 static bool is_digit(char c)
 {
@@ -23,8 +23,8 @@ argx_lex_kind_t argx_lex_classify(const char *arg)
     assert(arg != NULL);
 
     /*
-     * "", and an argument that does not start with '-'. The terminator of
-     * the string is read before any character after it.
+     * "" and any argument that does not start with '-'. The string's
+     * terminating '\0' is read before any character after it.
      */
     if (arg[0] != '-')
     {
@@ -51,8 +51,8 @@ bool argx_lex_is_negative_number(const char *arg)
         return false;
     }
     /*
-     * arg[1] exists: it is a character or the terminator. arg[2] is read
-     * only after arg[1] was seen to be '.'.
+     * arg[1] exists: it is a character or the terminating '\0'. arg[2] is
+     * read only once arg[1] is known to be '.'.
      */
     if (is_digit(arg[1]))
     {
