@@ -415,8 +415,9 @@ ARGX_API const argx_type_t *argx_option_type(const argx_option_t *option);
  * order, after the option has been added:
  *
  * - argx_option_set_description(): the description. Every kind has one.
- * - argx_option_set_value_name(): the value's display name, such as
- *   "FILE". Only for an option that takes a value, ARGX_OPTION_VALUE.
+ * - argx_option_set_value_name(): the value name, the name the help
+ *   shows for the value, such as "FILE". Only for an option that takes a
+ *   value, ARGX_OPTION_VALUE.
  * - argx_option_set_required(): whether the option must be given. Only
  *   for an option that takes a value.
  * - argx_option_set_default(): the default value, as a string in the form
@@ -462,8 +463,8 @@ ARGX_API argx_error_t argx_option_set_initial(argx_option_t *option, bool on);
 ARGX_API const char *argx_option_description(const argx_option_t *option);
 
 /*
- * Returns the display name of option's value, or NULL when none has been
- * set. It is always NULL for an option that takes no value.
+ * Returns option's value name, or NULL when none has been set. It is
+ * always NULL for an option that takes no value.
  *
  * Preconditions:
  *

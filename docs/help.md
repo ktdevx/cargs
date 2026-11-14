@@ -747,7 +747,7 @@ Options:
   -c, --[no-]check     A negatable flag with a short name
   -v, --verbose...     A count
   -d...                A count with a short name only
-  -o, --output <FILE>  A value with a display name
+  -o, --output <FILE>  A value with a value name
   -j <integer>         A value without one: the name of the type
       --ratio <float>  A float
       --name <string>  A string

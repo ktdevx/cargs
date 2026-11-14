@@ -232,7 +232,7 @@ static void add_flag(argx_command_t *command, char short_name, const char *long_
 
 /*
  * Adds an option with a value of strings that must succeed, with the
- * display name value_name. The option is not required. default_value is
+ * value name value_name. The option is not required. default_value is
  * its default value, or NULL to set none.
  */
 static void add_value(argx_command_t *command, char short_name, const char *long_name,

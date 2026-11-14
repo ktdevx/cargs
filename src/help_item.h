@@ -53,9 +53,9 @@ void argx_help_item_string(argx_out_t *out, const char *text);
  * - a flag: nothing more.
  * - a negatable flag: the long name is written as "--[no-]long".
  * - a count: "..." right after the names.
- * - an option with a value: a blank and the value's display name between
- *   "<" and ">". When no display name is set, the value type name stands
- *   in its place.
+ * - an option with a value: a blank and the value name between "<" and
+ *   ">". When no value name is set, the value type name stands in its
+ *   place.
  *
  * An unknown kind is written as a flag.
  */
@@ -72,8 +72,8 @@ void argx_help_item_positional_heading(argx_out_t *out, const argx_positional_t 
 /*
  * Writes option as a required option appears in a usage line: "--" and
  * the long name, or "-" and the short name when it has no long name, then
- * a blank and the value's display name between "<" and ">". When no
- * display name is set, the value type name stands in its place.
+ * a blank and the value name between "<" and ">". When no value name is
+ * set, the value type name stands in its place.
  *
  * Preconditions: option takes a value, ARGX_OPTION_VALUE. Checked with
  * assert.

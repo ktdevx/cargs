@@ -334,7 +334,7 @@ static argx_error_t convert_nothing(const char *text, void *value, void *context
 }
 
 /*
- * Without a display name of the value, the name of the value type stands
+ * Without a value name, the name of the value type stands
  * in its place: of a built-in type, of a choice and of a user-defined
  * type.
  */

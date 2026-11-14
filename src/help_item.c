@@ -35,9 +35,9 @@ void argx_help_item_string(argx_out_t *out, const char *text)
 }
 
 /*
- * Writes the display name of option's value between "<" and ">": the
- * value name that was set, or else the value type name. option takes a
- * value.
+ * Writes the name shown for option's value between "<" and ">": the
+ * value name if one was set, or else the value type name. option takes
+ * a value.
  */
 static void item_value_name(argx_out_t *out, const argx_option_t *option)
 {

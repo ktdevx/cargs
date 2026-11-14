@@ -193,7 +193,7 @@ static void add_count(argx_command_t *command, char short_name, const char *long
 
 /*
  * Adds an option with a value of strings that must succeed, with the
- * display name value_name. The option is not required and has no default
+ * value name value_name. The option is not required and has no default
  * value.
  */
 static void add_value(argx_command_t *command, char short_name, const char *long_name,

@@ -153,7 +153,7 @@ static void add_flag(argx_command_t *command, char short_name, const char *long_
 }
 
 /*
- * Adds an option with a value of strings and the display name "FILE"; it
+ * Adds an option with a value of strings and the value name "FILE"; it
  * must succeed. short_name is '\0' for none. default_value is its default
  * value, or NULL for an option that is required.
  */

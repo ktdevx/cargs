@@ -61,8 +61,8 @@ struct argx_command
  * - type: the value type, for the ARGX_OPTION_VALUE kind. NULL for every
  *   other kind. Borrowed.
  * - description: the description, or NULL when none has been set.
- * - value_name: the value name (its display name), or NULL when none has
- *   been set. Only the ARGX_OPTION_VALUE kind has one.
+ * - value_name: the value name, or NULL when none has been set. Only the
+ *   ARGX_OPTION_VALUE kind has one.
  * - default_value: the default value, or NULL when none has been set. Only
  *   the ARGX_OPTION_VALUE kind has one.
  * - required: whether the option is required. Only the ARGX_OPTION_VALUE
