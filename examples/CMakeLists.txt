@@ -42,3 +42,6 @@ argx_add_example(schema_pack "^the schema of pack is valid\r?\n$")
 argx_add_example(parse_pack
     "^verbose: 2, color: on\r?\ncreate out\\.tar, level 6 \\(default\\)\r?\n  a\\.txt\r?\n  b\\.txt\r?\n$"
     ARGS -vv create -o out.tar a.txt b.txt)
+argx_add_example(help_pack
+    "^Usage: pack create \\[OPTIONS\\] --output <FILE> <file>\\.\\.\\.\r?\n\r?\nCreate an archive\\.\r?\n"
+    ARGS create --help)

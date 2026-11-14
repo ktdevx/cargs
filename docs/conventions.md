@@ -58,6 +58,7 @@ CODE_OF_CONDUCT.md    The code of conduct for everyone who takes part in the pro
 CONTRIBUTING.md       The entry point for contributors
 examples/             Complete example programs that the documents link to. Built and run as tests (label example) when ARGX_BUILD_TESTS is ON
 ├── CMakeLists.txt    The argx_add_example() calls: one executable and one test per example
+├── help_pack.c       The complete help example of docs/help.md
 ├── parse_pack.c      The complete parsing example of docs/parse.md
 └── schema_pack.c     The complete schema example of docs/schema.md
 LICENSE               The MIT License
@@ -111,7 +112,7 @@ tools/                Scripts that are not part of the build
 docs/                 Documents
 ├── README.md         The index of the documents (for users, contributors and maintainers)
 ├── conventions.md    This document (for contributors)
-├── help.md           Using help (for users): examples of generating help and the usage line, text rules, options, output, limits, preconditions
+├── help.md           Using help (for users): an overview and a short example, printing --help and errors, the generating functions, the text layout rules, the help options, the output, the limits, and a reference of failures, lifetime rules and preconditions
 ├── install.md        Installation (for users): building and testing, the build options, the four ways to use the library from a project
 ├── ownership.md      Ownership and lifetime rules (for users): who allocates and frees, how long things stay valid, how failures are returned
 ├── parse.md          Using parsing (for users): an overview and a short example, reading the result, parse errors, --help, wide-character argv, the command-line syntax, and a reference of lifetime rules and preconditions
