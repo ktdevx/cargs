@@ -1,6 +1,6 @@
 # Installation
 
-This document describes how to build and test ArgX, the build options, and the four ways to use it from your project: `FetchContent`, `add_subdirectory`, `find_package` and pkg-config. It is written for you as a user of the library. How to write a program with ArgX is in [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md).
+This document describes how to build and test ArgX, the build options, and the four ways to use it from your project: `FetchContent`, `add_subdirectory`, `find_package` and pkg-config. It is written for you as a user of the library. How to write a program with ArgX is in the [Guide](guide.md), and the references for each part are [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md).
 
 ## Requirements
 

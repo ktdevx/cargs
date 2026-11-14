@@ -2,7 +2,7 @@
 
 This document defines who allocates memory and who frees it, and how long the things you pass and the things you get back stay valid. Every public function of ArgX follows these rules. It is written for you as a user of the library: it tells you what you free yourself and what you must not free.
 
-This document covers the rules themselves and how they apply to schemas, parsing, results and help. How to define a schema, parse argv and generate help is in [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md). The detailed description and the preconditions of each function are in the comments of the public headers under `include/argx/`. How the library code implements these rules is in [Development Conventions](conventions.md#applying-the-ownership-rules).
+This document covers the rules themselves and how they apply to schemas, parsing, results and help. How a program puts these together is in the [Guide](guide.md), and how to define a schema, parse argv and generate help is in [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md). The detailed description and the preconditions of each function are in the comments of the public headers under `include/argx/`. How the library code implements these rules is in [Development Conventions](conventions.md#applying-the-ownership-rules).
 
 In the examples of this document, names that start with `argx_example_` are placeholders used for explanation; they do not exist in the library. The other names (`argx_set_allocator`, `argx_error_message`, `argx_strdup` and so on) are real.
 

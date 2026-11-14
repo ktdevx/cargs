@@ -188,8 +188,9 @@ The tests fetch the test framework Naos from GitHub at configure time. To build 
 
 - [Installation](docs/install.md): building, the build options, and the four ways to use ArgX from your project.
 - [examples/pack.c](examples/pack.c): a complete program that goes through every step, from defining the schema to printing the help and reading the values.
+- [Guide](docs/guide.md): how to write a program with ArgX, step by step through examples/pack.c.
 - [Schemas](docs/schema.md): the reference for defining and validating commands, options, positionals and value types.
-- [Parsing](docs/parse.md): the reference for parsing, the command-line syntax, reading the result, parse errors, `--help`, and wide-character argv (`wmain`).
+- [Parsing](docs/parse.md): the reference for parsing, the command-line syntax, reading the result, parse errors, and wide-character argv.
 - [Help and Usage](docs/help.md): the reference for generating the help and the usage line, the layout rules and settings, and the output.
 - [Ownership and Lifetime](docs/ownership.md): who frees what, and how long things stay valid.
 - [Documentation index](docs/README.md): all documents, including those for contributors.

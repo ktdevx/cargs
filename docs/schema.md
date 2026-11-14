@@ -2,18 +2,15 @@
 
 A schema describes, with function calls, which command lines your program accepts. It is a tree of commands, and each command has options and positionals. Options with a value and positionals each have a value type, which says how their input strings are converted. This document covers defining, validating, reading and destroying a schema.
 
-A schema knows nothing about argv. Parsing argv with a validated schema is in [Parsing](parse.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public headers `include/argx/schema.h` and `include/argx/type.h`. This document is a reference; a complete program that defines, validates and destroys a schema with subcommands and value types of its own is [examples/pack.c](../examples/pack.c).
+A schema knows nothing about argv. Parsing argv with a validated schema is in [Parsing](parse.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public headers `include/argx/schema.h` and `include/argx/type.h`. This document is a reference. How a program puts these functions together, step by step, is in the [Guide](guide.md), which follows the complete program [examples/pack.c](../examples/pack.c).
 
 ## Overview
 
-Every program goes through the same four steps:
-
-1. **Get the value types.** The string, integer and float value types are built in. Choice value types and user-defined value types are created by you.
-2. **Build the tree.** Create the root command with `argx_command_create`, then add options, positionals and subcommands to it. Each add function writes a handle, which you use to set the attributes of what you added.
-3. **Validate.** Call `argx_command_validate` on the root once the definition is complete. Only a validated schema can be passed to parsing and help generation.
-4. **Destroy.** Destroy the root with `argx_command_destroy`, which frees the whole tree. Then destroy the value types you created.
-
-Every function that can fail returns an `argx_error_t`, which is `ARGX_ERROR_NONE` on success.
+- A schema is a tree of commands, created with `argx_command_create` (the root) and `argx_command_add_subcommand`. Options and positionals are added to a command; each add function writes a handle, with which their attributes are set ([Commands](#commands), [Options](#options), [Positionals](#positionals)).
+- The string, integer and float value types are built in. Choice value types and user-defined value types are created and destroyed by the user ([Value types](#value-types)).
+- Only a schema whose root has passed `argx_command_validate` can be passed to parsing and help generation ([Validation](#validation)).
+- `argx_command_destroy` on the root frees the whole tree. It does not destroy the value types ([Borrowed value types and the order of destruction](#borrowed-value-types-and-the-order-of-destruction)).
+- Every function that can fail returns an `argx_error_t`, which is `ARGX_ERROR_NONE` on success ([Definition errors](#definition-errors)).
 
 ## Commands
 
@@ -127,7 +124,7 @@ A value type does not change after it is created. So one value type can be share
 
 ### Converting a value
 
-If you only define a schema, you do not need this section: validation does the conversions it needs.
+Validation and parsing request the conversions they need. The functions in this section are for code that converts values itself.
 
 A conversion is requested with `argx_type_convert` and `argx_type_release`. They are called in the same way for every value type. You need to know the kind only when you read the value.
 
@@ -138,9 +135,9 @@ A conversion is requested with `argx_type_convert` and `argx_type_release`. They
 
 Because values are passed as `void *`, the compiler does not detect a wrong buffer size or a wrong type. Read the value with the type given in the table above.
 
-## Writing a user-defined value type
+## User-defined value types
 
-Pass the type name, the size of the value, the conversion function, the release function and your user data to `argx_type_create`.
+`argx_type_create` creates a user-defined value type from the type name, the size of the value, the conversion function, the release function and your user data. An example, the value type `size` of [examples/pack.c](../examples/pack.c), is in the [Guide](guide.md#1-create-the-value-types).
 
 ```
 argx_error_t argx_type_create(const char *name, size_t value_size,
@@ -156,22 +153,6 @@ argx_error_t argx_type_create(const char *name, size_t value_size,
 | `convert_fn` | The conversion function. `argx_error_t (*)(const char *text, void *value, void *context)` |
 | `release_fn` | The release function. `void (*)(void *value, void *context)`. `NULL` if the value needs no release |
 | `context` | User data passed to both functions. `NULL` if not needed |
-
-For example, the value type `size` of [examples/pack.c](../examples/pack.c) takes decimal digits with an optional unit, `k` or `m` (`512`, `64k`, `2m`), and writes the number of bytes as an `unsigned long`. Its `context` holds the largest size it takes. The value refers to nothing, so it has no release function:
-
-```
-typedef struct size_limit
-{
-    unsigned long max;
-} size_limit_t;
-
-static argx_error_t convert_size(const char *text, void *value, void *context);
-
-size_limit_t limit = { 1024UL * 1024UL * 1024UL };
-argx_type_t *size = NULL;
-
-error = argx_type_create("size", sizeof(unsigned long), convert_size, NULL, &limit, &size);
-```
 
 ### The conversion function
 
@@ -190,7 +171,7 @@ error = argx_type_create("size", sizeof(unsigned long), convert_size, NULL, &lim
 ### User data (`context`)
 
 - A value type only borrows `context`. The library neither copies nor frees it.
-- You keep what `context` points to valid until you destroy the value type. In [examples/pack.c](../examples/pack.c), `limit` is a local variable of `main`, and it stays valid until after the value type is destroyed.
+- What `context` points to must stay valid until the value type is destroyed.
 - If you use a value type from several threads at the same time, write the conversion function and the release function so that they work correctly when they read `context` at the same time.
 
 Creating and destroying a value type calls neither the conversion function nor the release function.
@@ -217,7 +198,7 @@ Destroy them in this order:
 - `argx_type_destroy(NULL)` and `argx_command_destroy(NULL)` do nothing. So you can write the destruction in the same order even after a creation has failed.
 - What `argx_option_type` and `argx_positional_type` return is the very value type that was passed when the element was added. It belongs to you, and it does not become invalid when the schema is destroyed.
 
-## Validation and finding the cause of a failure
+## Validation
 
 ```
 argx_error_t argx_command_validate(argx_command_t *root,
@@ -240,19 +221,8 @@ bool argx_command_is_validated(const argx_command_t *command);
 
 - Each of the three output parameters can be omitted by passing `NULL`. An output parameter that is not `NULL` is always written on every call.
 - The handles written are ones in the tree. They stay valid until the root is destroyed, and you do not free them.
-- Validation does not change the definition. Whatever it returns, the commands, options, positionals and their attributes are as they were before the call.
-
-### Finding the cause
-
-This is what `report_fault` in [examples/pack.c](../examples/pack.c) does:
-
-1. Pass the return value to `argx_error_message` to get the kind of error.
-2. Pass `*command` to `argx_command_name` to get which command's definition it is. To walk up to the parents, use `argx_command_parent` (`NULL` for the root).
-3. If `*option` is not `NULL`, use `argx_option_long_name` (`NULL` if none), `argx_option_short_name` (`'\0'` if none), `argx_option_default`, `argx_option_is_required` and so on to find which option has which error.
-4. If `*positional` is not `NULL`, use `argx_positional_name`, `argx_positional_arity`, `argx_positional_default` and so on.
-5. If all three are `NULL` and the return value is `ARGX_ERROR_OUT_OF_MEMORY`, it is not an error in the definition. The definition is unchanged, so you can validate again once enough memory is available.
-
-To fix an error, set the attribute again (replace the default value with a correct one, set required to `false`, and so on). There are no functions that remove a definition element, so for an error in the sequence of positionals, destroy the schema and build it again.
+- Validation does not change the definition. Whatever it returns, the commands, options, positionals and their attributes are as they were before the call. A failed validation can be repeated after the cause is fixed, and after `ARGX_ERROR_OUT_OF_MEMORY`, once enough memory is available.
+- The handles can be read with the functions in [Reading a schema](#reading-a-schema). How [examples/pack.c](../examples/pack.c) reports which definition a failure points to is in the [Guide](guide.md#3-validate-the-schema).
 
 ### The validation state
 
@@ -266,11 +236,9 @@ To fix an error, set the attribute again (replace the default value with a corre
 
 ### What validation calls
 
-For each default value it reaches, validation allocates a value buffer, asks the value type to convert the value, requests its release if the conversion succeeds, and frees the buffer. So the conversion function and the release function of a user-defined value type are called on every validation ([Writing a user-defined value type](#writing-a-user-defined-value-type)). No value is left after validation.
+For each default value it reaches, validation allocates a value buffer, asks the value type to convert the value, requests its release if the conversion succeeds, and frees the buffer. So the conversion function and the release function of a user-defined value type are called on every validation ([User-defined value types](#user-defined-value-types)). No value is left after validation.
 
-## Reference
-
-### Definition errors
+## Definition errors
 
 Errors in a definition are returned as error codes. Errors that the add and set functions can check are returned right away. Errors that can only be found by looking at the whole tree are returned by validation.
 
@@ -297,7 +265,7 @@ A `NULL` for a required argument, an index out of range, a value that is not in 
 
 Within one function, the conditions are checked from the top row down, and the first one that applies is returned. Besides these, every function returns `ARGX_ERROR_OUT_OF_MEMORY` when an allocation fails. Setting a description (on a command, an option or a positional) fails only when an allocation fails.
 
-When an add or set function fails, the schema is as it was before the call, and the handle that it writes is `NULL`. Stop at the first failure, so that a `NULL` handle is never passed to the next call.
+When an add or set function fails, the schema is as it was before the call, and the handle that it writes is `NULL`. Passing that `NULL` handle to a later call breaks a precondition ([Preconditions](#preconditions)).
 
 **`argx_command_create`**
 
@@ -371,7 +339,7 @@ These are returned by `argx_command_validate`, in the [order of the checks](#ord
   2. The options, in the order they were added. For each option, the combination of required and a default value is checked first, then the conversion of the default value.
   3. The conversion of the default values of the positionals, in the order they were added.
 
-### Guarantees of a validated schema
+## Guarantees of a validated schema
 
 What always holds for any schema (the add and set functions ensure it):
 
@@ -390,9 +358,9 @@ In a validated schema (a tree for which `argx_command_is_validated` returns `tru
 - A required option with a value has no default value.
 - Every default value was converted successfully by its value type at the time of validation. If the conversion function has no side effects and returns the same result for the same input, converting it later also succeeds.
 
-Code that reads a schema (parsing and help generation) can rely on these for a validated schema. For a schema that is not validated, it cannot. This is why both parsing and help generation have a validated schema as a precondition ([Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure)).
+Code that reads a schema (parsing and help generation) can rely on these for a validated schema. For a schema that is not validated, it cannot. This is why both parsing and help generation have a validated schema as a precondition ([Validation](#validation)).
 
-### Reading a schema
+## Reading a schema
 
 The read functions take `const` handles, change nothing, and do not fail.
 
@@ -422,7 +390,7 @@ Lifetime and threads:
 - However, a string read from an attribute that can be set again (the description of a command; the description, value name or default value of an option; the description or default value of a positional) stays valid until the root is destroyed or that attribute is set again, whichever comes first. Setting the attribute again frees the previous string. Names are never replaced.
 - While a schema is not being changed, its read functions can be called from several threads at the same time. Changing or validating a schema cannot be done at the same time as any other call on it. You do the synchronization.
 
-### Preconditions
+## Preconditions
 
 The preconditions of each function are written in the comments of the public headers, under `Preconditions:`. What they have in common is:
 
@@ -439,4 +407,4 @@ The preconditions of each function are written in the comments of the public hea
 - What you pass to `argx_command_destroy` and `argx_command_validate` is the root. Do not pass a subcommand.
 - Handles have not been destroyed. A value type has not been destroyed before the schemas that use it.
 
-Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined. During development, we recommend that you use the library built in the Debug configuration ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)).
+Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)).

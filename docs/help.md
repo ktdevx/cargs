@@ -2,7 +2,7 @@
 
 The library generates the help of a command, or only its usage line, from a validated schema. You choose where the text goes: a write function of your own, or a buffer. This document covers the generating functions, the rules that decide the text, the help options that control the layout, the output, and the limits.
 
-Defining and validating a schema is in [Schemas](schema.md), and parsing argv is in [Parsing](parse.md). Generation only reads the schema; it needs no parse result. The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/help.h`. This document is a reference; a complete program that defines `--help` and prints the help and parse errors is [examples/pack.c](../examples/pack.c).
+Defining and validating a schema is in [Schemas](schema.md), and parsing argv is in [Parsing](parse.md). Generation only reads the schema; it needs no parse result. The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/help.h`. This document is a reference. How a program defines `--help` and prints the help and parse errors, step by step, is in the [Guide](guide.md), which follows the complete program [examples/pack.c](../examples/pack.c).
 
 ## Overview
 
@@ -12,61 +12,6 @@ Every generation takes the same four things:
 2. **Help options** that set the width, the indent and the maximum description column. `NULL` means the defaults ([Help options](#help-options)).
 3. **A destination**: a write function that receives the text in parts ([The write function contract](#the-write-function-contract)), or a buffer of yours ([Formatting into a buffer](#formatting-into-a-buffer)).
 4. **The return value**, which tells you whether the text was written in full ([On failure](#on-failure)).
-
-Three rules are easy to miss:
-
-- **The library prints nothing by itself, ends no process, and adds no `--help`.** You define `--help` in the schema, check it after parsing, and print the help yourself ([Printing `--help` and errors](#printing---help-and-errors)).
-- **The text passed to a write function is not null-terminated.** Write exactly `length` bytes ([The write function contract](#the-write-function-contract)).
-- **On a failure, the text written so far stays at the destination.** To avoid partial text, format into a buffer first ([On failure](#on-failure)).
-
-## Printing `--help` and errors
-
-`--help` is an ordinary flag that you define in the schema; the library adds none. After parsing, your code checks whether it was given, prints the help and ends the program. How to read `--help`, and why to check it before the parse error, is in [Parsing](parse.md#handling---help).
-
-| To print | Generate for | Usual destination |
-| --- | --- | --- |
-| The help, for `--help` | `argx_result_command`: the last command that the command line selected. `pack create --help` gives the help of `create` | The standard output |
-| The usage line, with the message of a parse error | `argx_result_error_command`: the command that was current when the error was found. It is never `NULL` on a result with a parse error | The standard error stream |
-
-- `--help` appears in the `Options:` list like any other option, because it is one. The list shows only what the schema defines.
-- The usage line already ends with a newline. Do not add one after it.
-- The destination is the `user_data` of the write function.
-
-How `main` of [examples/pack.c](../examples/pack.c) decides what to print (an excerpt):
-
-```c
-error = argx_parse(schema.root, argc, argv, &result);
-
-if (result == NULL)
-{
-    /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
-    fprintf(stderr, "pack: %s
-", argx_error_message(error));
-}
-else if (help_was_given(result))
-{
-    /* The help of the command that the command line ends in. */
-    error = argx_help_write(argx_result_command(result), NULL, write_to_stream, stdout);
-    ...
-}
-else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-{
-    /* The message, then the usage line of the command where the error was found. */
-    fprintf(stderr, "pack: %s
-", argx_result_error_message(result));
-    argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
-    fprintf(stderr, "Try 'pack --help' for more information.
-");
-}
-```
-
-For the command line `pack create a.txt`, which leaves out the required `--output` of `create`, it prints:
-
-```
-pack: missing required option '--output'
-Usage: pack create [OPTIONS] --output <FILE> <file>...
-Try 'pack --help' for more information.
-```
 
 ## Generating functions
 
@@ -98,13 +43,14 @@ argx_error_t argx_help_format_usage(const argx_command_t *command,
 - The functions that format into a buffer produce the same bytes as the functions that pass the text to a write function.
 - The usage line that `argx_help_write_usage` generates is the same text as the first line of the help, for the same command and help options.
 - Generation changes neither the schema nor the help options, and returns nothing for you to free.
+- The library prints nothing by itself and adds no `--help` option. Which command to generate for, and where to write the text, is up to the program; how [examples/pack.c](../examples/pack.c) prints the help for `--help` and the usage line with a parse error is in the [Guide](guide.md#5-print-the-help-or-the-parse-error).
 - Return values, and what is left on failure, are in [On failure](#on-failure).
 
 ## Text layout rules
 
 The text follows from the schema and the help options by the rules below and nothing else, so tests can compare it with an expected string exactly.
 
-The rules describe a schema whose names, value names, default values and choices have no leading or trailing blanks and no newlines, and whose descriptions do not start with a newline or a line of blanks. Other schemas are covered in [Limits](#limits).
+The rules describe a schema whose names, value names, default values and choices have no leading or trailing blanks and no newlines, and whose descriptions do not start with a newline or a line of blanks. Other schemas are covered in [Descriptions](#descriptions) and [Limits](#limits).
 
 The examples of this document use `pack create`, a subcommand of the made-up program `pack`. It has the description `Create an archive.` and these definitions, in this order:
 
@@ -410,6 +356,25 @@ Options:
                            for more.
 ```
 
+### Descriptions
+
+- **A description of only blanks (0x20) and newlines (0x0A) counts as not set.** `""`, `"   "` and `" \n"` all mean no description, for commands, options and positionals alike. In `Commands:`, only the first line of a subcommand's description counts: if it has only blanks, the item is the heading alone, even when more lines follow.
+- **Trailing blanks of a description are dropped, trailing newlines are kept.** In the blanks and newlines after the last other byte of a description, the blanks are ignored: `"foo\n  "` gives the same text as `"foo\n"`, and `"foo\n \n"` the same as `"foo\n\n"`.
+- **A newline, or a line of only blanks, at the start of a description is kept.** It is not removed from the description of a command (in its own help), an option or a positional. It can add empty lines and move where the description or the annotations start, so "one empty line between parts" in [Structure](#structure) may no longer hold. A command with the description `"\nPack files."` gives:
+
+  ```
+  Usage: tool [OPTIONS]
+
+
+  Pack files.
+
+  Options:
+    -q, --quiet    Print nothing.
+    -v, --verbose  Print more.
+  ```
+
+  The text for such descriptions may change in later versions.
+
 ## Help options
 
 The help options (`argx_help_options_t`) hold the settings of the layout. You create them, pass them to the generating functions, and destroy them.
@@ -539,68 +504,7 @@ error = argx_help_write(root, NULL, write_to_stream, stdout);
 
 To get the whole text, call twice: first with `size` 0 and `buffer` `NULL` for the length, then with an array of `*length + 1` bytes.
 
-```c
-/*
- * Returns the help of command as a string that the caller frees with
- * free(), or NULL when it cannot be made.
- */
-static char *help_string(const argx_command_t *command)
-{
-    char *text = NULL;
-    size_t length = 0;
-
-    /*
-     * First the length: with the size 0 nothing is written, and the buffer
-     * may be NULL.
-     */
-    if (argx_help_format(command, NULL, NULL, 0, &length) != ARGX_ERROR_NONE)
-    {
-        return NULL;
-    }
-
-    text = malloc(length + 1);
-    if (text == NULL)
-    {
-        return NULL;
-    }
-
-    /*
-     * Then the text. The schema and the settings are the same as in the
-     * first call, so the text has the same length and fits.
-     */
-    if (argx_help_format(command, NULL, text, length + 1, NULL) != ARGX_ERROR_NONE)
-    {
-        free(text);
-        return NULL;
-    }
-    return text;
-}
-```
-
-The next function receives the usage line in a fixed-size array. `argx_help_format_usage` cannot fail, so its return value is not checked.
-
-```c
-/* Prints an error message with the usage line of command behind it. */
-static void print_error(const argx_command_t *command, const char *message)
-{
-    char usage[256];
-    size_t length = 0;
-
-    /* The usage line cannot fail. It is cut when it does not fit. */
-    argx_help_format_usage(command, NULL, usage, sizeof(usage), &length);
-
-    if (length >= sizeof(usage))
-    {
-        /* Cut: the array holds the first sizeof(usage) - 1 bytes. */
-        fprintf(stderr, "pack: %s\n", message);
-    }
-    else
-    {
-        /* The text ends with a newline of its own. */
-        fprintf(stderr, "pack: %s\n%s", message, usage);
-    }
-}
-```
+Code that gets the whole help as a string this way, and code that prints the usage line from a fixed-size array, is in the [Guide](guide.md#getting-the-help-as-a-string).
 
 ## Limits
 
@@ -639,28 +543,7 @@ static void print_error(const argx_command_t *command, const char *message)
 - There is no way to hide an option or to group options.
 - The help of a subcommand does not show the options of its parent.
 
-### Notes on writing descriptions
-
-- **A description of only blanks (0x20) and newlines (0x0A) counts as not set.** `""`, `"   "` and `" \n"` all mean no description, for commands, options and positionals alike. In `Commands:`, only the first line of a subcommand's description counts: if it has only blanks, the item is the heading alone, even when more lines follow.
-- **Trailing blanks of a description are dropped, trailing newlines are kept.** In the blanks and newlines after the last other byte of a description, the blanks are ignored: `"foo\n  "` gives the same text as `"foo\n"`, and `"foo\n \n"` the same as `"foo\n\n"`.
-- **Do not start a description with a newline, or with a line of only blanks.** Such a start is not removed from the description of a command (in its own help), an option or a positional. It can add empty lines and move where the description or the annotations start, so "one empty line between parts" in [Structure](#structure) may no longer hold. A command with the description `"\nPack files."` gives:
-
-  ```
-  Usage: tool [OPTIONS]
-
-
-  Pack files.
-
-  Options:
-    -q, --quiet    Print nothing.
-    -v, --verbose  Print more.
-  ```
-
-  The text for such descriptions may change in later versions.
-
-## Reference
-
-### On failure
+## On failure
 
 Two failures can happen at run time, a write failure and an allocation failure. The returned `argx_error_t` reports them.
 
@@ -687,7 +570,7 @@ Two failures can happen at run time, a write failure and an allocation failure. 
 - To leave no partial text at the destination, format into a buffer with `argx_help_format`, check that it succeeded, then write the buffer out.
 - A `NULL` argument, or a schema that is not validated, is not a failure but a programming error ([Preconditions](#preconditions)).
 
-### Lifetime rules
+## Lifetime rules
 
 | Thing | Owner | Valid for |
 | --- | --- | --- |
@@ -701,7 +584,7 @@ Two failures can happen at run time, a write failure and an allocation failure. 
 - Memory for a generation, and the help options object, come from the allocator set for the library (`argx_set_allocator`). Generation frees its memory before returning. Do not set the allocator again while a help options object exists ([Ownership and Lifetime](ownership.md#5-allocator)).
 - While the schema and the help options are not being changed, several threads may generate with them at once. Give each call its own buffer. Whether your write function can be called concurrently is up to it.
 
-### Preconditions
+## Preconditions
 
 Breaking a precondition is a programming error, and no error code is returned. Preconditions that can be checked are checked with `assert`: in the Debug configuration a broken one aborts the process, and in the Release configuration it is undefined behavior ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The comments of `include/argx/help.h` list them under `Preconditions:` too.
 
@@ -725,4 +608,4 @@ Arguments that may be `NULL`:
 - `length` of `argx_help_format` and `argx_help_format_usage` (the length is not reported), and `buffer` when `size` is 0.
 - `options` of `argx_help_options_destroy`.
 
-Generating from a schema that is not validated breaks a precondition. Adding a definition or setting an attribute makes the schema unvalidated again, so validate it again before generating. For a subcommand, it is still the root that you validate ([Schemas](schema.md#validation-and-finding-the-cause-of-a-failure)).
+Generating from a schema that is not validated breaks a precondition. Adding a definition or setting an attribute makes the schema unvalidated again, so validate it again before generating. For a subcommand, it is still the root that you validate ([Schemas](schema.md#validation)).

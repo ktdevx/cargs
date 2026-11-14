@@ -2,24 +2,15 @@
 
 Parsing reads argv with a validated schema and gives you a result, from which you read the values. This document covers parsing, reading the result, parse errors and destroying the result, and the command-line syntax that the users of your program can write. Parsing prints nothing, does not end the process, and does not read environment variables.
 
-Defining and validating a schema is in [Schemas](schema.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/parse.h`. This document is a reference; a complete program that parses, prints the help and parse errors, and reads the values is [examples/pack.c](../examples/pack.c).
+Defining and validating a schema is in [Schemas](schema.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/parse.h`. This document is a reference. How a program parses, checks `--help`, prints parse errors and reads the values, step by step, is in the [Guide](guide.md), which follows the complete program [examples/pack.c](../examples/pack.c).
 
 ## Overview
 
-Every program goes through the same steps:
-
-1. **Parse.** Pass the root of a validated schema, and `argc` and `argv` as `main` received them, to `argx_parse`.
-2. **Check for an allocation failure.** If no result was written (`NULL`), there is nothing to read or destroy.
-3. **Check `--help`.** If it was given, print the help and exit.
-4. **Check for a parse error.** If the return value is `ARGX_ERROR_INVALID_COMMAND_LINE`, print the message of the parse error.
-5. **Read the values,** by the handles that you received when you defined the schema.
-6. **Destroy** the result, then the schema.
-
-Three rules are easy to miss:
-
-- **A parse error also gives you a result.** You read the error from it, and you destroy it ([Entry points](#entry-points)).
-- **Check `--help` before the parse error.** `pack create --help` is a parse error when `create` has a required option, but `--help` still reads as given ([Handling `--help`](#handling---help)).
-- **Destroy the result before the schema, and do not change the schema while a result exists** ([Lifetime rules](#lifetime-rules)).
+- `argx_parse` and `argx_parse_wide` read argv with the root of a validated schema and write a result ([Entry points](#entry-points)).
+- A result is written also when the command line has a parse error. Only on an allocation failure is there no result ([Entry points](#entry-points), [Parse errors](#parse-errors)).
+- Values are read from the result with the handles of the schema ([Reading the result](#reading-the-result)).
+- The library does not treat `--help` specially ([`--help`](#--help)).
+- A result borrows the schema: it is destroyed before the schema, and the schema is not changed while it exists ([Lifetime rules](#lifetime-rules)).
 
 ## Entry points
 
@@ -158,23 +149,20 @@ The library prints nothing. Your code prints the message:
 fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
 ```
 
-Anything more, such as adding the usage line, pointing at the offending element or changing the wording for each kind, is done in your code by reading the [Parse error details](#parse-error-details). An example that prints the usage line of the command where the error was found, with the message, is in [Help and Usage](help.md#printing---help-and-errors). The messages are in English only.
+Anything more, such as adding the usage line, pointing at the offending element or changing the wording for each kind, is done in your code by reading the [Parse error details](#parse-error-details). An example that prints the usage line of the command where the error was found, with the message, is in the [Guide](guide.md#5-print-the-help-or-the-parse-error). The messages are in English only.
 
-## Handling `--help`
+## `--help`
 
-The library does not treat `--help` specially. `--help` is a flag that you define in the schema. Your code reads from the result whether it was given, prints the help and exits. The help text can be generated from the schema, but parsing neither generates nor prints it. The generating functions, and an example that reads `--help` and prints the help, are in [Help and Usage](help.md#printing---help-and-errors).
+The library does not treat `--help` specially. `--help` is a flag that is defined in the schema like any other option, and it is read from the result with `argx_result_flag`. Parsing neither generates nor prints the help; generating it is in [Help and Usage](help.md). How [examples/pack.c](../examples/pack.c) reads `--help` and prints the help is in the [Guide](guide.md#4-parse-argv-and-check---help-first).
 
-**Check whether `--help` was given before you look at the parse error.** `pack create --help` does not give `--output`, a required option of `create`, so `argx_parse` returns a parse error for a missing required option. A result with a parse error still holds what was read before the error, so `--help` reads as given. If you look at the error first, a user who asked for help is shown an error message instead.
-
-**Define `--help` on subcommands too.** An option is recognized only while its command is the current command. If you define `--help` only on the root, `pack --help` and `pack --help create` are accepted, but `pack create --help` is an unknown option, because `create` has no `--help`. To accept `tool sub --help`, define `--help` on every command, as `add_help` in [examples/pack.c](../examples/pack.c) does.
-
-- To find out whether it was given, read the `--help` of each selected command with `argx_result_flag` (`help_was_given` in [examples/pack.c](../examples/pack.c)). The `--help` of a command that was not selected reads as `false`.
-- To choose whose help to print, use `argx_result_command` (the last selected command). Passing it to `argx_help_write` generates the help of that command.
+- An option is recognized only while its command is the current command ([Subcommands](#subcommands)). With `--help` defined only on the root, `pack --help` and `pack --help create` are accepted, but `pack create --help` is an unknown option, because `create` has no `--help`.
+- A result with a parse error holds what was read before the error ([The result of a parse error](#the-result-of-a-parse-error)). `pack create --help` does not give `--output`, a required option of `create`, so `argx_parse` returns a parse error for a missing required option; `--help` was read before that error was found, so it reads as given.
 - If an element before `--help` causes a parse error, parsing stops there and `--help` is not read (`pack create --bogus --help` is an unknown option error).
+- The `--help` of a command that was not selected reads as `false`. `argx_result_command` returns the last selected command, and passing it to `argx_help_write` generates the help of that command.
 
 ## Wide-character argv
 
-`argx_parse_wide` parses a wide-character argv, such as the one that `wmain` receives. On Windows, it is the way to receive arguments that contain non-ASCII characters without losing any of them to the code page.
+`argx_parse_wide` parses a wide-character argv, such as the one that `wmain` receives. On Windows, it is the way to receive arguments that contain non-ASCII characters without losing any of them to the code page. An example with `wmain` is in the [Guide](guide.md#wide-character-argv-with-wmain).
 
 - **`argx_parse_wide` is provided on every platform,** not only on Windows.
 - How a wide string is read depends on the width of `wchar_t`, not on the locale:
@@ -192,27 +180,7 @@ The library does not treat `--help` specially. `--help` is a flag that you defin
   - `argv[0]` is not parsed, so it never causes this error.
 - `argx_parse`, in contrast, treats the elements of a `char` argv as byte sequences, without checking or converting their encoding. Bytes that are invalid in UTF-8 also become values as they are.
 - The return values, `*out`, ownership and preconditions are the same as for `argx_parse`.
-
-With `wmain`, the wide argv goes to `argx_parse_wide` as `wmain` received it. Everything read from the result is UTF-8 (`name` is a positional of the schema):
-
-```c
-int wmain(int argc, wchar_t **argv)
-{
-    ...
-    error = argx_parse_wide(root, argc, argv, &result);
-    ...
-    if (argx_result_positional_string(result, name, 0, &text))
-    {
-        /* text is UTF-8, whatever the width of wchar_t is. */
-        printf("hello, %s
-", text);
-    }
-    ...
-}
-```
-
-- `wmain` is an entry point that Windows compilers provide. On other platforms you can call `argx_parse_wide`, but there is no `wmain`.
-- Writing the UTF-8 strings to standard output as they are, as above, does not make the console display them. Making the console display UTF-8 (on Windows, setting the output code page of the console, and so on) is up to the program. The library does not call operating system APIs.
+- The library does not call operating system APIs. Making the console display the UTF-8 strings (on Windows, setting the output code page of the console, and so on) is up to the program.
 
 ## Command-line syntax
 
@@ -329,9 +297,7 @@ When parsing has read the last element without a parse error, two steps are done
 - The only sources of a value are the command line and the default values. Environment variables and the like are not read.
 - If the conversion of a default value fails, it is an `INVALID_VALUE` parse error. Validation of the schema has already checked the default values, so this happens only when a user-defined value type gives a different answer for the same input.
 
-## Reference
-
-### Lifetime rules
+## Lifetime rules
 
 | Object | Owner | How long it is valid |
 | --- | --- | --- |
@@ -352,7 +318,7 @@ When parsing has read the last element without a parse error, two steps are done
 - All memory is allocated from the allocator set for the library (`argx_set_allocator`). Do not set the allocator again while a result is left ([Ownership and Lifetime](ownership.md#5-allocator)).
 - The library does not detect destroying the schema before a result, or changing the schema while a result exists.
 
-### Preconditions
+## Preconditions
 
 Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The preconditions of each function are also written in the comments of the public header `include/argx/parse.h`, under `Preconditions:`.
 
@@ -378,5 +344,5 @@ What each function adds (functions that are not listed add nothing):
 | `argx_result_positional_value` | — | The returned pointer is read with the C type of the value of the value type |
 
 - These do not break a precondition, and each returns the value that means "none" ([Reading the result](#reading-the-result)): reading an option or positional of a command that was not selected; reading the value of an option with a value or a positional that has no value; reading a positional with an index equal to or greater than the number of values; reading the details of a parse error from a result that succeeded.
-- Adding an option, positional or subcommand to a schema, or setting an attribute, makes the schema not validated again. Validate it again before parsing ([Schemas](schema.md#validation-and-finding-the-cause-of-a-failure)).
+- Adding an option, positional or subcommand to a schema, or setting an attribute, makes the schema not validated again. Validate it again before parsing ([Schemas](schema.md#validation)).
 - Neither the compiler nor the library detects reading the pointer that `_value` returns with a type other than the C type of the value of the value type.
