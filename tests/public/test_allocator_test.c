@@ -1,11 +1,12 @@
 /*
  * Tests of the test allocator itself: "../support/test_allocator.h".
  *
- * The test allocator is test support, not a part of the library. No public
- * function of the library allocates memory yet, so these tests call the
- * four functions of argx_test_allocator_get() directly. The tests of the
- * internal memory functions check that install and uninstall really route
- * the allocations of the library; here they are only exercised.
+ * The test allocator is test support, not a part of the library. Many tests
+ * rely on its failures and counts, so they are checked here on their own:
+ * these tests call the four functions of argx_test_allocator_get()
+ * directly, not through the library. The tests of the internal memory
+ * functions check that install and uninstall really route the allocations
+ * of the library; here they are only exercised.
  *
  * The state of the test allocator is shared by all the tests of this
  * executable. Every test starts with a reset (or an install, which resets),
