@@ -31,6 +31,7 @@ static void *test_malloc(size_t size)
         ++violation_count;
         return NULL;
     }
+
     if (fail)
     {
         return NULL;
@@ -41,6 +42,7 @@ static void *test_malloc(size_t size)
     {
         ++live_count;
     }
+
     return ptr;
 }
 
@@ -53,6 +55,7 @@ static void *test_realloc(void *ptr, size_t size)
         ++violation_count;
         return NULL;
     }
+
     if (fail)
     {
         return NULL;
@@ -72,6 +75,7 @@ static void *test_calloc(size_t count, size_t size)
         ++violation_count;
         return NULL;
     }
+
     if (fail)
     {
         return NULL;
@@ -82,6 +86,7 @@ static void *test_calloc(size_t count, size_t size)
     {
         ++live_count;
     }
+
     return ptr;
 }
 
@@ -105,6 +110,7 @@ argx_allocator_t argx_test_allocator_get(void)
     allocator.realloc_fn = test_realloc;
     allocator.calloc_fn = test_calloc;
     allocator.free_fn = test_free;
+
     return allocator;
 }
 

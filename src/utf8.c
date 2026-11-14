@@ -162,6 +162,7 @@ size_t argx_utf8_write(const wchar_t *text, char *out)
     {
         text += decode(text, &code_point, &valid);
         count = encode(code_point, bytes);
+
         /*
          * The bytes are copied as is, so no value above 127 is converted to
          * char, which may be signed.
@@ -169,6 +170,7 @@ size_t argx_utf8_write(const wchar_t *text, char *out)
         memcpy(out + length, bytes, count);
         length += count;
     }
+
     out[length] = '\0';
 
     return length;

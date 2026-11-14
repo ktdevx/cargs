@@ -57,5 +57,6 @@ int main(void)
         printf("ArgX %d.%d.%d\n",
             ARGX_VERSION_MAJOR, ARGX_VERSION_MINOR, ARGX_VERSION_PATCH);
     }
+
     return status;
 }

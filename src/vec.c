@@ -37,6 +37,7 @@ static argx_error_t grow(argx_vec_t *vec)
         {
             return ARGX_ERROR_OUT_OF_MEMORY;
         }
+
         new_capacity = vec->capacity * 2;
     }
 
@@ -58,6 +59,7 @@ static argx_error_t grow(argx_vec_t *vec)
 
     vec->items = new_items;
     vec->capacity = new_capacity;
+
     return ARGX_ERROR_NONE;
 }
 

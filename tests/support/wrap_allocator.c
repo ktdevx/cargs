@@ -46,6 +46,7 @@ argx_allocator_t argx_wrap_allocator_get(void)
     allocator.realloc_fn = wrap_realloc;
     allocator.calloc_fn = wrap_calloc;
     allocator.free_fn = wrap_free;
+
     return allocator;
 }
 

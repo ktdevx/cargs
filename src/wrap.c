@@ -26,6 +26,7 @@ void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
     {
         --length;
     }
+
     if (length == 0)
     {
         return;
@@ -54,6 +55,7 @@ void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
             {
                 ++position;
             }
+
             argx_out_spaces(out, position - start);
         }
         else
@@ -65,6 +67,7 @@ void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
             {
                 ++position;
             }
+
             word = position - start;
 
             /*

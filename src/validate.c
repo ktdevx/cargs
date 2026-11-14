@@ -55,6 +55,7 @@ static const argx_positional_t *find_positional_fault(const argx_command_t *comm
         {
             return positional;
         }
+
         if (after_variadic)
         {
             return positional;
@@ -64,11 +65,13 @@ static const argx_positional_t *find_positional_fault(const argx_command_t *comm
         {
             after_optional = true;
         }
+
         if ((arity == ARGX_ARITY_ZERO_OR_MORE) || (arity == ARGX_ARITY_ONE_OR_MORE))
         {
             after_variadic = true;
         }
     }
+
     return NULL;
 }
 
@@ -108,6 +111,7 @@ static argx_error_t check_default(const argx_type_t *type, const char *text)
     {
         return error;
     }
+
     return ARGX_ERROR_INVALID_DEFAULT;
 }
 
@@ -154,11 +158,13 @@ static argx_error_t check_options(const argx_command_t *command, const argx_opti
         {
             *faulty = option;
         }
+
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -193,11 +199,13 @@ static argx_error_t check_positional_defaults(const argx_command_t *command,
         {
             *faulty = positional;
         }
+
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -236,6 +244,7 @@ static argx_error_t check_command(const argx_command_t *command, fault_t *fault)
         fault->option = option;
         fault->positional = NULL;
     }
+
     if (error != ARGX_ERROR_NONE)
     {
         return error;
@@ -248,6 +257,7 @@ static argx_error_t check_command(const argx_command_t *command, fault_t *fault)
         fault->option = NULL;
         fault->positional = positional;
     }
+
     if (error != ARGX_ERROR_NONE)
     {
         return error;
@@ -262,6 +272,7 @@ static argx_error_t check_command(const argx_command_t *command, fault_t *fault)
             return error;
         }
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -295,14 +306,17 @@ argx_error_t argx_command_validate(argx_command_t *root, const argx_command_t **
     {
         *command = fault.command;
     }
+
     if (option != NULL)
     {
         *option = fault.option;
     }
+
     if (positional != NULL)
     {
         *positional = fault.positional;
     }
+
     return error;
 }
 
@@ -315,5 +329,6 @@ bool argx_command_is_validated(const argx_command_t *command)
     {
         command = command->parent;
     }
+
     return command->validated;
 }
