@@ -55,7 +55,8 @@ typedef struct clargs_type clargs_type_t;
  * Later versions may add kinds. Write code that may receive a value it does
  * not know: give a switch over clargs_type_kind_t a default label.
  */
-typedef enum clargs_type_kind {
+typedef enum clargs_type_kind
+{
     CLARGS_TYPE_STRING,
     CLARGS_TYPE_INT,
     CLARGS_TYPE_FLOAT,
@@ -94,7 +95,8 @@ typedef clargs_error_t (*clargs_convert_fn_t)(const char *text, void *value, voi
 typedef void (*clargs_release_fn_t)(void *value, void *context);
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*

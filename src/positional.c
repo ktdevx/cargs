@@ -22,8 +22,10 @@ static bool name_is_in_use(const clargs_command_t *command, const char *name)
     size_t count = clargs_command_positional_count(command);
     size_t index;
 
-    for (index = 0; index < count; ++index) {
-        if (strcmp(clargs_command_positional_at(command, index)->name, name) == 0) {
+    for (index = 0; index < count; ++index)
+    {
+        if (strcmp(clargs_command_positional_at(command, index)->name, name) == 0)
+        {
             return true;
         }
     }
@@ -40,7 +42,8 @@ static clargs_positional_t *new_positional(clargs_command_t *command, const char
 {
     clargs_positional_t *positional = (clargs_positional_t *)clargs_malloc(sizeof(*positional));
 
-    if (positional == NULL) {
+    if (positional == NULL)
+    {
         return NULL;
     }
 
@@ -51,7 +54,8 @@ static clargs_positional_t *new_positional(clargs_command_t *command, const char
     positional->default_value = NULL;
 
     positional->name = clargs_strdup(name);
-    if (positional->name == NULL) {
+    if (positional->name == NULL)
+    {
         clargs_free(positional);
         return NULL;
     }
@@ -83,7 +87,8 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
     assert(arity == CLARGS_ARITY_REQUIRED || arity == CLARGS_ARITY_OPTIONAL ||
            arity == CLARGS_ARITY_ZERO_OR_MORE || arity == CLARGS_ARITY_ONE_OR_MORE);
 
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = NULL;
     }
 
@@ -91,18 +96,22 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
      * The checks come before every allocation, so a wrong definition
      * touches nothing. Their order is part of the contract.
      */
-    if (name[0] == '\0') {
+    if (name[0] == '\0')
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (clargs_command_subcommand_count(command) != 0) {
+    if (clargs_command_subcommand_count(command) != 0)
+    {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
-    if (name_is_in_use(command, name)) {
+    if (name_is_in_use(command, name))
+    {
         return CLARGS_ERROR_NAME_CONFLICT;
     }
 
     positional = new_positional(command, name, type, arity);
-    if (positional == NULL) {
+    if (positional == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -110,14 +119,16 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
      * The tree is changed last: a push that fails leaves the array as it
      * was.
      */
-    if (clargs_vec_push(&command->positionals, &positional) != CLARGS_ERROR_NONE) {
+    if (clargs_vec_push(&command->positionals, &positional) != CLARGS_ERROR_NONE)
+    {
         free_new_positional(positional);
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     clargs_schema_touch(command);
 
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = positional;
     }
     return CLARGS_ERROR_NONE;
@@ -133,7 +144,8 @@ static clargs_error_t set_string(clargs_positional_t *positional, char **slot, c
 {
     clargs_error_t error = clargs_schema_replace_string(slot, text);
 
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         return error;
     }
 
@@ -158,7 +170,8 @@ clargs_error_t clargs_positional_set_default(clargs_positional_t *positional, co
      * The check of the arity comes before the allocation, so a set on
      * another arity touches nothing.
      */
-    if (positional->arity != CLARGS_ARITY_OPTIONAL) {
+    if (positional->arity != CLARGS_ARITY_OPTIONAL)
+    {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
 

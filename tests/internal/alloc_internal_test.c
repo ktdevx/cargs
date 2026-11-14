@@ -112,7 +112,8 @@ static void fill(unsigned char *bytes, size_t size, unsigned char seed)
 {
     size_t i;
 
-    for (i = 0; i < size; ++i) {
+    for (i = 0; i < size; ++i)
+    {
         bytes[i] = (unsigned char)(seed + i * 7u);
     }
 }
@@ -701,7 +702,8 @@ NAOS_TEST(free_of_null_does_nothing)
 /* What one run of the sequence of operations saw. */
 #define RECORD_CAPACITY 256
 
-typedef struct record {
+typedef struct record
+{
     unsigned char bytes[RECORD_CAPACITY];
     size_t size;
     int overflowed;
@@ -709,7 +711,8 @@ typedef struct record {
 
 static void record_bytes(record_t *record, const unsigned char *bytes, size_t size)
 {
-    if (size > RECORD_CAPACITY - record->size) {
+    if (size > RECORD_CAPACITY - record->size)
+    {
         record->overflowed = 1;
         return;
     }

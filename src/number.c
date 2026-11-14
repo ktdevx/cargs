@@ -47,11 +47,13 @@ clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
 
     p = text;
     negative = false;
-    if (*p == '+' || *p == '-') {
+    if (*p == '+' || *p == '-')
+    {
         negative = *p == '-';
         ++p;
     }
-    if (!is_digit(*p)) {
+    if (!is_digit(*p))
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
 
@@ -63,22 +65,27 @@ clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
      * rounds towards 0, which is upwards here: exactly the bound.
      */
     value = 0;
-    for (; *p != '\0'; ++p) {
+    for (; *p != '\0'; ++p)
+    {
         int digit;
 
-        if (!is_digit(*p)) {
+        if (!is_digit(*p))
+        {
             return CLARGS_ERROR_INVALID_VALUE;
         }
         digit = *p - '0';
-        if (value < (INT64_MIN + digit) / 10) {
+        if (value < (INT64_MIN + digit) / 10)
+        {
             return CLARGS_ERROR_INVALID_VALUE;
         }
         value = value * 10 - digit;
     }
 
-    if (!negative) {
+    if (!negative)
+    {
         /* -INT64_MIN is one more than INT64_MAX. */
-        if (value == INT64_MIN) {
+        if (value == INT64_MIN)
+        {
             return CLARGS_ERROR_INVALID_VALUE;
         }
         value = -value;
@@ -102,36 +109,46 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
     const char *dot = NULL;
     bool has_digit = false;
 
-    if (*p == '+' || *p == '-') {
+    if (*p == '+' || *p == '-')
+    {
         ++p;
     }
-    for (; is_digit(*p); ++p) {
+    for (; is_digit(*p); ++p)
+    {
         has_digit = true;
     }
-    if (*p == '.') {
+    if (*p == '.')
+    {
         dot = p;
         ++p;
-        for (; is_digit(*p); ++p) {
+        for (; is_digit(*p); ++p)
+        {
             has_digit = true;
         }
     }
     /* A digit before the '.' or after it, or both. */
-    if (!has_digit) {
+    if (!has_digit)
+    {
         return false;
     }
-    if (*p == 'e' || *p == 'E') {
+    if (*p == 'e' || *p == 'E')
+    {
         ++p;
-        if (*p == '+' || *p == '-') {
+        if (*p == '+' || *p == '-')
+        {
             ++p;
         }
-        if (!is_digit(*p)) {
+        if (!is_digit(*p))
+        {
             return false;
         }
-        for (; is_digit(*p); ++p) {
+        for (; is_digit(*p); ++p)
+        {
             /* The digits of the exponent. */
         }
     }
-    if (*p != '\0') {
+    if (*p != '\0')
+    {
         return false;
     }
 
@@ -157,7 +174,8 @@ static size_t decimal_point(char *buffer)
 
     written = snprintf(formatted, sizeof formatted, "%.1f", 0.5);
     if (written < 3 || (size_t)written >= sizeof formatted
-        || formatted[0] != '0' || formatted[written - 1] != '5') {
+        || formatted[0] != '0' || formatted[written - 1] != '5')
+    {
         buffer[0] = '.';
         buffer[1] = '\0';
         return 1;
@@ -190,7 +208,8 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
     assert(text != NULL);
     assert(out != NULL);
 
-    if (!scan_float(text, &length, &point)) {
+    if (!scan_float(text, &length, &point))
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
 
@@ -205,18 +224,23 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
      */
     point_length = decimal_point(point_text);
     copy_length = point < length ? length - 1 + point_length : length;
-    if (copy_length < sizeof short_copy) {
+    if (copy_length < sizeof short_copy)
+    {
         copy = short_copy;
-    } else {
+    }
+    else
+    {
         copy = clargs_malloc(copy_length + 1);
-        if (copy == NULL) {
+        if (copy == NULL)
+        {
             errno = saved_errno;
             return CLARGS_ERROR_OUT_OF_MEMORY;
         }
     }
 
     memcpy(copy, text, point);
-    if (point < length) {
+    if (point < length)
+    {
         memcpy(copy + point, point_text, point_length);
         memcpy(copy + point + point_length, text + point + 1, length - point - 1);
     }
@@ -225,7 +249,8 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
     value = strtod(copy, &end);
     complete = end == copy + copy_length;
 
-    if (copy != short_copy) {
+    if (copy != short_copy)
+    {
         clargs_free(copy);
     }
     errno = saved_errno;
@@ -235,7 +260,8 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
      * two calls above. A value beyond the finite range comes back as an
      * infinity (HUGE_VAL, with either sign).
      */
-    if (!complete || value > DBL_MAX || value < -DBL_MAX) {
+    if (!complete || value > DBL_MAX || value < -DBL_MAX)
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
 

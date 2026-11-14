@@ -28,7 +28,8 @@
 /*
  * The help options. Every field is at most CLARGS_HELP_SETTING_MAX.
  */
-struct clargs_help_options {
+struct clargs_help_options
+{
     size_t width;      /* The width in columns; 0 means no limit. */
     size_t indent;     /* The blanks before each item of a list. */
     size_t max_column; /* The last column at which the descriptions may start. */

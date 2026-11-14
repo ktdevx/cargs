@@ -19,7 +19,8 @@
 #include <stddef.h>
 
 /* The shape of an argument. */
-typedef enum clargs_lex_kind {
+typedef enum clargs_lex_kind
+{
     CLARGS_LEX_PLAIN,     /* not an option: "-", "" and an argument that does not start with '-' */
     CLARGS_LEX_LONG,      /* "--" and one character or more */
     CLARGS_LEX_SHORT,     /* '-' and one character or more, the first not '-' */

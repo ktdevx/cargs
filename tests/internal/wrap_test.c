@@ -22,7 +22,8 @@
 #define SINK_SIZE ((size_t)256)
 
 /* What the write function of the tests has received. */
-typedef struct sink {
+typedef struct sink
+{
     char text[SINK_SIZE]; /* the parts, joined in the order of the calls */
     size_t length;        /* the number of bytes of text */
     size_t calls;         /* the number of calls */
@@ -40,11 +41,13 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0) {
+    if (text == NULL || length == 0)
+    {
         ++sink->empty_calls;
         return true;
     }
-    if (length > SINK_SIZE - sink->length) {
+    if (length > SINK_SIZE - sink->length)
+    {
         return false;
     }
 
@@ -259,7 +262,8 @@ NAOS_TEST(empty_text_writes_nothing)
     static const char *const texts[] = { "", "\n", "\n\n\n" };
     size_t i;
 
-    for (i = 0; i < sizeof texts / sizeof texts[0]; ++i) {
+    for (i = 0; i < sizeof texts / sizeof texts[0]; ++i)
+    {
         sink_t sink;
         clargs_out_t out;
 

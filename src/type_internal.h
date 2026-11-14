@@ -35,7 +35,8 @@
  * - is_static: true for a built-in value type, which is a fixed object that
  *   is never destroyed.
  */
-struct clargs_type {
+struct clargs_type
+{
     clargs_type_kind_t kind;
     const char *name;
     char *owned_name;

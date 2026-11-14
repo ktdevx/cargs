@@ -25,7 +25,8 @@ clargs_error_t clargs_help_options_create(clargs_help_options_t **out)
     *out = NULL;
 
     options = clargs_malloc(sizeof(*options));
-    if (options == NULL) {
+    if (options == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 

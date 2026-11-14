@@ -63,7 +63,8 @@ typedef struct clargs_result clargs_result_t;
  * code that may receive a value it does not know: give a switch over
  * clargs_source_t a default label.
  */
-typedef enum clargs_source {
+typedef enum clargs_source
+{
     CLARGS_SOURCE_NONE,        /* There is no value; the error has no position. */
     CLARGS_SOURCE_DEFAULT,     /* The default value or the initial state of the schema. */
     CLARGS_SOURCE_COMMAND_LINE /* The command line (argv). */
@@ -76,7 +77,8 @@ typedef enum clargs_source {
  * Later versions may add kinds. Write code that may receive a value it does
  * not know: give a switch over clargs_parse_error_kind_t a default label.
  */
-typedef enum clargs_parse_error_kind {
+typedef enum clargs_parse_error_kind
+{
     CLARGS_PARSE_ERROR_NONE,                  /* There is no parse error. */
     CLARGS_PARSE_ERROR_UNKNOWN_OPTION,        /* An option that the command does not have. */
     CLARGS_PARSE_ERROR_UNKNOWN_SUBCOMMAND,    /* A subcommand that the command does not have. */
@@ -90,7 +92,8 @@ typedef enum clargs_parse_error_kind {
 } clargs_parse_error_kind_t;
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*

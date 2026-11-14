@@ -128,11 +128,13 @@ static int int_value(size_t index)
  */
 static clargs_error_t push_ints_up_to(clargs_vec_t *vec, size_t total)
 {
-    while (vec->count < total) {
+    while (vec->count < total)
+    {
         int value = int_value(vec->count);
         clargs_error_t error = clargs_vec_push(vec, &value);
 
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
     }
@@ -147,7 +149,8 @@ static void check_ints(const clargs_vec_t *vec)
 {
     size_t i;
 
-    for (i = 0; i < vec->count; ++i) {
+    for (i = 0; i < vec->count; ++i)
+    {
         const int *item = clargs_vec_at(vec, i);
 
         NAOS_CHECK_INT_EQ(*item, int_value(i));
@@ -256,10 +259,12 @@ NAOS_TEST(capacity_doubles_when_the_array_is_full)
     clargs_test_allocator_install();
     clargs_vec_init(&vec, sizeof(int));
 
-    while (vec.count < 100) {
+    while (vec.count < 100)
+    {
         NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, vec.count + 1),
             CLARGS_ERROR_NONE);
-        if (vec.count > capacity) {
+        if (vec.count > capacity)
+        {
             capacity *= 2;
             ++requests;
         }
@@ -285,7 +290,8 @@ NAOS_TEST(growth_keeps_the_contents)
     clargs_test_allocator_install();
     clargs_vec_init(&vec, sizeof(int));
 
-    for (i = 0; i < 100; ++i) {
+    for (i = 0; i < 100; ++i)
+    {
         int value = int_value(i);
 
         NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
@@ -322,7 +328,8 @@ NAOS_TEST(push_copies_the_item)
     value = 33;
 
     NAOS_CHECK_UINT_EQ(vec.count, 2);
-    if (vec.count == 2) {
+    if (vec.count == 2)
+    {
         item = clargs_vec_at(&vec, 0);
         NAOS_CHECK_TRUE(item != &value);
         NAOS_CHECK_INT_EQ(*item, 11);
@@ -354,7 +361,8 @@ NAOS_TEST(at_returns_the_address_of_the_item)
     NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 10), CLARGS_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 10);
 
-    for (i = 0; i < vec.count; ++i) {
+    for (i = 0; i < vec.count; ++i)
+    {
         int *item = clargs_vec_at(&vec, i);
 
         NAOS_CHECK_TRUE((char *)item == (char *)vec.items + i * sizeof(int));
@@ -362,11 +370,13 @@ NAOS_TEST(at_returns_the_address_of_the_item)
     }
 
     /* Writing through the pointer changes that item and no other. */
-    if (vec.count == 10) {
+    if (vec.count == 10)
+    {
         int *item = clargs_vec_at(&vec, 5);
 
         *item = 12345;
-        for (i = 0; i < vec.count; ++i) {
+        for (i = 0; i < vec.count; ++i)
+        {
             item = clargs_vec_at(&vec, i);
             NAOS_CHECK_INT_EQ(*item, i == 5 ? 12345 : int_value(i));
         }
@@ -389,7 +399,8 @@ NAOS_TEST(holds_chars)
     clargs_test_allocator_install();
     clargs_vec_init(&vec, sizeof(char));
 
-    for (i = 0; i < 50; ++i) {
+    for (i = 0; i < 50; ++i)
+    {
         char value = (char)('a' + (int)(i % 26));
 
         NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
@@ -397,13 +408,15 @@ NAOS_TEST(holds_chars)
     NAOS_CHECK_UINT_EQ(vec.count, 50);
     NAOS_CHECK_UINT_EQ(vec.item_size, 1);
 
-    for (i = 0; i < vec.count; ++i) {
+    for (i = 0; i < vec.count; ++i)
+    {
         const char *item = clargs_vec_at(&vec, i);
 
         NAOS_CHECK_INT_EQ(*item, 'a' + (int)(i % 26));
     }
     /* The items are next to each other: one byte each. */
-    if (vec.count == 50) {
+    if (vec.count == 50)
+    {
         NAOS_CHECK_MEM_EQ(vec.items, 26, "abcdefghijklmnopqrstuvwxyz", 26);
     }
 
@@ -414,7 +427,8 @@ NAOS_TEST(holds_chars)
 }
 
 /* A structure with members of different sizes, so with padding. */
-typedef struct sample {
+typedef struct sample
+{
     char tag;
     double number;
     short small;
@@ -430,7 +444,8 @@ NAOS_TEST(holds_structs)
     clargs_test_allocator_install();
     clargs_vec_init(&vec, sizeof(sample_t));
 
-    for (i = 0; i < 30; ++i) {
+    for (i = 0; i < 30; ++i)
+    {
         sample_t value;
 
         value.tag = (char)('A' + (int)(i % 26));
@@ -442,7 +457,8 @@ NAOS_TEST(holds_structs)
     NAOS_CHECK_UINT_EQ(vec.count, 30);
     NAOS_CHECK_UINT_EQ(vec.item_size, sizeof(sample_t));
 
-    for (i = 0; i < vec.count; ++i) {
+    for (i = 0; i < vec.count; ++i)
+    {
         const sample_t *item = clargs_vec_at(&vec, i);
 
         NAOS_CHECK_INT_EQ(item->tag, 'A' + (int)(i % 26));
@@ -477,7 +493,8 @@ NAOS_TEST(holds_pointers)
     clargs_test_allocator_install();
     clargs_vec_init(&vec, sizeof(char *));
 
-    for (i = 0; i < 21; ++i) {
+    for (i = 0; i < 21; ++i)
+    {
         NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &strings[i % 3]),
             CLARGS_ERROR_NONE);
     }
@@ -485,7 +502,8 @@ NAOS_TEST(holds_pointers)
     /* Only the array itself was allocated. */
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 1);
 
-    for (i = 0; i < vec.count; ++i) {
+    for (i = 0; i < vec.count; ++i)
+    {
         char **item = clargs_vec_at(&vec, i);
 
         NAOS_CHECK_TRUE(*item == strings[i % 3]);
@@ -504,7 +522,8 @@ NAOS_TEST(holds_pointers)
 /* An item that is larger than any small block. */
 NAOS_TEST(holds_large_items)
 {
-    typedef struct large {
+    typedef struct large
+    {
         unsigned char bytes[1000];
     } large_t;
     clargs_vec_t vec;
@@ -514,13 +533,15 @@ NAOS_TEST(holds_large_items)
     clargs_test_allocator_install();
     clargs_vec_init(&vec, sizeof(large_t));
 
-    for (i = 0; i < 9; ++i) {
+    for (i = 0; i < 9; ++i)
+    {
         memset(value.bytes, (int)(i + 1), sizeof value.bytes);
         NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(vec.count, 9);
 
-    for (i = 0; i < vec.count; ++i) {
+    for (i = 0; i < vec.count; ++i)
+    {
         const large_t *item = clargs_vec_at(&vec, i);
 
         memset(value.bytes, (int)(i + 1), sizeof value.bytes);
@@ -639,14 +660,16 @@ NAOS_TEST(requests_go_through_realloc_and_free)
     NAOS_CHECK_UINT_EQ(wrap_malloc_size, 4 * sizeof(double));
     NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 0);
 
-    while (vec.count < 5) {
+    while (vec.count < 5)
+    {
         NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_realloc_size, 8 * sizeof(double));
 
-    while (vec.count < 9) {
+    while (vec.count < 9)
+    {
         NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
@@ -754,7 +777,8 @@ NAOS_TEST(fails_at_every_allocation_point)
 
     clargs_test_allocator_install();
 
-    for (n = 1; n <= limit; ++n) {
+    for (n = 1; n <= limit; ++n)
+    {
         clargs_vec_t vec;
         clargs_error_t error;
         size_t count;
@@ -768,7 +792,8 @@ NAOS_TEST(fails_at_every_allocation_point)
         error = push_ints_up_to(&vec, total);
 
         if (error == CLARGS_ERROR_NONE
-            && clargs_test_allocator_requests() < n) {
+            && clargs_test_allocator_requests() < n)
+        {
             /*
              * The operation ended before the request to fail was reached:
              * every allocation point has been passed.
@@ -1038,7 +1063,8 @@ NAOS_TEST(largest_first_allocation_is_requested)
  */
 NAOS_TEST(overflow_of_the_size_in_bytes)
 {
-    typedef struct eight {
+    typedef struct eight
+    {
         unsigned char bytes[8];
     } eight_t;
     /* Twice this is SIZE_MAX / 4 + 1 items of 8 bytes at the least. */

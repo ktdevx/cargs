@@ -15,7 +15,8 @@
  * The state of one generation. It lives on the stack of the public
  * function, for the one call.
  */
-typedef struct help_context {
+typedef struct help_context
+{
     const clargs_command_t *command; /* the command the text is about */
     size_t width;                    /* the width in columns; 0 means no limit */
     size_t indent;                   /* the blanks before each item of a list */
@@ -39,11 +40,14 @@ static void help_context_init(help_context_t *context, const clargs_command_t *c
                               void *user_data)
 {
     context->command = command;
-    if (options != NULL) {
+    if (options != NULL)
+    {
         context->width = options->width;
         context->indent = options->indent;
         context->max_column = options->max_column;
-    } else {
+    }
+    else
+    {
         context->width = CLARGS_HELP_DEFAULT_WIDTH;
         context->indent = CLARGS_HELP_DEFAULT_INDENT;
         context->max_column = CLARGS_HELP_DEFAULT_MAX_COLUMN;
@@ -74,19 +78,23 @@ static void help_write_path(clargs_out_t *out, const clargs_command_t *command)
     size_t level;
 
     for (ancestor = clargs_command_parent(command); ancestor != NULL;
-         ancestor = clargs_command_parent(ancestor)) {
+         ancestor = clargs_command_parent(ancestor))
+    {
         ++depth;
     }
 
-    for (level = depth + 1; level-- > 0;) {
+    for (level = depth + 1; level-- > 0;)
+    {
         size_t step;
 
         ancestor = command;
-        for (step = 0; step < level; ++step) {
+        for (step = 0; step < level; ++step)
+        {
             ancestor = clargs_command_parent(ancestor);
         }
 
-        if (level != depth) {
+        if (level != depth)
+        {
             clargs_out_spaces(out, 1);
         }
         clargs_help_item_string(out, clargs_command_name(ancestor));
@@ -102,8 +110,10 @@ static bool help_has_optional_option(const clargs_command_t *command)
     size_t count = clargs_command_option_count(command);
     size_t index;
 
-    for (index = 0; index < count; ++index) {
-        if (!clargs_option_is_required(clargs_command_option_at(command, index))) {
+    for (index = 0; index < count; ++index)
+    {
+        if (!clargs_option_is_required(clargs_command_option_at(command, index)))
+        {
             return true;
         }
     }
@@ -117,7 +127,8 @@ static bool help_has_optional_option(const clargs_command_t *command)
 #define HELP_USAGE_INDENT ((size_t)7)
 
 /* The kinds of the items of the usage line that follow the path. */
-typedef enum help_usage_kind {
+typedef enum help_usage_kind
+{
     HELP_USAGE_OPTIONS,    /* "[OPTIONS]" */
     HELP_USAGE_OPTION,     /* a required option */
     HELP_USAGE_POSITIONAL, /* a positional */
@@ -125,7 +136,8 @@ typedef enum help_usage_kind {
 } help_usage_kind_t;
 
 /* One item of the usage line: a text that is never divided. */
-typedef struct help_usage_item {
+typedef struct help_usage_item
+{
     help_usage_kind_t kind;
     const clargs_option_t *option;         /* for HELP_USAGE_OPTION */
     const clargs_positional_t *positional; /* for HELP_USAGE_POSITIONAL */
@@ -137,7 +149,8 @@ typedef struct help_usage_item {
  */
 static void help_usage_item_write(clargs_out_t *out, const help_usage_item_t *item)
 {
-    switch (item->kind) {
+    switch (item->kind)
+    {
     case HELP_USAGE_OPTIONS:
         clargs_out_string(out, "[OPTIONS]");
         break;
@@ -222,7 +235,8 @@ static void help_usage_separate(help_context_t *context, const help_usage_item_t
 {
     clargs_out_t *out = &context->out;
 
-    if (context->width != 0) {
+    if (context->width != 0)
+    {
         size_t item_width = help_usage_item_width(item);
 
         /*
@@ -231,7 +245,8 @@ static void help_usage_separate(help_context_t *context, const help_usage_item_t
          * is less than the width.
          */
         if (item_width >= context->width ||
-            clargs_out_column(out) >= context->width - item_width) {
+            clargs_out_column(out) >= context->width - item_width)
+        {
             clargs_out_newline(out);
             clargs_out_spaces(out, HELP_USAGE_INDENT);
             return;
@@ -277,7 +292,8 @@ static void help_write_usage_line(help_context_t *context)
     item.option = NULL;
     item.positional = NULL;
 
-    if (help_has_optional_option(command)) {
+    if (help_has_optional_option(command))
+    {
         item.kind = HELP_USAGE_OPTIONS;
         help_usage_add(context, &item);
     }
@@ -285,21 +301,25 @@ static void help_write_usage_line(help_context_t *context)
     /* Only an option that takes a value can be required. */
     item.kind = HELP_USAGE_OPTION;
     count = clargs_command_option_count(command);
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         item.option = clargs_command_option_at(command, index);
-        if (clargs_option_is_required(item.option)) {
+        if (clargs_option_is_required(item.option))
+        {
             help_usage_add(context, &item);
         }
     }
 
     item.kind = HELP_USAGE_POSITIONAL;
     count = clargs_command_positional_count(command);
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         item.positional = clargs_command_positional_at(command, index);
         help_usage_add(context, &item);
     }
 
-    if (clargs_command_subcommand_count(command) != 0) {
+    if (clargs_command_subcommand_count(command) != 0)
+    {
         item.kind = HELP_USAGE_COMMAND;
         help_usage_add(context, &item);
     }
@@ -326,7 +346,8 @@ clargs_error_t clargs_help_write_usage(const clargs_command_t *command,
 /* ---- The lists ----------------------------------------------------------- */
 
 /* The kinds of the items of the lists. */
-typedef enum help_heading_kind {
+typedef enum help_heading_kind
+{
     HELP_HEADING_SUBCOMMAND, /* an item of "Commands:" */
     HELP_HEADING_POSITIONAL, /* an item of "Arguments:" */
     HELP_HEADING_OPTION      /* an item of "Options:" */
@@ -336,7 +357,8 @@ typedef enum help_heading_kind {
  * The heading of one item of a list: what stands on the left of its
  * description.
  */
-typedef struct help_heading {
+typedef struct help_heading
+{
     help_heading_kind_t kind;
     const clargs_command_t *subcommand;    /* for HELP_HEADING_SUBCOMMAND */
     const clargs_positional_t *positional; /* for HELP_HEADING_POSITIONAL */
@@ -350,7 +372,8 @@ typedef struct help_heading {
  */
 static void help_heading_write(clargs_out_t *out, const help_heading_t *heading)
 {
-    switch (heading->kind) {
+    switch (heading->kind)
+    {
     case HELP_HEADING_SUBCOMMAND:
         clargs_help_item_string(out, clargs_command_name(heading->subcommand));
         break;
@@ -449,28 +472,34 @@ static size_t help_description_column(const help_context_t *context)
     size_t index;
 
     count = clargs_command_subcommand_count(command);
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         heading = help_subcommand_heading(command, index);
         width = help_heading_width(&heading);
-        if (width > widest) {
+        if (width > widest)
+        {
             widest = width;
         }
     }
 
     count = clargs_command_positional_count(command);
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         heading = help_positional_heading(command, index);
         width = help_heading_width(&heading);
-        if (width > widest) {
+        if (width > widest)
+        {
             widest = width;
         }
     }
 
     count = clargs_command_option_count(command);
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         heading = help_option_heading(command, index);
         width = help_heading_width(&heading);
-        if (width > widest) {
+        if (width > widest)
+        {
             widest = width;
         }
     }
@@ -478,13 +507,15 @@ static size_t help_description_column(const help_context_t *context)
     column = help_heading_reach(context, widest);
 
     limit = context->max_column;
-    if (context->width != 0 && context->width / 2 < limit) {
+    if (context->width != 0 && context->width / 2 < limit)
+    {
         limit = context->width / 2;
     }
 
     /* The indent is at most CLARGS_HELP_SETTING_MAX: the sum cannot wrap. */
     lowest = context->indent + 2;
-    if (limit < lowest) {
+    if (limit < lowest)
+    {
         limit = lowest;
     }
 
@@ -501,8 +532,10 @@ static bool help_is_blank(const char *text, size_t length)
 {
     size_t index;
 
-    for (index = 0; index < length; ++index) {
-        if (text[index] != ' ' && text[index] != '\n') {
+    for (index = 0; index < length; ++index)
+    {
+        if (text[index] != ' ' && text[index] != '\n')
+        {
             return false;
         }
     }
@@ -525,16 +558,20 @@ static size_t help_whole_length(const char *text, size_t *newlines)
     size_t length;
 
     *newlines = 0;
-    if (text == NULL) {
+    if (text == NULL)
+    {
         return 0;
     }
 
     length = strlen(text);
-    if (help_is_blank(text, length)) {
+    if (help_is_blank(text, length))
+    {
         return 0;
     }
-    while (text[length - 1] == ' ' || text[length - 1] == '\n') {
-        if (text[length - 1] == '\n') {
+    while (text[length - 1] == ' ' || text[length - 1] == '\n')
+    {
+        if (text[length - 1] == '\n')
+        {
             ++*newlines;
         }
         --length;
@@ -553,7 +590,8 @@ static size_t help_first_line_length(const char *text)
     const char *end;
     size_t length;
 
-    if (text == NULL) {
+    if (text == NULL)
+    {
         return 0;
     }
 
@@ -574,7 +612,8 @@ static void help_write_description(help_context_t *context)
     size_t newlines;
     size_t length = help_whole_length(text, &newlines);
 
-    if (length == 0) {
+    if (length == 0)
+    {
         return;
     }
 
@@ -615,8 +654,10 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
 
     clargs_out_spaces(out, context->indent);
     help_heading_write(out, heading);
-    if (length != 0) {
-        if (help_heading_reach(context, help_heading_width(heading)) > context->column) {
+    if (length != 0)
+    {
+        if (help_heading_reach(context, help_heading_width(heading)) > context->column)
+        {
             clargs_out_newline(out);
         }
 
@@ -650,11 +691,13 @@ static clargs_error_t help_cell_start(help_context_t *context, const char *descr
     clargs_error_t error;
 
     context->text.count = 0;
-    if (length == 0) {
+    if (length == 0)
+    {
         return CLARGS_ERROR_NONE;
     }
     error = clargs_help_item_text_append(&context->text, description, length);
-    while (error == CLARGS_ERROR_NONE && newlines != 0) {
+    while (error == CLARGS_ERROR_NONE && newlines != 0)
+    {
         error = clargs_help_item_text_append(&context->text, "\n", 1);
         --newlines;
     }
@@ -685,12 +728,14 @@ static void help_write_commands(help_context_t *context)
     size_t count = clargs_command_subcommand_count(command);
     size_t index;
 
-    if (count == 0) {
+    if (count == 0)
+    {
         return;
     }
 
     help_write_title(context, "Commands:");
-    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index) {
+    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index)
+    {
         help_heading_t heading = help_subcommand_heading(command, index);
         const char *text = clargs_command_description(heading.subcommand);
 
@@ -712,20 +757,24 @@ static clargs_error_t help_write_arguments(help_context_t *context)
     size_t count = clargs_command_positional_count(command);
     size_t index;
 
-    if (count == 0) {
+    if (count == 0)
+    {
         return CLARGS_ERROR_NONE;
     }
 
     help_write_title(context, "Arguments:");
-    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index) {
+    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index)
+    {
         help_heading_t heading = help_positional_heading(command, index);
         clargs_error_t error =
             help_cell_start(context, clargs_positional_description(heading.positional));
 
-        if (error == CLARGS_ERROR_NONE) {
+        if (error == CLARGS_ERROR_NONE)
+        {
             error = clargs_help_item_positional_notes(&context->text, heading.positional);
         }
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
         help_write_cell_item(context, &heading);
@@ -749,19 +798,23 @@ static clargs_error_t help_write_options(help_context_t *context)
     size_t count = clargs_command_option_count(command);
     size_t index;
 
-    if (count == 0) {
+    if (count == 0)
+    {
         return CLARGS_ERROR_NONE;
     }
 
     help_write_title(context, "Options:");
-    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index) {
+    for (index = 0; index < count && !clargs_out_failed(&context->out); ++index)
+    {
         help_heading_t heading = help_option_heading(command, index);
         clargs_error_t error = help_cell_start(context, clargs_option_description(heading.option));
 
-        if (error == CLARGS_ERROR_NONE) {
+        if (error == CLARGS_ERROR_NONE)
+        {
             error = clargs_help_item_option_notes(&context->text, heading.option);
         }
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
         help_write_cell_item(context, &heading);
@@ -789,7 +842,8 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
     context.column = help_description_column(&context);
     help_write_commands(&context);
     error = help_write_arguments(&context);
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         error = help_write_options(&context);
     }
 
@@ -799,7 +853,8 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
      * lists.
      */
     clargs_vec_destroy(&context.text);
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         return error;
     }
     return help_context_result(&context);
@@ -812,7 +867,8 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
  * text has come. It lives on the stack of the public function, for the one
  * call.
  */
-typedef struct help_buffer {
+typedef struct help_buffer
+{
     char *buffer;  /* the array; may be NULL when size is 0 */
     size_t size;   /* the number of bytes of the array */
     size_t length; /* the bytes of the text so far, also those that did not fit */
@@ -830,7 +886,8 @@ static bool help_buffer_write(void *user_data, const char *text, size_t length)
     help_buffer_t *target = user_data;
 
     /* The text may fill the bytes before the index size - 1. */
-    if (target->size != 0 && target->length < target->size - 1) {
+    if (target->size != 0 && target->length < target->size - 1)
+    {
         size_t room = target->size - 1 - target->length;
 
         memcpy(target->buffer + target->length, text, length < room ? length : room);
@@ -848,14 +905,17 @@ static bool help_buffer_write(void *user_data, const char *text, size_t length)
 static clargs_error_t help_buffer_finish(help_buffer_t *target, clargs_error_t error,
                                          size_t *length)
 {
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         target->length = 0;
     }
-    if (target->size != 0) {
+    if (target->size != 0)
+    {
         target->buffer[target->length < target->size - 1 ? target->length : target->size - 1] =
             '\0';
     }
-    if (length != NULL) {
+    if (length != NULL)
+    {
         *length = target->length;
     }
     return error;

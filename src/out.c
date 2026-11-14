@@ -25,10 +25,12 @@ static void out_write(clargs_out_t *out, const char *text, size_t length)
 {
     assert(length != 0);
 
-    if (out->write_fn == NULL || out->failed) {
+    if (out->write_fn == NULL || out->failed)
+    {
         return;
     }
-    if (!out->write_fn(out->user_data, text, length)) {
+    if (!out->write_fn(out->user_data, text, length))
+    {
         out->failed = true;
     }
 }
@@ -42,7 +44,8 @@ static void out_flush_blanks(clargs_out_t *out)
     size_t rest = out->pending;
 
     out->pending = 0;
-    while (rest != 0) {
+    while (rest != 0)
+    {
         size_t part = rest < CLARGS_OUT_BLANKS_LENGTH ? rest : CLARGS_OUT_BLANKS_LENGTH;
 
         out_write(out, CLARGS_OUT_BLANKS, part);
@@ -65,7 +68,8 @@ void clargs_out_text(clargs_out_t *out, const char *text, size_t length)
 {
     assert(out != NULL);
 
-    if (length == 0) {
+    if (length == 0)
+    {
         return;
     }
 
@@ -96,7 +100,8 @@ void clargs_out_pad_to(clargs_out_t *out, size_t column)
 {
     assert(out != NULL);
 
-    if (out->column < column) {
+    if (out->column < column)
+    {
         clargs_out_spaces(out, column - out->column);
     }
 }

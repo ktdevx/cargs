@@ -104,7 +104,8 @@ static void check_clean(void)
 static clargs_help_options_t *stale_options(void)
 {
     /* Aligned for an object of any type, as allocated memory is. */
-    static union {
+    static union
+    {
         long long integer;
         long double number;
         void *pointer;
@@ -126,7 +127,8 @@ NAOS_TEST(creating_and_destroying_help_options_leaves_nothing_allocated)
     NAOS_CHECK_TRUE(clargs_test_allocator_requests() >= 1);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), clargs_test_allocator_requests());
 
-    if (options != stale_options()) {
+    if (options != stale_options())
+    {
         clargs_help_options_destroy(options);
     }
 
@@ -141,7 +143,8 @@ NAOS_TEST(creating_help_options_fails_cleanly_at_every_allocation_point)
 
     clargs_test_allocator_install();
 
-    for (n = 1; n <= REQUEST_LIMIT; ++n) {
+    for (n = 1; n <= REQUEST_LIMIT; ++n)
+    {
         clargs_help_options_t *options = stale_options();
         clargs_error_t error;
 
@@ -150,7 +153,8 @@ NAOS_TEST(creating_help_options_fails_cleanly_at_every_allocation_point)
 
         error = clargs_help_options_create(&options);
 
-        if (error == CLARGS_ERROR_NONE) {
+        if (error == CLARGS_ERROR_NONE)
+        {
             /*
              * The creation ended before the request to fail was reached:
              * every allocation point has failed once. The creation is not
@@ -160,7 +164,8 @@ NAOS_TEST(creating_help_options_fails_cleanly_at_every_allocation_point)
             NAOS_CHECK_TRUE(n > 1);
             NAOS_CHECK_TRUE(options != NULL);
             NAOS_CHECK_TRUE(options != stale_options());
-            if (options != stale_options()) {
+            if (options != stale_options())
+            {
                 clargs_help_options_destroy(options);
             }
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -189,7 +194,8 @@ NAOS_TEST(creating_help_options_fails_cleanly_at_every_allocation_point)
         clargs_test_allocator_reset();
         NAOS_CHECK_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
         NAOS_CHECK_TRUE(options != NULL);
-        if (options != stale_options()) {
+        if (options != stale_options())
+        {
             clargs_help_options_destroy(options);
         }
     }
@@ -262,7 +268,8 @@ NAOS_TEST(setting_help_options_never_allocates)
 /* ---- The generations ------------------------------------------------------ */
 
 /* What the write function of the tests has received. */
-typedef struct sink {
+typedef struct sink
+{
     char text[SINK_SIZE]; /* the parts, joined in the order of the calls */
     size_t length;        /* the number of bytes of text */
     size_t calls;         /* the number of calls */
@@ -284,11 +291,13 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0) {
+    if (text == NULL || length == 0)
+    {
         ++sink->empty_calls;
         return true;
     }
-    if (length > SINK_SIZE - sink->length) {
+    if (length > SINK_SIZE - sink->length)
+    {
         return false;
     }
 
@@ -303,7 +312,8 @@ static bool sink_write(void *user_data, const char *text, size_t length)
  * return, in the order of the reading. Two pictures of a schema that did
  * not change are equal byte by byte.
  */
-typedef struct picture {
+typedef struct picture
+{
     char text[PICTURE_SIZE];
     size_t length;
     const void *pointers[PICTURE_POINTERS];
@@ -316,7 +326,8 @@ static void put(picture_t *picture, const char *text)
 {
     size_t length = strlen(text);
 
-    if (length > PICTURE_SIZE - picture->length) {
+    if (length > PICTURE_SIZE - picture->length)
+    {
         picture->overflow = true;
         return;
     }
@@ -327,7 +338,8 @@ static void put(picture_t *picture, const char *text)
 /* Appends the pointer to the pointers of the picture. */
 static void put_pointer(picture_t *picture, const void *pointer)
 {
-    if (picture->pointer_count == PICTURE_POINTERS) {
+    if (picture->pointer_count == PICTURE_POINTERS)
+    {
         picture->overflow = true;
         return;
     }
@@ -343,9 +355,12 @@ static void put_text(picture_t *picture, const char *label, const char *text)
 {
     put(picture, label);
     put_pointer(picture, text);
-    if (text == NULL) {
+    if (text == NULL)
+    {
         put(picture, "none");
-    } else {
+    }
+    else
+    {
         put(picture, "[");
         put(picture, text);
         put(picture, "]");
@@ -359,7 +374,8 @@ static void put_count(picture_t *picture, const char *label, size_t count)
     size_t at = sizeof digits - 1;
 
     digits[at] = '\0';
-    do {
+    do
+    {
         --at;
         digits[at] = (char)('0' + (int)(count % 10));
         count /= 10;
@@ -379,7 +395,8 @@ static void put_type(picture_t *picture, const char *label, const clargs_type_t 
 
     put(picture, label);
     put_pointer(picture, type);
-    if (type == NULL) {
+    if (type == NULL)
+    {
         put(picture, "none");
         return;
     }
@@ -387,7 +404,8 @@ static void put_type(picture_t *picture, const char *label, const clargs_type_t 
     put_count(picture, " kind=", (size_t)clargs_type_kind(type));
     put_count(picture, " size=", clargs_type_value_size(type));
     put_count(picture, " choices=", clargs_type_choice_count(type));
-    for (index = 0; index < clargs_type_choice_count(type); ++index) {
+    for (index = 0; index < clargs_type_choice_count(type); ++index)
+    {
         put_text(picture, " ", clargs_type_choice_at(type, index));
     }
     put(picture, "}");
@@ -446,13 +464,16 @@ static void put_command(picture_t *picture, const clargs_command_t *command)
     put_count(picture, " subcommands=", clargs_command_subcommand_count(command));
     put(picture, "\n");
 
-    for (index = 0; index < clargs_command_option_count(command); ++index) {
+    for (index = 0; index < clargs_command_option_count(command); ++index)
+    {
         put_option(picture, clargs_command_option_at(command, index));
     }
-    for (index = 0; index < clargs_command_positional_count(command); ++index) {
+    for (index = 0; index < clargs_command_positional_count(command); ++index)
+    {
         put_positional(picture, clargs_command_positional_at(command, index));
     }
-    for (index = 0; index < clargs_command_subcommand_count(command); ++index) {
+    for (index = 0; index < clargs_command_subcommand_count(command); ++index)
+    {
         put_command(picture, clargs_command_subcommand_at(command, index));
     }
 }
@@ -469,7 +490,8 @@ static void draw(picture_t *picture, const clargs_command_t *root)
  * One generation that is compared: a command, help options, and the text
  * and the number of requests of a generation without a failure.
  */
-typedef struct help_case {
+typedef struct help_case
+{
     const clargs_command_t *command;
     const clargs_help_options_t *options; /* NULL: the default settings */
     char text[SINK_SIZE];                 /* the help */
@@ -483,7 +505,8 @@ typedef struct help_case {
  * The schema of the tests, the help options that are not the default, and
  * what was read and generated before any failure.
  */
-typedef struct fixture {
+typedef struct fixture
+{
     clargs_type_t *format; /* the choices of --format */
     clargs_type_t *target; /* the choices of <target> and of --mode */
     clargs_command_t *root;
@@ -505,13 +528,16 @@ static void add_value(clargs_command_t *command, char short_name, const char *lo
     NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (value_name != NULL) {
+    if (value_name != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
     }
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_default(option, default_value) == CLARGS_ERROR_NONE);
     }
-    if (required) {
+    if (required)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
     }
     NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
@@ -530,7 +556,8 @@ static void add_positional(clargs_command_t *command, const char *name, const cl
     NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, arity, &positional) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_positional_set_default(positional, default_value) ==
                           CLARGS_ERROR_NONE);
     }
@@ -669,7 +696,8 @@ static void fixture_start(fixture_t *fixture)
 
     draw(&fixture->before, fixture->root);
 
-    for (index = 0; index < CASE_COUNT; ++index) {
+    for (index = 0; index < CASE_COUNT; ++index)
+    {
         help_case_t *item = &fixture->cases[index];
         size_t live = clargs_test_allocator_live();
         size_t requests = clargs_test_allocator_requests();
@@ -753,7 +781,8 @@ static void check_unchanged(const fixture_t *fixture)
                       sizeof fixture->before.pointers);
     NAOS_CHECK_TRUE(clargs_command_is_validated(fixture->root));
 
-    for (index = 0; index < CASE_COUNT; ++index) {
+    for (index = 0; index < CASE_COUNT; ++index)
+    {
         const help_case_t *item = &fixture->cases[index];
         size_t requests = clargs_test_allocator_requests();
         char buffer[SINK_SIZE];
@@ -785,7 +814,8 @@ static void check_unchanged(const fixture_t *fixture)
 }
 
 /* How clargs_help_format() is called in a check. */
-typedef struct format_call {
+typedef struct format_call
+{
     size_t size;      /* the size of the array */
     bool null_buffer; /* the array is NULL; the size is 0 then */
     bool with_length; /* the length is asked for */
@@ -824,7 +854,8 @@ static void check_format_failure(const help_case_t *item, size_t nth, format_cal
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests() - requests, nth);
     NAOS_CHECK_UINT_EQ(length, call.with_length ? (size_t)0 : LENGTH_UNSET);
 
-    if (call.size != 0) {
+    if (call.size != 0)
+    {
         /*
          * The empty string. The bytes of the array behind its '\0' are not
          * specified: the start of the text may have been there.
@@ -855,14 +886,16 @@ NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
 
     fixture_start(&fixture);
 
-    for (index = 0; index < CASE_COUNT; ++index) {
+    for (index = 0; index < CASE_COUNT; ++index)
+    {
         const help_case_t *item = &fixture.cases[index];
         size_t shortest = item->length;
         size_t failures = 0;
         bool completed = false;
         size_t n;
 
-        for (n = 1; n <= REQUEST_LIMIT; ++n) {
+        for (n = 1; n <= REQUEST_LIMIT; ++n)
+        {
             size_t live = clargs_test_allocator_live();
             size_t requests = clargs_test_allocator_requests();
             clargs_error_t error;
@@ -873,7 +906,8 @@ NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
             error = clargs_help_write(item->command, item->options, sink_write, &sink);
             clargs_test_allocator_fail_at(0);
 
-            if (error == CLARGS_ERROR_NONE) {
+            if (error == CLARGS_ERROR_NONE)
+            {
                 /*
                  * The generation ended before the request to fail was
                  * reached: every allocation point has failed once.
@@ -907,7 +941,8 @@ NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
             NAOS_CHECK_MEM_EQ(sink.text, sink.length, item->text, sink.length);
             NAOS_REQUIRE_TRUE(sink.length >= item->usage_length);
             NAOS_CHECK_TRUE(sink.text[sink.length - 1] == '\n');
-            if (sink.length < shortest) {
+            if (sink.length < shortest)
+            {
                 shortest = sink.length;
             }
 
@@ -944,7 +979,8 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
 
     fixture_start(&fixture);
 
-    for (index = 0; index < CASE_COUNT; ++index) {
+    for (index = 0; index < CASE_COUNT; ++index)
+    {
         const help_case_t *item = &fixture.cases[index];
         size_t n;
 
@@ -955,11 +991,13 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
          * The requests of a generation were counted by fixture_start(): the
          * 1st to the last of them fail in turn.
          */
-        for (n = 1; n <= item->requests; ++n) {
+        for (n = 1; n <= item->requests; ++n)
+        {
             format_call_t call;
             int with_length;
 
-            for (with_length = 0; with_length < 2; ++with_length) {
+            for (with_length = 0; with_length < 2; ++with_length)
+            {
                 call.with_length = with_length != 0;
                 call.null_buffer = false;
 
@@ -1032,7 +1070,8 @@ NAOS_TEST(generating_a_usage_line_never_allocates)
 
     fixture_start(&fixture);
 
-    for (index = 0; index < CASE_COUNT; ++index) {
+    for (index = 0; index < CASE_COUNT; ++index)
+    {
         const help_case_t *item = &fixture.cases[index];
         size_t live = clargs_test_allocator_live();
         size_t requests = clargs_test_allocator_requests();

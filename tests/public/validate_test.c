@@ -148,7 +148,8 @@ static void check_validate(clargs_command_t *root, clargs_error_t expected,
     other_option = add_flag(other, 's', "sentinel");
     other_positional = add_positional(other, "sentinel", CLARGS_ARITY_REQUIRED);
 
-    for (mask = 0; mask < 8; ++mask) {
+    for (mask = 0; mask < 8; ++mask)
+    {
         const clargs_command_t *command = other;
         const clargs_option_t *option = other_option;
         const clargs_positional_t *positional = other_positional;
@@ -161,13 +162,16 @@ static void check_validate(clargs_command_t *root, clargs_error_t expected,
                                                   with_positional ? &positional : NULL),
                           expected);
 
-        if (with_command) {
+        if (with_command)
+        {
             NAOS_CHECK_TRUE(command == expected_command);
         }
-        if (with_option) {
+        if (with_option)
+        {
             NAOS_CHECK_TRUE(option == expected_option);
         }
-        if (with_positional) {
+        if (with_positional)
+        {
             NAOS_CHECK_TRUE(positional == expected_positional);
         }
     }
@@ -232,7 +236,8 @@ NAOS_TEST(an_empty_root_is_valid_with_every_combination_of_outputs)
 }
 
 /* A tree that uses everything a definition can hold and has no fault. */
-typedef struct full_tree {
+typedef struct full_tree
+{
     clargs_command_t *root;
     clargs_command_t *build;
     clargs_command_t *remote;
@@ -370,7 +375,8 @@ NAOS_TEST(a_valid_tree_can_be_validated_again)
     clargs_test_allocator_install();
     build_full_tree(&tree);
 
-    for (round = 0; round < 3; ++round) {
+    for (round = 0; round < 3; ++round)
+    {
         const clargs_command_t *command = tree.root;
         const clargs_option_t *option = tree.verbose;
         const clargs_positional_t *positional = tree.target;
@@ -395,7 +401,8 @@ NAOS_TEST(a_valid_tree_can_be_validated_again)
  * definition, and the index of the positional that the validation reports;
  * count for an order without a fault.
  */
-typedef struct order {
+typedef struct order
+{
     size_t count;
     clargs_arity_t arities[ORDER_MAX];
     size_t faulty;
@@ -416,7 +423,8 @@ static void check_order(const order_t *order, bool in_subcommand)
 
     NAOS_REQUIRE_TRUE(order->count <= ORDER_MAX);
 
-    if (in_subcommand) {
+    if (in_subcommand)
+    {
         (void)add_sub(root, "first");
         command = add_sub(add_sub(root, "group"), "leaf");
     }
@@ -424,15 +432,19 @@ static void check_order(const order_t *order, bool in_subcommand)
     /* An option without a fault does not change the result. */
     (void)add_value(command, 'o', "output");
 
-    for (index = 0; index < order->count; ++index) {
+    for (index = 0; index < order->count; ++index)
+    {
         positionals[index] = add_positional(command, names[index], order->arities[index]);
     }
 
-    if (order->faulty == order->count) {
+    if (order->faulty == order->count)
+    {
         check_validate(root, CLARGS_ERROR_NONE, NULL, NULL, NULL);
         NAOS_CHECK_TRUE(clargs_command_is_validated(root));
         NAOS_CHECK_TRUE(clargs_command_is_validated(command));
-    } else {
+    }
+    else
+    {
         NAOS_REQUIRE_TRUE(order->faulty < order->count);
         check_validate(root, CLARGS_ERROR_INVALID_DEFINITION, command, NULL, positionals[order->faulty]);
         NAOS_CHECK_FALSE(clargs_command_is_validated(root));
@@ -441,7 +453,8 @@ static void check_order(const order_t *order, bool in_subcommand)
 
     /* The positionals are as they were defined. */
     NAOS_REQUIRE_TRUE(clargs_command_positional_count(command) == order->count);
-    for (index = 0; index < order->count; ++index) {
+    for (index = 0; index < order->count; ++index)
+    {
         NAOS_CHECK_TRUE(clargs_command_positional_at(command, index) == positionals[index]);
         NAOS_CHECK_INT_EQ(clargs_positional_arity(positionals[index]), order->arities[index]);
         NAOS_CHECK_STR_EQ(clargs_positional_name(positionals[index]), names[index]);
@@ -457,7 +470,8 @@ static void check_orders(const order_t *orders, size_t count)
 
     clargs_test_allocator_install();
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         check_order(&orders[index], false);
         check_order(&orders[index], true);
     }
@@ -767,7 +781,8 @@ NAOS_TEST(the_same_definition_gives_the_same_result_every_time)
     (void)add_positional(run, "first", CLARGS_ARITY_ONE_OR_MORE);
     second = add_positional(run, "second", CLARGS_ARITY_OPTIONAL);
 
-    for (round = 0; round < 3; ++round) {
+    for (round = 0; round < 3; ++round)
+    {
         const clargs_command_t *command = NULL;
         const clargs_option_t *option = output;
         const clargs_positional_t *positional = NULL;
@@ -841,7 +856,8 @@ NAOS_TEST(a_fault_that_is_added_to_a_validated_tree_is_found)
 /* ---- The state after a change -------------------------------------------- */
 
 /* Where in the tree the command is that a change is made to. */
-typedef enum location {
+typedef enum location
+{
     AT_ROOT,
     AT_SUBCOMMAND
 } location_t;
@@ -867,7 +883,8 @@ static const location_t all_locations[LOCATION_COUNT] = { AT_ROOT, AT_SUBCOMMAND
  * readers holds every command of the tree: the state is read from each.
  * (A root with positionals is the only command of its tree.)
  */
-typedef struct fixture {
+typedef struct fixture
+{
     clargs_command_t *root;
     clargs_command_t *target;
     const clargs_command_t *readers[READER_MAX];
@@ -891,7 +908,8 @@ static void check_state(const fixture_t *fixture, bool expected)
 {
     size_t index;
 
-    for (index = 0; index < fixture->reader_count; ++index) {
+    for (index = 0; index < fixture->reader_count; ++index)
+    {
         NAOS_CHECK_TRUE(clargs_command_is_validated(fixture->readers[index]) == expected);
     }
 }
@@ -906,9 +924,12 @@ static void build_fixture(fixture_t *fixture, location_t location, bool with_pos
     fixture->root = new_root();
     add_reader(fixture, fixture->root);
 
-    if (location == AT_ROOT) {
+    if (location == AT_ROOT)
+    {
         fixture->target = fixture->root;
-    } else {
+    }
+    else
+    {
         clargs_command_t *middle = add_sub(fixture->root, "middle");
 
         fixture->target = add_sub(middle, "leaf");
@@ -922,12 +943,15 @@ static void build_fixture(fixture_t *fixture, location_t location, bool with_pos
     fixture->negatable = add_negatable(fixture->target, '\0', "color");
     NAOS_REQUIRE_TRUE(clargs_command_add_count(fixture->target, 'c', "count", NULL) == CLARGS_ERROR_NONE);
 
-    if (with_positionals) {
+    if (with_positionals)
+    {
         fixture->required = add_positional(fixture->target, "input", CLARGS_ARITY_REQUIRED);
         (void)add_positional(fixture->target, "second", CLARGS_ARITY_REQUIRED);
         fixture->optional = add_positional(fixture->target, "extra", CLARGS_ARITY_OPTIONAL);
         (void)add_positional(fixture->target, "fourth", CLARGS_ARITY_OPTIONAL);
-    } else {
+    }
+    else
+    {
         add_reader(fixture, add_sub(fixture->target, "child"));
         add_reader(fixture, add_sub(fixture->target, "second"));
         add_reader(fixture, add_sub(fixture->target, "third"));
@@ -940,7 +964,8 @@ static void build_fixture(fixture_t *fixture, location_t location, bool with_pos
 }
 
 /* Every kind of change that a tree takes. */
-typedef enum mutation {
+typedef enum mutation
+{
     ADD_SUBCOMMAND,
     ADD_FLAG,
     ADD_NEGATABLE,
@@ -980,7 +1005,8 @@ static bool mutation_needs_positionals(mutation_t mutation)
  */
 static size_t mutation_allocations(mutation_t mutation)
 {
-    switch (mutation) {
+    switch (mutation)
+    {
     case ADD_SUBCOMMAND:
     case ADD_FLAG:
     case ADD_COUNT:
@@ -1003,7 +1029,8 @@ static size_t mutation_allocations(mutation_t mutation)
  */
 static clargs_error_t mutate(const fixture_t *fixture, mutation_t mutation)
 {
-    switch (mutation) {
+    switch (mutation)
+    {
     case ADD_SUBCOMMAND:
         return clargs_command_add_subcommand(fixture->target, "new", NULL);
     case ADD_FLAG:
@@ -1046,8 +1073,10 @@ NAOS_TEST(every_change_that_succeeds_takes_a_validated_tree_back_to_not_validate
 
     clargs_test_allocator_install();
 
-    for (where = 0; where < LOCATION_COUNT; ++where) {
-        for (which = 0; which < MUTATION_COUNT; ++which) {
+    for (where = 0; where < LOCATION_COUNT; ++where)
+    {
+        for (which = 0; which < MUTATION_COUNT; ++which)
+        {
             const mutation_t mutation = all_mutations[which];
             fixture_t fixture;
 
@@ -1081,7 +1110,8 @@ NAOS_TEST(a_set_of_the_same_value_takes_a_validated_tree_back_to_not_validated)
 
     clargs_test_allocator_install();
 
-    for (where = 0; where < LOCATION_COUNT; ++where) {
+    for (where = 0; where < LOCATION_COUNT; ++where)
+    {
         fixture_t fixture;
 
         build_fixture(&fixture, all_locations[where], false);
@@ -1127,7 +1157,8 @@ NAOS_TEST(a_change_takes_back_the_state_of_its_own_tree_only)
 }
 
 /* Every kind of change that a tree refuses because of the definition. */
-typedef enum refusal {
+typedef enum refusal
+{
     /* A name that is not one. */
     SUBCOMMAND_WITH_A_WRONG_NAME,
     OPTION_WITHOUT_A_NAME,
@@ -1177,7 +1208,8 @@ static bool refusal_needs_positionals(refusal_t refusal)
 /* The error code that the change is refused with. */
 static clargs_error_t refusal_error(refusal_t refusal)
 {
-    switch (refusal) {
+    switch (refusal)
+    {
     case SUBCOMMAND_WITH_A_WRONG_NAME:
     case OPTION_WITHOUT_A_NAME:
     case FLAG_WITH_A_WRONG_SHORT_NAME:
@@ -1210,7 +1242,8 @@ static clargs_error_t refusal_error(refusal_t refusal)
 /* Tries the change on the target of the fixture. */
 static clargs_error_t attempt(const fixture_t *fixture, refusal_t refusal)
 {
-    switch (refusal) {
+    switch (refusal)
+    {
     case SUBCOMMAND_WITH_A_WRONG_NAME:
         return clargs_command_add_subcommand(fixture->target, "-new", NULL);
     case OPTION_WITHOUT_A_NAME:
@@ -1267,8 +1300,10 @@ NAOS_TEST(a_change_that_is_refused_leaves_a_validated_tree_validated)
 
     clargs_test_allocator_install();
 
-    for (where = 0; where < LOCATION_COUNT; ++where) {
-        for (which = 0; which < REFUSAL_COUNT; ++which) {
+    for (where = 0; where < LOCATION_COUNT; ++where)
+    {
+        for (which = 0; which < REFUSAL_COUNT; ++which)
+        {
             const refusal_t refusal = all_refusals[which];
             fixture_t fixture;
             size_t requests;
@@ -1302,14 +1337,17 @@ NAOS_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_valid
 
     clargs_test_allocator_install();
 
-    for (where = 0; where < LOCATION_COUNT; ++where) {
-        for (which = 0; which < MUTATION_COUNT; ++which) {
+    for (where = 0; where < LOCATION_COUNT; ++where)
+    {
+        for (which = 0; which < MUTATION_COUNT; ++which)
+        {
             const mutation_t mutation = all_mutations[which];
             bool completed = false;
             size_t failures = 0;
             size_t n;
 
-            for (n = 1; n <= ALLOCATION_LIMIT && !completed; ++n) {
+            for (n = 1; n <= ALLOCATION_LIMIT && !completed; ++n)
+            {
                 fixture_t fixture;
                 clargs_error_t error;
                 size_t requests;
@@ -1324,12 +1362,15 @@ NAOS_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_valid
 
                 clargs_test_allocator_fail_at(0);
 
-                if (error == CLARGS_ERROR_NONE) {
+                if (error == CLARGS_ERROR_NONE)
+                {
                     /* Every allocation point has been passed. */
                     NAOS_CHECK_TRUE(clargs_test_allocator_requests() < requests + n);
                     check_state(&fixture, false);
                     completed = true;
-                } else {
+                }
+                else
+                {
                     NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
                     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + n);
                     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
@@ -1408,7 +1449,8 @@ static clargs_type_t *new_choice_type(void)
  * What the functions of a user-defined value type count. It is the user
  * data of the value type.
  */
-typedef struct probe {
+typedef struct probe
+{
     size_t conversions; /* calls of the conversion function */
     size_t successes;   /* conversions that succeeded */
     size_t releases;    /* calls of the cleanup function */
@@ -1419,7 +1461,8 @@ typedef struct probe {
  * The value of the user-defined value type. It is larger than every value
  * of a built-in value type, and the conversion writes all of it.
  */
-typedef struct probe_value {
+typedef struct probe_value
+{
     double number;
     const char *text;
     int marker;
@@ -1450,13 +1493,16 @@ static clargs_error_t probe_convert(const char *text, void *value, void *context
      */
     memset(out, PROBE_FILL, sizeof(*out));
 
-    if (strcmp(text, PROBE_REJECTED) == 0) {
+    if (strcmp(text, PROBE_REJECTED) == 0)
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
-    if (strcmp(text, PROBE_OTHER_CODE) == 0) {
+    if (strcmp(text, PROBE_OTHER_CODE) == 0)
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (strcmp(text, PROBE_NO_MEMORY) == 0) {
+    if (strcmp(text, PROBE_NO_MEMORY) == 0)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -1479,7 +1525,8 @@ static void probe_release(void *value, void *context)
      * conversion succeeded.
      */
     if (probe->releases > probe->successes || in->marker != PROBE_MARKER || in->text == NULL ||
-        in->fill[0] != PROBE_FILL || in->fill[sizeof(in->fill) - 1] != PROBE_FILL) {
+        in->fill[0] != PROBE_FILL || in->fill[sizeof(in->fill) - 1] != PROBE_FILL)
+    {
         ++probe->mismatches;
     }
 }
@@ -1521,7 +1568,8 @@ static clargs_error_t plain_convert(const char *text, void *value, void *context
 
     (void)context;
 
-    if (strcmp(text, "yes") != 0) {
+    if (strcmp(text, "yes") != 0)
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
     *out = 1;
@@ -1557,7 +1605,8 @@ static void check_validate_without_memory(clargs_command_t *root, size_t nth)
     other_option = add_flag(other, 's', "sentinel");
     other_positional = add_positional(other, "sentinel", CLARGS_ARITY_REQUIRED);
 
-    for (mask = 0; mask < 8; ++mask) {
+    for (mask = 0; mask < 8; ++mask)
+    {
         const clargs_command_t *command = other;
         const clargs_option_t *option = other_option;
         const clargs_positional_t *positional = other_positional;
@@ -1579,13 +1628,16 @@ static void check_validate_without_memory(clargs_command_t *root, size_t nth)
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
         NAOS_CHECK_TRUE(clargs_command_is_validated(root) == validated);
 
-        if (with_command) {
+        if (with_command)
+        {
             NAOS_CHECK_TRUE(command == NULL);
         }
-        if (with_option) {
+        if (with_option)
+        {
             NAOS_CHECK_TRUE(option == NULL);
         }
-        if (with_positional) {
+        if (with_positional)
+        {
             NAOS_CHECK_TRUE(positional == NULL);
         }
     }
@@ -1603,7 +1655,8 @@ NAOS_TEST(a_default_value_that_is_not_a_number_is_rejected_by_the_integer_type)
     (void)add_flag(root, 'v', "verbose");
     jobs = add_typed_value(root, 'j', "jobs", clargs_type_int());
 
-    for (index = 0; index < sizeof(rejected) / sizeof(rejected[0]); ++index) {
+    for (index = 0; index < sizeof(rejected) / sizeof(rejected[0]); ++index)
+    {
         set_option_default(jobs, rejected[index]);
 
         check_validate(root, CLARGS_ERROR_INVALID_DEFAULT, root, jobs, NULL);
@@ -2104,7 +2157,8 @@ NAOS_TEST(an_invalid_default_value_leaves_the_tree_not_validated_and_unchanged)
     set_option_default(limit, "none");
     check_full_tree_state(&tree, false);
 
-    for (round = 0; round < 3; ++round) {
+    for (round = 0; round < 3; ++round)
+    {
         const clargs_command_t *command = NULL;
         const clargs_option_t *option = NULL;
         const clargs_positional_t *positional = tree.target;
@@ -2152,7 +2206,8 @@ NAOS_TEST(a_validation_that_cannot_allocate_the_area_of_a_value_fails_for_a_lack
      * The tree has three default values, so a validation asks for three
      * areas. Each of them fails in turn, on a tree that is not validated.
      */
-    for (nth = 1; nth <= 3; ++nth) {
+    for (nth = 1; nth <= 3; ++nth)
+    {
         const size_t successes = probe.successes;
 
         check_validate_without_memory(root, nth);

@@ -190,7 +190,8 @@ static void check_string(const clargs_result_t *result, const clargs_positional_
 
 /* ---- The schema "copy": options and positionals of each arity ----------- */
 
-typedef struct copy_fixture {
+typedef struct copy_fixture
+{
     clargs_command_t *root;
     clargs_option_t *verbose;  /* -v, --verbose: a flag */
     clargs_option_t *out;      /* -o, --out: a string */
@@ -719,7 +720,8 @@ NAOS_TEST(a_wrong_value_after_good_ones_keeps_the_good_ones)
  *     add [-f|--force] [-1] [-o|--out FILE] NAME [URLS]...
  *     remove [--all] NAME
  */
-typedef struct tool_fixture {
+typedef struct tool_fixture
+{
     clargs_command_t *root;
     clargs_option_t *verbose;        /* tool -v, --verbose: a flag */
     clargs_option_t *config;         /* tool --config: a string */
@@ -1239,7 +1241,8 @@ static void check_every_allocation_failing(const clargs_command_t *root, int arg
 {
     size_t nth;
 
-    for (nth = 1; nth < 100; nth++) {
+    for (nth = 1; nth < 100; nth++)
+    {
         const size_t live = clargs_test_allocator_live();
         clargs_result_t *result = NULL;
         clargs_error_t error;
@@ -1248,7 +1251,8 @@ static void check_every_allocation_failing(const clargs_command_t *root, int arg
         error = clargs_parse(root, argc, argv, &result);
         clargs_test_allocator_fail_at(0);
 
-        if (error != CLARGS_ERROR_OUT_OF_MEMORY) {
+        if (error != CLARGS_ERROR_OUT_OF_MEMORY)
+        {
             /* The parse made fewer than nth allocations. */
             NAOS_CHECK_INT_EQ(error, expected);
             NAOS_REQUIRE_TRUE(result != NULL);

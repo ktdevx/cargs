@@ -31,11 +31,14 @@ static bool is_name(const char *name)
 {
     const char *p;
 
-    if (!is_name_start(name[0])) {
+    if (!is_name_start(name[0]))
+    {
         return false;
     }
-    for (p = name + 1; *p != '\0'; ++p) {
-        if (!is_name_continue(*p)) {
+    for (p = name + 1; *p != '\0'; ++p)
+    {
+        if (!is_name_continue(*p))
+        {
             return false;
         }
     }

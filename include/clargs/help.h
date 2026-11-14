@@ -95,7 +95,8 @@ typedef bool (*clargs_help_write_fn_t)(void *user_data, const char *text, size_t
 typedef struct clargs_help_options clargs_help_options_t;
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*

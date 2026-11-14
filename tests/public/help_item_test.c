@@ -34,7 +34,8 @@
 #define SINK_SIZE ((size_t)1024)
 
 /* What the write function of the tests has received. */
-typedef struct sink {
+typedef struct sink
+{
     char text[SINK_SIZE]; /* the parts, joined in the order of the calls */
     size_t length;        /* the number of bytes of text */
     size_t calls;         /* the number of calls, the failed one included */
@@ -56,14 +57,17 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0) {
+    if (text == NULL || length == 0)
+    {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at) {
+    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    {
         return false;
     }
-    if (length > SINK_SIZE - sink->length) {
+    if (length > SINK_SIZE - sink->length)
+    {
         return false;
     }
 
@@ -108,7 +112,8 @@ static void destroy_root(clargs_command_t *root)
 static void describe_option(clargs_option_t *option, const char *description)
 {
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
     }
 }
@@ -163,7 +168,8 @@ static void add_value(clargs_command_t *command, char short_name, const char *lo
     NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (value_name != NULL) {
+    if (value_name != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
     }
     describe_option(option, description);
@@ -206,7 +212,8 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
 
     NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(command, name, &sub) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sub != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_command_set_description(sub, description) == CLARGS_ERROR_NONE);
     }
     return sub;
@@ -227,8 +234,10 @@ static bool has_blank_at_line_end(const char *text, size_t length)
 {
     size_t index;
 
-    for (index = 0; index < length; ++index) {
-        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n')) {
+    for (index = 0; index < length; ++index)
+    {
+        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n'))
+        {
             return true;
         }
     }
@@ -615,7 +624,8 @@ static clargs_option_t *add_value_option(clargs_command_t *command, char short_n
     NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (value_name != NULL) {
+    if (value_name != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
     }
     describe_option(option, description);
@@ -648,7 +658,8 @@ static clargs_positional_t *add_positional(clargs_command_t *command, const char
     NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, arity, &positional) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
                           CLARGS_ERROR_NONE);
     }
@@ -1069,7 +1080,8 @@ NAOS_TEST(generation_out_of_memory_frees_the_cell_text)
     size_t live = clargs_test_allocator_live();
     size_t step;
 
-    for (step = 1; step <= 3; ++step) {
+    for (step = 1; step <= 3; ++step)
+    {
         sink_t sink;
 
         sink_init(&sink);

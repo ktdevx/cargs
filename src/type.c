@@ -50,8 +50,10 @@ static clargs_error_t convert_choice(const char *text, void *value, void *contex
     const clargs_type_t *type = (const clargs_type_t *)context;
     size_t index;
 
-    for (index = 0; index < type->choice_count; ++index) {
-        if (strcmp(type->choices[index], text) == 0) {
+    for (index = 0; index < type->choice_count; ++index)
+    {
+        if (strcmp(type->choices[index], text) == 0)
+        {
             *(size_t *)value = index;
             return CLARGS_ERROR_NONE;
         }
@@ -68,9 +70,12 @@ static bool has_duplicate(const char *const *choices, size_t count)
     size_t first;
     size_t second;
 
-    for (first = 0; first < count; ++first) {
-        for (second = first + 1; second < count; ++second) {
-            if (strcmp(choices[first], choices[second]) == 0) {
+    for (first = 0; first < count; ++first)
+    {
+        for (second = first + 1; second < count; ++second)
+        {
+            if (strcmp(choices[first], choices[second]) == 0)
+            {
                 return true;
             }
         }
@@ -115,26 +120,31 @@ clargs_error_t clargs_type_create_choice(const char *const *choices, size_t coun
 
     *out = NULL;
 
-    if (count == 0) {
+    if (count == 0)
+    {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
 
     assert(choices != NULL);
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         assert(choices[index] != NULL);
     }
 
-    if (has_duplicate(choices, count)) {
+    if (has_duplicate(choices, count))
+    {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
 
     /* The size of the array of the copies must not overflow. */
-    if (count > SIZE_MAX / sizeof(char *)) {
+    if (count > SIZE_MAX / sizeof(char *))
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     type = (clargs_type_t *)clargs_malloc(sizeof(*type));
-    if (type == NULL) {
+    if (type == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -149,7 +159,8 @@ clargs_error_t clargs_type_create_choice(const char *const *choices, size_t coun
     type->is_static = false;
 
     type->choices = (char **)clargs_malloc(count * sizeof(char *));
-    if (type->choices == NULL) {
+    if (type->choices == NULL)
+    {
         clargs_type_destroy(type);
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
@@ -158,9 +169,11 @@ clargs_error_t clargs_type_create_choice(const char *const *choices, size_t coun
      * choice_count is the number of the copies made so far, so that a
      * failure frees exactly those.
      */
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         type->choices[index] = clargs_strdup(choices[index]);
-        if (type->choices[index] == NULL) {
+        if (type->choices[index] == NULL)
+        {
             clargs_type_destroy(type);
             return CLARGS_ERROR_OUT_OF_MEMORY;
         }
@@ -184,17 +197,20 @@ clargs_error_t clargs_type_create(const char *name, size_t value_size, clargs_co
     assert(value_size > 0);
     assert(convert_fn != NULL);
 
-    if (name[0] == '\0') {
+    if (name[0] == '\0')
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
 
     type = (clargs_type_t *)clargs_malloc(sizeof(*type));
-    if (type == NULL) {
+    if (type == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     type->owned_name = clargs_strdup(name);
-    if (type->owned_name == NULL) {
+    if (type->owned_name == NULL)
+    {
         clargs_free(type);
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
@@ -217,18 +233,22 @@ void clargs_type_destroy(clargs_type_t *type)
 {
     size_t index;
 
-    if (type == NULL || type->is_static) {
+    if (type == NULL || type->is_static)
+    {
         return;
     }
 
-    if (type->choices != NULL) {
-        for (index = 0; index < type->choice_count; ++index) {
+    if (type->choices != NULL)
+    {
+        for (index = 0; index < type->choice_count; ++index)
+        {
             clargs_free(type->choices[index]);
         }
         clargs_free(type->choices);
     }
     /* Only a copied name is freed; the other names are fixed strings. */
-    if (type->owned_name != NULL) {
+    if (type->owned_name != NULL)
+    {
         clargs_free(type->owned_name);
     }
     clargs_free(type);
@@ -284,7 +304,8 @@ void clargs_type_release(const clargs_type_t *type, void *value)
     assert(type != NULL);
     assert(value != NULL);
 
-    if (type->release_fn != NULL) {
+    if (type->release_fn != NULL)
+    {
         type->release_fn(value, type->context);
     }
 }

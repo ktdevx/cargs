@@ -24,17 +24,22 @@ static clargs_error_t clargs_vec_grow(clargs_vec_t *vec)
     size_t new_capacity;
     void *new_items;
 
-    if (vec->capacity == 0) {
+    if (vec->capacity == 0)
+    {
         new_capacity = CLARGS_VEC_FIRST_CAPACITY;
-    } else {
-        if (vec->capacity > CLARGS_VEC_SIZE_MAX / 2) {
+    }
+    else
+    {
+        if (vec->capacity > CLARGS_VEC_SIZE_MAX / 2)
+        {
             return CLARGS_ERROR_OUT_OF_MEMORY;
         }
         new_capacity = vec->capacity * 2;
     }
 
     /* clargs_realloc does not check the product. */
-    if (new_capacity > CLARGS_VEC_SIZE_MAX / vec->item_size) {
+    if (new_capacity > CLARGS_VEC_SIZE_MAX / vec->item_size)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -43,7 +48,8 @@ static clargs_error_t clargs_vec_grow(clargs_vec_t *vec)
      * old items are still valid and vec still points to them.
      */
     new_items = clargs_realloc(vec->items, new_capacity * vec->item_size);
-    if (new_items == NULL) {
+    if (new_items == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -69,10 +75,12 @@ clargs_error_t clargs_vec_push(clargs_vec_t *vec, const void *item)
     assert(item != NULL);
     assert(vec->item_size > 0);
 
-    if (vec->count == vec->capacity) {
+    if (vec->count == vec->capacity)
+    {
         clargs_error_t error = clargs_vec_grow(vec);
 
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
     }

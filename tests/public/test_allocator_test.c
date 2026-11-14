@@ -59,18 +59,22 @@ NAOS_TEST(succeeds_when_no_failure_is_set)
 
     clargs_test_allocator_reset();
 
-    for (i = 0; i < 8; ++i) {
+    for (i = 0; i < 8; ++i)
+    {
         blocks[i] = (i % 2 == 0) ? allocator.malloc_fn(16) : allocator.calloc_fn(4, 4);
         NAOS_CHECK_TRUE(blocks[i] != NULL);
     }
-    for (i = 0; i < 8; ++i) {
+    for (i = 0; i < 8; ++i)
+    {
         grown = allocator.realloc_fn(blocks[i], 64);
         NAOS_CHECK_TRUE(grown != NULL);
-        if (grown != NULL) {
+        if (grown != NULL)
+        {
             blocks[i] = grown;
         }
     }
-    for (i = 0; i < 8; ++i) {
+    for (i = 0; i < 8; ++i)
+    {
         allocator.free_fn(blocks[i]);
     }
 
@@ -292,7 +296,8 @@ NAOS_TEST(counts_the_requests)
 
     grown = allocator.realloc_fn(block, 32);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 3);
-    if (grown != NULL) {
+    if (grown != NULL)
+    {
         block = grown;
     }
 
@@ -329,7 +334,8 @@ NAOS_TEST(counts_the_live_blocks)
 
     grown = allocator.realloc_fn(first, 128);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 2);
-    if (grown != NULL) {
+    if (grown != NULL)
+    {
         first = grown;
     }
 

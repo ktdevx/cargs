@@ -61,13 +61,15 @@
 #define LENGTH_UNSET ((size_t)54321)
 
 /* The two texts that the library generates. */
-typedef enum text_kind {
+typedef enum text_kind
+{
     TEXT_HELP, /* clargs_help_write(), clargs_help_format() */
     TEXT_USAGE /* clargs_help_write_usage(), clargs_help_format_usage() */
 } text_kind_t;
 
 /* What the write function of the tests has received. */
-typedef struct sink {
+typedef struct sink
+{
     char text[SINK_SIZE]; /* the parts, joined in the order of the calls */
     size_t length;        /* the number of bytes of text */
     size_t calls;         /* the number of calls, the failed one included */
@@ -90,14 +92,17 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0) {
+    if (text == NULL || length == 0)
+    {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at) {
+    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    {
         return false;
     }
-    if (length > sizeof sink->text - sink->length) {
+    if (length > sizeof sink->text - sink->length)
+    {
         return false;
     }
 
@@ -138,7 +143,8 @@ static void add_flag(clargs_command_t *command, char short_name, const char *lon
     NAOS_REQUIRE_TRUE(clargs_command_add_flag(command, short_name, long_name, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
     }
 }
@@ -157,9 +163,12 @@ static void add_file(clargs_command_t *command, char short_name, const char *lon
                                                &option) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, "FILE") == CLARGS_ERROR_NONE);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_default(option, default_value) == CLARGS_ERROR_NONE);
-    } else {
+    }
+    else
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
     }
     NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
@@ -254,7 +263,8 @@ static clargs_error_t write_text(text_kind_t kind, const clargs_command_t *comma
                                  const clargs_help_options_t *options,
                                  clargs_help_write_fn_t write_fn, void *user_data)
 {
-    if (kind == TEXT_USAGE) {
+    if (kind == TEXT_USAGE)
+    {
         return clargs_help_write_usage(command, options, write_fn, user_data);
     }
     return clargs_help_write(command, options, write_fn, user_data);
@@ -265,7 +275,8 @@ static clargs_error_t format_text(text_kind_t kind, const clargs_command_t *comm
                                   const clargs_help_options_t *options, char *buffer, size_t size,
                                   size_t *length)
 {
-    if (kind == TEXT_USAGE) {
+    if (kind == TEXT_USAGE)
+    {
         return clargs_help_format_usage(command, options, buffer, size, length);
     }
     return clargs_help_format(command, options, buffer, size, length);
@@ -287,7 +298,8 @@ static void collect(text_kind_t kind, const clargs_command_t *command,
 }
 
 /* How check_format() calls a format function. */
-typedef struct format_call {
+typedef struct format_call
+{
     size_t size;      /* the size that is given */
     bool null_buffer; /* whether NULL is given as the array; only with the size 0 */
     bool with_length; /* whether a place for the length is given */
@@ -319,7 +331,8 @@ static void check_format(text_kind_t kind, const clargs_command_t *command,
 
     memset(area, SENTINEL, sizeof area);
     memset(want, SENTINEL, sizeof want);
-    if (call.size != 0) {
+    if (call.size != 0)
+    {
         size_t written = text_length < call.size - 1 ? text_length : call.size - 1;
 
         memcpy(want + GUARD_SIZE, text, written);
@@ -350,13 +363,15 @@ static void check_size(text_kind_t kind, const clargs_command_t *command,
 
     collect(kind, command, options, &sink);
 
-    for (with_length = 0; with_length < 2; ++with_length) {
+    for (with_length = 0; with_length < 2; ++with_length)
+    {
         call.size = size;
         call.null_buffer = false;
         call.with_length = with_length != 0;
         check_format(kind, command, options, sink.text, sink.length, call);
 
-        if (size == 0) {
+        if (size == 0)
+        {
             call.null_buffer = true;
             check_format(kind, command, options, sink.text, sink.length, call);
         }
@@ -389,8 +404,10 @@ static void check_sizes(bool from_length, size_t delta)
     settings[0] = narrow;
     settings[1] = NULL;
 
-    for (setting = 0; setting < 2; ++setting) {
-        for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind) {
+    for (setting = 0; setting < 2; ++setting)
+    {
+        for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
+        {
             size_t base =
                 from_length ? text_length((text_kind_t)kind, root, settings[setting]) : 0;
 
@@ -462,8 +479,10 @@ NAOS_TEST(parts_of_the_write_function_joined_are_the_text_of_the_buffer)
     settings[0] = narrow;
     settings[1] = NULL;
 
-    for (setting = 0; setting < 2; ++setting) {
-        for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind) {
+    for (setting = 0; setting < 2; ++setting)
+    {
+        for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
+        {
             sink_t sink;
             char buffer[SINK_SIZE];
             size_t length = LENGTH_UNSET;
@@ -496,7 +515,8 @@ NAOS_TEST(parts_of_the_write_function_joined_are_the_text_of_the_buffer)
 }
 
 /* What the write function of the test of the user data has seen. */
-typedef struct probe {
+typedef struct probe
+{
     const void *self;  /* the pointer that was given as the user data */
     size_t calls;      /* the number of calls */
     size_t mismatches; /* the calls whose user data was another pointer */
@@ -513,7 +533,8 @@ static bool probe_write(void *user_data, const char *text, size_t length)
     (void)text;
     (void)length;
     ++probe->calls;
-    if (probe->self != user_data) {
+    if (probe->self != user_data)
+    {
         ++probe->mismatches;
     }
     return true;
@@ -536,7 +557,8 @@ NAOS_TEST(user_data_reaches_the_write_function_unchanged)
     clargs_help_options_t *narrow = create_narrow();
     int kind;
 
-    for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind) {
+    for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
+    {
         probe_t probe;
 
         probe.self = &probe;
@@ -568,8 +590,10 @@ NAOS_TEST(write_function_is_never_called_with_the_length_0)
     settings[0] = narrow;
     settings[1] = NULL;
 
-    for (setting = 0; setting < 2; ++setting) {
-        for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind) {
+    for (setting = 0; setting < 2; ++setting)
+    {
+        for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
+        {
             sink_t sink;
 
             collect((text_kind_t)kind, root, settings[setting], &sink);
@@ -587,13 +611,15 @@ NAOS_TEST(failure_in_the_nth_call_stops_the_generation_after_n_calls)
     size_t live = clargs_test_allocator_live();
     int kind;
 
-    for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind) {
+    for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
+    {
         sink_t whole;
         size_t n;
 
         collect((text_kind_t)kind, root, narrow, &whole);
 
-        for (n = 1; n <= whole.calls; ++n) {
+        for (n = 1; n <= whole.calls; ++n)
+        {
             sink_t sink;
 
             sink_init(&sink);
@@ -671,7 +697,8 @@ NAOS_TEST(two_calls_get_the_whole_text)
     clargs_help_options_t *narrow = create_narrow();
     int kind;
 
-    for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind) {
+    for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
+    {
         const char *expected = kind == TEXT_HELP ? narrow_help : narrow_usage;
         char buffer[SINK_SIZE];
         size_t length = LENGTH_UNSET;
@@ -711,7 +738,8 @@ NAOS_TEST(format_leaves_nothing_allocated_and_format_usage_allocates_nothing)
     sizes[2] = 30;
     sizes[3] = SINK_SIZE;
 
-    for (index = 0; index < 4; ++index) {
+    for (index = 0; index < 4; ++index)
+    {
         char buffer[SINK_SIZE];
         size_t length = LENGTH_UNSET;
         size_t requests = clargs_test_allocator_requests();
@@ -765,7 +793,8 @@ static void check_out_of_memory(const clargs_command_t *command,
     NAOS_CHECK_TRUE(error == CLARGS_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_UINT_EQ(length, call.with_length ? (size_t)0 : LENGTH_UNSET);
 
-    if (call.size != 0) {
+    if (call.size != 0)
+    {
         /*
          * The empty string. The bytes of the array behind its '\0' are not
          * specified: the start of the text may have been there.
@@ -788,7 +817,8 @@ NAOS_TEST(format_out_of_memory_empties_the_buffer_and_the_length)
     format_call_t call;
     int with_length;
 
-    for (with_length = 0; with_length < 2; ++with_length) {
+    for (with_length = 0; with_length < 2; ++with_length)
+    {
         call.with_length = with_length != 0;
         call.null_buffer = false;
 

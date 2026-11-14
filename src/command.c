@@ -67,13 +67,16 @@ static void free_command(clargs_command_t *command)
 {
     size_t index;
 
-    for (index = 0; index < command->subcommands.count; ++index) {
+    for (index = 0; index < command->subcommands.count; ++index)
+    {
         free_command(subcommand_at(command, index));
     }
-    for (index = 0; index < command->options.count; ++index) {
+    for (index = 0; index < command->options.count; ++index)
+    {
         free_option(option_at(command, index));
     }
-    for (index = 0; index < command->positionals.count; ++index) {
+    for (index = 0; index < command->positionals.count; ++index)
+    {
         free_positional(positional_at(command, index));
     }
 
@@ -94,12 +97,14 @@ static clargs_command_t *new_command(const char *name, clargs_command_t *parent)
 {
     clargs_command_t *command = (clargs_command_t *)clargs_malloc(sizeof(*command));
 
-    if (command == NULL) {
+    if (command == NULL)
+    {
         return NULL;
     }
 
     command->name = clargs_strdup(name);
-    if (command->name == NULL) {
+    if (command->name == NULL)
+    {
         clargs_free(command);
         return NULL;
     }
@@ -119,7 +124,8 @@ clargs_command_t *clargs_schema_root(clargs_command_t *command)
 {
     assert(command != NULL);
 
-    while (command->parent != NULL) {
+    while (command->parent != NULL)
+    {
         command = command->parent;
     }
     return command;
@@ -140,7 +146,8 @@ clargs_error_t clargs_schema_replace_string(char **slot, const char *text)
     assert(text != NULL);
 
     copy = clargs_strdup(text);
-    if (copy == NULL) {
+    if (copy == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -160,12 +167,14 @@ clargs_error_t clargs_command_create(const char *name, clargs_command_t **out)
 
     *out = NULL;
 
-    if (name[0] == '\0') {
+    if (name[0] == '\0')
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
 
     root = new_command(name, NULL);
-    if (root == NULL) {
+    if (root == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -175,7 +184,8 @@ clargs_error_t clargs_command_create(const char *name, clargs_command_t **out)
 
 void clargs_command_destroy(clargs_command_t *root)
 {
-    if (root == NULL) {
+    if (root == NULL)
+    {
         return;
     }
 
@@ -192,7 +202,8 @@ clargs_error_t clargs_command_add_subcommand(clargs_command_t *command, const ch
     assert(command != NULL);
     assert(name != NULL);
 
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = NULL;
     }
 
@@ -200,18 +211,22 @@ clargs_error_t clargs_command_add_subcommand(clargs_command_t *command, const ch
      * The checks come before every allocation, so a wrong definition
      * touches nothing.
      */
-    if (!clargs_name_is_subcommand(name)) {
+    if (!clargs_name_is_subcommand(name))
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (command->positionals.count != 0) {
+    if (command->positionals.count != 0)
+    {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
-    if (clargs_command_find_subcommand(command, name) != NULL) {
+    if (clargs_command_find_subcommand(command, name) != NULL)
+    {
         return CLARGS_ERROR_NAME_CONFLICT;
     }
 
     subcommand = new_command(name, command);
-    if (subcommand == NULL) {
+    if (subcommand == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -219,14 +234,16 @@ clargs_error_t clargs_command_add_subcommand(clargs_command_t *command, const ch
      * The tree is changed last: a push that fails leaves the array as it
      * was.
      */
-    if (clargs_vec_push(&command->subcommands, &subcommand) != CLARGS_ERROR_NONE) {
+    if (clargs_vec_push(&command->subcommands, &subcommand) != CLARGS_ERROR_NONE)
+    {
         free_command(subcommand);
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     clargs_schema_touch(command);
 
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = subcommand;
     }
     return CLARGS_ERROR_NONE;
@@ -240,7 +257,8 @@ clargs_error_t clargs_command_set_description(clargs_command_t *command, const c
     assert(text != NULL);
 
     error = clargs_schema_replace_string(&command->description, text);
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         return error;
     }
 
@@ -328,14 +346,17 @@ const clargs_option_t *clargs_command_find_short(const clargs_command_t *command
      * '\0' is how an option without a short name is stored; it is not a
      * name.
      */
-    if (name == '\0') {
+    if (name == '\0')
+    {
         return NULL;
     }
 
-    for (index = 0; index < command->options.count; ++index) {
+    for (index = 0; index < command->options.count; ++index)
+    {
         const clargs_option_t *option = option_at(command, index);
 
-        if (option->short_name == name) {
+        if (option->short_name == name)
+        {
             return option;
         }
     }
@@ -350,12 +371,15 @@ const clargs_option_t *clargs_command_find_long(const clargs_command_t *command,
     assert(command != NULL);
     assert(name != NULL);
 
-    for (index = 0; index < command->options.count; ++index) {
+    for (index = 0; index < command->options.count; ++index)
+    {
         const clargs_option_t *option = option_at(command, index);
         bool is_long = option->long_name != NULL && name_equals(option->long_name, name, length);
 
-        if (is_long || (option->negated_name != NULL && name_equals(option->negated_name, name, length))) {
-            if (negated != NULL) {
+        if (is_long || (option->negated_name != NULL && name_equals(option->negated_name, name, length)))
+        {
+            if (negated != NULL)
+            {
                 *negated = !is_long;
             }
             return option;
@@ -371,10 +395,12 @@ const clargs_command_t *clargs_command_find_subcommand(const clargs_command_t *c
     assert(command != NULL);
     assert(name != NULL);
 
-    for (index = 0; index < command->subcommands.count; ++index) {
+    for (index = 0; index < command->subcommands.count; ++index)
+    {
         const clargs_command_t *subcommand = subcommand_at(command, index);
 
-        if (strcmp(subcommand->name, name) == 0) {
+        if (strcmp(subcommand->name, name) == 0)
+        {
             return subcommand;
         }
     }

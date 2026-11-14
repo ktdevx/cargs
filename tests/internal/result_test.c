@@ -297,7 +297,8 @@ NAOS_TEST(several_arguments_are_copied_in_one_allocation)
     NAOS_CHECK_UINT_EQ(requests_of_create(root, 6, argv), without + 1);
 
     result = create_result(root, 6, argv);
-    for (i = 0; i < 6; ++i) {
+    for (i = 0; i < 6; ++i)
+    {
         NAOS_CHECK_STR_EQ(clargs_result_arg(result, i), expected[i]);
         NAOS_CHECK_TRUE(clargs_result_arg(result, i) != argv[i]);
     }
@@ -430,17 +431,20 @@ NAOS_TEST(many_nested_commands_are_kept)
     size_t i;
 
     commands[0] = root;
-    for (i = 1; i <= DEPTH; ++i) {
+    for (i = 1; i <= DEPTH; ++i)
+    {
         commands[i] = add_sub(commands[i - 1], "sub");
     }
 
     result = create_result(root, 0, NULL);
-    for (i = 1; i <= DEPTH; ++i) {
+    for (i = 1; i <= DEPTH; ++i)
+    {
         NAOS_REQUIRE_TRUE(clargs_result_push_command(result, commands[i]) == CLARGS_ERROR_NONE);
     }
 
     NAOS_CHECK_UINT_EQ(clargs_result_command_count(result), DEPTH + 1);
-    for (i = 0; i <= DEPTH; ++i) {
+    for (i = 0; i <= DEPTH; ++i)
+    {
         NAOS_CHECK_TRUE(clargs_result_command_at(result, i) == commands[i]);
     }
     NAOS_CHECK_TRUE(clargs_result_command(result) == commands[DEPTH]);
@@ -627,7 +631,8 @@ NAOS_TEST(count_is_the_number_of_records)
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, VERBOSE)),
                       CLARGS_SOURCE_COMMAND_LINE);
 
-    for (i = 2; i <= 40; ++i) {
+    for (i = 2; i <= 40; ++i)
+    {
         clargs_result_record_count(result, option_of(root, VERBOSE));
         NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(root, VERBOSE)), i);
     }
@@ -859,12 +864,15 @@ static clargs_error_t create_and_push(clargs_command_t *const *commands, size_t 
     *pushed = 0;
 
     error = clargs_result_create(commands[0], 3, argv, out);
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         return error;
     }
-    for (i = 1; i < count; ++i) {
+    for (i = 1; i < count; ++i)
+    {
         error = clargs_result_push_command(*out, commands[i]);
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
         ++*pushed;
@@ -895,7 +903,8 @@ NAOS_TEST(fails_at_every_allocation_point)
     root = new_root();
     commands[0] = root;
     add_four_options(root);
-    for (i = 1; i < COUNT; ++i) {
+    for (i = 1; i < COUNT; ++i)
+    {
         commands[i] = add_sub(commands[i - 1], "sub");
         add_four_options(commands[i]);
     }
@@ -903,7 +912,8 @@ NAOS_TEST(fails_at_every_allocation_point)
     live_of_schema = clargs_test_allocator_live();
     clargs_test_allocator_uninstall();
 
-    for (n = 1; n <= limit; ++n) {
+    for (n = 1; n <= limit; ++n)
+    {
         clargs_result_t *result = NULL;
         clargs_error_t error;
         size_t pushed;
@@ -918,7 +928,8 @@ NAOS_TEST(fails_at_every_allocation_point)
 
         error = create_and_push(commands, COUNT, &result, &pushed);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < n) {
+        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < n)
+        {
             /*
              * The operation ended before the request to fail was reached:
              * every allocation point has been passed.
@@ -937,7 +948,8 @@ NAOS_TEST(fails_at_every_allocation_point)
         NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n);
 
-        if (result == NULL) {
+        if (result == NULL)
+        {
             /*
              * The creation failed: there is no result, and nothing of it
              * is left.
@@ -945,14 +957,17 @@ NAOS_TEST(fails_at_every_allocation_point)
             ++failures_of_create;
             NAOS_CHECK_UINT_EQ(pushed, 0);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-        } else {
+        }
+        else
+        {
             size_t live = clargs_test_allocator_live();
 
             /* A push failed: the result is as it was before that push. */
             ++failures_of_push;
             NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
             NAOS_CHECK_UINT_EQ(clargs_result_command_count(result), pushed + 1);
-            for (i = 0; i <= pushed; ++i) {
+            for (i = 0; i <= pushed; ++i)
+            {
                 NAOS_CHECK_TRUE(clargs_result_command_at(result, i) == commands[i]);
             }
             NAOS_CHECK_TRUE(clargs_result_command(result) == commands[pushed]);
@@ -1012,14 +1027,16 @@ NAOS_TEST(fails_at_every_allocation_point)
  * than a pointer, so the area of a value has to have the size that the
  * value type tells.
  */
-typedef struct custom_value {
+typedef struct custom_value
+{
     const char *text; /* The input string itself. */
     size_t length;    /* Its length. */
     double filler[3]; /* 1.0, 2.0 and 3.0 */
 } custom_value_t;
 
 /* The user data of the user-defined value type: what was called. */
-typedef struct custom_counts {
+typedef struct custom_counts
+{
     size_t converts;           /* The calls of the conversion function. */
     size_t successes;          /* Those that succeeded. */
     size_t releases;           /* The calls of the cleanup function. */
@@ -1038,7 +1055,8 @@ static clargs_error_t custom_convert(const char *text, void *value, void *contex
 
     counts->converts += 1;
     counts->last_text = text;
-    switch (text[0]) {
+    switch (text[0])
+    {
     case '!':
         return CLARGS_ERROR_INVALID_VALUE;
     case '#':
@@ -1071,7 +1089,8 @@ static void custom_release(void *value, void *context)
  * The value types that the tests of the values create, and the counts of
  * the user-defined one.
  */
-typedef struct value_types {
+typedef struct value_types
+{
     clargs_type_t *choice; /* "red", "green", "blue" */
     clargs_type_t *custom;
     custom_counts_t counts;
@@ -1383,7 +1402,8 @@ static void check_positionals_have_no_value(const clargs_result_t *result,
     NAOS_CHECK_FALSE(clargs_result_positional_choice(result, positional_of(command, V_MODE), index, &mode));
     NAOS_CHECK_UINT_EQ(mode, 77);
 
-    for (i = V_TEXT; i <= V_ITEM; ++i) {
+    for (i = V_TEXT; i <= V_ITEM; ++i)
+    {
         NAOS_CHECK_TRUE(clargs_result_positional_value(result, positional_of(command, i), index) == NULL);
         NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional_of(command, i)), 0);
         NAOS_CHECK_INT_EQ(clargs_result_positional_source(result, positional_of(command, i)),
@@ -1544,7 +1564,8 @@ NAOS_TEST(failed_conversion_keeps_the_value_of_an_option)
     create_types(&types);
     add_value_options(root, &types);
 
-    for (i = 0; i < 3; ++i) {
+    for (i = 0; i < 3; ++i)
+    {
         clargs_result_t *result = create_result_of_two(root);
         const custom_value_t *item;
         size_t releases = types.counts.releases;
@@ -1646,7 +1667,8 @@ NAOS_TEST(positional_values_of_every_value_type_are_read)
     NAOS_CHECK_INT_EQ(record_positional(result, root, V_MODE, "green"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(record_positional(result, root, V_ITEM, ""), CLARGS_ERROR_NONE);
 
-    for (i = V_TEXT; i <= V_ITEM; ++i) {
+    for (i = V_TEXT; i <= V_ITEM; ++i)
+    {
         NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional_of(root, i)), 1);
         NAOS_CHECK_INT_EQ(clargs_result_positional_source(result, positional_of(root, i)),
                           CLARGS_SOURCE_COMMAND_LINE);
@@ -1728,10 +1750,12 @@ NAOS_TEST(positional_values_are_kept_in_their_order)
      * A value is added after those that are there; none is replaced or
      * cleaned up, also when the array of the values grows.
      */
-    for (i = 0; i < COUNT; ++i) {
+    for (i = 0; i < COUNT; ++i)
+    {
         NAOS_CHECK_INT_EQ(record_positional(result, root, V_ITEM, inputs[i]), CLARGS_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional_of(root, V_ITEM)), i + 1);
-        for (k = 0; k <= i; ++k) {
+        for (k = 0; k <= i; ++k)
+        {
             const custom_value_t *item = (const custom_value_t *)clargs_result_positional_value(
                 result, positional_of(root, V_ITEM), k);
 
@@ -1863,7 +1887,8 @@ NAOS_TEST(destroy_releases_every_value_once)
     NAOS_CHECK_INT_EQ(record_option(result, leaf, V_ITEM, "#e"), CLARGS_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_INT_EQ(record_option(result, leaf, V_MODE, "red"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(record_positional(result, leaf, V_NUM, "3"), CLARGS_ERROR_NONE);
-    for (i = 0; i < 6; ++i) {
+    for (i = 0; i < 6; ++i)
+    {
         NAOS_CHECK_INT_EQ(record_positional(result, leaf, V_ITEM, "f"), CLARGS_ERROR_NONE);
     }
     NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
@@ -1893,7 +1918,8 @@ NAOS_TEST(destroy_releases_every_value_once)
 /* ---- The failure of an allocation while recording values ----------------- */
 
 /* One step of record_values(). */
-typedef struct value_step {
+typedef struct value_step
+{
     bool positional;  /* Whether the value is that of a positional. */
     size_t index;     /* The index of the option or the positional in the command. */
     const char *text; /* The input. */
@@ -1935,16 +1961,21 @@ static clargs_error_t record_values(clargs_result_t *result, const clargs_comman
     size_t i;
 
     *done = 0;
-    for (i = 0; i < VALUE_STEPS; ++i) {
+    for (i = 0; i < VALUE_STEPS; ++i)
+    {
         clargs_error_t error;
 
         *live = clargs_test_allocator_live();
-        if (value_steps[i].positional) {
+        if (value_steps[i].positional)
+        {
             error = record_positional(result, command, value_steps[i].index, value_steps[i].text);
-        } else {
+        }
+        else
+        {
             error = record_option(result, command, value_steps[i].index, value_steps[i].text);
         }
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
         ++*done;
@@ -1965,28 +1996,37 @@ static void check_recorded_values(const clargs_result_t *result, const clargs_co
     const custom_value_t *item;
     size_t i;
 
-    for (i = 0; i < done; ++i) {
-        if (value_steps[i].index != V_ITEM) {
+    for (i = 0; i < done; ++i)
+    {
+        if (value_steps[i].index != V_ITEM)
+        {
             continue;
         }
-        if (value_steps[i].positional) {
+        if (value_steps[i].positional)
+        {
             items[item_count] = value_steps[i].text;
             ++item_count;
-        } else {
+        }
+        else
+        {
             option_item = value_steps[i].text;
         }
     }
 
     item = (const custom_value_t *)clargs_result_option_value(result, option_of(command, V_ITEM));
-    if (option_item == NULL) {
+    if (option_item == NULL)
+    {
         NAOS_CHECK_TRUE(item == NULL);
-    } else {
+    }
+    else
+    {
         NAOS_REQUIRE_TRUE(item != NULL);
         NAOS_CHECK_TRUE(item->text == option_item);
     }
 
     NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional_of(command, V_ITEM)), item_count);
-    for (i = 0; i < item_count; ++i) {
+    for (i = 0; i < item_count; ++i)
+    {
         item = (const custom_value_t *)clargs_result_positional_value(result,
                                                                       positional_of(command, V_ITEM), i);
         NAOS_REQUIRE_TRUE(item != NULL);
@@ -2021,7 +2061,8 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
     add_value_positionals(sub, &types);
     clargs_test_allocator_uninstall();
 
-    for (n = 1; n <= limit; ++n) {
+    for (n = 1; n <= limit; ++n)
+    {
         clargs_result_t *result;
         clargs_error_t error;
         size_t done;
@@ -2043,7 +2084,8 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
 
         error = record_values(result, sub, &done, &live);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < first + n) {
+        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < first + n)
+        {
             /*
              * The operation ended before the request to fail was reached:
              * every allocation point has been passed.
@@ -2076,11 +2118,14 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
         NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
 
         /* The result is still usable: the same step now succeeds. */
-        if (value_steps[done].positional) {
+        if (value_steps[done].positional)
+        {
             NAOS_CHECK_INT_EQ(record_positional(result, sub, value_steps[done].index,
                                                 value_steps[done].text),
                               CLARGS_ERROR_NONE);
-        } else {
+        }
+        else
+        {
             NAOS_CHECK_INT_EQ(record_option(result, sub, value_steps[done].index, value_steps[done].text),
                               CLARGS_ERROR_NONE);
         }
@@ -2189,7 +2234,8 @@ enum { VALUE_NONE, VALUE_ARGUMENT, VALUE_AFTER_EQUALS };
 enum { ELEMENT_NONE, ELEMENT_OUT, ELEMENT_FLAG, ELEMENT_INPUT };
 
 /* One parse error to record, and the message that it has. */
-typedef struct failure_case {
+typedef struct failure_case
+{
     clargs_parse_error_kind_t kind;
     clargs_source_t source;
     size_t index;
@@ -2252,7 +2298,8 @@ NAOS_TEST(recorded_error_is_read_back)
     add_four_options(sub);
     add_two_positionals(sub);
 
-    for (i = 0; i < FAILURE_CASES; ++i) {
+    for (i = 0; i < FAILURE_CASES; ++i)
+    {
         const failure_case_t *c = &failure_cases[i];
         clargs_result_t *result = create_result(root, 5, argv);
         clargs_result_failure_t failure;
@@ -2276,19 +2323,28 @@ NAOS_TEST(recorded_error_is_read_back)
         failure.command = sub;
         failure.option = NULL;
         failure.positional = NULL;
-        if (c->source == CLARGS_SOURCE_COMMAND_LINE) {
+        if (c->source == CLARGS_SOURCE_COMMAND_LINE)
+        {
             argument = clargs_result_arg(result, c->index);
         }
-        if (c->value == VALUE_ARGUMENT) {
+        if (c->value == VALUE_ARGUMENT)
+        {
             failure.value = argument;
-        } else if (c->value == VALUE_AFTER_EQUALS) {
+        }
+        else if (c->value == VALUE_AFTER_EQUALS)
+        {
             failure.value = clargs_result_arg(result, 3) + 7;
         }
-        if (c->element == ELEMENT_OUT) {
+        if (c->element == ELEMENT_OUT)
+        {
             failure.option = option_of(sub, OUT);
-        } else if (c->element == ELEMENT_FLAG) {
+        }
+        else if (c->element == ELEMENT_FLAG)
+        {
             failure.option = option_of(sub, FLAG);
-        } else if (c->element == ELEMENT_INPUT) {
+        }
+        else if (c->element == ELEMENT_INPUT)
+        {
             failure.positional = positional_of(sub, 0);
         }
 
@@ -2313,7 +2369,8 @@ NAOS_TEST(recorded_error_is_read_back)
         NAOS_CHECK_TRUE(clargs_result_error_option(result) == failure.option);
         NAOS_CHECK_TRUE(clargs_result_error_positional(result) == failure.positional);
         NAOS_CHECK_TRUE(clargs_result_error_short_name(result) == c->short_name);
-        if (c->value == VALUE_AFTER_EQUALS) {
+        if (c->value == VALUE_AFTER_EQUALS)
+        {
             NAOS_CHECK_STR_EQ(clargs_result_error_value(result), "1");
         }
 
@@ -2391,9 +2448,12 @@ static void check_invalid_value(const clargs_result_t *result, const clargs_resu
     NAOS_CHECK_INT_EQ(clargs_result_error_kind(result), CLARGS_PARSE_ERROR_INVALID_VALUE);
     NAOS_CHECK_INT_EQ(clargs_result_error_source(result), where->source);
     NAOS_CHECK_UINT_EQ(clargs_result_error_index(result), where->index);
-    if (where->source == CLARGS_SOURCE_COMMAND_LINE) {
+    if (where->source == CLARGS_SOURCE_COMMAND_LINE)
+    {
         NAOS_CHECK_TRUE(clargs_result_error_argument(result) == clargs_result_arg(result, where->index));
-    } else {
+    }
+    else
+    {
         NAOS_CHECK_TRUE(clargs_result_error_argument(result) == NULL);
     }
     NAOS_CHECK_TRUE(clargs_result_error_value(result) == text);
@@ -2430,7 +2490,8 @@ NAOS_TEST(failed_conversion_of_an_option_is_recorded_as_an_invalid_value)
     add_value_options(root, &types);
     add_value_options(sub, &types);
 
-    for (i = 0; i < CASES; ++i) {
+    for (i = 0; i < CASES; ++i)
+    {
         size_t live;
 
         result = create_result_of_two(root);
@@ -2499,7 +2560,8 @@ NAOS_TEST(failed_conversion_of_a_positional_is_recorded_as_an_invalid_value)
     create_types(&types);
     add_value_positionals(sub, &types);
 
-    for (i = 0; i < CASES; ++i) {
+    for (i = 0; i < CASES; ++i)
+    {
         clargs_result_t *result = create_result_of_two(root);
         clargs_result_where_t where = on_command_line();
         size_t live;

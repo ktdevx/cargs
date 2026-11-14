@@ -83,7 +83,8 @@ static clargs_option_t *add_value(clargs_command_t *command, char short_name, co
     NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_default(option, default_value) == CLARGS_ERROR_NONE);
     }
     return option;
@@ -112,7 +113,8 @@ static clargs_positional_t *add_positional(clargs_command_t *command, const char
     NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, arity, &positional) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_positional_set_default(positional, default_value) == CLARGS_ERROR_NONE);
     }
     return positional;
@@ -560,7 +562,8 @@ NAOS_TEST(the_first_missing_required_thing_is_reported)
  * A tool with the subcommands "build", which has something required, a
  * default value and a negatable flag for each initial state, and "clean".
  */
-typedef struct tool_fixture {
+typedef struct tool_fixture
+{
     clargs_command_t *root;
     clargs_option_t *config;      /* --config of tool, default "tool.cfg" */
     clargs_command_t *build;
@@ -731,7 +734,8 @@ NAOS_TEST(a_result_with_a_parse_error_has_no_default_value)
  * "bad". Its value is the text. The validation of a schema converts the
  * default values with it; the switch is thrown afterwards.
  */
-typedef struct picky {
+typedef struct picky
+{
     bool reject;
 } picky_t;
 
@@ -739,7 +743,8 @@ static clargs_error_t picky_convert(const char *text, void *value, void *context
 {
     const picky_t *picky = context;
 
-    if (picky->reject && strcmp(text, "bad") == 0) {
+    if (picky->reject && strcmp(text, "bad") == 0)
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
     memcpy(value, &text, sizeof(text));
@@ -818,7 +823,8 @@ NAOS_TEST(a_parse_that_cannot_allocate_a_default_value_returns_no_result_and_lea
     NAOS_REQUIRE_TRUE(requests > 0);
 
     /* Each of them fails in turn. */
-    for (nth = 1; nth <= requests; nth++) {
+    for (nth = 1; nth <= requests; nth++)
+    {
         clargs_error_t error;
 
         result = NULL;
@@ -849,7 +855,8 @@ NAOS_TEST(a_parse_that_cannot_allocate_a_default_value_returns_no_result_and_lea
  * The value of the user-defined value type "word": the text that the
  * conversion was given, not a copy of it, and the length of the text.
  */
-typedef struct word {
+typedef struct word
+{
     const char *text;
     size_t length;
 } word_t;
@@ -860,7 +867,8 @@ typedef struct word {
  * was requested and of the last value that was cleaned up, and tells what
  * the conversion of the text "bad" returns.
  */
-typedef struct word_log {
+typedef struct word_log
+{
     size_t converted;
     size_t released;
     clargs_error_t failure; /* CLARGS_ERROR_NONE: "bad" is taken like every text */
@@ -872,7 +880,8 @@ static void keep_text(char *buffer, size_t size, const char *text)
 {
     size_t length = strlen(text);
 
-    if (length >= size) {
+    if (length >= size)
+    {
         length = size - 1;
     }
     memcpy(buffer, text, length);
@@ -885,7 +894,8 @@ static clargs_error_t word_convert(const char *text, void *value, void *context)
     word_t word;
 
     keep_text(log->last_text, sizeof(log->last_text), text);
-    if (log->failure != CLARGS_ERROR_NONE && strcmp(text, "bad") == 0) {
+    if (log->failure != CLARGS_ERROR_NONE && strcmp(text, "bad") == 0)
+    {
         return log->failure;
     }
     word.text = text;
@@ -1343,7 +1353,8 @@ NAOS_TEST(white_space_around_a_value_is_not_removed_for_its_value_type)
  * which takes any number of values. The conversion takes "bad" until
  * log.failure is set, which is done after the validation.
  */
-typedef struct word_fixture {
+typedef struct word_fixture
+{
     word_log_t log;
     clargs_type_t *type;
     clargs_command_t *root;
@@ -1591,7 +1602,8 @@ NAOS_TEST(a_conversion_that_reports_a_lack_of_memory_fails_the_parse_without_a_r
     other = parse_ok(fixture.root, ARGC(good), good);
     live = clargs_test_allocator_live();
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 3; i++)
+    {
         size_t converted = fixture.log.converted;
         size_t held = words_held(&fixture);
         clargs_result_t *result = other;

@@ -41,14 +41,16 @@
     X(CLARGS_ERROR_WRITE_FAILED, "write failed")
 
 /* The kind of a failure, or CLARGS_ERROR_NONE for success. */
-typedef enum clargs_error {
+typedef enum clargs_error
+{
 #define CLARGS_ERROR_ENUM(name, message) name,
     CLARGS_ERROR_LIST(CLARGS_ERROR_ENUM)
 #undef CLARGS_ERROR_ENUM
 } clargs_error_t;
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*

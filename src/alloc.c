@@ -52,7 +52,8 @@ static clargs_allocator_t current_allocator = DEFAULT_ALLOCATOR;
 
 void clargs_set_allocator(const clargs_allocator_t *allocator)
 {
-    if (allocator == NULL) {
+    if (allocator == NULL)
+    {
         current_allocator = default_allocator;
         return;
     }
@@ -67,7 +68,8 @@ void clargs_set_allocator(const clargs_allocator_t *allocator)
 
 void *clargs_malloc(size_t size)
 {
-    if (size == 0) {
+    if (size == 0)
+    {
         return NULL;
     }
 
@@ -76,11 +78,13 @@ void *clargs_malloc(size_t size)
 
 void *clargs_calloc(size_t count, size_t size)
 {
-    if (count == 0 || size == 0) {
+    if (count == 0 || size == 0)
+    {
         return NULL;
     }
     /* count * size would not fit in a size_t. */
-    if (count > SIZE_MAX / size) {
+    if (count > SIZE_MAX / size)
+    {
         return NULL;
     }
 
@@ -89,10 +93,12 @@ void *clargs_calloc(size_t count, size_t size)
 
 void *clargs_realloc(void *ptr, size_t size)
 {
-    if (ptr == NULL) {
+    if (ptr == NULL)
+    {
         return clargs_malloc(size);
     }
-    if (size == 0) {
+    if (size == 0)
+    {
         clargs_free(ptr);
         return NULL;
     }
@@ -102,7 +108,8 @@ void *clargs_realloc(void *ptr, size_t size)
 
 void clargs_free(void *ptr)
 {
-    if (ptr == NULL) {
+    if (ptr == NULL)
+    {
         return;
     }
 

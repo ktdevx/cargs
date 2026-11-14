@@ -39,7 +39,8 @@ static clargs_error_t convert_choice(const clargs_type_t *type, const char *text
 {
     clargs_error_t error = clargs_type_convert(type, text, index);
 
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         clargs_type_release(type, index);
     }
     return error;
@@ -52,7 +53,8 @@ static clargs_error_t convert_choice(const clargs_type_t *type, const char *text
  */
 static clargs_type_t *as_destroyable(const clargs_type_t *type)
 {
-    union {
+    union
+    {
         const clargs_type_t *as_const;
         clargs_type_t *as_modifiable;
     } pointer;
@@ -69,7 +71,8 @@ static clargs_error_t convert_int(const char *text, int64_t *value)
 {
     clargs_error_t error = clargs_type_convert(clargs_type_int(), text, value);
 
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         clargs_type_release(clargs_type_int(), value);
     }
     return error;
@@ -83,7 +86,8 @@ static clargs_error_t convert_float(const char *text, double *value)
 {
     clargs_error_t error = clargs_type_convert(clargs_type_float(), text, value);
 
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         clargs_type_release(clargs_type_float(), value);
     }
     return error;
@@ -152,7 +156,8 @@ NAOS_TEST(string_conversion_writes_the_pointer_to_the_input)
     };
     size_t index;
 
-    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index) {
+    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index)
+    {
         const char *value = NULL;
         clargs_error_t error = clargs_type_convert(clargs_type_string(), inputs[index], &value);
 
@@ -203,7 +208,8 @@ NAOS_TEST(int_conversion_fails)
     };
     size_t index;
 
-    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index) {
+    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index)
+    {
         int64_t value = 0;
 
         NAOS_CHECK_INT_EQ(clargs_type_convert(clargs_type_int(), inputs[index], &value),
@@ -241,7 +247,8 @@ NAOS_TEST(float_conversion_fails)
     };
     size_t index;
 
-    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index) {
+    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index)
+    {
         double value = 0.0;
 
         NAOS_CHECK_INT_EQ(clargs_type_convert(clargs_type_float(), inputs[index], &value),
@@ -256,7 +263,8 @@ NAOS_TEST(float_conversion_fails)
  */
 NAOS_TEST(conversion_is_requested_the_same_way_for_every_type)
 {
-    typedef union any_value {
+    typedef union any_value
+    {
         const char *as_string;
         int64_t as_int;
         double as_float;
@@ -269,14 +277,16 @@ NAOS_TEST(conversion_is_requested_the_same_way_for_every_type)
     types[1] = clargs_type_int();
     types[2] = clargs_type_float();
 
-    for (index = 0; index < 3; ++index) {
+    for (index = 0; index < 3; ++index)
+    {
         any_value_t value;
 
         value.as_int = 0;
         NAOS_REQUIRE_TRUE(clargs_type_value_size(types[index]) <= sizeof(value));
         NAOS_REQUIRE_TRUE(clargs_type_convert(types[index], input, &value) == CLARGS_ERROR_NONE);
 
-        switch (clargs_type_kind(types[index])) {
+        switch (clargs_type_kind(types[index]))
+        {
         case CLARGS_TYPE_STRING:
             NAOS_CHECK_TRUE(value.as_string == input);
             break;
@@ -355,7 +365,8 @@ NAOS_TEST(choice_conversion_fails_without_an_exact_match)
     NAOS_REQUIRE_TRUE(clargs_type_create_choice(choices, 3, &type) == CLARGS_ERROR_NONE);
     requests = clargs_test_allocator_requests();
 
-    for (position = 0; position < sizeof(inputs) / sizeof(inputs[0]); ++position) {
+    for (position = 0; position < sizeof(inputs) / sizeof(inputs[0]); ++position)
+    {
         size_t index = 0;
 
         NAOS_CHECK_INT_EQ(clargs_type_convert(type, inputs[position], &index),
@@ -442,7 +453,8 @@ NAOS_TEST(choices_are_read_in_the_order_of_the_definition)
     NAOS_REQUIRE_TRUE(clargs_type_create_choice(choices, count, &type) == CLARGS_ERROR_NONE);
 
     NAOS_REQUIRE_TRUE(clargs_type_choice_count(type) == count);
-    for (position = 0; position < count; ++position) {
+    for (position = 0; position < count; ++position)
+    {
         NAOS_CHECK_STR_EQ(clargs_type_choice_at(type, position), choices[position]);
     }
 
@@ -586,7 +598,8 @@ NAOS_TEST(choice_creation_frees_everything_when_an_allocation_fails)
     NAOS_REQUIRE_TRUE(allocation_points > 0);
     NAOS_REQUIRE_TRUE(clargs_test_allocator_live() == 0);
 
-    for (n = 1; n <= allocation_points; ++n) {
+    for (n = 1; n <= allocation_points; ++n)
+    {
         clargs_test_allocator_reset();
         clargs_test_allocator_fail_at(n);
 
@@ -613,7 +626,8 @@ NAOS_TEST(choice_creation_frees_everything_when_an_allocation_fails)
  * The user data of the test value type. The conversion and the cleanup
  * function write what they were called with here.
  */
-typedef struct probe {
+typedef struct probe
+{
     clargs_error_t result;  /* what the conversion function returns */
     size_t convert_calls;
     size_t release_calls;
@@ -643,7 +657,8 @@ static clargs_error_t probe_convert(const char *text, void *value, void *context
     ++probe->convert_calls;
     probe->last_text = text;
     probe->last_converted = value;
-    if (probe->result == CLARGS_ERROR_NONE) {
+    if (probe->result == CLARGS_ERROR_NONE)
+    {
         *(int *)value = (int)strlen(text);
     }
     return probe->result;
@@ -765,7 +780,8 @@ NAOS_TEST(custom_name_can_be_any_string_that_is_not_empty)
     probe_init(&probe, CLARGS_ERROR_NONE);
     clargs_test_allocator_install();
 
-    for (index = 0; index < sizeof(names) / sizeof(names[0]); ++index) {
+    for (index = 0; index < sizeof(names) / sizeof(names[0]); ++index)
+    {
         clargs_type_t *type = NULL;
 
         NAOS_REQUIRE_TRUE(clargs_type_create(names[index], sizeof(int), probe_convert, NULL, &probe,
@@ -886,13 +902,15 @@ NAOS_TEST(custom_conversion_returns_what_the_function_returns)
     NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
                                          &type) == CLARGS_ERROR_NONE);
 
-    for (index = 0; index < sizeof(results) / sizeof(results[0]); ++index) {
+    for (index = 0; index < sizeof(results) / sizeof(results[0]); ++index)
+    {
         int value = -1;
 
         probe.result = results[index];
         NAOS_CHECK_INT_EQ(clargs_type_convert(type, "abcd", &value), results[index]);
         NAOS_CHECK_UINT_EQ(probe.convert_calls, index + 1);
-        if (results[index] == CLARGS_ERROR_NONE) {
+        if (results[index] == CLARGS_ERROR_NONE)
+        {
             NAOS_CHECK_INT_EQ(value, 4);
             clargs_type_release(type, &value);
         }
@@ -921,7 +939,8 @@ NAOS_TEST(custom_cleanup_is_called_once_for_each_successful_conversion)
     NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
                                          &type) == CLARGS_ERROR_NONE);
 
-    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index) {
+    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index)
+    {
         int value = -1;
         clargs_error_t error;
 
@@ -930,7 +949,8 @@ NAOS_TEST(custom_cleanup_is_called_once_for_each_successful_conversion)
 
         /* The conversion itself cleans nothing up. */
         NAOS_CHECK_UINT_EQ(probe.release_calls, successes);
-        if (error == CLARGS_ERROR_NONE) {
+        if (error == CLARGS_ERROR_NONE)
+        {
             clargs_type_release(type, &value);
             ++successes;
             NAOS_CHECK_TRUE(probe.last_released == (void *)&value);
@@ -981,7 +1001,8 @@ NAOS_TEST(custom_release_without_a_cleanup_function_does_nothing)
  */
 NAOS_TEST(custom_and_builtin_types_are_used_the_same_way)
 {
-    typedef union any_value {
+    typedef union any_value
+    {
         const char *as_string;
         int64_t as_int;
         double as_float;
@@ -1003,7 +1024,8 @@ NAOS_TEST(custom_and_builtin_types_are_used_the_same_way)
     types[2] = clargs_type_int();
     types[3] = clargs_type_float();
 
-    for (index = 0; index < 4; ++index) {
+    for (index = 0; index < 4; ++index)
+    {
         any_value_t value;
 
         value.as_int = 0;
@@ -1011,7 +1033,8 @@ NAOS_TEST(custom_and_builtin_types_are_used_the_same_way)
         NAOS_REQUIRE_TRUE(clargs_type_value_size(types[index]) <= sizeof(value));
         NAOS_REQUIRE_TRUE(clargs_type_convert(types[index], input, &value) == CLARGS_ERROR_NONE);
 
-        switch (clargs_type_kind(types[index])) {
+        switch (clargs_type_kind(types[index]))
+        {
         case CLARGS_TYPE_STRING:
             NAOS_CHECK_TRUE(value.as_string == input);
             break;
@@ -1103,7 +1126,8 @@ NAOS_TEST(custom_creation_frees_everything_when_an_allocation_fails)
     NAOS_REQUIRE_TRUE(allocation_points > 0);
     NAOS_REQUIRE_TRUE(clargs_test_allocator_live() == 0);
 
-    for (n = 1; n <= allocation_points; ++n) {
+    for (n = 1; n <= allocation_points; ++n)
+    {
         clargs_test_allocator_reset();
         clargs_test_allocator_fail_at(n);
 

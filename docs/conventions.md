@@ -198,7 +198,8 @@ Create `include/clargs/example.h` in the following form.
 #include <clargs/export.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 CLARGS_API int clargs_example_add(int left, int right);
@@ -434,11 +435,13 @@ The model is `fails_at_every_allocation_point` in `tests/internal/vec_test.c`. W
  */
 static clargs_error_t push_up_to(clargs_vec_t *vec, size_t total)
 {
-    while (vec->count < total) {
+    while (vec->count < total)
+    {
         int value = (int)vec->count;
         clargs_error_t error = clargs_vec_push(vec, &value);
 
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
     }
@@ -454,7 +457,8 @@ NAOS_TEST(fails_at_every_allocation_point)
 
     clargs_test_allocator_install();
 
-    for (n = 1; n <= limit; ++n) {
+    for (n = 1; n <= limit; ++n)
+    {
         clargs_vec_t vec;
         clargs_error_t error;
         size_t index;
@@ -468,7 +472,8 @@ NAOS_TEST(fails_at_every_allocation_point)
         error = push_up_to(&vec, total);
 
         if (error == CLARGS_ERROR_NONE
-            && clargs_test_allocator_requests() < n) {
+            && clargs_test_allocator_requests() < n)
+        {
             /*
              * The operation ended before the request to fail was reached:
              * every allocation point has failed once.
@@ -491,7 +496,8 @@ NAOS_TEST(fails_at_every_allocation_point)
          */
         NAOS_CHECK_TRUE(vec.count < total);
         NAOS_CHECK_UINT_EQ(vec.count, vec.capacity);
-        for (index = 0; index < vec.count; ++index) {
+        for (index = 0; index < vec.count; ++index)
+        {
             const int *item = clargs_vec_at(&vec, index);
 
             NAOS_CHECK_INT_EQ(*item, (int)index);
@@ -539,6 +545,21 @@ clargs_add_test(<name> SOURCES <source>... [INTERNAL])
 
 These are the rules for writing the library sources (`src/`). Ownership, lifetime and how failures are returned themselves are in [Ownership and Lifetime](ownership.md).
 
+### Brace style
+
+All C code (`include/`, `src/`, `tests/`) uses the Allman style: the opening brace of a function, a control statement (`if`, `else`, `for`, `while`, `do`, `switch`), a `struct`, `union` or `enum`, and `extern "C"` goes on a line of its own, at the indentation of the line that starts the statement. `else` starts a new line after the closing brace. The braces of an initializer (`= {`) stay on the same line, and the `while` of a `do` statement follows the closing brace (`} while (...);`).
+
+```c
+if (vec->capacity == 0)
+{
+    new_capacity = CLARGS_VEC_FIRST_CAPACITY;
+}
+else
+{
+    new_capacity = vec->capacity * 2;
+}
+```
+
 ### Allocating memory
 
 The library code allocates and frees memory with the internal memory functions (`src/alloc_internal.h`). This makes every allocation go through the allocator that the user set with `clargs_set_allocator()`.
@@ -579,12 +600,14 @@ clargs_error_t clargs_example_resize(int **values, size_t count)
     assert(count > 0);
 
     /* count * sizeof(int) would not fit in a size_t. */
-    if (count > SIZE_MAX / sizeof(int)) {
+    if (count > SIZE_MAX / sizeof(int))
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     resized = clargs_realloc(*values, count * sizeof(int));
-    if (resized == NULL) {
+    if (resized == NULL)
+    {
         /* *values is still valid and unchanged. */
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
@@ -650,7 +673,8 @@ The following example shows how a function is written to follow [rule 7](ownersh
 #include <assert.h>
 #include <stddef.h>
 
-struct clargs_example {
+struct clargs_example
+{
     char *name;
 };
 
@@ -664,12 +688,14 @@ clargs_error_t clargs_example_create(const char *name, clargs_example_t **out)
     *out = NULL;            /* On failure, the output is NULL. */
 
     example = clargs_calloc(1, sizeof(*example));
-    if (example == NULL) {
+    if (example == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     example->name = clargs_strdup(name);   /* Rule 2: duplicate it. */
-    if (example->name == NULL) {
+    if (example->name == NULL)
+    {
         clargs_free(example);              /* Free what this call allocated. */
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
