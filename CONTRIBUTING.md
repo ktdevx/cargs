@@ -83,7 +83,7 @@ Record every change that is visible to users under `Unreleased` in [CHANGELOG.md
 
 ## Releases
 
-This section is for maintainers. The release procedure is described in [docs/development/releasing.md](docs/development/releasing.md), and the versioning policy in [docs/references/versioning.md](docs/references/versioning.md).
+This section is for maintainers. The release procedure is described in [docs/development/releasing.md](docs/development/releasing.md), and the versioning policy in [docs/references/version.md](docs/references/version.md#compatibility).
 
 ## License
 

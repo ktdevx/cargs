@@ -190,12 +190,12 @@ The [documentation index](docs/README.md) lists every document. To start:
 
 - **Getting started:** [Installation](docs/getting-started/install.md) covers building, the build options, and the four ways to use ArgX from your project.
 - **Guides:** the [Guide](docs/guides/guide.md) walks through [examples/pack.c](examples/pack.c), a complete program, step by step. The [FAQ](docs/guides/faq.md) answers common questions, and [Design](docs/guides/design.md) explains why the library works the way it does.
-- **References:** one API page for each public header ([Schemas](docs/references/schema.md), [Value Types](docs/references/types.md), [Parsing](docs/references/parse.md), [Help and Usage](docs/references/help.md), [Allocator](docs/references/alloc.md), [Error Codes](docs/references/errors.md), [Version](docs/references/version.md)), and the specifications of the [command-line syntax](docs/references/syntax.md), the [help text layout](docs/references/help-layout.md), [ownership and lifetime](docs/references/ownership.md) and [versioning](docs/references/versioning.md).
+- **References:** one API page for each public header ([Schemas](docs/references/schema.md), [Value Types](docs/references/types.md), [Parsing](docs/references/parse.md), [Help and Usage](docs/references/help.md), [Allocator](docs/references/alloc.md), [Error Codes](docs/references/errors.md), [Version](docs/references/version.md)), and the specifications of the [command-line syntax](docs/references/syntax.md), the [help text layout](docs/references/help-layout.md) and [ownership and lifetime](docs/references/ownership.md).
 - **Development:** [Contributing to ArgX](CONTRIBUTING.md) is the entry point for contributors.
 
 ## Releases and changes
 
-Changes in each version are recorded in [CHANGELOG.md](CHANGELOG.md), and releases are published on the [Releases](https://github.com/ktdevx/cargs/releases) page. Release tags have the form `v<SemVer>`, such as `v0.2.0`. What stays compatible between versions is described in the [versioning policy](docs/references/versioning.md).
+Changes in each version are recorded in [CHANGELOG.md](CHANGELOG.md), and releases are published on the [Releases](https://github.com/ktdevx/cargs/releases) page. Release tags have the form `v<SemVer>`, such as `v0.2.0`. What stays compatible between versions is described in [Version](docs/references/version.md#compatibility).
 
 ## Contributing
 

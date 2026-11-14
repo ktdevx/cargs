@@ -25,14 +25,13 @@ API, one page for each public header, each starting with an index of its functio
 - [Help and Usage](references/help.md) (`help.h`): generating the help and the usage line, the help options, the output, and failures.
 - [Allocator](references/alloc.md) (`alloc.h`): setting the allocator, and what its functions must do.
 - [Error Codes](references/errors.md) (`error.h`): every error code with its message and meaning.
-- [Version](references/version.md) (`version.h`): checking the version in code.
+- [Version](references/version.md) (`version.h`): how versions are numbered and tagged, what a new version may change, and checking the version in code.
 
 Specifications:
 
 - [Command-Line Syntax](references/syntax.md): the command lines that a program using ArgX accepts.
 - [Help Text Layout](references/help-layout.md): the text of the help and of the usage line, and its limits.
 - [Ownership and Lifetime](references/ownership.md): who allocates and frees memory, how long things stay valid, and how failures are returned.
-- [Versioning](references/versioning.md): how versions are numbered and tagged, and what a new version may change.
 
 ## Development
 

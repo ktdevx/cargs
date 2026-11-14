@@ -122,11 +122,10 @@ docs/                       Documents; the subdirectories match the sections of 
 │   ├── help.md             API of help.h: generating functions, help options, output, failures
 │   ├── alloc.md            API of alloc.h: the allocator
 │   ├── errors.md           API of error.h: the error codes and their messages
-│   ├── version.md          API of version.h: checking the version in code
+│   ├── version.md          API of version.h and the versioning policy: version numbers, compatibility, checking the version
 │   ├── syntax.md           Specification: the command-line syntax
 │   ├── help-layout.md      Specification: the text of the help and the usage line
-│   ├── ownership.md        Specification: ownership, lifetime and failures
-│   └── versioning.md       Specification: the versioning policy
+│   └── ownership.md        Specification: ownership, lifetime and failures
 └── development/
     ├── conventions.md      This document (for contributors)
     ├── procedures.md       The steps for common changes (for contributors)
@@ -134,7 +133,7 @@ docs/                       Documents; the subdirectories match the sections of 
 ```
 
 - [CONTRIBUTING.md](../../CONTRIBUTING.md) is the entry point for contributors, and [docs/README.md](../README.md) is the index of the documents.
-- [CHANGELOG.md](../../CHANGELOG.md) records the changes of each release. The [versioning policy](../references/versioning.md) and the [release guide](releasing.md) describe the versions and the release procedure.
+- [CHANGELOG.md](../../CHANGELOG.md) records the changes of each release. The [versioning policy](../references/version.md#compatibility) and the [release guide](releasing.md) describe the versions and the release procedure.
 - [`tools/release/`](../../tools/release) holds the release scripts and modules, and [`tools/ci/`](../../tools/ci) holds [`changes.cmake`](../../tools/ci/changes.cmake), which CI uses to decide whether a change touches documentation only. The workflows [`ci.yml`](../../.github/workflows/ci.yml), [`release-pr.yml`](../../.github/workflows/release-pr.yml) and [`release-publish.yml`](../../.github/workflows/release-publish.yml) in [`.github/workflows/`](../../.github/workflows) run them.
 - The tests in [`tests/release/`](../../tests/release) are registered by `tests/CMakeLists.txt` with `argx_add_release_test(<name>)`, under the name `release.<name>` and with the label `release`. They need no build, so they are registered in both the static and the shared configuration. You can select them with `ctest -L release`. On Windows, `file(WRITE)` turns LF into CRLF, so the release scripts and the tests write the files whose bytes matter with `argx_write_bytes()` of `ArgXReadBytes.cmake`. To write them as on Windows on any host, run the tests with the environment variable `ARGX_WRITE_BYTES_WITH_CONFIGURE=1`.
 - The documents in `docs/` are of four kinds, one directory each. The guides (`guides/`) hold the walkthrough, the recipes, the FAQ and the design rationale; the [Guide](../guides/guide.md) follows [examples/pack.c](../../examples/pack.c) with excerpts that name the function they come from. The references (`references/`) hold rules, tables, code fragments and output, but no walkthroughs, no advice on how to put the functions together, and no rationale. A fact has one place: the guides, the FAQ and the design rationale link to the references instead of repeating them.
@@ -468,7 +467,7 @@ argx_add_test(<name> SOURCES <source>... [INTERNAL])
 
 - The only source of the version is the four macros `ARGX_VERSION_MAJOR`, `ARGX_VERSION_MINOR`, `ARGX_VERSION_PATCH` and `ARGX_VERSION_PRERELEASE` in `include/argx/version.h`. The build reads this header as text, so write each of the four macros on its own line. Write the three numeric macros in the form `#define ARGX_VERSION_<PART> <integer>`, as decimal 0 to 255 without leading zeros. Do not write the version numbers anywhere else.
 - Write `ARGX_VERSION_PRERELEASE` as a single string literal in the form `#define ARGX_VERSION_PRERELEASE "<identifier>"`. Its contents are SemVer 2.0.0 pre-release identifiers without the leading hyphen (for example `"rc.1"`). Separate identifiers with `.` and write each with the characters `[0-9A-Za-z-]`. Numeric identifiers have no leading zeros. For a final release, make it the empty string `""`. If the form is wrong, configuration fails.
-- Do not bump the version by hand. The release workflow **Release PR** rewrites `include/argx/version.h` and `CHANGELOG.md` together and opens a release PR. The procedure is in the [release guide](releasing.md), and the policy for bumping the version is in the [versioning policy](../references/versioning.md).
+- Do not bump the version by hand. The release workflow **Release PR** rewrites `include/argx/version.h` and `CHANGELOG.md` together and opens a release PR. The procedure is in the [release guide](releasing.md), and the policy for bumping the version is in [Compatibility](../references/version.md#compatibility).
 - `ARGX_VERSION_NUMBER` and `ARGX_MAKE_VERSION()` contain an `(unsigned long)` cast, so they cannot be used in `#if`. In `#if`, compare `ARGX_VERSION_MAJOR` and the others one by one.
 
   ```c
@@ -480,4 +479,4 @@ argx_add_test(<name> SOURCES <source>... [INTERNAL])
   - `ArgX_VERSION`, set by `find_package(ArgX)`, is the numeric part (for example `0.2.0`).
   - `ArgX_VERSION_FULL` is the full version (for example `0.2.0-rc.1`). `ArgX_VERSION_PRERELEASE` is the pre-release identifier (for example `rc.1`). For a final release, `ArgX_VERSION_FULL` is the same as `ArgX_VERSION`, and `ArgX_VERSION_PRERELEASE` is empty.
   - `Version` in the pkg-config file `argx.pc` is the full version.
-  - `find_package` compares only the numeric part, so `0.2.0-rc.1` is also found by `find_package(ArgX 0.2)`. pkg-config considers `0.2.0-rc.1` newer than `0.2.0`. See the [versioning policy](../references/versioning.md) for details.
+  - `find_package` compares only the numeric part, so `0.2.0-rc.1` is also found by `find_package(ArgX 0.2)`. pkg-config considers `0.2.0-rc.1` newer than `0.2.0`. See [The version of the package](../getting-started/install.md#the-version-of-the-package) for details.

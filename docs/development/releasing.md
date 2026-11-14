@@ -1,6 +1,6 @@
 # Releasing
 
-This document describes how a maintainer releases a new version of ArgX, the repository settings the release process needs, and how to recover when something goes wrong. How version numbers are chosen is described in [the versioning policy](../references/versioning.md). The changes of each version are listed in [the changelog](../../CHANGELOG.md).
+This document describes how a maintainer releases a new version of ArgX, the repository settings the release process needs, and how to recover when something goes wrong. How version numbers are chosen is described in [Version](../references/version.md#compatibility). The changes of each version are listed in [the changelog](../../CHANGELOG.md).
 
 ## Overview
 
@@ -66,7 +66,7 @@ Do not write the section of the new version, its date or the links at the end of
 
 ## Making a release
 
-1. Choose the version, as described in [the versioning policy](../references/versioning.md), for example `0.2.0`. Write it without a leading `v`.
+1. Choose the version, as described in [Version](../references/version.md#compatibility), for example `0.2.0`. Write it without a leading `v`.
 2. Open the Actions tab, select the workflow **Release PR**, and select **Run workflow**. Keep the branch `main` and enter the version in the input `version`. The workflow can also be started from the command line:
 
    ```sh

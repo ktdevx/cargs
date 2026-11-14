@@ -118,7 +118,7 @@ target_link_libraries(app PRIVATE ArgX::argx)
 
 - If you installed to a non-standard location, pass `-DCMAKE_PREFIX_PATH=<install-prefix>` when you configure your project.
 - You may later move the installed directory as a whole.
-- To request a version, write `find_package(ArgX <major>.<minor> CONFIG REQUIRED)`. While the major version is 0, only versions with the same minor version are treated as compatible, so write the version down to the minor version. A request with only the major version, or a version range, finds nothing. The compatibility rules are described in [Compatibility before and after 1.0](../references/versioning.md#compatibility-before-and-after-10) in the versioning policy. For contributors, [Version notes](../development/conventions.md#version-notes) in the development conventions describes where the version is defined.
+- To request a version, write `find_package(ArgX <major>.<minor> CONFIG REQUIRED)`. While the major version is 0, only versions with the same minor version are treated as compatible, so write the version down to the minor version. A request with only the major version, or a version range, finds nothing. The compatibility rules are described in [Compatibility](../references/version.md#compatibility). For contributors, [Version notes](../development/conventions.md#version-notes) in the development conventions describes where the version is defined.
 
 ### pkg-config
 
@@ -159,6 +159,11 @@ The installed package files hold the version of ArgX:
 | `Version` in `argx.pc` (`pkg-config --modversion argx`) | The full version, such as `0.2.0-rc.1` |
 
 These variables are set only by `find_package`. A project that adds ArgX with `FetchContent` or `add_subdirectory` reads the version from the header. The version macros of the header are in [Version](../references/version.md).
+
+Under Semantic Versioning, a pre-release has a lower precedence than its release: `0.2.0-rc.1` comes before `0.2.0`. `find_package` and pkg-config compare versions in a different way:
+
+- `find_package` compares only the numeric part, `<major>.<minor>.<patch>`. So `find_package(ArgX 0.2)` and `find_package(ArgX 0.2.0)` also find an installed `0.2.0-rc.1`. To tell a pre-release from a release, check `ArgX_VERSION_PRERELEASE` after `find_package`; it is empty for a release.
+- pkg-config compares the full version, and considers `0.2.0-rc.1` newer than `0.2.0`. So `pkg-config --atleast-version=0.2.0 argx` also accepts an installed `0.2.0-rc.1`.
 
 ### Running the tests of an embedded ArgX
 
