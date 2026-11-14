@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# Copyright (c) 2026 The ArgX Authors
 # SPDX-License-Identifier: MIT
 #
 # ReleaseTestHelpers.cmake - checks and fixtures for the tests of the release

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
  * ArgX test support - the test allocator. See test_allocator.h.

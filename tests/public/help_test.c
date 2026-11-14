@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
  * Tests of the help: argx_help_write() of <argx/help.h>.

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
  * ArgX - positionals: the addition of a positional to a command, the

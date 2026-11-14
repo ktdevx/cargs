@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# Copyright (c) 2026 The ArgX Authors
 # SPDX-License-Identifier: MIT
 #
 # Tests of tools/release/ArgXChangelog.cmake: parsing a changelog and

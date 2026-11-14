@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# Copyright (c) 2026 The ArgX Authors
 # SPDX-License-Identifier: MIT
 #
 # Tests of argx_read_version (cmake/ArgXVersion.cmake): reading the

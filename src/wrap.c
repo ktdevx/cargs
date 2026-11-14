@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
  * ArgX - the wrapping of the help: writes one text broken into lines at

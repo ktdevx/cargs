@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 The ArgX Authors
+# Copyright (c) 2026 The ArgX Authors
 # SPDX-License-Identifier: MIT
 #
 # ArgXSemver.cmake - checks a ArgX version and compares two versions by

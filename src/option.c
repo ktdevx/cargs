@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 The ArgX Authors
+ * Copyright (c) 2026 The ArgX Authors
  * SPDX-License-Identifier: MIT
  *
  * ArgX - options: the addition of the four kinds of options to a command,
