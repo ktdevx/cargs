@@ -107,6 +107,7 @@ function(argx_check_read_header header names_var problems_var)
     # among them.
     string(REGEX REPLACE "(^|\n)[ \t]*#[^\n]*" "\\1" text "${text}")
 
+    string(LENGTH "ARGX_API" marker_length)
     while(TRUE)
         string(FIND "${text}" "ARGX_API" pos)
         if(pos EQUAL -1)
@@ -119,7 +120,7 @@ function(argx_check_read_header header names_var problems_var)
             math(EXPR before_pos "${pos} - 1")
             string(SUBSTRING "${text}" ${before_pos} 1 before)
         endif()
-        math(EXPR after "${pos} + 10")
+        math(EXPR after "${pos} + ${marker_length}")
         string(SUBSTRING "${text}" ${after} -1 text)
 
         # Part of a longer identifier: not the marker.
