@@ -56,13 +56,6 @@ typedef struct pack_schema
     argx_positional_t *pattern; /* list: [pattern]; "*" if not given */
 } pack_schema_t;
 
-/* Keeps the result of a call in *error and tells whether the call failed. */
-static bool failed(argx_error_t *error, argx_error_t result)
-{
-    *error = result;
-    return result != ARGX_ERROR_NONE;
-}
-
 /*
  * Adds -h, --help to command. An option is only known where its command is
  * the current command, so every command gets its own.
@@ -82,36 +75,97 @@ static argx_error_t define_schema(pack_schema_t *schema)
 
     schema->root = NULL;
 
-    if (failed(&error, argx_command_create("pack", &schema->root)) ||
-        failed(&error, add_help(schema->root)) ||
-        failed(&error, argx_command_add_count(schema->root, 'v', "verbose", &schema->verbose)) ||
-        failed(&error, argx_command_add_negatable(schema->root, '\0', "color", &schema->color)) ||
-        failed(&error, argx_option_set_initial(schema->color, true)))
+    /* The root: pack [-h] [-v] [--[no-]color] [COMMAND]. */
+    error = argx_command_create("pack", &schema->root);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = add_help(schema->root);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_count(schema->root, 'v', "verbose", &schema->verbose);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_negatable(schema->root, '\0', "color", &schema->color);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_initial(schema->color, true);
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
-    if (failed(&error, argx_command_add_subcommand(schema->root, "create", &schema->create)) ||
-        failed(&error, add_help(schema->create)) ||
-        failed(&error, argx_command_add_value(schema->create, 'o', "output", argx_type_string(),
-                                              &schema->output)) ||
-        failed(&error, argx_option_set_required(schema->output, true)) ||
-        failed(&error, argx_command_add_value(schema->create, 'l', "level", argx_type_int(),
-                                              &schema->level)) ||
-        failed(&error, argx_option_set_default(schema->level, "6")) ||
-        failed(&error, argx_command_add_positional(schema->create, "file", argx_type_string(),
-                                                   ARGX_ARITY_ONE_OR_MORE, &schema->files)))
+    /* The subcommand create. */
+    error = argx_command_add_subcommand(schema->root, "create", &schema->create);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = add_help(schema->create);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_value(schema->create, 'o', "output", argx_type_string(),
+                                    &schema->output);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_required(schema->output, true);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_value(schema->create, 'l', "level", argx_type_int(), &schema->level);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_option_set_default(schema->level, "6");
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_positional(schema->create, "file", argx_type_string(),
+                                        ARGX_ARITY_ONE_OR_MORE, &schema->files);
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
-    if (failed(&error, argx_command_add_subcommand(schema->root, "list", &schema->list)) ||
-        failed(&error, add_help(schema->list)) ||
-        failed(&error, argx_command_add_positional(schema->list, "archive", argx_type_string(),
-                                                   ARGX_ARITY_REQUIRED, &schema->archive)) ||
-        failed(&error, argx_command_add_positional(schema->list, "pattern", argx_type_string(),
-                                                   ARGX_ARITY_OPTIONAL, &schema->pattern)) ||
-        failed(&error, argx_positional_set_default(schema->pattern, "*")))
+    /* The subcommand list. */
+    error = argx_command_add_subcommand(schema->root, "list", &schema->list);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = add_help(schema->list);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_positional(schema->list, "archive", argx_type_string(),
+                                        ARGX_ARITY_REQUIRED, &schema->archive);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_command_add_positional(schema->list, "pattern", argx_type_string(),
+                                        ARGX_ARITY_OPTIONAL, &schema->pattern);
+    if (error != ARGX_ERROR_NONE)
+    {
+        return error;
+    }
+    error = argx_positional_set_default(schema->pattern, "*");
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -248,48 +302,50 @@ int main(int argc, char **argv)
     argx_error_t error;
     int status = EXIT_FAILURE;
 
-    if (failed(&error, define_schema(&schema)))
+    error = define_schema(&schema);
+    if (error != ARGX_ERROR_NONE)
     {
         fprintf(stderr, "pack: cannot define the command line: %s\n", argx_error_message(error));
+        goto cleanup;
+    }
+
+    /* argc and argv go in as main() received them. */
+    error = argx_parse(schema.root, argc, argv, &result);
+
+    if (result == NULL)
+    {
+        /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
+        fprintf(stderr, "pack: %s\n", argx_error_message(error));
+    }
+    else if (help_was_given(result))
+    {
+        /*
+         * --help first: "pack create --help" leaves out what create
+         * requires, and that must not hide the help.
+         */
+        print_usage(&schema, argx_result_command(result));
+        status = EXIT_SUCCESS;
+    }
+    else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
+    {
+        /* The message is one line with no prefix and no line break. */
+        fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
     }
     else
     {
-        /* argc and argv go in as main() received them. */
-        error = argx_parse(schema.root, argc, argv, &result);
-
-        if (result == NULL)
-        {
-            /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
-            fprintf(stderr, "pack: %s\n", argx_error_message(error));
-        }
-        else if (help_was_given(result))
-        {
-            /*
-             * --help first: "pack create --help" leaves out what create
-             * requires, and that must not hide the help.
-             */
-            print_usage(&schema, argx_result_command(result));
-            status = EXIT_SUCCESS;
-        }
-        else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-        {
-            /* The message is one line with no prefix and no line break. */
-            fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
-        }
-        else
-        {
-            status = run(&schema, result);
-        }
-
-        if (status != EXIT_SUCCESS)
-        {
-            fprintf(stderr, "Try 'pack --help' for more information.\n");
-        }
+        status = run(&schema, result);
     }
 
+    if (status != EXIT_SUCCESS)
+    {
+        fprintf(stderr, "Try 'pack --help' for more information.\n");
+    }
+
+cleanup:
     /*
      * The result first, then the schema it was made from. A parse error
-     * also leaves a result to destroy. Destroying NULL does nothing.
+     * also leaves a result to destroy. Destroying NULL does nothing, so
+     * this is also right after a failure.
      */
     argx_result_destroy(result);
     argx_command_destroy(schema.root);
@@ -629,42 +685,46 @@ int wmain(int argc, wchar_t **argv)
     int status = EXIT_FAILURE;
 
     error = argx_command_create("greet", &root);
-    if (error == ARGX_ERROR_NONE)
-    {
-        error = argx_command_add_positional(root, "name", argx_type_string(), ARGX_ARITY_REQUIRED,
-                                            &name);
-    }
-    if (error == ARGX_ERROR_NONE)
-    {
-        error = argx_command_validate(root, NULL, NULL, NULL);
-    }
-
     if (error != ARGX_ERROR_NONE)
     {
-        fprintf(stderr, "greet: cannot define the command line: %s\n", argx_error_message(error));
+        goto define_failed;
     }
-    else
+    error = argx_command_add_positional(root, "name", argx_type_string(), ARGX_ARITY_REQUIRED,
+                                        &name);
+    if (error != ARGX_ERROR_NONE)
     {
-        /* The wide argv goes in as wmain() received it. */
-        error = argx_parse_wide(root, argc, argv, &result);
-
-        if (result == NULL)
-        {
-            fprintf(stderr, "greet: %s\n", argx_error_message(error));
-        }
-        else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-        {
-            /* The message is UTF-8, like every string of the result. */
-            fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
-        }
-        else if (argx_result_positional_string(result, name, 0, &text))
-        {
-            /* text is UTF-8, whatever the width of wchar_t is. */
-            printf("hello, %s\n", text);
-            status = EXIT_SUCCESS;
-        }
+        goto define_failed;
+    }
+    error = argx_command_validate(root, NULL, NULL, NULL);
+    if (error != ARGX_ERROR_NONE)
+    {
+        goto define_failed;
     }
 
+    /* The wide argv goes in as wmain() received it. */
+    error = argx_parse_wide(root, argc, argv, &result);
+
+    if (result == NULL)
+    {
+        fprintf(stderr, "greet: %s\n", argx_error_message(error));
+    }
+    else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
+    {
+        /* The message is UTF-8, like every string of the result. */
+        fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
+    }
+    else if (argx_result_positional_string(result, name, 0, &text))
+    {
+        /* text is UTF-8, whatever the width of wchar_t is. */
+        printf("hello, %s\n", text);
+        status = EXIT_SUCCESS;
+    }
+    goto cleanup;
+
+define_failed:
+    fprintf(stderr, "greet: cannot define the command line: %s\n", argx_error_message(error));
+
+cleanup:
     argx_result_destroy(result);
     argx_command_destroy(root);
 
