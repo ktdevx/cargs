@@ -6,19 +6,6 @@ This document covers parsing, reading the result, parse errors and destroying th
 
 The detailed description and the preconditions of each function are in the comments of the public header `include/argx/parse.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
 
-Contents:
-
-- [A complete example](#a-complete-example)
-- [Entry points](#entry-points)
-- [Command-line syntax](#command-line-syntax)
-- [Required checks and default values](#required-checks-and-default-values)
-- [Reading the result](#reading-the-result)
-- [Parse errors](#parse-errors)
-- [Handling `--help`](#handling---help)
-- [Wide-character argv](#wide-character-argv)
-- [Lifetime rules](#lifetime-rules)
-- [Preconditions](#preconditions)
-
 ## A complete example
 
 The example uses `pack`, a made-up program. It validates the schema, parses, checks for `--help`, prints parse errors, reads the values and destroys everything. It accepts command lines of this form:
@@ -398,7 +385,7 @@ argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *cons
 `argx_parse` parses a `char` argv. `argx_parse_wide` converts a wide-character argv to UTF-8 and then parses it in the same way ([Wide-character argv](#wide-character-argv)).
 
 | Return value | `*out` | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `ARGX_ERROR_NONE` | A result | Success. The values have been resolved |
 | `ARGX_ERROR_INVALID_COMMAND_LINE` | A result | A parse error. From the result, you can read the details of the error and what was read before the error |
 | `ARGX_ERROR_OUT_OF_MEMORY` | `NULL` | An allocation failed. Nothing is left |
@@ -419,7 +406,7 @@ These are the forms that the user of your program can write on the command line.
 The rows are tried from the top.
 
 | Form of the element | Condition | Treatment |
-|---|---|---|
+| --- | --- | --- |
 | `--` | Before the terminator | The terminator. Everything after it is a positional |
 | `--x…` | Before the terminator | A long option. It is split into the name and the value at the first `=` |
 | `-` | — | An element that is not an option |
@@ -440,7 +427,7 @@ The rows are tried from the top.
 A long option is matched against the long names and the negated names. In a bundle of short options, the characters after the `-` are matched one at a time, from the first, against the short names.
 
 | Form | Kind of option | Behavior |
-|---|---|---|
+| --- | --- | --- |
 | `--name=value` | With a value | The text right after the `=` is the value (it may be empty) |
 | `--name` | With a value | The next element is the value, whatever it contains. If there is none, `MISSING_VALUE` |
 | `--name=value`, `--no-name=value` | Flag, negatable flag, count | `UNEXPECTED_VALUE` |
@@ -450,7 +437,7 @@ A long option is matched against the long names and the negated names. In a bund
 Forms of options that take no value:
 
 | Form | Kind of option | Behavior |
-|---|---|---|
+| --- | --- | --- |
 | `--name`, `-n` | Flag | Given |
 | `--name`, `-n` | Count | The count goes up by 1 |
 | `--name`, `-n` | Negatable flag | On |
@@ -467,7 +454,7 @@ Forms of options that take no value:
 The same option can be given any number of times, by its short name or by its long name.
 
 | Kind of option | Result of giving it more than once |
-|---|---|
+| --- | --- |
 | Flag | Stays given |
 | Count | The number of times it was given (`-v --verbose -vv` is 4) |
 | Negatable flag | The last one given (`--color --no-color` is off; in the reverse order, on) |
@@ -480,7 +467,7 @@ The values of an option with a value are converted by the value type one at a ti
 In a command that has no subcommands, the elements that are not options are assigned, in the order they appear, to the positionals in the order the positionals were added.
 
 | Arity of the positional | Assignment |
-|---|---|
+| --- | --- |
 | `ARGX_ARITY_REQUIRED`, `ARGX_ARITY_OPTIONAL` | One value is assigned. The next element goes to the next positional |
 | `ARGX_ARITY_ZERO_OR_MORE`, `ARGX_ARITY_ONE_OR_MORE` | The value is assigned. Every later element is also a value of this positional |
 
@@ -519,7 +506,7 @@ When the parse has read up to the last element without a parse error, the requir
 A result (`argx_result_t`) is read with the same functions whether the parse succeeded or ended in a parse error. The reading functions take a `const` result, change nothing, allocate nothing and do not fail. Several threads can read one result at the same time.
 
 | What is read | Functions | Value when there is "none" |
-|---|---|---|
+| --- | --- | --- |
 | Whether the parse succeeded | `argx_result_error` | Returns `ARGX_ERROR_NONE` or `ARGX_ERROR_INVALID_COMMAND_LINE` |
 | The sequence of selected commands | `argx_result_command_count`, `argx_result_command_at`, `argx_result_command` | The sequence has at least one command. Index 0 is the root. `argx_result_command` is the last command |
 | Flag, negatable flag | `argx_result_flag` | `false` (a negatable flag is in its initial state) |
@@ -543,7 +530,7 @@ A result (`argx_result_t`) is read with the same functions whether the parse suc
 What the reading functions return, for each state of a definition element.
 
 | State of the definition element | Flag | Count | Negatable flag | Option with a value, positional | Source |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | Belongs to a command of the sequence, and was given on the command line | `true` | The number of times | The last one given | The value | `COMMAND_LINE` |
 | Belongs to a command of the sequence, was not given, and its default value was applied | — | — | — | The default value | `DEFAULT` |
 | Belongs to a command of the sequence, and was not given (other than above) | `false` | 0 | The initial state | No value | `DEFAULT` for flags, counts and negatable flags; `NONE` for options with a value and positionals |
@@ -563,7 +550,7 @@ When the arguments do not match the schema, the parse returns `ARGX_ERROR_INVALI
 The kind is the `argx_parse_error_kind_t` that `argx_result_error_kind` returns, and the message is returned by `argx_result_error_message`. In the table below, `ARGX_PARSE_ERROR_` is left out of the kinds.
 
 | Kind | Wording | Example |
-|---|---|---|
+| --- | --- | --- |
 | `UNKNOWN_OPTION` | `unknown option '<name>'` | `unknown option '--colour'`, `unknown option '-x'` |
 | `UNKNOWN_SUBCOMMAND` | `unknown command '<value>'` | `unknown command 'comit'` |
 | `MISSING_VALUE` | `option '<name>' requires a value` | `option '--output' requires a value` |
@@ -589,7 +576,7 @@ The kind is the `argx_parse_error_kind_t` that `argx_result_error_kind` returns,
 Besides the message, the following functions read the details of the error. The column names are the function names with `argx_result_error_` left out.
 
 | Kind | `argument`, `index`, `source` | `value` | `option` / `positional` | `short_name` |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `UNKNOWN_OPTION` | The element, `COMMAND_LINE` | `NULL` | `NULL` | In a bundle, that character |
 | `UNKNOWN_SUBCOMMAND` | The element | The element | `NULL` | `'\0'` |
 | `MISSING_VALUE` | The element that the option was written in | `NULL` | The option | In a bundle, that character |
@@ -654,7 +641,7 @@ The order is the one in `main` of the example.
 - How a wide string is read depends on the width of `wchar_t`. It does not depend on the locale.
 
   | Width of `wchar_t` | Example platforms | How it is read |
-  |---|---|---|
+  | --- | --- | --- |
   | 16 bits | Windows | UTF-16. A pair of a high and a low surrogate is read as one character |
   | Wider | Linux, macOS | UTF-32 |
 
@@ -738,7 +725,7 @@ cleanup:
 ## Lifetime rules
 
 | Object | Owner | How long it is valid |
-|---|---|---|
+| --- | --- | --- |
 | A result (`argx_result_t`) | You, who called the parse | Until you destroy it with `argx_result_destroy`. The same for a result with a parse error |
 | Strings and value buffers read from the result | The result | Until the result is destroyed. Do not free or modify them |
 | The details and message of a parse error | The result | Until the result is destroyed. Do not free or modify them |
@@ -768,7 +755,7 @@ What every function has in common:
 The preconditions of each function:
 
 | Function | Preconditions checked with `assert` | Preconditions not checked |
-|---|---|---|
+| --- | --- | --- |
 | `argx_parse`, `argx_parse_wide` | `root` and `out` are not `NULL`. `root` is a root command (not a subcommand). The schema of `root` has been validated (`argx_command_is_validated`). `argc` is 0 or greater. If `argc` is greater than 0, `argv` is not `NULL`, and `argv[0]` to `argv[argc - 1]` are not `NULL` | The schema and the value types it uses are neither changed nor destroyed until the result is destroyed |
 | `argx_result_destroy` | None | `result` is `NULL` or a result that has not been destroyed. The schema and the value types of the result have been neither destroyed nor changed |
 | `argx_result_error`, `argx_result_command_count`, `argx_result_command` | `result` is not `NULL` | The common ones |

@@ -9,7 +9,7 @@ The detailed description and the preconditions of each function are in the comme
 Terms used in this document:
 
 | Term | Meaning |
-|---|---|
+| --- | --- |
 | help | The whole text that describes one command. It consists of the usage line, the description of the command, and the lists |
 | usage line | The part at the start of the help that begins with `Usage: `. When it is wrapped, it spans several lines |
 | list | Each of `Commands:`, `Arguments:` and `Options:` |
@@ -21,19 +21,6 @@ Terms used in this document:
 | description column | The column where the descriptions of the items start |
 | help options | The object that holds the width, the indent and the maximum description column (`argx_help_options_t`) |
 | write function | Your function that receives the generated text (`argx_help_write_fn_t`) |
-
-Contents:
-
-- [A minimal example](#a-minimal-example)
-- [Printing `--help` and errors](#printing---help-and-errors)
-- [Generating functions](#generating-functions)
-- [Text layout rules](#text-layout-rules)
-- [Help options](#help-options)
-- [Output](#output)
-- [Limits](#limits)
-- [On failure](#on-failure)
-- [Lifetime rules](#lifetime-rules)
-- [Preconditions](#preconditions)
 
 ## A minimal example
 
@@ -573,7 +560,7 @@ argx_error_t argx_help_format_usage(const argx_command_t *command,
 ```
 
 | Function | Generates | Destination |
-|---|---|---|
+| --- | --- | --- |
 | `argx_help_write` | The help | A write function |
 | `argx_help_write_usage` | The usage line | A write function |
 | `argx_help_format` | The help | Your buffer |
@@ -603,7 +590,7 @@ What holds for every text:
 The help consists of the following parts, in this order.
 
 | Order | Part | Appears when | Content |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | Usage line | Always | As in the rules of [Usage line](#usage-line) |
 | 2 | Description of the command | A description is set | Written from the start of the line. A newline at the end is not written. Wrapped at the width ([Wrapping](#wrapping)) |
 | 3 | `Commands:` | There is at least one subcommand | The direct subcommands, one item each. The heading is the name, and the description is the first line of the description text (up to the first newline) |
@@ -649,7 +636,7 @@ The files are packed in the order of the command line.
 The usage line consists of the following items, in this order.
 
 | Order | Item | Appears when | Notation |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | The command path | Always | `Usage: ` followed by the names from the root to the command, separated by one blank |
 | 2 | `[OPTIONS]` | There is at least one option that is not required | `[OPTIONS]`. Flags, negatable flags, counts and options with a value that are not required are the options that are not required |
 | 3 | Required options | One for each required option with a value, in the order they were defined | `--long <value name>` if it has a long name, otherwise `-s <value name>` |
@@ -659,7 +646,7 @@ The usage line consists of the following items, in this order.
 The notation of a positional depends on its arity. The headings of the `Arguments:` list use the same notation.
 
 | Arity | Notation |
-|---|---|
+| --- | --- |
 | `ARGX_ARITY_REQUIRED` | `<name>` |
 | `ARGX_ARITY_OPTIONAL` | `[name]` |
 | `ARGX_ARITY_ZERO_OR_MORE` | `[name]...` |
@@ -718,7 +705,7 @@ The heading of a subcommand is its name. The heading of a positional is the same
 The names part:
 
 | Names of the option | Notation |
-|---|---|
+| --- | --- |
 | A short name and a long name | `-s, --long` |
 | A short name only | `-s` |
 | A long name only | 4 blanks and `--long`. The long name lines up with the long names of options that have a short name |
@@ -726,7 +713,7 @@ The names part:
 The continuation for each kind:
 
 | Kind | Notation | Example |
-|---|---|---|
+| --- | --- | --- |
 | Flag | The names part only | `-h, --help` |
 | Negatable flag | The long name is written as `--[no-]long` | `--[no-]color` |
 | Count | `...` right after the names part | `-v, --verbose...` |
@@ -762,7 +749,7 @@ Options:
 Annotations follow the description of an option or a positional, in the following order. Subcommands have no annotations.
 
 | Order | Annotation | Appears when |
-|---|---|---|
+| --- | --- | --- |
 | 1 | `[choices: a, b, c]` | An option with a value or a positional whose value type is a choice. The choices are listed in the order they were defined, separated by `, ` |
 | 2 | `[default: value]` | An option with a value or a positional that has a default value set. The value is the string that was set, unchanged. However, annotations are wrapped too, so blanks at the end of a line and blanks at the wrapping points inside the value are not written |
 | 2 | `[default: on]` | A negatable flag whose initial state is on. When it is off, there is no annotation |
@@ -808,7 +795,7 @@ The description column is decided as follows.
 The form of the line of an item depends on the width of its heading.
 
 | Condition | Form of the line |
-|---|---|
+| --- | --- |
 | "indent + width of the heading + 2" is not greater than the description column | The description starts at the description column on the same line as the heading. There are 2 or more blanks between the heading and the description |
 | "indent + width of the heading + 2" is greater than the description column | The heading is on a line of its own, and the description starts at the description column of the next line |
 
@@ -883,7 +870,7 @@ Options:
 The help options (`argx_help_options_t`) are an object that holds the values that decide the layout of the text. You create them, pass them to the generating functions, and destroy them.
 
 | To do this | Function | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Create | `argx_help_options_create` | Every setting has its default value. When the allocation fails, it returns `ARGX_ERROR_OUT_OF_MEMORY` and `*out` is `NULL` |
 | Destroy | `argx_help_options_destroy` | `NULL` does nothing |
 | Set the width | `argx_help_options_set_width` | Cannot fail |
@@ -891,7 +878,7 @@ The help options (`argx_help_options_t`) are an object that holds the values tha
 | Set the maximum description column | `argx_help_options_set_max_column` | Cannot fail |
 
 | Setting | Meaning | Default value |
-|---|---|---|
+| --- | --- | --- |
 | Width | The number of columns of one line that wrapping is based on. 0 means "no limit", and nothing is wrapped | 80 |
 | Indent | The number of blanks placed before the items of a list | 2 |
 | Maximum description column | The column that the description column does not exceed. However, when the width is not 0 and half of the width (rounded down) is smaller, that half is the maximum. Then, if the maximum is less than "indent + 2", "indent + 2" is the maximum. Because "indent + 2" takes priority, in that case the description column can exceed the maximum you set or half of the width ([Description column](#description-column)) | 32 |
@@ -1006,7 +993,7 @@ error = argx_help_write(root, NULL, write_to_stream, stdout);
 `argx_help_format` and `argx_help_format_usage` write the text as a string into an array that you provide. No write function is needed.
 
 | `size` | What is written into `buffer` |
-|---|---|
+| --- | --- |
 | 0 | Nothing. `buffer` may be `NULL` |
 | 1 or greater | As much of the text from the start as fits (at most `size - 1` bytes), followed by a terminating null character. Nothing is written outside the array |
 
@@ -1139,7 +1126,7 @@ static void print_error(const argx_command_t *command, const char *message)
 There are two runtime failures: a write failure and an allocation failure. Both are reported by the returned `argx_error_t`.
 
 | Return value | Meaning | Returned by |
-|---|---|---|
+| --- | --- | --- |
 | `ARGX_ERROR_NONE` | Success. For the functions that format into a buffer, truncation is also a success | All |
 | `ARGX_ERROR_WRITE_FAILED` | The write function returned `false` | `argx_help_write`, `argx_help_write_usage` |
 | `ARGX_ERROR_OUT_OF_MEMORY` | An allocation failed | `argx_help_write`, `argx_help_format`, `argx_help_options_create` |
@@ -1147,7 +1134,7 @@ There are two runtime failures: a write failure and an allocation failure. Both 
 **When generation fails, the text passed to the write function before the failure stays at the destination.** The library cannot take back text it has passed.
 
 | Function | Failure | What is left at the destination |
-|---|---|---|
+| --- | --- | --- |
 | `argx_help_write`, `argx_help_write_usage` | Write failure | The parts received by the calls in which the write function returned `true`. This is the text from the start up to some position. It may end in the middle of a line |
 | `argx_help_write` | Allocation failure | The text from the start up to the line of the item (an option or a positional) that needed the allocation. It ends with the newline of the line before |
 | `argx_help_format` | Allocation failure | If `size` is not 0, `buffer` holds the empty string. `*length` is 0. If `size` is 0, nothing is written into `buffer` |
@@ -1164,7 +1151,7 @@ There are two runtime failures: a write failure and an allocation failure. Both 
 ## Lifetime rules
 
 | Thing | Owner | Valid for |
-|---|---|---|
+| --- | --- | --- |
 | Help options (`argx_help_options_t`) | You, who created them | Until destroyed with `argx_help_options_destroy`. They are independent of the schema, and either may be destroyed first |
 | `text` passed to the write function | The library or the schema | Only during that call. You neither free nor change it |
 | Buffer (`buffer`) | You | It needs to be valid only during the call of the generation. The library does not refer to it after the call returns |
@@ -1180,7 +1167,7 @@ There are two runtime failures: a write failure and an allocation failure. Both 
 Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The preconditions of each function are also written in the comments of the public header `include/argx/help.h`, under `Preconditions:`.
 
 | Function | Preconditions checked with `assert` | Preconditions not checked |
-|---|---|---|
+| --- | --- | --- |
 | `argx_help_options_create` | `out` is not `NULL` | None |
 | `argx_help_options_destroy` | None | `options` is `NULL` or help options that have not been destroyed. No other thread is using those help options |
 | `argx_help_options_set_width`, `argx_help_options_set_indent`, `argx_help_options_set_max_column` | `options` is not `NULL` | `options` has not been destroyed. During the call, no other thread is using those help options |

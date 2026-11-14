@@ -4,19 +4,6 @@ Thank you for your interest in contributing to ArgX. Everyone who takes part in 
 
 This document is the entry point for contributors. It covers how to report problems, set up a development environment, build and test, and submit a pull request. It does not repeat the rules for writing code: those are in [Development Conventions](docs/conventions.md). How to use the library is described in the [README](README.md) and the documents it links to.
 
-Contents:
-
-- [Reporting bugs and requesting features](#reporting-bugs-and-requesting-features)
-- [Reporting security vulnerabilities](#reporting-security-vulnerabilities)
-- [Development environment](#development-environment)
-- [Building and testing](#building-and-testing)
-- [Coding conventions](#coding-conventions)
-- [Documentation and comments](#documentation-and-comments)
-- [Submitting a pull request](#submitting-a-pull-request)
-- [Recording changes](#recording-changes)
-- [Releases](#releases)
-- [License](#license)
-
 ## Reporting bugs and requesting features
 
 Open an [issue](https://github.com/ktdevx/cargs/issues/new/choose) and choose one of the forms: **Bug report** for a wrong result, a crash or a build failure, and **Feature request** for a new feature or a change. Fill in the fields of the form so that the problem can be reproduced.

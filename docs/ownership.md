@@ -4,28 +4,12 @@ This document defines who allocates memory and who frees it, and how long the th
 
 This document covers the rules themselves and how they apply to schemas, parsing, results and help. How to define a schema, parse argv and generate help is in [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md). The detailed description and the preconditions of each function are in the comments of the public headers under `include/argx/`. How the library code implements these rules is in [Development Conventions](conventions.md#applying-the-ownership-rules).
 
-Contents:
-
-- [The rules at a glance](#the-rules-at-a-glance)
-- [Runtime failures and programming errors](#runtime-failures-and-programming-errors)
-- [1. Creation and destruction](#1-creation-and-destruction)
-- [2. Strings you pass](#2-strings-you-pass)
-- [3. Strings and objects the library returns](#3-strings-and-objects-the-library-returns)
-- [4. NULL](#4-null)
-- [5. Allocator](#5-allocator)
-- [6. Whoever allocates frees](#6-whoever-allocates-frees)
-- [7. How failures are returned](#7-how-failures-are-returned)
-- [8. Threads](#8-threads)
-- [Schemas, argv and results](#schemas-argv-and-results)
-- [Help](#help)
-- [Allocator and error functions](#allocator-and-error-functions)
-
 In the examples of this document, names that start with `argx_example_` are placeholders used for explanation; they do not exist in the library. The other names (`argx_set_allocator`, `argx_error_message`, `argx_strdup` and so on) are real.
 
 ## The rules at a glance
 
 | No. | Rule | Summary |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Creation and destruction | Destroy an object you got from `create` only with the matching `destroy`. Destroying it also frees everything that belongs to it |
 | 2 | Strings you pass | The library duplicates them. Functions that borrow are the exception, and their comments state for how long |
 | 3 | Strings and objects the library returns | The object that returned them owns them. They stay valid until that object is destroyed. You do not free them |
@@ -40,7 +24,7 @@ In the examples of this document, names that start with `argx_example_` are plac
 The rules divide failures into two kinds. Every rule assumes this division.
 
 | Kind | What it is | Examples | Handling |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Runtime failure | Something that can happen even in a correct program | Memory allocation failure. Schema definition errors that come from the content of strings or from the relation between definitions (the table below). Errors in the input of the user of your program, and so on | Returned as `argx_error_t` ([rule 7](#7-how-failures-are-returned)) |
 | Programming error | Something that always happens until the calling code is fixed, and that cannot be handled at run time | `NULL` for a required argument, an allocator with a missing function, an index out of range, use of an object that was already destroyed | A precondition of the function. No error code is assigned |
 
@@ -49,7 +33,7 @@ Programming errors get no error code because the caller cannot handle them at ru
 Schema definition errors are divided into these two kinds by where they come from.
 
 | Where the error comes from | Examples | Handling |
-|---|---|---|
+| --- | --- | --- |
 | The content of a string | A name that breaks the naming rules, an empty name, a default value or value that the value type cannot convert | Runtime failure. Returned as `argx_error_t` |
 | The relation between definitions | A name conflict within the same command, positionals used together with subcommands, required used together with a default value, a contradiction in the order of positionals, setting an attribute on a kind of definition element it does not apply to, a list of choices that is empty or has duplicates | Runtime failure. Returned as `argx_error_t` |
 | The form of an argument | `NULL` for a required argument, an index out of range, a value that is not in the enumeration | Programming error. Stays a precondition |
@@ -233,7 +217,7 @@ From your side, a failure never leaves more to clean up. After a failed `create`
 The following table applies the rules to common questions about schemas, argv, results, and the lifetime of value types, including the result that parsing (`argx_parse`, `argx_parse_wide`) gives you.
 
 | Question | How the rules apply |
-|---|---|
+| --- | --- |
 | Does the schema duplicate strings? | Yes (the default of [rule 2](#2-strings-you-pass)) |
 | Does the result duplicate the strings of argv? | Yes (the default of [rule 2](#2-strings-you-pass)). The result keeps a duplicate of every string of argv. For a wide-character argv, it keeps them converted to UTF-8. Once the parse call returns, you may change or free both the argv array and its strings. Strings you read from the result stay valid until the result is destroyed ([rule 3](#3-strings-and-objects-the-library-returns)) |
 | May a result outlive its schema? | No. A result refers to the schema and the value types, so destroy the result first ([rule 3](#3-strings-and-objects-the-library-returns)). The order of destruction is result, schema, value types |
@@ -248,7 +232,7 @@ No function borrows (the exception of rule 2) in parsing. The details are in [Pa
 The rules apply to generating the help and the usage line (`argx_help_write`, `argx_help_write_usage`, `argx_help_format`, `argx_help_format_usage`) and to the help options (`argx_help_options_t`).
 
 | Question | How the rules apply |
-|---|---|
+| --- | --- |
 | Who creates and who destroys the help options? | You create them with `argx_help_options_create` and destroy them with `argx_help_options_destroy` ([rule 1](#1-creation-and-destruction)). The help options do not belong to a schema. Destroying the schema does not destroy the help options. You may destroy either one first. `argx_help_options_destroy(NULL)` does nothing ([rule 4](#4-null)) |
 | Do the generating functions return something you must free? | No. The text is passed to your write function or written to your buffer. No function returns a string allocated by the library ([rule 6](#6-whoever-allocates-frees)). Memory allocated for generation is all freed before the function returns, on success and on failure ([rule 7](#7-how-failures-are-returned)) |
 | How long are the strings passed to the write function valid? | Only during that call (the "shorter period" of [rule 3](#3-strings-and-objects-the-library-returns)). The strings are not terminated. To use one later, duplicate it inside the write function. Do not free or change them |
@@ -264,6 +248,6 @@ No function borrows (the exception of rule 2) in help. The details are in [Help 
 The public functions for the allocator and for errors also follow these rules.
 
 | Function | How it follows the rules |
-|---|---|
+| --- | --- |
 | `void argx_set_allocator(const argx_allocator_t *allocator)` | It cannot fail at run time, so it returns nothing (rule 7). It allocates no memory. `NULL` goes back to the default (rule 4). It copies the structure (rule 5). That none of the four functions is `NULL` is a precondition, checked with `assert`. The preconditions are in the comments of `include/argx/alloc.h` |
 | `const char *argx_error_message(argx_error_t error)` | It cannot fail at run time, so it returns the string directly (rule 7). The string stays valid until the program ends, and you do not free it (rule 3). It allocates no memory. It has no preconditions. For a value that is not in the list, it returns `"unknown error code"` |

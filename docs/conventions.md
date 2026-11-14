@@ -6,20 +6,10 @@ Before you design a public function or an object that owns memory, read [Ownersh
 
 The entry point for contributors is [CONTRIBUTING.md](../CONTRIBUTING.md) at the root of the repository. It describes how to report issues, build and test, and submit a pull request, and points to this document for the conventions.
 
-Contents:
-
-- [Naming conventions](#naming-conventions)
-- [Directory layout](#directory-layout)
-- [Procedures](#procedures)
-- [Implementation rules](#implementation-rules)
-- [Writing tests](#writing-tests)
-- [Verifying a change](#verifying-a-change)
-- [Version notes](#version-notes)
-
 ## Naming conventions
 
 | What | Convention | Example |
-|---|---|---|
+| --- | --- | --- |
 | Public functions and types | `argx_` + lowercase snake case. Type names end with `_t` | `argx_version`, `argx_example_t` |
 | Public macros and enumeration constants | `ARGX_` + uppercase snake case | `ARGX_VERSION_MAJOR` |
 | Internal functions and types (used across files) | The same `argx_` + lowercase snake case as public ones. Type names end with `_t`. Do not add `ARGX_API`; declare them in an internal header in `src/` | `argx_vec_push`, `argx_vec_t` |
@@ -138,7 +128,7 @@ docs/                 Documents
 ## Procedures
 
 | What you want to do | Procedure |
-|---|---|
+| --- | --- |
 | Add a public function | Put `ARGX_API` at the start of the declaration in the public header. Write `ARGX_API`, the return type, the function name and `(` in this order. Write it inside the `extern "C"` guard. Write the implementation in a source in `src/` |
 | Add a public header | Put it in `include/argx/` and add one include line to `argx.h` |
 | Add a source file | Put it in `src/` and add one line to `ARGX_SOURCES` in `src/CMakeLists.txt` |
@@ -251,7 +241,7 @@ Declare an internal function that is used across files in an internal header. Do
 The name of the internal header depends on whether there is a public header of the same name.
 
 | Module | Internal header | Include guard |
-|---|---|---|
+| --- | --- | --- |
 | Has the public header `include/argx/example.h` | `src/example_internal.h` | `ARGX_EXAMPLE_INTERNAL_H` |
 | Has no public header | `src/example.h` | `ARGX_EXAMPLE_H` |
 
@@ -386,7 +376,7 @@ In the test source (`tests/public/` or `tests/internal/`), include it in this fo
 The test allocator depends only on `<argx/argx.h>` and the C standard library, so it can be used both in tests of the public API and in tests of internal functions.
 
 | Function | What it does |
-|---|---|
+| --- | --- |
 | `void argx_test_allocator_install(void)` | Resets the counts (the same as `reset`) and sets the test allocator as the library's allocator |
 | `void argx_test_allocator_uninstall(void)` | Sets the library back to the default allocator. The counts are kept, so you can read them afterwards |
 | `void argx_test_allocator_reset(void)` | Sets the number of requests, the number of live blocks and the number of contract violations back to 0, and clears the request to fail |
@@ -606,7 +596,7 @@ return add_subcommand(sweep, root, "build", &tree->build) &&
 The library code allocates and frees memory with the internal memory functions (`src/alloc_internal.h`). This makes every allocation go through the allocator that the user set with `argx_set_allocator()`.
 
 | Internal memory function | Corresponding standard function |
-|---|---|
+| --- | --- |
 | `void *argx_malloc(size_t size)` | `malloc` |
 | `void *argx_calloc(size_t count, size_t size)` | `calloc` |
 | `void *argx_realloc(void *ptr, size_t size)` | `realloc` |
@@ -693,7 +683,7 @@ Every public function follows the rules in [Ownership and Lifetime](ownership.md
 Following [rule 6](ownership.md#6-whoever-allocates-frees), do not write public functions of the following forms.
 
 | Form not to write | Form to write instead |
-|---|---|
+| --- | --- |
 | Returns an allocated string and has the user `free` it | Return a string owned by an object ([rule 3](ownership.md#3-strings-and-objects-the-library-returns)) |
 | Takes a buffer allocated by the user and frees it in the library | Duplicate it ([rule 2](ownership.md#2-strings-you-pass)). The user frees the original buffer |
 
@@ -761,7 +751,7 @@ void argx_example_destroy(argx_example_t *example)
 #### How the internal utilities follow the rules
 
 | Function | How it follows the rules |
-|---|---|
+| --- | --- |
 | `argx_malloc`, `argx_calloc`, `argx_realloc`, `argx_free` (`src/alloc_internal.h`) | They call only the allocator that is set, so memory they allocate is freed by the same allocator ([rules 5](ownership.md#5-allocator) and [6](ownership.md#6-whoever-allocates-frees)). `NULL` for `argx_free` does nothing. When `argx_realloc` fails, the original memory stays valid ([rule 7](ownership.md#7-how-failures-are-returned)). They do not write `errno`, print anything or abort |
 | `char *argx_strdup(const char *str)` (`src/str.h`) | The caller owns the duplicate and frees it with `argx_free`. On failure it returns `NULL` and leaves nothing allocated ([rule 7](ownership.md#7-how-failures-are-returned)). `NULL` for `str` is a precondition violation, checked with `assert` ([rule 4](ownership.md#4-null)) |
 | `argx_vec_init`, `argx_vec_push`, `argx_vec_at`, `argx_vec_destroy` (`src/vec.h`) | `argx_error_t argx_vec_push(argx_vec_t *vec, const void *item)` returns `ARGX_ERROR_OUT_OF_MEMORY` on failure, and `count`, `capacity` and the existing items stay as they were before the call ([rule 7](ownership.md#7-how-failures-are-returned)). `argx_vec_destroy` frees all the memory of the array. It does not free what the items point to; the caller owns that ([rule 6](ownership.md#6-whoever-allocates-frees)). It may be called twice. The pointer that `argx_vec_at` returns is valid until the next `argx_vec_push` or `argx_vec_destroy` (an example of the "shorter period" of [rule 3](ownership.md#3-strings-and-objects-the-library-returns), stated in the comment). `NULL` for `vec` and `item`, and an index out of range, are precondition violations, checked with `assert` ([rule 4](ownership.md#4-null)) |
@@ -778,7 +768,7 @@ The only global state these functions use is the allocator that is set ([Global 
 Failures are divided into two kinds. The detailed explanation of the division is in [Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors).
 
 | Kind | Example | How to write it |
-|---|---|---|
+| --- | --- | --- |
 | Runtime failure (can happen even in a correct program) | Failure to allocate memory | Return it as a `argx_error_t` |
 | Programming error (always happens until the calling code is fixed) | `NULL` for a required argument, an allocator with a missing function, an index out of range | Make it a precondition of the function and check it with `assert`. Do not assign an error code |
 
@@ -816,7 +806,7 @@ Failures are divided into two kinds. The detailed explanation of the division is
 ### Return values of internal functions
 
 | Internal function | Return value | Example |
-|---|---|---|
+| --- | --- | --- |
 | Those that pair with a standard function | Return in the same form as the standard. Failure is `NULL` | `argx_malloc`, `argx_calloc`, `argx_realloc`, `argx_strdup` |
 | Other functions that can fail | Return `argx_error_t` | `argx_vec_push` |
 | Those that cannot fail | The natural type, or `void` | `argx_vec_init`, `argx_vec_at`, `argx_vec_destroy` |

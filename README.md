@@ -262,7 +262,7 @@ ctest --test-dir build
 ## Build options
 
 | Option | Description | Default when built directly | Default when embedded |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `ARGX_BUILD_TESTS` | Builds the tests and registers them with CTest (fetches Naos) | `ON` | `OFF` |
 | `ARGX_INSTALL` | Creates the install rules and the package files for `find_package` and pkg-config | `ON` | `OFF` |
 | `ARGX_WARNINGS_AS_ERRORS` | Turns compiler warnings into errors for the ArgX targets | `ON` | `OFF` |

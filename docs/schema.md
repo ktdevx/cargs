@@ -6,21 +6,6 @@ This document covers defining, validating, reading and destroying a schema. It d
 
 The detailed description and the preconditions of each function are in the comments of the public headers `include/argx/schema.h` and `include/argx/type.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
 
-Contents:
-
-- [A complete example](#a-complete-example)
-- [Commands](#commands)
-- [Options](#options)
-- [Positionals](#positionals)
-- [Value types](#value-types)
-- [Writing a user-defined value type](#writing-a-user-defined-value-type)
-- [Borrowed value types and the order of destruction](#borrowed-value-types-and-the-order-of-destruction)
-- [Definition errors](#definition-errors)
-- [Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure)
-- [Guarantees of a validated schema](#guarantees-of-a-validated-schema)
-- [Reading a schema](#reading-a-schema)
-- [Preconditions](#preconditions)
-
 ## A complete example
 
 The example defines, validates and destroys the command line of `pack`, a made-up program. It describes command lines of this form:
@@ -480,7 +465,7 @@ Key points of the example:
 A schema is a tree of commands. The root command represents the program, and every command can have subcommands. There is no limit on the depth of nesting.
 
 | To do this | Function | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Create the root | `argx_command_create` | The name is any non-empty string. The rules for subcommand names do not apply |
 | Add a subcommand | `argx_command_add_subcommand` | The name has one character or more. The first is an ASCII letter or digit; the rest are ASCII letters, digits, `-` or `_` |
 | Set the description | `argx_command_set_description` | An empty string can also be set. Setting it again replaces it |
@@ -499,7 +484,7 @@ A schema is a tree of commands. The root command represents the program, and eve
 There are four kinds of options, and each kind has its own add function.
 
 | Kind | Add function | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `ARGX_OPTION_FLAG` | `argx_command_add_flag` | Whether it was given |
 | `ARGX_OPTION_NEGATABLE` | `argx_command_add_negatable` | Switched with `--name` and `--no-name` |
 | `ARGX_OPTION_COUNT` | `argx_command_add_count` | How many times it was given |
@@ -515,7 +500,7 @@ Names:
 All attributes are optional. After you add an option, you set each attribute with its own function.
 
 | Attribute | Set function | Kinds it can be set on | Value when not set |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Description | `argx_option_set_description` | All | `NULL` |
 | Value name | `argx_option_set_value_name` | `ARGX_OPTION_VALUE` | `NULL` |
 | Required | `argx_option_set_required` | `ARGX_OPTION_VALUE` | `false` |
@@ -533,7 +518,7 @@ All attributes are optional. After you add an option, you set each attribute wit
 A positional is added with `argx_command_add_positional`. You specify its name, its value type and its arity. The positionals of a command receive the command-line arguments in the order they were added.
 
 | Arity | Meaning |
-|---|---|
+| --- | --- |
 | `ARGX_ARITY_REQUIRED` | Exactly one |
 | `ARGX_ARITY_OPTIONAL` | Zero or one |
 | `ARGX_ARITY_ZERO_OR_MORE` | Zero or more |
@@ -552,7 +537,7 @@ A value type does not change after it is created. So one value type can be share
 The kinds of value types, and the type of the value that the conversion writes to the buffer:
 
 | Kind | How to get it | Type name | C type of the value | Value |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `ARGX_TYPE_STRING` | `argx_type_string()` | `"string"` | `const char *` | A pointer to the input string (not a copy) |
 | `ARGX_TYPE_INT` | `argx_type_int()` | `"integer"` | `int64_t` | The converted integer |
 | `ARGX_TYPE_FLOAT` | `argx_type_float()` | `"float"` | `double` | The converted value |
@@ -591,7 +576,7 @@ argx_error_t argx_type_create(const char *name, size_t value_size,
 ```
 
 | Argument | Contents |
-|---|---|
+| --- | --- |
 | `name` | The type name (such as `"size"`). Any non-empty string. It is copied |
 | `value_size` | The size of the value in bytes. Greater than 0. The buffer that the conversion writes to is at least this size |
 | `convert_fn` | The conversion function. `argx_error_t (*)(const char *text, void *value, void *context)` |
@@ -625,7 +610,7 @@ Creating and destroying a value type calls neither the conversion function nor t
 A schema borrows its value types. `argx_command_add_value` and `argx_command_add_positional` do not copy the value type they are given. They only keep a pointer to it.
 
 | Object | Owner | How long it must stay valid |
-|---|---|---|
+| --- | --- | --- |
 | String, integer and float value types | The library | Valid until the program ends. Not destroyed (passing them to `argx_type_destroy` does nothing) |
 | Choice value types, user-defined value types | The user who created them | Until every schema that uses them has been destroyed |
 | The `context` of a user-defined value type | The user | Until the value type is destroyed |
@@ -648,7 +633,7 @@ The order of destruction:
 Errors in a definition are returned as error codes. Errors that the add and set functions can check are returned right away. Errors that can only be found by looking at the whole tree are returned by validation.
 
 | Error code | Message (`argx_error_message`) | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `ARGX_ERROR_OUT_OF_MEMORY` | `"out of memory"` | A memory allocation failed |
 | `ARGX_ERROR_INVALID_NAME` | `"invalid name"` | A name does not follow the rules, is empty, or is missing |
 | `ARGX_ERROR_NAME_CONFLICT` | `"name already in use"` | Names conflict within the same command |
@@ -663,7 +648,7 @@ If an add or set function fails, the schema has the same contents as before the 
 Within one function, the conditions are checked from the top row down, and the first one that applies is returned. Besides these, every function returns `ARGX_ERROR_OUT_OF_MEMORY` when an allocation fails.
 
 | Function | Condition | Error code |
-|---|---|---|
+| --- | --- | --- |
 | `argx_command_create` | The name is empty | `INVALID_NAME` |
 | `argx_command_add_subcommand` | The name does not follow the rules (including an empty name) | `INVALID_NAME` |
 | | The command it is added to has positionals | `INVALID_DEFINITION` |
@@ -691,7 +676,7 @@ Within one function, the conditions are checked from the top row down, and the f
 These are returned by `argx_command_validate`. The order of the checks is in [Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure).
 
 | Condition | Error code | Reported definition element |
-|---|---|---|
+| --- | --- | --- |
 | In the sequence of positionals, `REQUIRED` or `ONE_OR_MORE` comes after `OPTIONAL` or `ZERO_OR_MORE` | `INVALID_DEFINITION` | The later positional |
 | In the sequence of positionals, a positional comes after `ZERO_OR_MORE` or `ONE_OR_MORE` | `INVALID_DEFINITION` | The later positional |
 | An option is required and also has a default value | `INVALID_DEFINITION` | That option |
@@ -729,7 +714,7 @@ The order of the checks is fixed. Validation returns the first error it finds an
 The result and the three output parameters:
 
 | Return value | `*command` | `*option` | `*positional` | Validation state |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `ARGX_ERROR_NONE` | `NULL` | `NULL` | `NULL` | Becomes validated |
 | `ARGX_ERROR_INVALID_DEFINITION`, `ARGX_ERROR_INVALID_DEFAULT` (error in an option) | The command the option belongs to | The option with the error | `NULL` | Unchanged |
 | `ARGX_ERROR_INVALID_DEFINITION`, `ARGX_ERROR_INVALID_DEFAULT` (error in a positional) | The command the positional belongs to | `NULL` | The positional with the error | Unchanged |
@@ -786,7 +771,7 @@ Code that reads a schema (parsing and help generation) can rely on these for a v
 The read functions take `const` handles, change nothing, and do not fail.
 
 | Object | Functions |
-|---|---|
+| --- | --- |
 | Command | `argx_command_name`, `argx_command_description`, `argx_command_parent`, `argx_command_is_validated` |
 | Enumerating within a command | `argx_command_option_count` and `argx_command_option_at`, `argx_command_positional_count` and `argx_command_positional_at`, `argx_command_subcommand_count` and `argx_command_subcommand_at` |
 | Lookup by name | `argx_command_find_short`, `argx_command_find_long`, `argx_command_find_subcommand` |
