@@ -21,11 +21,11 @@
 typedef struct help_context
 {
     const argx_command_t *command; /* the command the text is about */
-    size_t width;                    /* the width in columns; 0 means no limit */
-    size_t indent;                   /* the blanks before each item of a list */
-    size_t max_column;               /* the last column at which the descriptions may start */
-    size_t column;                   /* the description column; set before the lists are written */
-    argx_out_t out;                  /* where the text goes */
+    size_t width;                  /* the width in columns; 0 means no limit */
+    size_t indent;                 /* the blanks before each item of a list */
+    size_t max_column;             /* the last column at which the descriptions may start */
+    size_t column;                 /* the description column; set before the lists are written */
+    argx_out_t out;                /* where the text goes */
     /*
      * the cell text of one item, as bytes; used again for the
      * next item, freed before the generation returns

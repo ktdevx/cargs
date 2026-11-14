@@ -29,15 +29,15 @@
 typedef struct scan
 {
     const argx_command_t *command; /* The current command: the last selected command. */
-    size_t index;                    /* The index of the argument that is being read. */
-    size_t count;                    /* The number of arguments, the name of the program included. */
-    bool options_ended;              /* Whether the terminator of the options was read. */
+    size_t index;                  /* The index of the argument that is being read. */
+    size_t count;                  /* The number of arguments, the name of the program included. */
+    bool options_ended;            /* Whether the terminator of the options was read. */
     /*
      * The index of the positional of command that takes the next
      * argument that is not an option.
      */
     size_t positional;
-    bool has_digit_short;            /* Whether command has an option whose short name is a digit. */
+    bool has_digit_short;          /* Whether command has an option whose short name is a digit. */
 } scan_t;
 
 /* Makes command the current command of scan. */
