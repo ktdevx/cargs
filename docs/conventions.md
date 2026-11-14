@@ -56,6 +56,9 @@ CHANGELOG.md          The record of changes in each release (Keep a Changelog)
 CMakeLists.txt        Assembly only: reads the version, project(), options, adds each directory
 CODE_OF_CONDUCT.md    The code of conduct for everyone who takes part in the project
 CONTRIBUTING.md       The entry point for contributors
+examples/             Complete example programs that the documents link to. Built and run as tests (label example) when ARGX_BUILD_TESTS is ON
+├── CMakeLists.txt    The argx_add_example() calls: one executable and one test per example
+└── schema_pack.c     The complete schema example of docs/schema.md
 LICENSE               The MIT License
 README.md             The entry point of the project for users: overview, an example, quick installation, links to the documents
 SECURITY.md           Supported versions and how to report a vulnerability privately
@@ -112,7 +115,7 @@ docs/                 Documents
 ├── ownership.md      Ownership and lifetime rules (for users): who allocates and frees, how long things stay valid, how failures are returned
 ├── parse.md          Using parsing (for users): an example from parsing to destruction, the list of argument forms, parse errors, lifetime rules, preconditions
 ├── releasing.md      The release procedure (for maintainers): releasing a version, the repository settings it needs, recovering from failures
-├── schema.md         Using schemas (for users): an example from definition through validation to destruction, the value type contract, the order of destruction
+├── schema.md         Using schemas (for users): an overview and a short example, commands, options, positionals, the value type contract, the order of destruction, validation, and a reference of errors, guarantees and preconditions
 └── versioning.md     The versioning policy (for users and contributors): how versions are numbered, what a new version may change, checking the version
 ```
 

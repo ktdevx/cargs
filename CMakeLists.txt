@@ -48,11 +48,13 @@ if(ARGX_INSTALL)
 endif()
 
 # The tests. The testing module fetches Naos when it is included, so it is
-# included only when the tests are built.
+# included only when the tests are built. The example programs the documents
+# link to are built and run as tests too.
 if(ARGX_BUILD_TESTS)
     include("${CMAKE_CURRENT_LIST_DIR}/cmake/ArgXTesting.cmake")
     enable_testing()
     add_subdirectory(tests)
+    add_subdirectory(examples)
 endif()
 
 # The configuration ctest uses when none is given. With a multi-config
