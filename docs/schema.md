@@ -2,7 +2,7 @@
 
 A schema describes, with function calls, which command lines your program accepts. It is a tree of commands, and each command has options and positionals. Options with a value and positionals each have a value type, which says how their input strings are converted. This document covers defining, validating, reading and destroying a schema.
 
-A schema knows nothing about argv. Parsing argv with a validated schema is in [Parsing](parse.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public headers `include/argx/schema.h` and `include/argx/type.h`.
+A schema knows nothing about argv. Parsing argv with a validated schema is in [Parsing](parse.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public headers `include/argx/schema.h` and `include/argx/type.h`. This document is a reference; a complete program that defines, validates and destroys a schema with subcommands and value types of its own is [examples/pack.c](../examples/pack.c).
 
 ## Overview
 
@@ -14,96 +14,6 @@ Every program goes through the same four steps:
 4. **Destroy.** Destroy the root with `argx_command_destroy`, which frees the whole tree. Then destroy the value types you created.
 
 Every function that can fail returns an `argx_error_t`, which is `ARGX_ERROR_NONE` on success.
-
-## A short example
-
-The example defines the command line of `pack`, a made-up program, validates it and destroys it:
-
-```
-pack [-v]... -o FILE [-l LEVEL] file...
-```
-
-It is a complete program that includes only `<argx/argx.h>` and standard headers. It prints `the schema of pack is valid` and exits with status 0. The macro `TRY` checks every call and jumps to the error message at the first failure.
-
-```c
-#include <argx/argx.h>
-
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-/* Stops at the first call that fails. */
-#define TRY(call)                     \
-    do                                \
-    {                                 \
-        error = (call);               \
-        if (error != ARGX_ERROR_NONE) \
-        {                             \
-            goto failed;              \
-        }                             \
-    } while (0)
-
-int main(void)
-{
-    argx_command_t *root = NULL;
-    argx_option_t *option;
-    argx_positional_t *positional;
-    argx_error_t error;
-    int status = EXIT_FAILURE;
-
-    /* The root command represents the program. */
-    TRY(argx_command_create("pack", &root));
-    TRY(argx_command_set_description(root, "Pack files into an archive."));
-
-    /* A count: -v, -vv, --verbose. */
-    TRY(argx_command_add_count(root, 'v', "verbose", &option));
-    TRY(argx_option_set_description(option, "Print more; can be repeated."));
-
-    /* A required option with the built-in value type string. */
-    TRY(argx_command_add_value(root, 'o', "output", argx_type_string(), &option));
-    TRY(argx_option_set_description(option, "The archive to write."));
-    TRY(argx_option_set_value_name(option, "FILE"));
-    TRY(argx_option_set_required(option, true));
-
-    /* An integer with a default value, written as on a command line. */
-    TRY(argx_command_add_value(root, 'l', "level", argx_type_int(), &option));
-    TRY(argx_option_set_description(option, "The compression level."));
-    TRY(argx_option_set_value_name(option, "LEVEL"));
-    TRY(argx_option_set_default(option, "6"));
-
-    /* One or more files. */
-    TRY(argx_command_add_positional(root, "file", argx_type_string(),
-                                    ARGX_ARITY_ONE_OR_MORE, &positional));
-    TRY(argx_positional_set_description(positional, "The files to pack."));
-
-    /* Validation, once the definition is complete. */
-    TRY(argx_command_validate(root, NULL, NULL, NULL));
-    printf("the schema of %s is valid\n", argx_command_name(root));
-    status = EXIT_SUCCESS;
-    goto cleanup;
-
-failed:
-    fprintf(stderr, "pack: cannot define the command line: %s\n", argx_error_message(error));
-
-cleanup:
-    /* Destroying the root frees the whole tree. Destroying NULL does nothing. */
-    argx_command_destroy(root);
-    return status;
-}
-```
-
-Key points:
-
-- The example creates only the root, so the root is the only thing it destroys. The handles that the add functions write (`option`, `positional`) are owned by the tree. You do not destroy them.
-- When an add or set function fails, the schema is as it was before the call, and the handle it writes is `NULL`. `TRY` stops at the first failure, so a `NULL` handle is never passed to the next call.
-- The built-in value types (`argx_type_string()`, `argx_type_int()`) are never destroyed.
-
-The complete example [examples/schema_pack.c](../examples/schema_pack.c) defines a larger `pack` and is built and run with the tests. It also shows:
-
-- subcommands (`create` and `list`), with options in front of the subcommand on the root;
-- every kind of option: a flag, a count, a negatable flag and options with a value;
-- a choice value type and a user-defined value type, and destroying them after the schema;
-- finding which definition a failed validation points to (`report_fault`).
 
 ## Commands
 
@@ -247,7 +157,7 @@ argx_error_t argx_type_create(const char *name, size_t value_size,
 | `release_fn` | The release function. `void (*)(void *value, void *context)`. `NULL` if the value needs no release |
 | `context` | User data passed to both functions. `NULL` if not needed |
 
-For example, the value type `size` of [examples/schema_pack.c](../examples/schema_pack.c) takes decimal digits with an optional unit, `k` or `m` (`512`, `64k`, `2m`), and writes the number of bytes as an `unsigned long`. Its `context` holds the largest size it takes. The value refers to nothing, so it has no release function:
+For example, the value type `size` of [examples/pack.c](../examples/pack.c) takes decimal digits with an optional unit, `k` or `m` (`512`, `64k`, `2m`), and writes the number of bytes as an `unsigned long`. Its `context` holds the largest size it takes. The value refers to nothing, so it has no release function:
 
 ```
 typedef struct size_limit
@@ -280,7 +190,7 @@ error = argx_type_create("size", sizeof(unsigned long), convert_size, NULL, &lim
 ### User data (`context`)
 
 - A value type only borrows `context`. The library neither copies nor frees it.
-- You keep what `context` points to valid until you destroy the value type. In the complete example, `limit` is a local variable of `main`, and it stays valid until after the value type is destroyed.
+- You keep what `context` points to valid until you destroy the value type. In [examples/pack.c](../examples/pack.c), `limit` is a local variable of `main`, and it stays valid until after the value type is destroyed.
 - If you use a value type from several threads at the same time, write the conversion function and the release function so that they work correctly when they read `context` at the same time.
 
 Creating and destroying a value type calls neither the conversion function nor the release function.
@@ -334,7 +244,7 @@ bool argx_command_is_validated(const argx_command_t *command);
 
 ### Finding the cause
 
-This is what `report_fault` in [examples/schema_pack.c](../examples/schema_pack.c) does:
+This is what `report_fault` in [examples/pack.c](../examples/pack.c) does:
 
 1. Pass the return value to `argx_error_message` to get the kind of error.
 2. Pass `*command` to `argx_command_name` to get which command's definition it is. To walk up to the parents, use `argx_command_parent` (`NULL` for the root).
@@ -386,6 +296,8 @@ A `NULL` for a required argument, an index out of range, a value that is not in 
 ### Errors when adding and setting
 
 Within one function, the conditions are checked from the top row down, and the first one that applies is returned. Besides these, every function returns `ARGX_ERROR_OUT_OF_MEMORY` when an allocation fails. Setting a description (on a command, an option or a positional) fails only when an allocation fails.
+
+When an add or set function fails, the schema is as it was before the call, and the handle that it writes is `NULL`. Stop at the first failure, so that a `NULL` handle is never passed to the next call.
 
 **`argx_command_create`**
 

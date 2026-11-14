@@ -4,12 +4,12 @@ This page lists the documents of ArgX, grouped by reader, with a one-line descri
 
 ## Using ArgX
 
-For users of the library. Start with [Installation](install.md) to build ArgX and use it from your project, then read [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md) in this order; use [Ownership and Lifetime](ownership.md) and [Versioning](versioning.md) as references.
+For users of the library. Start with [Installation](install.md) to build ArgX and use it from your project. Then read the example in the [README](../README.md#example) and the complete program [examples/pack.c](../examples/pack.c), which goes through every step from defining the schema to reading the values. The documents below are references: look up a function or a rule in them when you need it.
 
 - [Installation](install.md): for users who build ArgX or use it from their project; covers building and testing, the build options, and FetchContent, add_subdirectory, find_package and pkg-config.
-- [Schemas](schema.md): for users who define command lines; covers defining, validating, reading and destroying a schema of commands, options, positionals and value types.
-- [Parsing](parse.md): for users who parse argv; covers parsing with a validated schema, the command-line syntax, reading the result, parse errors and destroying the result.
-- [Help and Usage](help.md): for users who show help to their own users; covers generating the help and the usage line, the text layout rules, the help options and the output.
+- [Schemas](schema.md): a reference for defining command lines; covers defining, validating, reading and destroying a schema of commands, options, positionals and value types.
+- [Parsing](parse.md): a reference for parsing argv; covers parsing with a validated schema, the command-line syntax, reading the result, parse errors and destroying the result.
+- [Help and Usage](help.md): a reference for showing help to the users of your program; covers generating the help and the usage line, the text layout rules, the help options and the output.
 - [Ownership and Lifetime](ownership.md): a reference for all users; covers who allocates and frees memory, and how long what you pass and what you get back stay valid.
 - [Versioning](versioning.md): a reference for users and contributors; covers how versions are numbered and tagged, what a new version may change, and how to check the version in code.
 

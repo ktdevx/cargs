@@ -2,7 +2,7 @@
 
 The library generates the help of a command, or only its usage line, from a validated schema. You choose where the text goes: a write function of your own, or a buffer. This document covers the generating functions, the rules that decide the text, the help options that control the layout, the output, and the limits.
 
-Defining and validating a schema is in [Schemas](schema.md), and parsing argv is in [Parsing](parse.md). Generation only reads the schema; it needs no parse result. The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/help.h`.
+Defining and validating a schema is in [Schemas](schema.md), and parsing argv is in [Parsing](parse.md). Generation only reads the schema; it needs no parse result. The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/help.h`. This document is a reference; a complete program that defines `--help` and prints the help and parse errors is [examples/pack.c](../examples/pack.c).
 
 ## Overview
 
@@ -19,132 +19,29 @@ Three rules are easy to miss:
 - **The text passed to a write function is not null-terminated.** Write exactly `length` bytes ([The write function contract](#the-write-function-contract)).
 - **On a failure, the text written so far stays at the destination.** To avoid partial text, format into a buffer first ([On failure](#on-failure)).
 
-## A short example
-
-The example prints the help of `fetch`, a made-up program, to the standard output, and then the usage line alone. It is a complete program that includes only `<argx/argx.h>` and standard headers.
-
-```c
-#include <argx/argx.h>
-
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-/* Stops at the first call that fails. */
-#define TRY(call)                     \
-    do                                \
-    {                                 \
-        error = (call);               \
-        if (error != ARGX_ERROR_NONE) \
-        {                             \
-            goto define_failed;       \
-        }                             \
-    } while (0)
-
-/*
- * The write function: writes one part of the text to the stream that
- * user_data points to. The part is not terminated, so it is written with
- * its length.
- */
-static bool write_to_stream(void *user_data, const char *text, size_t length)
-{
-    return fwrite(text, 1, length, (FILE *)user_data) == length;
-}
-
-int main(void)
-{
-    argx_command_t *root = NULL;
-    argx_option_t *quiet;
-    argx_option_t *output;
-    argx_option_t *retries;
-    argx_positional_t *url;
-    argx_error_t error;
-    int status = EXIT_FAILURE;
-
-    /* The schema. The help is generated from it, so it must be validated. */
-    TRY(argx_command_create("fetch", &root));
-    TRY(argx_command_set_description(root, "Download a file."));
-    TRY(argx_command_add_flag(root, 'q', "quiet", &quiet));
-    TRY(argx_option_set_description(quiet, "Print nothing."));
-    TRY(argx_command_add_value(root, 'o', "output", argx_type_string(), &output));
-    TRY(argx_option_set_description(output, "The file to write."));
-    TRY(argx_option_set_value_name(output, "FILE"));
-    TRY(argx_option_set_required(output, true));
-    TRY(argx_command_add_value(root, 'r', "retries", argx_type_int(), &retries));
-    TRY(argx_option_set_description(retries, "How often to try again."));
-    TRY(argx_option_set_default(retries, "3"));
-    TRY(argx_command_add_positional(root, "url", argx_type_string(), ARGX_ARITY_REQUIRED, &url));
-    TRY(argx_positional_set_description(url, "The address to read."));
-    TRY(argx_command_validate(root, NULL, NULL, NULL));
-
-    /* The help, with the default help options (NULL). */
-    error = argx_help_write(root, NULL, write_to_stream, stdout);
-    if (error == ARGX_ERROR_NONE)
-    {
-        /* The usage line alone: the first line of the help. */
-        printf("----\n");
-        error = argx_help_write_usage(root, NULL, write_to_stream, stdout);
-    }
-
-    if (error != ARGX_ERROR_NONE)
-    {
-        fprintf(stderr, "fetch: cannot print the help: %s\n", argx_error_message(error));
-    }
-    else
-    {
-        status = EXIT_SUCCESS;
-    }
-    goto cleanup;
-
-define_failed:
-    fprintf(stderr, "fetch: cannot define the command line: %s\n", argx_error_message(error));
-
-cleanup:
-    /* Destroying NULL does nothing, so this is also right after a failure. */
-    argx_command_destroy(root);
-
-    return status;
-}
-```
-
-Output:
-
-```
-Usage: fetch [OPTIONS] --output <FILE> <url>
-
-Download a file.
-
-Arguments:
-  <url>                    The address to read.
-
-Options:
-  -q, --quiet              Print nothing.
-  -o, --output <FILE>      The file to write. [required]
-  -r, --retries <integer>  How often to try again. [default: 3]
-----
-Usage: fetch [OPTIONS] --output <FILE> <url>
-```
-
-Key points:
-
-- The library only hands the text to `write_to_stream`, which decides where it goes. The `----` line is printed by the example itself.
-- The usage line alone is the same text as the first line of the help, for the same command and help options.
-- Everything comes from the schema. `<integer>` is the name of the value type of `--retries`, which has no value name. `[required]` and `[default: 3]` are annotations made from the definitions.
-- Generation changes neither the schema nor the help options, and returns nothing for you to free.
-
 ## Printing `--help` and errors
 
-`--help` is an ordinary flag that you define in the schema. After parsing, your code checks whether it was given, prints the help and ends the program. How to read `--help`, and why to check it before parse errors, is in [Parsing](parse.md#handling---help).
+`--help` is an ordinary flag that you define in the schema; the library adds none. After parsing, your code checks whether it was given, prints the help and ends the program. How to read `--help`, and why to check it before the parse error, is in [Parsing](parse.md#handling---help).
 
-The complete example [examples/help_pack.c](../examples/help_pack.c) defines `pack`, a made-up program with the subcommands `create` and `list`, and `-h, --help` on every command. It is built and run with the tests. Its `main` decides what to print as follows (an excerpt):
+| To print | Generate for | Usual destination |
+| --- | --- | --- |
+| The help, for `--help` | `argx_result_command`: the last command that the command line selected. `pack create --help` gives the help of `create` | The standard output |
+| The usage line, with the message of a parse error | `argx_result_error_command`: the command that was current when the error was found. It is never `NULL` on a result with a parse error | The standard error stream |
+
+- `--help` appears in the `Options:` list like any other option, because it is one. The list shows only what the schema defines.
+- The usage line already ends with a newline. Do not add one after it.
+- The destination is the `user_data` of the write function.
+
+How `main` of [examples/pack.c](../examples/pack.c) decides what to print (an excerpt):
 
 ```c
-error = argx_parse(root, argc, argv, &result);
+error = argx_parse(schema.root, argc, argv, &result);
 
 if (result == NULL)
 {
     /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
-    fprintf(stderr, "pack: %s\n", argx_error_message(error));
+    fprintf(stderr, "pack: %s
+", argx_error_message(error));
 }
 else if (help_was_given(result))
 {
@@ -155,60 +52,21 @@ else if (help_was_given(result))
 else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
 {
     /* The message, then the usage line of the command where the error was found. */
-    fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
+    fprintf(stderr, "pack: %s
+", argx_result_error_message(result));
     argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
-    fprintf(stderr, "Try 'pack --help' for more information.\n");
+    fprintf(stderr, "Try 'pack --help' for more information.
+");
 }
 ```
 
-Example runs (the `$` lines are the input, and the lines after them are the output):
+For the command line `pack create a.txt`, which leaves out the required `--output` of `create`, it prints:
 
 ```
-$ pack --help
-Usage: pack [OPTIONS] [COMMAND]
-
-Pack files into an archive.
-
-Commands:
-  create            Create an archive.
-  list              List the files of an archive.
-
-Options:
-  -h, --help        Print this help.
-  -v, --verbose...  Print more; can be repeated.
-      --[no-]color  Color the output. [default: on]
-
-$ pack create --help
-Usage: pack create [OPTIONS] --output <FILE> <file>...
-
-Create an archive.
-
-Arguments:
-  <file>...            The files to pack.
-
-Options:
-  -h, --help           Print this help.
-  -o, --output <FILE>  The archive to write. [required]
-  -l, --level <LEVEL>  The compression level. [default: 6]
-
-$ pack create a.txt
 pack: missing required option '--output'
 Usage: pack create [OPTIONS] --output <FILE> <file>...
 Try 'pack --help' for more information.
-
-$ pack list a b c
-pack: unexpected argument 'c'
-Usage: pack list [OPTIONS] <archive> [pattern]
-Try 'pack --help' for more information.
 ```
-
-Key points:
-
-- For `--help`, print the help of `argx_result_command`, the last command that the command line selected. `pack create --help` gives the help of `create`.
-- For a parse error, print the usage line of `argx_result_error_command`, the command that was current when the error was found. It is never `NULL` on a result with a parse error.
-- `--help` appears in the `Options:` list like any other option, because it is one. The list shows only what the schema defines.
-- The usage line already ends with a newline. Do not add one after it.
-- The destination is the `user_data` of the write function: here `stdout` for the help and `stderr` for the usage line.
 
 ## Generating functions
 
@@ -238,6 +96,8 @@ argx_error_t argx_help_format_usage(const argx_command_t *command,
 - `options` are the help options. `NULL` means every setting has its default value ([Help options](#help-options)).
 - **The text is deterministic.** The same command and help options always give the same bytes, however many times you generate and in any environment. The text depends on neither the locale, environment variables nor the terminal.
 - The functions that format into a buffer produce the same bytes as the functions that pass the text to a write function.
+- The usage line that `argx_help_write_usage` generates is the same text as the first line of the help, for the same command and help options.
+- Generation changes neither the schema nor the help options, and returns nothing for you to free.
 - Return values, and what is left on failure, are in [On failure](#on-failure).
 
 ## Text layout rules
@@ -245,6 +105,15 @@ argx_error_t argx_help_format_usage(const argx_command_t *command,
 The text follows from the schema and the help options by the rules below and nothing else, so tests can compare it with an expected string exactly.
 
 The rules describe a schema whose names, value names, default values and choices have no leading or trailing blanks and no newlines, and whose descriptions do not start with a newline or a line of blanks. Other schemas are covered in [Limits](#limits).
+
+The examples of this document use `pack create`, a subcommand of the made-up program `pack`. It has the description `Create an archive.` and these definitions, in this order:
+
+| Definition | Kind | Value name | Attributes | Description |
+| --- | --- | --- | --- | --- |
+| `-h, --help` | Flag | | | `Print this help.` |
+| `-o, --output` | Option with a value, string | `FILE` | Required | `The archive to write.` |
+| `-l, --level` | Option with a value, integer | `LEVEL` | Default value `6` | `The compression level.` |
+| `file` | Positional, one or more, string | | | `The files to pack.` |
 
 The parts of a help have these names in this document (the help of `pack create`):
 
@@ -476,7 +345,7 @@ The description column is decided in three steps:
 
 An item whose "indent + heading + 2" fits within the description column has its description on the same line, at least 2 blanks after the heading. Otherwise the heading is on a line of its own, and the description starts at the description column of the next line.
 
-In the help of `pack create` ([Printing `--help` and errors](#printing---help-and-errors)), the widest headings, `-o, --output <FILE>` and `-l, --level <LEVEL>`, are 19 columns. The description column is 2 + 19 + 2 = 23, below the maximum 32, so both lists start their descriptions at column 23.
+In the help of `pack create` ([Text layout rules](#text-layout-rules)), the widest headings, `-o, --output <FILE>` and `-l, --level <LEVEL>`, are 19 columns. The description column is 2 + 19 + 2 = 23, below the maximum 32, so both lists start their descriptions at column 23.
 
 Below, with the default help options, the widest heading is 41 columns, so the description column is the maximum, 32. `--exactly-two-blanks-fit` is 28 columns, and 2 + 28 + 2 = 32 still fits on its line; `--one-blank-is-not-enough`, one column wider, does not. The last option has no description:
 
@@ -567,7 +436,7 @@ The help options (`argx_help_options_t`) hold the settings of the layout. You cr
 - The library reads neither the terminal width nor environment variables. To fit the terminal, find its width yourself and set it.
 - The contents are not public. Later versions may add settings and their set functions.
 
-The next function prints a help 40 columns wide (`write_to_stream` is the one from [A short example](#a-short-example)):
+The next function prints a help 40 columns wide (`write_to_stream` is the one in [Writing to standard output](#writing-to-standard-output)):
 
 ```c
 /* Prints the help of command to the standard output, 40 columns wide. */
@@ -618,7 +487,7 @@ Options:
 
 ## Output
 
-The generating functions hand the text to a write function, or write it into your buffer. The library does not use `<stdio.h>` and writes nowhere you did not specify; to write to a `FILE *`, use a write function that calls `fwrite()`, like `write_to_stream` in [A short example](#a-short-example).
+The generating functions hand the text to a write function, or write it into your buffer. The library does not use `<stdio.h>` and writes nowhere you did not specify; to write to a `FILE *`, use a write function that calls `fwrite()`, like `write_to_stream` in [Writing to standard output](#writing-to-standard-output).
 
 ### The write function contract
 
@@ -637,9 +506,17 @@ The library passes the text from the start, in order, in several parts.
 
 ### Writing to standard output
 
-`write_to_stream` in [A short example](#a-short-example) is all a `FILE *` needs: pass the stream as `user_data`.
+A write function that calls `fwrite()` is all a `FILE *` needs. Pass the stream as `user_data`:
 
+```c
+/* Writes one part of the text to the stream that user_data points to. */
+static bool write_to_stream(void *user_data, const char *text, size_t length)
+{
+    return fwrite(text, 1, length, (FILE *)user_data) == length;
+}
 ```
+
+```c
 error = argx_help_write(root, NULL, write_to_stream, stdout);
 ```
 

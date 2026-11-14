@@ -18,7 +18,7 @@ Include `<argx/argx.h>` and link to `ArgX::argx`.
 
 ## Example
 
-A complete program that accepts `greet [-h] [-l] [-n COUNT] name`.
+A complete program that accepts `greet [-h] [-l] [-n COUNT] name`. A larger one, with subcommands, every kind of option and value types of its own, is [examples/pack.c](examples/pack.c).
 
 ```c
 #include <argx/argx.h>
@@ -187,9 +187,10 @@ The tests fetch the test framework Naos from GitHub at configure time. To build 
 ## Documentation
 
 - [Installation](docs/install.md): building, the build options, and the four ways to use ArgX from your project.
-- [Schemas](docs/schema.md): defining and validating commands, options, positionals and value types.
-- [Parsing](docs/parse.md): parsing, the command-line syntax, reading the result, parse errors, `--help`, and wide-character argv (`wmain`).
-- [Help and Usage](docs/help.md): generating the help and the usage line, the layout rules and settings, and the output.
+- [examples/pack.c](examples/pack.c): a complete program that goes through every step, from defining the schema to printing the help and reading the values.
+- [Schemas](docs/schema.md): the reference for defining and validating commands, options, positionals and value types.
+- [Parsing](docs/parse.md): the reference for parsing, the command-line syntax, reading the result, parse errors, `--help`, and wide-character argv (`wmain`).
+- [Help and Usage](docs/help.md): the reference for generating the help and the usage line, the layout rules and settings, and the output.
 - [Ownership and Lifetime](docs/ownership.md): who frees what, and how long things stay valid.
 - [Documentation index](docs/README.md): all documents, including those for contributors.
 

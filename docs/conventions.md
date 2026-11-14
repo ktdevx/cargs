@@ -56,11 +56,9 @@ CHANGELOG.md          The record of changes in each release (Keep a Changelog)
 CMakeLists.txt        Assembly only: reads the version, project(), options, adds each directory
 CODE_OF_CONDUCT.md    The code of conduct for everyone who takes part in the project
 CONTRIBUTING.md       The entry point for contributors
-examples/             Complete example programs that the documents link to. Built and run as tests (label example) when ARGX_BUILD_TESTS is ON
-├── CMakeLists.txt    The argx_add_example() calls: one executable and one test per example
-├── help_pack.c       The complete help example of docs/help.md
-├── parse_pack.c      The complete parsing example of docs/parse.md
-└── schema_pack.c     The complete schema example of docs/schema.md
+examples/             Complete example programs, linked from the README. Built and run as tests (label example) when ARGX_BUILD_TESTS is ON
+├── CMakeLists.txt    argx_add_example() per program and argx_add_example_test() per command line it is run with
+└── pack.c            The complete example: schema, validation, parsing, --help, parse errors, reading the values
 LICENSE               The MIT License
 README.md             The entry point of the project for users: overview, an example, quick installation, links to the documents
 SECURITY.md           Supported versions and how to report a vulnerability privately
@@ -125,6 +123,7 @@ docs/                 Documents
 - [CHANGELOG.md](../CHANGELOG.md) records the changes of each release. The [versioning policy](versioning.md) and the [release guide](releasing.md) describe the versions and the release procedure.
 - [`tools/release/`](../tools/release/) holds the release scripts and modules, and [`tools/ci/`](../tools/ci/) holds [`changes.cmake`](../tools/ci/changes.cmake), which CI uses to decide whether a change touches documentation only. The workflows [`ci.yml`](../.github/workflows/ci.yml), [`release-pr.yml`](../.github/workflows/release-pr.yml) and [`release-publish.yml`](../.github/workflows/release-publish.yml) in [`.github/workflows/`](../.github/workflows/) run them.
 - The tests in [`tests/release/`](../tests/release/) are registered by `tests/CMakeLists.txt` with `argx_add_release_test(<name>)`, under the name `release.<name>` and with the label `release`. They need no build, so they are registered in both the static and the shared configuration. You can select them with `ctest -L release`. On Windows, `file(WRITE)` turns LF into CRLF, so the release scripts and the tests write the files whose bytes matter with `argx_write_bytes()` of `ArgXReadBytes.cmake`. To write them as on Windows on any host, run the tests with the environment variable `ARGX_WRITE_BYTES_WITH_CONFIGURE=1`.
+- [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md) are references. They hold rules, tables, code fragments and output, but no complete programs and no walkthroughs. Complete programs are the example in the [README](../README.md#example) and the programs in `examples/`, which are built and run with the tests; a document that refers to one of them links to the file and names the function. When an example prints something else, update the expected output of its `argx_add_example_test()` and the run in the comment at the top of the program.
 - Users write only `#include <argx/argx.h>`. Public headers also include each other in the form `<argx/<name>.h>`.
 - The internal headers in `src/` are included only by the sources in `src/` and by tests of internal functions, in the form `"<name>_internal.h"` (`"<name>.h"` if there is no public header of the same name). Do not include internal headers from public headers.
 - Of the scripts in `cmake/`, `ArgXCheckAllocations.cmake` (the allocation check `argx.allocations`) and `ArgXCheckExports.cmake` (the export check `argx.exports`) can also be run on their own with `cmake -P` ([Verifying a change](#verifying-a-change)).

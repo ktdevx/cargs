@@ -2,7 +2,7 @@
 
 Parsing reads argv with a validated schema and gives you a result, from which you read the values. This document covers parsing, reading the result, parse errors and destroying the result, and the command-line syntax that the users of your program can write. Parsing prints nothing, does not end the process, and does not read environment variables.
 
-Defining and validating a schema is in [Schemas](schema.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/parse.h`.
+Defining and validating a schema is in [Schemas](schema.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/parse.h`. This document is a reference; a complete program that parses, prints the help and parse errors, and reads the values is [examples/pack.c](../examples/pack.c).
 
 ## Overview
 
@@ -20,154 +20,6 @@ Three rules are easy to miss:
 - **A parse error also gives you a result.** You read the error from it, and you destroy it ([Entry points](#entry-points)).
 - **Check `--help` before the parse error.** `pack create --help` is a parse error when `create` has a required option, but `--help` still reads as given ([Handling `--help`](#handling---help)).
 - **Destroy the result before the schema, and do not change the schema while a result exists** ([Lifetime rules](#lifetime-rules)).
-
-## A short example
-
-The example parses the command line of `pack`, a made-up program:
-
-```
-pack [-h] [-v]... -o FILE file...
-```
-
-It is a complete program that includes only `<argx/argx.h>` and standard headers. The schema is defined as in [Schemas](schema.md); the numbered comments follow the steps of the [Overview](#overview).
-
-```c
-#include <argx/argx.h>
-
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-/* Stops at the first call that fails. */
-#define TRY(call)                     \
-    do                                \
-    {                                 \
-        error = (call);               \
-        if (error != ARGX_ERROR_NONE) \
-        {                             \
-            goto define_failed;       \
-        }                             \
-    } while (0)
-
-int main(int argc, char **argv)
-{
-    argx_command_t *root = NULL;
-    argx_option_t *help;
-    argx_option_t *verbose;
-    argx_option_t *output;
-    argx_positional_t *files;
-    argx_result_t *result = NULL;
-    argx_error_t error;
-    int status = EXIT_FAILURE;
-
-    /* Define and validate the schema (see docs/schema.md). */
-    TRY(argx_command_create("pack", &root));
-    TRY(argx_command_add_flag(root, 'h', "help", &help));
-    TRY(argx_command_add_count(root, 'v', "verbose", &verbose));
-    TRY(argx_command_add_value(root, 'o', "output", argx_type_string(), &output));
-    TRY(argx_option_set_required(output, true));
-    TRY(argx_command_add_positional(root, "file", argx_type_string(), ARGX_ARITY_ONE_OR_MORE,
-                                    &files));
-    TRY(argx_command_validate(root, NULL, NULL, NULL));
-
-    /* 1. Parse argc and argv as main() received them. */
-    error = argx_parse(root, argc, argv, &result);
-
-    if (result == NULL)
-    {
-        /* 2. ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
-        fprintf(stderr, "pack: %s\n", argx_error_message(error));
-    }
-    else if (argx_result_flag(result, help))
-    {
-        /* 3. --help before the parse error: "pack --help" lacks -o. */
-        printf("usage: pack [-h] [-v]... -o FILE file...\n");
-        status = EXIT_SUCCESS;
-    }
-    else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-    {
-        /* 4. The message is one line, with no prefix and no line break. */
-        fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
-    }
-    else
-    {
-        /* 5. Read the values by the handles of the schema. */
-        const char *file = NULL;
-        size_t i;
-
-        argx_result_option_string(result, output, &file);
-        printf("output: %s, verbose: %lu\n", file,
-               (unsigned long)argx_result_count(result, verbose));
-        for (i = 0; i < argx_result_positional_count(result, files); ++i)
-        {
-            argx_result_positional_string(result, files, i, &file);
-            printf("  %s\n", file);
-        }
-        status = EXIT_SUCCESS;
-    }
-    goto cleanup;
-
-define_failed:
-    fprintf(stderr, "pack: cannot define the command line: %s\n", argx_error_message(error));
-
-cleanup:
-    /* 6. The result first, then the schema. A parse error leaves a result too. */
-    argx_result_destroy(result);
-    argx_command_destroy(root);
-
-    return status;
-}
-```
-
-Example runs (the `$` lines are the input, and the lines after them are the output):
-
-```
-$ pack -vv -o out.tar a.txt b.txt
-output: out.tar, verbose: 2
-  a.txt
-  b.txt
-
-$ pack a.txt
-pack: missing required option '--output'
-
-$ pack --help
-usage: pack [-h] [-v]... -o FILE file...
-```
-
-Key points:
-
-- A value is read by the handle that an add function wrote (`output`, `files`), not by a name string. No conversion or cast of `argc` and `argv` is needed.
-- `pack --help` gives no `-o`, so `argx_parse` returns a parse error for a missing required option. The result still holds what was read before the error, so `--help` reads as given.
-- After a parse that succeeded, the required `--output` always has a value, and `files` has at least one.
-- The usage line is written by hand, to keep the example about parsing. Generating it from the schema is in [Help and Usage](help.md).
-- `result` starts as `NULL`, and destroying `NULL` does nothing, so the cleanup is the same on every path.
-
-The complete example [examples/parse_pack.c](../examples/parse_pack.c) parses a larger `pack` and is built and run with the tests. It also shows:
-
-- subcommands (`create` and `list`), with `--help` on every command (`add_help`) and a check of `--help` across the selected commands (`help_was_given`);
-- a negatable flag with an initial state, and default values for an option and a positional;
-- reading where a value came from (`source_text`);
-- requiring a subcommand in your own code (`run`).
-
-```
-$ pack -vv create -o out.tar a.txt b.txt
-verbose: 2, color: on
-create out.tar, level 6 (default)
-  a.txt
-  b.txt
-
-$ pack --no-color create -l9 --output=out.tar -- -x.txt
-verbose: 0, color: off
-create out.tar, level 9 (command line)
-  -x.txt
-
-$ pack create a.txt
-pack: missing required option '--output'
-Try 'pack --help' for more information.
-
-$ pack create --help
-usage: pack create -o FILE [-l LEVEL] file...
-```
 
 ## Entry points
 
@@ -188,6 +40,7 @@ argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *cons
 
 - **If `*out` is not `NULL`, destroy it with `argx_result_destroy`, on a parse error too.** This is an exception to the rule of the other functions, "on failure, the output is `NULL`".
 - When the conversion function of a value type returns `ARGX_ERROR_OUT_OF_MEMORY`, it is also treated as an allocation failure.
+- `argc` and `argv` go in as `main` received them, with no conversion or cast.
 - `argv[0]` is the program name, and it is not parsed. If `argc` is 0 or 1, the command line is parsed as one in which nothing was given. `argv[argc]` is not read.
 - `root` must be the root of a validated schema. Passing a schema that has not been validated, or a subcommand, breaks a [precondition](#preconditions); no error code is returned for it.
 - Parsing does not change the schema, the value types, the argv array or the argv strings. No state is kept between calls, so the same schema and the same argv always give the same result. While the schema is not changed, several threads can parse with it at the same time.
@@ -313,9 +166,9 @@ The library does not treat `--help` specially. `--help` is a flag that you defin
 
 **Check whether `--help` was given before you look at the parse error.** `pack create --help` does not give `--output`, a required option of `create`, so `argx_parse` returns a parse error for a missing required option. A result with a parse error still holds what was read before the error, so `--help` reads as given. If you look at the error first, a user who asked for help is shown an error message instead.
 
-**Define `--help` on subcommands too.** An option is recognized only while its command is the current command. If you define `--help` only on the root, `pack --help` and `pack --help create` are accepted, but `pack create --help` is an unknown option, because `create` has no `--help`. To accept `tool sub --help`, define `--help` on every command, as `add_help` in [examples/parse_pack.c](../examples/parse_pack.c) does.
+**Define `--help` on subcommands too.** An option is recognized only while its command is the current command. If you define `--help` only on the root, `pack --help` and `pack --help create` are accepted, but `pack create --help` is an unknown option, because `create` has no `--help`. To accept `tool sub --help`, define `--help` on every command, as `add_help` in [examples/pack.c](../examples/pack.c) does.
 
-- To find out whether it was given, read the `--help` of each selected command with `argx_result_flag` (`help_was_given` in the complete example). The `--help` of a command that was not selected reads as `false`.
+- To find out whether it was given, read the `--help` of each selected command with `argx_result_flag` (`help_was_given` in [examples/pack.c](../examples/pack.c)). The `--help` of a command that was not selected reads as `false`.
 - To choose whose help to print, use `argx_result_command` (the last selected command). Passing it to `argx_help_write` generates the help of that command.
 - If an element before `--help` causes a parse error, parsing stops there and `--help` is not read (`pack create --bogus --help` is an unknown option error).
 
@@ -340,73 +193,26 @@ The library does not treat `--help` specially. `--help` is a flag that you defin
 - `argx_parse`, in contrast, treats the elements of a `char` argv as byte sequences, without checking or converting their encoding. Bytes that are invalid in UTF-8 also become values as they are.
 - The return values, `*out`, ownership and preconditions are the same as for `argx_parse`.
 
-An example with `wmain`. `greet` takes one name.
+With `wmain`, the wide argv goes to `argx_parse_wide` as `wmain` received it. Everything read from the result is UTF-8 (`name` is a positional of the schema):
 
 ```c
-#include <argx/argx.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-
 int wmain(int argc, wchar_t **argv)
 {
-    argx_command_t *root = NULL;
-    argx_positional_t *name = NULL;
-    argx_result_t *result = NULL;
-    const char *text = NULL;
-    argx_error_t error;
-    int status = EXIT_FAILURE;
-
-    error = argx_command_create("greet", &root);
-    if (error != ARGX_ERROR_NONE)
-    {
-        goto define_failed;
-    }
-    error = argx_command_add_positional(root, "name", argx_type_string(), ARGX_ARITY_REQUIRED,
-                                        &name);
-    if (error != ARGX_ERROR_NONE)
-    {
-        goto define_failed;
-    }
-    error = argx_command_validate(root, NULL, NULL, NULL);
-    if (error != ARGX_ERROR_NONE)
-    {
-        goto define_failed;
-    }
-
-    /* The wide argv goes in as wmain() received it. */
+    ...
     error = argx_parse_wide(root, argc, argv, &result);
-
-    if (result == NULL)
-    {
-        fprintf(stderr, "greet: %s\n", argx_error_message(error));
-    }
-    else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-    {
-        /* The message is UTF-8, like every string of the result. */
-        fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
-    }
-    else if (argx_result_positional_string(result, name, 0, &text))
+    ...
+    if (argx_result_positional_string(result, name, 0, &text))
     {
         /* text is UTF-8, whatever the width of wchar_t is. */
-        printf("hello, %s\n", text);
-        status = EXIT_SUCCESS;
+        printf("hello, %s
+", text);
     }
-    goto cleanup;
-
-define_failed:
-    fprintf(stderr, "greet: cannot define the command line: %s\n", argx_error_message(error));
-
-cleanup:
-    argx_result_destroy(result);
-    argx_command_destroy(root);
-
-    return status;
+    ...
 }
 ```
 
 - `wmain` is an entry point that Windows compilers provide. On other platforms you can call `argx_parse_wide`, but there is no `wmain`.
-- The example writes the UTF-8 strings to standard output as they are. Making the console display UTF-8 (on Windows, setting the output code page of the console, and so on) is up to the program. The library does not call operating system APIs.
+- Writing the UTF-8 strings to standard output as they are, as above, does not make the console display them. Making the console display UTF-8 (on Windows, setting the output code page of the console, and so on) is up to the program. The library does not call operating system APIs.
 
 ## Command-line syntax
 
@@ -506,7 +312,7 @@ In a command that has subcommands, an operand is matched against the names of it
 - A name that matches none of the subcommands of the current command is an `UNKNOWN_SUBCOMMAND` parse error.
 - **Write an option after the name of the command that defines it, and before the name of that command's subcommand.** The `-v` of `pack -v create …` is an option of `pack`. The `-v` of `pack create -v …` is looked up in `create`; if `create` has no `-v`, it is an unknown option. Subcommands do not inherit the options of their parent.
 - When a parent and a child have options with the same name, each option belongs to its own command, at its own position.
-- A command line that ends without the name of a subcommand is not a parse error. `argx_result_command` then returns the command that has subcommands. A program that requires a subcommand checks this itself, as `run` in [examples/parse_pack.c](../examples/parse_pack.c) does.
+- A command line that ends without the name of a subcommand is not a parse error. `argx_result_command` then returns the command that has subcommands. A program that requires a subcommand checks this itself, as `run` in [examples/pack.c](../examples/pack.c) does.
 - An element after the terminator does not become the name of a subcommand. A command that has subcommands has no positionals, so it is an `UNEXPECTED_POSITIONAL` parse error.
 - The options and positionals of subcommands that were not selected read as not given ([Rules for reading](#rules-for-reading)).
 
@@ -517,6 +323,7 @@ When parsing has read the last element without a parse error, two steps are done
 1. **The required checks.** A required option with a value (`argx_option_set_required`) with no value, or a positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` with no value at all, is a `MISSING_OPTION` or `MISSING_POSITIONAL` parse error. When two or more are missing, the first one is reported: commands closer to the root first, and within one command, options before positionals, each in the order they were added.
 2. **Applying the default values,** only when nothing is missing. Each option with a value and each positional of `ARGX_ARITY_OPTIONAL` that was not given and has a default value gets the default value, converted by its value type. Its source becomes `ARGX_SOURCE_DEFAULT`.
 
+- After a parse that succeeded, every required option with a value of the selected commands has a value, and every positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` has at least one.
 - An option with a value or an optional positional that was not given and has no default value has no value (its source is `ARGX_SOURCE_NONE`). A positional of `ARGX_ARITY_ZERO_OR_MORE` that was not given has 0 values.
 - A flag that was not given is "not given", a count is 0, and a negatable flag is in its initial state (`argx_option_set_initial`). Their source is `ARGX_SOURCE_DEFAULT`.
 - The only sources of a value are the command line and the default values. Environment variables and the like are not read.
@@ -540,7 +347,7 @@ When parsing has read the last element without a parse error, two steps are done
 - **You may change or free argv after parsing.** The result holds copies of all the strings of argv, and refers to neither the argv array nor its strings after `argx_parse` returns.
 - **Strings and values read from the result are valid until the result is destroyed.** To use one after that, copy it first.
 - On an allocation failure (`ARGX_ERROR_OUT_OF_MEMORY`), `*out` is `NULL` and there is nothing to destroy. All the memory allocated for that call, and the converted values, have been cleaned up.
-- `argx_result_destroy(NULL)` does nothing. If you initialize `result` to `NULL`, as the examples do, the cleanup is the same on every path.
+- `argx_result_destroy(NULL)` does nothing. If you initialize `result` to `NULL`, as [examples/pack.c](../examples/pack.c) does, the cleanup is the same on every path.
 - Destroying a result neither changes nor destroys the schema and the value types, so you can parse with the same schema any number of times. Results are independent of each other and can be destroyed in any order.
 - All memory is allocated from the allocator set for the library (`argx_set_allocator`). Do not set the allocator again while a result is left ([Ownership and Lifetime](ownership.md#5-allocator)).
 - The library does not detect destroying the schema before a result, or changing the schema while a result exists.
