@@ -7,9 +7,11 @@
 # ARGX_BUILD_TESTS is ON.
 #
 # To add an example, put the file here and add
-#     argx_add_example(<name> <expected output regex>)
+#     argx_add_example(<name> <expected output regex> [ARGS <argument>...])
+# ARGS are the command-line arguments that the test runs the example with.
 
 function(argx_add_example name pass_regex)
+    cmake_parse_arguments(PARSE_ARGV 2 example "" "" "ARGS")
     set(target "argx_example_${name}")
     add_executable("${target}" "${name}.c")
     argx_target_defaults("${target}")
@@ -29,7 +31,7 @@ function(argx_add_example name pass_regex)
         )
     endif()
 
-    add_test(NAME "example.${name}" COMMAND "${target}")
+    add_test(NAME "example.${name}" COMMAND "${target}" ${example_ARGS})
     set_tests_properties("example.${name}" PROPERTIES
         PASS_REGULAR_EXPRESSION "${pass_regex}"
         LABELS example
@@ -37,3 +39,6 @@ function(argx_add_example name pass_regex)
 endfunction()
 
 argx_add_example(schema_pack "^the schema of pack is valid\r?\n$")
+argx_add_example(parse_pack
+    "^verbose: 2, color: on\r?\ncreate out\\.tar, level 6 \\(default\\)\r?\n  a\\.txt\r?\n  b\\.txt\r?\n$"
+    ARGS -vv create -o out.tar a.txt b.txt)
