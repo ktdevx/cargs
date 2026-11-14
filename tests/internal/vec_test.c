@@ -791,8 +791,8 @@ NAOS_TEST(fails_at_every_allocation_point)
         clargs_vec_init(&vec, sizeof(int));
         error = push_ints_up_to(&vec, total);
 
-        if ((error == CLARGS_ERROR_NONE)
-            && (clargs_test_allocator_requests() < n))
+        if ((error == CLARGS_ERROR_NONE) &&
+            (clargs_test_allocator_requests() < n))
         {
             /*
              * The operation ended before the request to fail was reached:

@@ -173,8 +173,8 @@ static size_t decimal_point(char *buffer)
     size_t length;
 
     written = snprintf(formatted, sizeof formatted, "%.1f", 0.5);
-    if ((written < 3) || ((size_t)written >= sizeof formatted)
-        || (formatted[0] != '0') || (formatted[written - 1] != '5'))
+    if ((written < 3) || ((size_t)written >= sizeof formatted) ||
+        (formatted[0] != '0') || (formatted[written - 1] != '5'))
     {
         buffer[0] = '.';
         buffer[1] = '\0';

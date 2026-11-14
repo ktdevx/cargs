@@ -576,6 +576,22 @@ length = (end != NULL) ? (size_t)(end - text) : strlen(text);
 return (c >= '0') && (c <= '9');
 ```
 
+### Breaking long expressions
+
+When an expression does not fit on one line, break it after a binary operator, not before it: the operator (`&&`, `||`, `+`, `?`, `:` and the others) stays at the end of the line. Align each continuation line with the start of the operand it continues: inside the opening parenthesis of the condition or call, or after `return `.
+
+```c
+if (((arity == CLARGS_ARITY_REQUIRED) || (arity == CLARGS_ARITY_ONE_OR_MORE)) &&
+    (clargs_result_positional_count(result, positional) == 0))
+
+parts.type_name = clargs_type_name((failure->positional != NULL) ?
+                                   clargs_positional_type(failure->positional) :
+                                   clargs_option_type(failure->option));
+
+return add_subcommand(sweep, root, "build", &tree->build) &&
+       add_subcommand(sweep, root, "run", &tree->run);
+```
+
 ### Allocating memory
 
 The library code allocates and frees memory with the internal memory functions (`src/alloc_internal.h`). This makes every allocation go through the allocator that the user set with `clargs_set_allocator()`.
