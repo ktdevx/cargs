@@ -170,7 +170,7 @@ add_executable(app main.c)
 target_link_libraries(app PRIVATE ArgX::argx)
 ```
 
-Replace `v0.1.0` with the latest tag from the [Releases](https://github.com/ktdevx/cargs/releases) page. `add_subdirectory`, `find_package`, pkg-config and the build options are described in [Installation](docs/getting-started/install.md).
+Replace `v0.1.0` with the latest tag from the [Releases](https://github.com/ktdevx/cargs/releases) page. `add_subdirectory`, `find_package`, pkg-config and the build options are described in [Installation](docs/getting-started/installation.md).
 
 ## Building and testing
 
@@ -182,13 +182,13 @@ cmake --build build
 ctest --test-dir build
 ```
 
-The tests fetch the test framework Naos from GitHub at configure time. To build offline or without the tests, see [Building and testing](docs/getting-started/install.md#building-and-testing) in the installation guide.
+The tests fetch the test framework Naos from GitHub at configure time. To build offline or without the tests, see [Building and testing](docs/getting-started/installation.md#building-and-testing) in the installation guide.
 
 ## Documentation
 
 The [documentation index](docs/README.md) lists every document. To start:
 
-- **Getting started:** [Installation](docs/getting-started/install.md) covers building, the build options, and the four ways to use ArgX from your project.
+- **Getting started:** [Installation](docs/getting-started/installation.md) covers building, the build options, and the four ways to use ArgX from your project.
 - **Guides:** the [Guide](docs/guides/guide.md) walks through [examples/pack.c](examples/pack.c), a complete program, step by step. The [FAQ](docs/guides/faq.md) answers common questions, and [Design](docs/guides/design.md) explains why the library works the way it does.
 - **References:** one API page for each public header ([Schemas](docs/references/schema.md), [Value Types](docs/references/types.md), [Parsing](docs/references/parse.md), [Help and Usage](docs/references/help.md), [Allocator](docs/references/alloc.md), [Error Codes](docs/references/errors.md), [Version](docs/references/version.md)), and the specifications of the [command-line syntax](docs/references/syntax.md), the [help text layout](docs/references/help-layout.md) and [ownership and lifetime](docs/references/ownership.md).
 - **Development:** [Contributing to ArgX](CONTRIBUTING.md) is the entry point for contributors.

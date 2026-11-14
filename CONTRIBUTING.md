@@ -28,7 +28,7 @@ ArgX builds on these environments:
 - macOS with Clang
 - Windows with MSVC
 
-If you already have a copy of Naos, you can configure without the network by passing `-DFETCHCONTENT_SOURCE_DIR_NAOS=<path-to-naos>`. The `_deps/naos-src` directory of a build directory that was configured once can be used as the copy. See [Building and testing](docs/getting-started/install.md#building-and-testing) and [Build options](docs/getting-started/install.md#build-options) in the installation guide for this and the other build options.
+If you already have a copy of Naos, you can configure without the network by passing `-DFETCHCONTENT_SOURCE_DIR_NAOS=<path-to-naos>`. The `_deps/naos-src` directory of a build directory that was configured once can be used as the copy. See [Building and testing](docs/getting-started/installation.md#building-and-testing) and [Build options](docs/getting-started/installation.md#build-options) in the installation guide for this and the other build options.
 
 ## Building and testing
 

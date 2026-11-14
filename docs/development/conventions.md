@@ -110,7 +110,7 @@ tools/                Scripts that are not part of the build
 docs/                       Documents; the subdirectories match the sections of the index
 ├── README.md               The index of the documents
 ├── getting-started/
-│   └── install.md          Installation: building and testing, the build options, using the library from a project
+│   └── installation.md     Installation: building and testing, the build options, using the library from a project
 ├── guides/
 │   ├── guide.md            The guide: concepts and a walk through examples/pack.c
 │   ├── faq.md              Short answers to common questions
@@ -479,4 +479,4 @@ argx_add_test(<name> SOURCES <source>... [INTERNAL])
   - `ArgX_VERSION`, set by `find_package(ArgX)`, is the numeric part (for example `0.2.0`).
   - `ArgX_VERSION_FULL` is the full version (for example `0.2.0-rc.1`). `ArgX_VERSION_PRERELEASE` is the pre-release identifier (for example `rc.1`). For a final release, `ArgX_VERSION_FULL` is the same as `ArgX_VERSION`, and `ArgX_VERSION_PRERELEASE` is empty.
   - `Version` in the pkg-config file `argx.pc` is the full version.
-  - `find_package` compares only the numeric part, so `0.2.0-rc.1` is also found by `find_package(ArgX 0.2)`. pkg-config considers `0.2.0-rc.1` newer than `0.2.0`. See [The version of the package](../getting-started/install.md#the-version-of-the-package) for details.
+  - `find_package` compares only the numeric part, so `0.2.0-rc.1` is also found by `find_package(ArgX 0.2)`. pkg-config considers `0.2.0-rc.1` newer than `0.2.0`. See [The version of the package](../getting-started/installation.md#the-version-of-the-package) for details.

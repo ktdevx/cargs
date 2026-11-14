@@ -4,7 +4,7 @@ This page lists the documents of ArgX, with a one-line description of each. The 
 
 ## Getting started
 
-- [Installation](getting-started/install.md): building and testing ArgX, the build options, the four ways to use it from your project (FetchContent, add_subdirectory, find_package and pkg-config), and the version of an installed package.
+- [Installation](getting-started/installation.md): building and testing ArgX, the build options, the four ways to use it from your project (FetchContent, add_subdirectory, find_package and pkg-config), and the version of an installed package.
 - [The example in the README](../README.md#example): a short program to read first.
 
 ## Guides

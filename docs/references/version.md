@@ -89,4 +89,4 @@ The packed number holds only the numeric part. It is the same for `0.2.0-rc.1` a
 #endif
 ```
 
-The version of an installed package, for CMake and pkg-config, is in [Installation](../getting-started/install.md#the-version-of-the-package).
+The version of an installed package, for CMake and pkg-config, is in [Installation](../getting-started/installation.md#the-version-of-the-package).

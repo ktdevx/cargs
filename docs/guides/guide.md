@@ -2,7 +2,7 @@
 
 This guide walks through a program that uses ArgX, from creating the value types to destroying the result. It follows [examples/pack.c](../../examples/pack.c), a complete program for a made-up archiver with two subcommands, `create` and `list`. The program is built and run with the tests, so its code works as shown. The code in this guide is taken from it; each excerpt names the function it comes from.
 
-To build ArgX and use it from your project, see [Installation](../getting-started/install.md) first.
+To build ArgX and use it from your project, see [Installation](../getting-started/installation.md) first.
 
 ## Concepts
 
