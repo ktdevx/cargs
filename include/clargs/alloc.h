@@ -55,7 +55,8 @@ typedef void (*clargs_free_fn_t)(void *ptr);
  * The layout is fixed: later versions add no field and change neither the
  * order nor the types of the fields.
  */
-typedef struct clargs_allocator {
+typedef struct clargs_allocator
+{
     clargs_malloc_fn_t malloc_fn;
     clargs_realloc_fn_t realloc_fn;
     clargs_calloc_fn_t calloc_fn;
@@ -63,7 +64,8 @@ typedef struct clargs_allocator {
 } clargs_allocator_t;
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*

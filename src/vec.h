@@ -30,7 +30,8 @@
  * clargs_vec_init() and after clargs_vec_destroy(); otherwise
  * count <= capacity, and items has room for capacity items.
  */
-typedef struct clargs_vec {
+typedef struct clargs_vec
+{
     void *items;      /* The items, one after the other; NULL when empty. */
     size_t count;     /* The number of items. */
     size_t capacity;  /* The number of items there is room for. */

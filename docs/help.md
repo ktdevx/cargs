@@ -87,21 +87,28 @@ int main(void)
         failed(&error, clargs_command_add_positional(root, "url", clargs_type_string(),
                                                      CLARGS_ARITY_REQUIRED, &positional)) ||
         failed(&error, clargs_positional_set_description(positional, "The address to read.")) ||
-        failed(&error, clargs_command_validate(root, NULL, NULL, NULL))) {
+        failed(&error, clargs_command_validate(root, NULL, NULL, NULL)))
+    {
         fprintf(stderr, "fetch: cannot define the command line: %s\n", clargs_error_message(error));
-    } else {
+    }
+    else
+    {
         /* The help of the root, with the default settings (NULL). */
         error = clargs_help_write(root, NULL, write_to_stream, stdout);
 
-        if (error == CLARGS_ERROR_NONE) {
+        if (error == CLARGS_ERROR_NONE)
+        {
             /* The usage line alone: the first line of the help. */
             printf("----\n");
             error = clargs_help_write_usage(root, NULL, write_to_stream, stdout);
         }
 
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             fprintf(stderr, "fetch: cannot print the help: %s\n", clargs_error_message(error));
-        } else {
+        }
+        else
+        {
             status = EXIT_SUCCESS;
         }
     }
@@ -153,7 +160,8 @@ The next example uses `pack`, a made-up program. When `--help` is given, it prin
 #include <stdlib.h>
 
 /* The schema of pack. The root owns all of it. */
-typedef struct pack_schema {
+typedef struct pack_schema
+{
     clargs_command_t *root;
     clargs_command_t *create;
     clargs_command_t *list;
@@ -176,7 +184,8 @@ static clargs_error_t add_help(clargs_command_t *command)
     clargs_option_t *option = NULL;
     clargs_error_t error;
 
-    if (failed(&error, clargs_command_add_flag(command, 'h', "help", &option))) {
+    if (failed(&error, clargs_command_add_flag(command, 'h', "help", &option)))
+    {
         return error;
     }
     return clargs_option_set_description(option, "Print this help.");
@@ -202,7 +211,8 @@ static clargs_error_t define_schema(pack_schema_t *schema)
         failed(&error, clargs_option_set_description(option, "Print more; can be repeated.")) ||
         failed(&error, clargs_command_add_negatable(schema->root, '\0', "color", &option)) ||
         failed(&error, clargs_option_set_description(option, "Color the output.")) ||
-        failed(&error, clargs_option_set_initial(option, true))) {
+        failed(&error, clargs_option_set_initial(option, true)))
+    {
         return error;
     }
 
@@ -221,7 +231,8 @@ static clargs_error_t define_schema(pack_schema_t *schema)
         failed(&error, clargs_option_set_default(option, "6")) ||
         failed(&error, clargs_command_add_positional(schema->create, "file", clargs_type_string(),
                                                      CLARGS_ARITY_ONE_OR_MORE, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The files to pack."))) {
+        failed(&error, clargs_positional_set_description(positional, "The files to pack.")))
+    {
         return error;
     }
 
@@ -235,7 +246,8 @@ static clargs_error_t define_schema(pack_schema_t *schema)
         failed(&error, clargs_command_add_positional(schema->list, "pattern", clargs_type_string(),
                                                      CLARGS_ARITY_OPTIONAL, &positional)) ||
         failed(&error, clargs_positional_set_description(positional, "The files to list.")) ||
-        failed(&error, clargs_positional_set_default(positional, "*"))) {
+        failed(&error, clargs_positional_set_default(positional, "*")))
+    {
         return error;
     }
 
@@ -255,11 +267,13 @@ static bool help_was_given(const clargs_result_t *result)
 {
     size_t i;
 
-    for (i = 0; i < clargs_result_command_count(result); ++i) {
+    for (i = 0; i < clargs_result_command_count(result); ++i)
+    {
         const clargs_command_t *command = clargs_result_command_at(result, i);
         const clargs_option_t *help = clargs_command_find_long(command, "help", 4, NULL);
 
-        if (help != NULL && clargs_result_flag(result, help)) {
+        if (help != NULL && clargs_result_flag(result, help))
+        {
             return true;
         }
     }
@@ -282,15 +296,21 @@ int main(int argc, char **argv)
     clargs_error_t error;
     int status = EXIT_FAILURE;
 
-    if (failed(&error, define_schema(&schema))) {
+    if (failed(&error, define_schema(&schema)))
+    {
         fprintf(stderr, "pack: cannot define the command line: %s\n", clargs_error_message(error));
-    } else {
+    }
+    else
+    {
         error = clargs_parse(schema.root, argc, argv, &result);
 
-        if (result == NULL) {
+        if (result == NULL)
+        {
             /* CLARGS_ERROR_OUT_OF_MEMORY: there is no result. */
             fprintf(stderr, "pack: %s\n", clargs_error_message(error));
-        } else if (help_was_given(result)) {
+        }
+        else if (help_was_given(result))
+        {
             /*
              * --help first: "pack create --help" leaves out what create
              * requires, and that must not hide the help. The help is the one
@@ -298,10 +318,13 @@ int main(int argc, char **argv)
              * program is up to this code: the library never exits.
              */
             if (clargs_help_write(clargs_result_command(result), NULL, write_to_stream, stdout) ==
-                CLARGS_ERROR_NONE) {
+                CLARGS_ERROR_NONE)
+            {
                 status = EXIT_SUCCESS;
             }
-        } else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE) {
+        }
+        else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE)
+        {
             /*
              * The message, then the usage line of the command in which the
              * error was found, both to the standard error stream.
@@ -310,7 +333,9 @@ int main(int argc, char **argv)
             clargs_help_write_usage(clargs_result_error_command(result), NULL, write_to_stream,
                                     stderr);
             fprintf(stderr, "Try 'pack --help' for more information.\n");
-        } else {
+        }
+        else
+        {
             /* The values are read here; see docs/parse.md. */
             printf("pack: nothing to show in this example\n");
             status = EXIT_SUCCESS;
@@ -735,7 +760,8 @@ static clargs_error_t print_narrow_help(const clargs_command_t *command)
 
     /* The settings start with their default values: 80, 2 and 32. */
     error = clargs_help_options_create(&options);
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         /* CLARGS_ERROR_OUT_OF_MEMORY: options is NULL. */
         return error;
     }
@@ -849,12 +875,14 @@ static char *help_string(const clargs_command_t *command)
      * First the length: with the size 0 nothing is written, and the buffer
      * may be NULL.
      */
-    if (clargs_help_format(command, NULL, NULL, 0, &length) != CLARGS_ERROR_NONE) {
+    if (clargs_help_format(command, NULL, NULL, 0, &length) != CLARGS_ERROR_NONE)
+    {
         return NULL;
     }
 
     text = malloc(length + 1);
-    if (text == NULL) {
+    if (text == NULL)
+    {
         return NULL;
     }
 
@@ -862,7 +890,8 @@ static char *help_string(const clargs_command_t *command)
      * Then the text. The schema and the settings are the same as in the
      * first call, so the text has the same length and fits.
      */
-    if (clargs_help_format(command, NULL, text, length + 1, NULL) != CLARGS_ERROR_NONE) {
+    if (clargs_help_format(command, NULL, text, length + 1, NULL) != CLARGS_ERROR_NONE)
+    {
         free(text);
         return NULL;
     }
@@ -882,10 +911,13 @@ static void print_error(const clargs_command_t *command, const char *message)
     /* The usage line cannot fail. It is cut when it does not fit. */
     clargs_help_format_usage(command, NULL, usage, sizeof(usage), &length);
 
-    if (length >= sizeof(usage)) {
+    if (length >= sizeof(usage))
+    {
         /* Cut: the array holds the first sizeof(usage) - 1 bytes. */
         fprintf(stderr, "pack: %s\n", message);
-    } else {
+    }
+    else
+    {
         /* The text ends with a newline of its own. */
         fprintf(stderr, "pack: %s\n%s", message, usage);
     }

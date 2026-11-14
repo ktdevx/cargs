@@ -23,7 +23,8 @@
 #include <string.h>
 
 /* The state of a scan. */
-typedef struct scan {
+typedef struct scan
+{
     const clargs_command_t *command; /* The current command: the last selected command. */
     size_t index;                    /* The index of the argument that is being read. */
     size_t count;                    /* The number of arguments, the name of the program included. */
@@ -44,8 +45,10 @@ static void enter_command(scan_t *scan, const clargs_command_t *command)
     scan->command = command;
     scan->positional = 0;
     scan->has_digit_short = false;
-    for (digit = '0'; digit <= '9'; digit++) {
-        if (clargs_command_find_short(command, digit) != NULL) {
+    for (digit = '0'; digit <= '9'; digit++)
+    {
+        if (clargs_command_find_short(command, digit) != NULL)
+        {
             scan->has_digit_short = true;
         }
     }
@@ -86,7 +89,8 @@ static clargs_error_t check_encoding(clargs_result_t *result, const scan_t *scan
     clargs_result_where_t where;
 
     /* The scan starts after the name of the program, and 0 is "none". */
-    if (scan->index != clargs_result_first_invalid_arg(result)) {
+    if (scan->index != clargs_result_first_invalid_arg(result))
+    {
         return CLARGS_ERROR_NONE;
     }
 
@@ -118,14 +122,18 @@ static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const
     const clargs_option_kind_t kind = clargs_option_kind(option);
     clargs_error_t error;
 
-    if (kind == CLARGS_OPTION_VALUE) {
-        if (value == NULL) {
-            if (scan->index + 1 >= scan->count) {
+    if (kind == CLARGS_OPTION_VALUE)
+    {
+        if (value == NULL)
+        {
+            if (scan->index + 1 >= scan->count)
+            {
                 return fail_at(result, scan, CLARGS_PARSE_ERROR_MISSING_VALUE, where, NULL, option);
             }
             scan->index++;
             error = check_encoding(result, scan);
-            if (error != CLARGS_ERROR_NONE) {
+            if (error != CLARGS_ERROR_NONE)
+            {
                 return error;
             }
             where->index = scan->index;
@@ -134,10 +142,12 @@ static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const
         return clargs_result_record_option_value(result, option, value, where);
     }
 
-    if (value != NULL) {
+    if (value != NULL)
+    {
         return fail_at(result, scan, CLARGS_PARSE_ERROR_UNEXPECTED_VALUE, where, value, option);
     }
-    switch (kind) {
+    switch (kind)
+    {
     case CLARGS_OPTION_FLAG:
         clargs_result_record_flag(result, option);
         break;
@@ -177,7 +187,8 @@ static clargs_error_t scan_long(clargs_result_t *result, scan_t *scan, const cha
     clargs_lex_split_long(arg, &where.name, &where.name_length, &value);
 
     option = clargs_command_find_long(scan->command, where.name, where.name_length, &negated);
-    if (option == NULL) {
+    if (option == NULL)
+    {
         return fail_at(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
     }
     return record_option(result, scan, option, !negated, value, &where);
@@ -197,7 +208,8 @@ static clargs_error_t scan_bundle(clargs_result_t *result, scan_t *scan, const c
 {
     const char *letter;
 
-    for (letter = arg + 1; *letter != '\0'; letter++) {
+    for (letter = arg + 1; *letter != '\0'; letter++)
+    {
         const clargs_option_t *option = clargs_command_find_short(scan->command, *letter);
         clargs_result_where_t where;
         clargs_error_t error;
@@ -213,14 +225,17 @@ static clargs_error_t scan_bundle(clargs_result_t *result, scan_t *scan, const c
         where.name = letter;
         where.name_length = 1;
 
-        if (option == NULL) {
+        if (option == NULL)
+        {
             return fail_at(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
         }
-        if (clargs_option_kind(option) == CLARGS_OPTION_VALUE) {
+        if (clargs_option_kind(option) == CLARGS_OPTION_VALUE)
+        {
             return record_option(result, scan, option, true, letter[1] != '\0' ? letter + 1 : NULL, &where);
         }
         error = record_option(result, scan, option, true, NULL, &where);
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
     }
@@ -259,31 +274,37 @@ static clargs_error_t scan_plain(clargs_result_t *result, scan_t *scan, const ch
     where.name = NULL;
     where.name_length = 0;
 
-    if (clargs_command_subcommand_count(scan->command) != 0) {
+    if (clargs_command_subcommand_count(scan->command) != 0)
+    {
         const clargs_command_t *subcommand;
         clargs_error_t error;
 
-        if (scan->options_ended) {
+        if (scan->options_ended)
+        {
             return fail_at(result, scan, CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL, &where, arg, NULL);
         }
         subcommand = clargs_command_find_subcommand(scan->command, arg);
-        if (subcommand == NULL) {
+        if (subcommand == NULL)
+        {
             return fail_at(result, scan, CLARGS_PARSE_ERROR_UNKNOWN_SUBCOMMAND, &where, arg, NULL);
         }
         error = clargs_result_push_command(result, subcommand);
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
         enter_command(scan, subcommand);
         return CLARGS_ERROR_NONE;
     }
 
-    if (scan->positional >= clargs_command_positional_count(scan->command)) {
+    if (scan->positional >= clargs_command_positional_count(scan->command))
+    {
         return fail_at(result, scan, CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL, &where, arg, NULL);
     }
 
     positional = clargs_command_positional_at(scan->command, scan->positional);
-    switch (clargs_positional_arity(positional)) {
+    switch (clargs_positional_arity(positional))
+    {
     case CLARGS_ARITY_ZERO_OR_MORE:
     case CLARGS_ARITY_ONE_OR_MORE:
         break;
@@ -323,14 +344,17 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
     scan.count = count;
     scan.options_ended = false;
 
-    for (scan.index = 1; scan.index < scan.count; scan.index++) {
+    for (scan.index = 1; scan.index < scan.count; scan.index++)
+    {
         const char *arg = clargs_result_arg(result, scan.index);
         clargs_error_t error = check_encoding(result, &scan);
 
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
-        if (scan.options_ended) {
+        if (scan.options_ended)
+        {
             /*
              * After the terminator, an argument is not classified: it is
              * not an option, whatever it looks like, a second "--"
@@ -338,8 +362,11 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
              * selected.
              */
             error = scan_plain(result, &scan, arg);
-        } else {
-            switch (clargs_lex_classify(arg)) {
+        }
+        else
+        {
+            switch (clargs_lex_classify(arg))
+            {
             case CLARGS_LEX_LONG:
                 error = scan_long(result, &scan, arg);
                 break;
@@ -349,9 +376,12 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
                  * bundle only for a command that has a digit as a short
                  * name. For any other command it is not an option.
                  */
-                if (scan.has_digit_short || !clargs_lex_is_negative_number(arg)) {
+                if (scan.has_digit_short || !clargs_lex_is_negative_number(arg))
+                {
                     error = scan_bundle(result, &scan, arg);
-                } else {
+                }
+                else
+                {
                     error = scan_plain(result, &scan, arg);
                 }
                 break;
@@ -365,7 +395,8 @@ static clargs_error_t scan_arguments(clargs_result_t *result, const clargs_comma
                 break;
             }
         }
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
     }
@@ -384,11 +415,13 @@ static clargs_error_t parse_result(clargs_result_t *result, const clargs_command
 {
     clargs_error_t error = scan_arguments(result, root, count);
 
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         error = clargs_resolve(result);
     }
 
-    if (error == CLARGS_ERROR_OUT_OF_MEMORY) {
+    if (error == CLARGS_ERROR_OUT_OF_MEMORY)
+    {
         clargs_result_destroy(result);
         *out = NULL;
         return error;
@@ -412,7 +445,8 @@ clargs_error_t clargs_parse(const clargs_command_t *root, int argc, char *const 
     assert(argc == 0 || argv != NULL);
 
     error = clargs_result_create(root, argc, argv, &result);
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         *out = NULL;
         return error;
     }
@@ -438,7 +472,8 @@ clargs_error_t clargs_parse_wide(const clargs_command_t *root, int argc, wchar_t
      * entries are the same.
      */
     error = clargs_result_create_wide(root, argc, argv, &result);
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         *out = NULL;
         return error;
     }

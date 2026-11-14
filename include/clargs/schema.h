@@ -67,7 +67,8 @@ typedef struct clargs_positional clargs_positional_t;
  * Later versions may add kinds. Write code that may receive a value it does
  * not know: give a switch over clargs_option_kind_t a default label.
  */
-typedef enum clargs_option_kind {
+typedef enum clargs_option_kind
+{
     CLARGS_OPTION_FLAG,      /* Whether it was given. */
     CLARGS_OPTION_NEGATABLE, /* Switched with --name and --no-name. */
     CLARGS_OPTION_COUNT,     /* How many times it was given. */
@@ -80,7 +81,8 @@ typedef enum clargs_option_kind {
  * Later versions may add kinds. Write code that may receive a value it does
  * not know: give a switch over clargs_arity_t a default label.
  */
-typedef enum clargs_arity {
+typedef enum clargs_arity
+{
     CLARGS_ARITY_REQUIRED,     /* Exactly one. */
     CLARGS_ARITY_OPTIONAL,     /* None or one. */
     CLARGS_ARITY_ZERO_OR_MORE, /* None or more. */
@@ -88,7 +90,8 @@ typedef enum clargs_arity {
 } clargs_arity_t;
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* ---- Commands ----------------------------------------------------------- */

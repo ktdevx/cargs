@@ -701,24 +701,31 @@ NAOS_TEST(float_in_a_locale_with_a_comma)
 
     /* setlocale returns a string that a later call may overwrite. */
     current = setlocale(LC_NUMERIC, NULL);
-    if (current != NULL && strlen(current) < sizeof original) {
+    if (current != NULL && strlen(current) < sizeof original)
+    {
         memcpy(original, current, strlen(current) + 1);
     }
 
     /* Before the switch. */
     check_point_only();
 
-    for (i = 0; i < sizeof candidates / sizeof candidates[0] && !switched; ++i) {
-        if (setlocale(LC_NUMERIC, candidates[i]) != NULL) {
-            if (decimal_point_is_comma()) {
+    for (i = 0; i < sizeof candidates / sizeof candidates[0] && !switched; ++i)
+    {
+        if (setlocale(LC_NUMERIC, candidates[i]) != NULL)
+        {
+            if (decimal_point_is_comma())
+            {
                 switched = true;
-            } else {
+            }
+            else
+            {
                 (void)setlocale(LC_NUMERIC, original);
             }
         }
     }
 
-    if (switched) {
+    if (switched)
+    {
         check_point_only();
         (void)setlocale(LC_NUMERIC, original);
     }

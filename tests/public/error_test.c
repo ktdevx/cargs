@@ -13,7 +13,8 @@
 /* What clargs_error_message() returns for a value that is not in the list. */
 #define UNKNOWN_MESSAGE "unknown error code"
 
-typedef struct error_entry {
+typedef struct error_entry
+{
     clargs_error_t error;
     const char *name;
     const char *message;
@@ -33,7 +34,8 @@ NAOS_TEST(every_code_has_the_message_of_the_list)
     size_t i;
 
     NAOS_REQUIRE_UINT_GT(error_entry_count, 0);
-    for (i = 0; i < error_entry_count; ++i) {
+    for (i = 0; i < error_entry_count; ++i)
+    {
         const char *message = clargs_error_message(error_entries[i].error);
 
         NAOS_REQUIRE_TRUE(message != NULL);
@@ -47,7 +49,8 @@ NAOS_TEST(every_message_is_not_empty)
     size_t i;
 
     NAOS_REQUIRE_UINT_GT(error_entry_count, 0);
-    for (i = 0; i < error_entry_count; ++i) {
+    for (i = 0; i < error_entry_count; ++i)
+    {
         const char *message = clargs_error_message(error_entries[i].error);
 
         NAOS_REQUIRE_TRUE(message != NULL);
@@ -61,7 +64,8 @@ NAOS_TEST(every_message_differs_from_the_unknown_message)
     size_t i;
 
     NAOS_REQUIRE_UINT_GT(error_entry_count, 0);
-    for (i = 0; i < error_entry_count; ++i) {
+    for (i = 0; i < error_entry_count; ++i)
+    {
         const char *message = clargs_error_message(error_entries[i].error);
 
         NAOS_REQUIRE_TRUE(message != NULL);
@@ -76,11 +80,13 @@ NAOS_TEST(every_message_is_unique)
     size_t j;
 
     NAOS_REQUIRE_UINT_GT(error_entry_count, 0);
-    for (i = 0; i < error_entry_count; ++i) {
+    for (i = 0; i < error_entry_count; ++i)
+    {
         const char *message = clargs_error_message(error_entries[i].error);
 
         NAOS_REQUIRE_TRUE(message != NULL);
-        for (j = i + 1; j < error_entry_count; ++j) {
+        for (j = i + 1; j < error_entry_count; ++j)
+        {
             const char *other = clargs_error_message(error_entries[j].error);
 
             NAOS_REQUIRE_TRUE(other != NULL);
@@ -95,7 +101,8 @@ NAOS_TEST(values_follow_the_order_of_the_list)
     size_t i;
 
     NAOS_REQUIRE_UINT_GT(error_entry_count, 0);
-    for (i = 0; i < error_entry_count; ++i) {
+    for (i = 0; i < error_entry_count; ++i)
+    {
         NAOS_CHECK_UINT_EQ((size_t)error_entries[i].error, i);
     }
 }
@@ -194,7 +201,8 @@ NAOS_TEST(message_is_the_same_on_every_call)
     size_t i;
 
     NAOS_REQUIRE_UINT_GT(error_entry_count, 0);
-    for (i = 0; i < error_entry_count; ++i) {
+    for (i = 0; i < error_entry_count; ++i)
+    {
         NAOS_CHECK_PTR_EQ(clargs_error_message(error_entries[i].error),
                           clargs_error_message(error_entries[i].error));
     }

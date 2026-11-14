@@ -17,7 +17,8 @@ int main(void)
     unsigned long headers = CLARGS_VERSION_NUMBER;
     int status = 0;
 
-    if (library != headers) {
+    if (library != headers)
+    {
         printf("clargs_version() is 0x%06lx, the headers say 0x%06lx\n", library, headers);
         status = 1;
     }
@@ -25,7 +26,8 @@ int main(void)
 #ifdef CONSUMER_PACKAGE_VERSION_MAJOR
     if (CONSUMER_PACKAGE_VERSION_MAJOR != CLARGS_VERSION_MAJOR
             || CONSUMER_PACKAGE_VERSION_MINOR != CLARGS_VERSION_MINOR
-            || CONSUMER_PACKAGE_VERSION_PATCH != CLARGS_VERSION_PATCH) {
+            || CONSUMER_PACKAGE_VERSION_PATCH != CLARGS_VERSION_PATCH)
+    {
         printf("the package reports version %d.%d.%d, the headers say %d.%d.%d\n",
             CONSUMER_PACKAGE_VERSION_MAJOR,
             CONSUMER_PACKAGE_VERSION_MINOR,
@@ -38,7 +40,8 @@ int main(void)
 #endif
 
 #ifdef CONSUMER_PACKAGE_VERSION_PRERELEASE
-    if (strcmp(CONSUMER_PACKAGE_VERSION_PRERELEASE, CLARGS_VERSION_PRERELEASE) != 0) {
+    if (strcmp(CONSUMER_PACKAGE_VERSION_PRERELEASE, CLARGS_VERSION_PRERELEASE) != 0)
+    {
         printf("the package reports the pre-release identifiers \"%s\", the headers say \"%s\"\n",
             CONSUMER_PACKAGE_VERSION_PRERELEASE,
             CLARGS_VERSION_PRERELEASE);
@@ -46,7 +49,8 @@ int main(void)
     }
 #endif
 
-    if (status == 0) {
+    if (status == 0)
+    {
         printf("CLArgs %d.%d.%d\n",
             CLARGS_VERSION_MAJOR, CLARGS_VERSION_MINOR, CLARGS_VERSION_PATCH);
     }

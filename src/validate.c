@@ -19,7 +19,8 @@
  * Where a fault is: the command it is in, and the option or the positional
  * that has it. One of option and positional is NULL.
  */
-typedef struct fault {
+typedef struct fault
+{
     const clargs_command_t *command;
     const clargs_option_t *option;
     const clargs_positional_t *positional;
@@ -42,21 +43,26 @@ static const clargs_positional_t *find_positional_fault(const clargs_command_t *
     bool after_variadic = false;
     size_t index;
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         const clargs_positional_t *positional = clargs_command_positional_at(command, index);
         const clargs_arity_t arity = clargs_positional_arity(positional);
 
-        if (after_optional && (arity == CLARGS_ARITY_REQUIRED || arity == CLARGS_ARITY_ONE_OR_MORE)) {
+        if (after_optional && (arity == CLARGS_ARITY_REQUIRED || arity == CLARGS_ARITY_ONE_OR_MORE))
+        {
             return positional;
         }
-        if (after_variadic) {
+        if (after_variadic)
+        {
             return positional;
         }
 
-        if (arity == CLARGS_ARITY_OPTIONAL || arity == CLARGS_ARITY_ZERO_OR_MORE) {
+        if (arity == CLARGS_ARITY_OPTIONAL || arity == CLARGS_ARITY_ZERO_OR_MORE)
+        {
             after_optional = true;
         }
-        if (arity == CLARGS_ARITY_ZERO_OR_MORE || arity == CLARGS_ARITY_ONE_OR_MORE) {
+        if (arity == CLARGS_ARITY_ZERO_OR_MORE || arity == CLARGS_ARITY_ONE_OR_MORE)
+        {
             after_variadic = true;
         }
     }
@@ -83,17 +89,20 @@ static clargs_error_t check_default(const clargs_type_t *type, const char *text)
     void *value = clargs_malloc(clargs_type_value_size(type));
     clargs_error_t error;
 
-    if (value == NULL) {
+    if (value == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     error = clargs_type_convert(type, text, value);
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         clargs_type_release(type, value);
     }
     clargs_free(value);
 
-    if (error == CLARGS_ERROR_NONE || error == CLARGS_ERROR_OUT_OF_MEMORY) {
+    if (error == CLARGS_ERROR_NONE || error == CLARGS_ERROR_OUT_OF_MEMORY)
+    {
         return error;
     }
     return CLARGS_ERROR_INVALID_DEFAULT;
@@ -118,26 +127,31 @@ static clargs_error_t check_options(const clargs_command_t *command, const clarg
     const size_t count = clargs_command_option_count(command);
     size_t index;
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         const clargs_option_t *option = clargs_command_option_at(command, index);
         const char *text = clargs_option_default(option);
         clargs_error_t error;
 
         /* Only an option that takes a value has a default value. */
-        if (text == NULL) {
+        if (text == NULL)
+        {
             continue;
         }
 
-        if (clargs_option_is_required(option)) {
+        if (clargs_option_is_required(option))
+        {
             *faulty = option;
             return CLARGS_ERROR_INVALID_DEFINITION;
         }
 
         error = check_default(clargs_option_type(option), text);
-        if (error == CLARGS_ERROR_INVALID_DEFAULT) {
+        if (error == CLARGS_ERROR_INVALID_DEFAULT)
+        {
             *faulty = option;
         }
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
     }
@@ -159,20 +173,24 @@ static clargs_error_t check_positional_defaults(const clargs_command_t *command,
     const size_t count = clargs_command_positional_count(command);
     size_t index;
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         const clargs_positional_t *positional = clargs_command_positional_at(command, index);
         const char *text = clargs_positional_default(positional);
         clargs_error_t error;
 
-        if (text == NULL) {
+        if (text == NULL)
+        {
             continue;
         }
 
         error = check_default(clargs_positional_type(positional), text);
-        if (error == CLARGS_ERROR_INVALID_DEFAULT) {
+        if (error == CLARGS_ERROR_INVALID_DEFAULT)
+        {
             *faulty = positional;
         }
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
     }
@@ -200,7 +218,8 @@ static clargs_error_t check_command(const clargs_command_t *command, fault_t *fa
     size_t count;
     size_t index;
 
-    if (positional != NULL) {
+    if (positional != NULL)
+    {
         fault->command = command;
         fault->option = NULL;
         fault->positional = positional;
@@ -208,29 +227,35 @@ static clargs_error_t check_command(const clargs_command_t *command, fault_t *fa
     }
 
     error = check_options(command, &option);
-    if (option != NULL) {
+    if (option != NULL)
+    {
         fault->command = command;
         fault->option = option;
         fault->positional = NULL;
     }
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         return error;
     }
 
     error = check_positional_defaults(command, &positional);
-    if (positional != NULL) {
+    if (positional != NULL)
+    {
         fault->command = command;
         fault->option = NULL;
         fault->positional = positional;
     }
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         return error;
     }
 
     count = clargs_command_subcommand_count(command);
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         error = check_command(clargs_command_subcommand_at(command, index), fault);
-        if (error != CLARGS_ERROR_NONE) {
+        if (error != CLARGS_ERROR_NONE)
+        {
             return error;
         }
     }
@@ -257,18 +282,22 @@ clargs_error_t clargs_command_validate(clargs_command_t *root, const clargs_comm
      * The state changes only here: a validation that fails leaves it as it
      * was.
      */
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         root->validated = true;
     }
 
     /* Every output that is given is written on every path. */
-    if (command != NULL) {
+    if (command != NULL)
+    {
         *command = fault.command;
     }
-    if (option != NULL) {
+    if (option != NULL)
+    {
         *option = fault.option;
     }
-    if (positional != NULL) {
+    if (positional != NULL)
+    {
         *positional = fault.positional;
     }
     return error;
@@ -279,7 +308,8 @@ bool clargs_command_is_validated(const clargs_command_t *command)
     assert(command != NULL);
 
     /* The state is kept in the root. */
-    while (command->parent != NULL) {
+    while (command->parent != NULL)
+    {
         command = command->parent;
     }
     return command->validated;

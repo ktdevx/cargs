@@ -67,7 +67,8 @@ static void check_convert(const wchar_t *text, const char *expected, size_t expe
     NAOS_CHECK_UINT_EQ(written, length);
     NAOS_REQUIRE_TRUE(written < OUT_SIZE);
     NAOS_CHECK_MEM_EQ(out, written + 1, expected, expected_length + 1);
-    for (i = written + 1; i < OUT_SIZE; ++i) {
+    for (i = written + 1; i < OUT_SIZE; ++i)
+    {
         NAOS_CHECK_TRUE(out[i] == UNTOUCHED);
     }
 }

@@ -81,7 +81,8 @@ static void check_message(const clargs_message_parts_t *parts, const char *expec
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 1);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live + 1);
     NAOS_CHECK_TRUE(message != NULL);
-    if (message != NULL) {
+    if (message != NULL)
+    {
         NAOS_CHECK_STR_EQ(message, expected);
         NAOS_CHECK_UINT_EQ(strlen(message), strlen(expected));
         clargs_free(message);
@@ -451,7 +452,8 @@ NAOS_TEST(long_strings_are_copied_whole)
     clargs_message_parts_t parts = parts_of(CLARGS_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
     size_t i;
 
-    for (i = 0; i < sizeof value - 1; ++i) {
+    for (i = 0; i < sizeof value - 1; ++i)
+    {
         value[i] = (char)('a' + i % 26);
     }
     value[sizeof value - 1] = '\0';
@@ -490,7 +492,8 @@ NAOS_TEST(message_is_one_line_without_a_full_stop)
 
     clargs_test_allocator_install();
 
-    for (i = 0; i < sizeof kinds / sizeof kinds[0]; ++i) {
+    for (i = 0; i < sizeof kinds / sizeof kinds[0]; ++i)
+    {
         clargs_message_parts_t parts = parts_of(kinds[i]);
         char *message = NULL;
         size_t length;

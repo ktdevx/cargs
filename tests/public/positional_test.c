@@ -106,7 +106,8 @@ static void check_rejected(clargs_command_t *command, const char *name, clargs_e
     sentinel = add(other, "sentinel", CLARGS_ARITY_REQUIRED);
     requests = clargs_test_allocator_requests();
 
-    for (index = 0; index < ARITY_COUNT; ++index) {
+    for (index = 0; index < ARITY_COUNT; ++index)
+    {
         clargs_positional_t *positional = sentinel;
 
         NAOS_CHECK_INT_EQ(clargs_command_add_positional(command, name, clargs_type_string(),
@@ -154,9 +155,12 @@ static void check_subcommand_rejected(clargs_command_t *command, const char *nam
  */
 static void check_text(const char *actual, const char *expected)
 {
-    if (expected == NULL) {
+    if (expected == NULL)
+    {
         NAOS_CHECK_TRUE(actual == NULL);
-    } else {
+    }
+    else
+    {
         NAOS_REQUIRE_TRUE(actual != NULL);
         NAOS_CHECK_STR_EQ(actual, expected);
     }
@@ -196,7 +200,8 @@ typedef enum text_attribute { TEXT_DESCRIPTION, TEXT_DEFAULT } text_attribute_t;
 /* Sets the attribute attribute with the function of that attribute. */
 static clargs_error_t set_text(text_attribute_t attribute, clargs_positional_t *positional, const char *text)
 {
-    switch (attribute) {
+    switch (attribute)
+    {
     case TEXT_DESCRIPTION:
         return clargs_positional_set_description(positional, text);
     case TEXT_DEFAULT:
@@ -210,7 +215,8 @@ static clargs_error_t set_text(text_attribute_t attribute, clargs_positional_t *
 /* Reads the attribute attribute with the function of that attribute. */
 static const char *get_text(text_attribute_t attribute, const clargs_positional_t *positional)
 {
-    switch (attribute) {
+    switch (attribute)
+    {
     case TEXT_DESCRIPTION:
         return clargs_positional_description(positional);
     case TEXT_DEFAULT:
@@ -238,7 +244,8 @@ NAOS_TEST(the_four_arities_are_added_and_read)
     types[2] = clargs_type_float();
     types[3] = clargs_type_string();
 
-    for (index = 0; index < ARITY_COUNT; ++index) {
+    for (index = 0; index < ARITY_COUNT; ++index)
+    {
         clargs_command_t *root = create_root();
         clargs_positional_t *positional = NULL;
 
@@ -264,8 +271,10 @@ NAOS_TEST(the_four_arities_are_different)
     size_t first;
     size_t second;
 
-    for (first = 0; first < ARITY_COUNT; ++first) {
-        for (second = first + 1; second < ARITY_COUNT; ++second) {
+    for (first = 0; first < ARITY_COUNT; ++first)
+    {
+        for (second = first + 1; second < ARITY_COUNT; ++second)
+        {
             NAOS_CHECK_TRUE(all_arities[first] != all_arities[second]);
         }
     }
@@ -285,7 +294,8 @@ NAOS_TEST(any_string_that_is_not_empty_is_a_name)
     clargs_command_t *root = create_root();
     size_t index;
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         clargs_positional_t *positional = NULL;
 
         NAOS_CHECK_INT_EQ(clargs_command_add_positional(root, names[index], clargs_type_string(),
@@ -329,7 +339,8 @@ NAOS_TEST(a_positional_can_be_added_without_an_output)
     clargs_command_t *root = create_root();
     size_t index;
 
-    for (index = 0; index < ARITY_COUNT; ++index) {
+    for (index = 0; index < ARITY_COUNT; ++index)
+    {
         static const char *const names[ARITY_COUNT] = { "a", "b", "c", "d" };
 
         NAOS_CHECK_INT_EQ(clargs_command_add_positional(root, names[index], clargs_type_int(),
@@ -361,17 +372,20 @@ NAOS_TEST(positionals_are_read_in_the_order_of_the_definition)
 
     NAOS_CHECK_UINT_EQ(clargs_command_positional_count(root), 0);
 
-    for (index = 0; index < COUNT; ++index) {
+    for (index = 0; index < COUNT; ++index)
+    {
         handles[index] = add(root, names[index], all_arities[index % ARITY_COUNT]);
         NAOS_CHECK_UINT_EQ(clargs_command_positional_count(root), index + 1);
 
         /* The earlier ones are where they were and what they were. */
-        for (earlier = 0; earlier <= index; ++earlier) {
+        for (earlier = 0; earlier <= index; ++earlier)
+        {
             NAOS_CHECK_TRUE(clargs_command_positional_at(root, earlier) == handles[earlier]);
         }
     }
 
-    for (index = 0; index < COUNT; ++index) {
+    for (index = 0; index < COUNT; ++index)
+    {
         check_positional(clargs_command_positional_at(root, index), root, names[index],
                          all_arities[index % ARITY_COUNT], clargs_type_string());
     }
@@ -601,7 +615,8 @@ NAOS_TEST(a_command_with_a_positional_takes_no_subcommand)
     {
         size_t index;
 
-        for (index = 0; index < ARITY_COUNT; ++index) {
+        for (index = 0; index < ARITY_COUNT; ++index)
+        {
             clargs_command_t *other = NULL;
 
             NAOS_REQUIRE_TRUE(clargs_command_create("other", &other) == CLARGS_ERROR_NONE);
@@ -709,7 +724,8 @@ NAOS_TEST(a_new_positional_has_no_attribute)
     clargs_command_t *root = create_root();
     size_t index;
 
-    for (index = 0; index < ARITY_COUNT; ++index) {
+    for (index = 0; index < ARITY_COUNT; ++index)
+    {
         check_attributes(add(root, names[index], all_arities[index]), NULL, NULL);
     }
 
@@ -729,17 +745,20 @@ NAOS_TEST(a_description_is_set_on_every_arity)
     clargs_positional_t *positionals[ARITY_COUNT];
     size_t index;
 
-    for (index = 0; index < ARITY_COUNT; ++index) {
+    for (index = 0; index < ARITY_COUNT; ++index)
+    {
         positionals[index] = add(root, names[index], all_arities[index]);
     }
 
-    for (index = 0; index < ARITY_COUNT; ++index) {
+    for (index = 0; index < ARITY_COUNT; ++index)
+    {
         NAOS_CHECK_INT_EQ(clargs_positional_set_description(positionals[index], texts[index]),
                           CLARGS_ERROR_NONE);
     }
 
     /* Each has its own, and nothing else changed. */
-    for (index = 0; index < ARITY_COUNT; ++index) {
+    for (index = 0; index < ARITY_COUNT; ++index)
+    {
         check_attributes(positionals[index], texts[index], NULL);
         check_positional(positionals[index], root, names[index], all_arities[index], clargs_type_string());
         NAOS_CHECK_TRUE(clargs_command_positional_at(root, index) == positionals[index]);
@@ -797,7 +816,8 @@ NAOS_TEST(a_default_value_on_another_arity_is_an_inconsistent_definition)
     static const char *const names[] = { "required", "zero-or-more", "one-or-more" };
     size_t index;
 
-    for (index = 0; index < sizeof(others) / sizeof(others[0]); ++index) {
+    for (index = 0; index < sizeof(others) / sizeof(others[0]); ++index)
+    {
         clargs_command_t *root = create_root();
         clargs_positional_t *positional = add(root, names[index], others[index]);
         size_t requests = clargs_test_allocator_requests();
@@ -971,11 +991,15 @@ static clargs_command_t *build_root_with(size_t existing, clargs_positional_t **
     *last = NULL;
     NAOS_REQUIRE_TRUE(existing <= sizeof(names) / sizeof(names[0]));
     NAOS_REQUIRE_TRUE(clargs_command_create("app", &root) == CLARGS_ERROR_NONE);
-    for (index = 0; index < existing; ++index) {
+    for (index = 0; index < existing; ++index)
+    {
         *last = add(root, names[index], all_arities[index % ARITY_COUNT]);
-        if (index == 0) {
+        if (index == 0)
+        {
             NAOS_REQUIRE_TRUE(clargs_positional_set_description(*last, "The first.") == CLARGS_ERROR_NONE);
-        } else if (index == 1) {
+        }
+        else if (index == 1)
+        {
             NAOS_REQUIRE_TRUE(clargs_positional_set_default(*last, "second") == CLARGS_ERROR_NONE);
         }
     }
@@ -992,7 +1016,8 @@ static void check_built_root(const clargs_command_t *root, size_t existing)
     NAOS_REQUIRE_TRUE(clargs_command_positional_count(root) == existing);
     NAOS_CHECK_UINT_EQ(clargs_command_option_count(root), 0);
     NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(root), 0);
-    for (index = 0; index < existing; ++index) {
+    for (index = 0; index < existing; ++index)
+    {
         const clargs_positional_t *old = clargs_command_positional_at(root, index);
 
         check_positional(old, root, names[index], all_arities[index % ARITY_COUNT], clargs_type_string());
@@ -1012,7 +1037,8 @@ static size_t fail_each_allocation_of_an_addition(clargs_arity_t arity, size_t e
     bool completed = false;
     size_t n;
 
-    for (n = 1; n <= limit; ++n) {
+    for (n = 1; n <= limit; ++n)
+    {
         clargs_command_t *root;
         clargs_positional_t *positional;
         clargs_error_t error;
@@ -1032,7 +1058,8 @@ static size_t fail_each_allocation_of_an_addition(clargs_arity_t arity, size_t e
 
         error = clargs_command_add_positional(root, "new", clargs_type_int(), arity, &positional);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < requests + n) {
+        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < requests + n)
+        {
             /* Every allocation point has been passed. */
             NAOS_CHECK_TRUE(positional != NULL);
             NAOS_CHECK_UINT_EQ(clargs_command_positional_count(root), existing + 1);
@@ -1085,7 +1112,8 @@ NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
 
     clargs_test_allocator_install();
 
-    for (index = 0; index < ARITY_COUNT; ++index) {
+    for (index = 0; index < ARITY_COUNT; ++index)
+    {
         size_t growing = fail_each_allocation_of_an_addition(all_arities[index], 0);
         size_t with_room = fail_each_allocation_of_an_addition(all_arities[index], 1);
 
@@ -1093,9 +1121,12 @@ NAOS_TEST(a_failed_addition_leaves_the_tree_as_it_was)
         NAOS_CHECK_UINT_EQ(growing, with_room + 1);
         NAOS_CHECK_UINT_EQ(fail_each_allocation_of_an_addition(all_arities[index], 4), growing);
 
-        if (index == 0) {
+        if (index == 0)
+        {
             with_room_of_the_first = with_room;
-        } else {
+        }
+        else
+        {
             NAOS_CHECK_UINT_EQ(with_room, with_room_of_the_first);
         }
     }
@@ -1117,8 +1148,10 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
 
     clargs_test_allocator_install();
 
-    for (index = 0; index < TEXT_ATTRIBUTE_COUNT; ++index) {
-        for (was_set = 0; was_set < 2; ++was_set) {
+    for (index = 0; index < TEXT_ATTRIBUTE_COUNT; ++index)
+    {
+        for (was_set = 0; was_set < 2; ++was_set)
+        {
             const text_attribute_t attribute = attributes[index];
             const char *const old = was_set != 0 ? "old value" : NULL;
             clargs_command_t *root = NULL;
@@ -1135,12 +1168,15 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
              * The other attribute is set, so that it shows if the failure
              * touches it.
              */
-            for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other) {
-                if (other != index) {
+            for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other)
+            {
+                if (other != index)
+                {
                     NAOS_REQUIRE_TRUE(set_text(attributes[other], positional, "other") == CLARGS_ERROR_NONE);
                 }
             }
-            if (old != NULL) {
+            if (old != NULL)
+            {
                 NAOS_REQUIRE_TRUE(set_text(attribute, positional, old) == CLARGS_ERROR_NONE);
             }
 
@@ -1158,8 +1194,10 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
              */
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
             check_text(get_text(attribute, positional), old);
-            for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other) {
-                if (other != index) {
+            for (other = 0; other < TEXT_ATTRIBUTE_COUNT; ++other)
+            {
+                if (other != index)
+                {
                     check_text(get_text(attributes[other], positional), "other");
                 }
             }

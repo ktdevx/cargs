@@ -37,7 +37,8 @@
 #define SINK_SIZE ((size_t)1024)
 
 /* What the write function of the tests has received. */
-typedef struct sink {
+typedef struct sink
+{
     char text[SINK_SIZE]; /* the parts, joined in the order of the calls */
     size_t length;        /* the number of bytes of text */
     size_t calls;         /* the number of calls, the failed one included */
@@ -59,14 +60,17 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0) {
+    if (text == NULL || length == 0)
+    {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at) {
+    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    {
         return false;
     }
-    if (length > SINK_SIZE - sink->length) {
+    if (length > SINK_SIZE - sink->length)
+    {
         return false;
     }
 
@@ -121,7 +125,8 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
 
     NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(command, name, &sub) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sub != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         describe(sub, description);
     }
     return sub;
@@ -139,7 +144,8 @@ static void add_positional(clargs_command_t *command, const char *name, clargs_a
     NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, clargs_type_string(), arity,
                                                     &positional) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
                           CLARGS_ERROR_NONE);
     }
@@ -158,7 +164,8 @@ static void add_flag(clargs_command_t *command, char short_name, const char *lon
     NAOS_REQUIRE_TRUE(clargs_command_add_flag(command, short_name, long_name, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
     }
 }
@@ -175,7 +182,8 @@ static void add_count(clargs_command_t *command, char short_name, const char *lo
     NAOS_REQUIRE_TRUE(clargs_command_add_count(command, short_name, long_name, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
     }
 }
@@ -194,7 +202,8 @@ static void add_value(clargs_command_t *command, char short_name, const char *lo
                                                &option) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
     }
 }
@@ -229,8 +238,10 @@ static bool has_blank_at_line_end(const char *text, size_t length)
 {
     size_t index;
 
-    for (index = 0; index < length; ++index) {
-        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n')) {
+    for (index = 0; index < length; ++index)
+    {
+        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n'))
+        {
             return true;
         }
     }
@@ -246,8 +257,10 @@ static size_t count_empty_lines(const char *text, size_t length)
     size_t count = 0;
     size_t index;
 
-    for (index = 0; index < length; ++index) {
-        if (text[index] == '\n' && (index == 0 || text[index - 1] == '\n')) {
+    for (index = 0; index < length; ++index)
+    {
+        if (text[index] == '\n' && (index == 0 || text[index - 1] == '\n'))
+        {
             ++count;
         }
     }
@@ -974,7 +987,8 @@ NAOS_TEST(usage_alone_is_the_head_of_the_help)
  * What the reading functions give for the schema of
  * same_input_gives_same_text_and_schema_is_unchanged.
  */
-typedef struct snapshot {
+typedef struct snapshot
+{
     bool validated;
     const char *root_name;
     const char *root_description;
@@ -1150,7 +1164,8 @@ NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
     requests = clargs_test_allocator_requests();
 
     /* Each call in turn is the one that fails. */
-    for (n = 1; n <= whole.calls; ++n) {
+    for (n = 1; n <= whole.calls; ++n)
+    {
         sink_t sink;
 
         sink_init(&sink);

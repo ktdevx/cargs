@@ -20,19 +20,23 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
     assert(text != NULL || length == 0);
     assert(clargs_out_column(out) <= column);
 
-    while (length != 0 && text[length - 1] == '\n') {
+    while (length != 0 && text[length - 1] == '\n')
+    {
         --length;
     }
-    if (length == 0) {
+    if (length == 0)
+    {
         return;
     }
 
     clargs_out_pad_to(out, column);
 
-    while (position < length) {
+    while (position < length)
+    {
         size_t start = position;
 
-        if (text[position] == '\n') {
+        if (text[position] == '\n')
+        {
             /*
              * The blanks that are remembered, those that lead to column
              * included, are dropped by the newline.
@@ -41,16 +45,22 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
             clargs_out_newline(out);
             clargs_out_pad_to(out, column);
             line_has_word = false;
-        } else if (text[position] == ' ') {
-            while (position < length && text[position] == ' ') {
+        }
+        else if (text[position] == ' ')
+        {
+            while (position < length && text[position] == ' ')
+            {
                 ++position;
             }
             clargs_out_spaces(out, position - start);
-        } else {
+        }
+        else
+        {
             size_t current;
             size_t word;
 
-            while (position < length && text[position] != ' ' && text[position] != '\n') {
+            while (position < length && text[position] != ' ' && text[position] != '\n')
+            {
                 ++position;
             }
             word = position - start;
@@ -60,7 +70,8 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
              * cannot wrap around, because current < width there.
              */
             current = clargs_out_column(out);
-            if (line_has_word && width != 0 && (current >= width || word > width - current)) {
+            if (line_has_word && width != 0 && (current >= width || word > width - current))
+            {
                 /* The blanks before the word are dropped by the newline. */
                 clargs_out_newline(out);
                 clargs_out_pad_to(out, column);

@@ -104,7 +104,8 @@ clargs_example_t *example;
 clargs_error_t error;
 
 error = clargs_example_create("name", &example);
-if (error != CLARGS_ERROR_NONE) {
+if (error != CLARGS_ERROR_NONE)
+{
     /* example is NULL. There is nothing to destroy. */
     fprintf(stderr, "%s\n", clargs_error_message(error));
     return 1;

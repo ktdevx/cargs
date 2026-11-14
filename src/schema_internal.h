@@ -36,7 +36,8 @@
  * - validated: whether the tree has been validated since its last change.
  *   Used in the root only; read and write it through the root.
  */
-struct clargs_command {
+struct clargs_command
+{
     char *name;
     char *description;
     clargs_command_t *parent;
@@ -67,7 +68,8 @@ struct clargs_command {
  * - initial: the initial state of the kind CLARGS_OPTION_NEGATABLE; false
  *   for every other kind.
  */
-struct clargs_option {
+struct clargs_option
+{
     clargs_command_t *command;
     clargs_option_kind_t kind;
     char short_name;
@@ -92,7 +94,8 @@ struct clargs_option {
  * - default_value: the default value, or NULL when none has been set. Only
  *   the arity CLARGS_ARITY_OPTIONAL has one.
  */
-struct clargs_positional {
+struct clargs_positional
+{
     clargs_command_t *command;
     char *name;
     clargs_arity_t arity;

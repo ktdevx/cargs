@@ -38,7 +38,8 @@
  * What a message is built from. The strings are only read during the
  * call.
  */
-typedef struct clargs_message_parts {
+typedef struct clargs_message_parts
+{
     clargs_parse_error_kind_t kind;
     clargs_source_t source;  /* CLARGS_SOURCE_DEFAULT: the wording of a default value */
     bool for_positional;     /* INVALID_VALUE: the wording of a positional argument */

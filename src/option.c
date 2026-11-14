@@ -40,11 +40,13 @@ static bool negated_name_is_in_use(const clargs_command_t *command, const char *
     size_t count = clargs_command_option_count(command);
     size_t index;
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         const clargs_option_t *option = clargs_command_option_at(command, index);
 
         if (is_negated_name_of(option->long_name, long_name) ||
-            is_negated_name_of(option->negated_name, long_name)) {
+            is_negated_name_of(option->negated_name, long_name))
+        {
             return true;
         }
     }
@@ -60,7 +62,8 @@ static char *new_negated_name(const char *long_name)
     size_t length = strlen(long_name);
     char *negated_name = (char *)clargs_malloc(NEGATED_PREFIX_LENGTH + length + 1);
 
-    if (negated_name == NULL) {
+    if (negated_name == NULL)
+    {
         return NULL;
     }
 
@@ -79,7 +82,8 @@ static clargs_option_t *new_option(clargs_command_t *command, clargs_option_kind
 {
     clargs_option_t *option = (clargs_option_t *)clargs_malloc(sizeof(*option));
 
-    if (option == NULL) {
+    if (option == NULL)
+    {
         return NULL;
     }
 
@@ -95,17 +99,21 @@ static clargs_option_t *new_option(clargs_command_t *command, clargs_option_kind
     option->required = false;
     option->initial = false;
 
-    if (long_name != NULL) {
+    if (long_name != NULL)
+    {
         option->long_name = clargs_strdup(long_name);
-        if (option->long_name == NULL) {
+        if (option->long_name == NULL)
+        {
             clargs_free(option);
             return NULL;
         }
     }
 
-    if (kind == CLARGS_OPTION_NEGATABLE) {
+    if (kind == CLARGS_OPTION_NEGATABLE)
+    {
         option->negated_name = new_negated_name(long_name);
-        if (option->negated_name == NULL) {
+        if (option->negated_name == NULL)
+        {
             clargs_free(option->long_name);
             clargs_free(option);
             return NULL;
@@ -134,7 +142,8 @@ static clargs_error_t add_option(clargs_command_t *command, clargs_option_kind_t
 
     assert(command != NULL);
 
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = NULL;
     }
 
@@ -142,30 +151,38 @@ static clargs_error_t add_option(clargs_command_t *command, clargs_option_kind_t
      * The checks come before every allocation, so a wrong definition
      * touches nothing. Their order is part of the contract.
      */
-    if (short_name == '\0' && long_name == NULL) {
+    if (short_name == '\0' && long_name == NULL)
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (kind == CLARGS_OPTION_NEGATABLE && long_name == NULL) {
+    if (kind == CLARGS_OPTION_NEGATABLE && long_name == NULL)
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (short_name != '\0' && !clargs_name_is_short(short_name)) {
+    if (short_name != '\0' && !clargs_name_is_short(short_name))
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (long_name != NULL && !clargs_name_is_long(long_name)) {
+    if (long_name != NULL && !clargs_name_is_long(long_name))
+    {
         return CLARGS_ERROR_INVALID_NAME;
     }
-    if (clargs_command_find_short(command, short_name) != NULL) {
+    if (clargs_command_find_short(command, short_name) != NULL)
+    {
         return CLARGS_ERROR_NAME_CONFLICT;
     }
-    if (long_name != NULL && clargs_command_find_long(command, long_name, strlen(long_name), NULL) != NULL) {
+    if (long_name != NULL && clargs_command_find_long(command, long_name, strlen(long_name), NULL) != NULL)
+    {
         return CLARGS_ERROR_NAME_CONFLICT;
     }
-    if (kind == CLARGS_OPTION_NEGATABLE && negated_name_is_in_use(command, long_name)) {
+    if (kind == CLARGS_OPTION_NEGATABLE && negated_name_is_in_use(command, long_name))
+    {
         return CLARGS_ERROR_NAME_CONFLICT;
     }
 
     option = new_option(command, kind, short_name, long_name, type);
-    if (option == NULL) {
+    if (option == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
@@ -173,14 +190,16 @@ static clargs_error_t add_option(clargs_command_t *command, clargs_option_kind_t
      * The tree is changed last: a push that fails leaves the array as it
      * was.
      */
-    if (clargs_vec_push(&command->options, &option) != CLARGS_ERROR_NONE) {
+    if (clargs_vec_push(&command->options, &option) != CLARGS_ERROR_NONE)
+    {
         free_new_option(option);
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     clargs_schema_touch(command);
 
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = option;
     }
     return CLARGS_ERROR_NONE;
@@ -226,12 +245,14 @@ static clargs_error_t set_string(clargs_option_t *option, char **slot, const cha
 {
     clargs_error_t error;
 
-    if (only_value && option->kind != CLARGS_OPTION_VALUE) {
+    if (only_value && option->kind != CLARGS_OPTION_VALUE)
+    {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
 
     error = clargs_schema_replace_string(slot, text);
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         return error;
     }
 
@@ -259,7 +280,8 @@ clargs_error_t clargs_option_set_required(clargs_option_t *option, bool required
 {
     assert(option != NULL);
 
-    if (option->kind != CLARGS_OPTION_VALUE) {
+    if (option->kind != CLARGS_OPTION_VALUE)
+    {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
 
@@ -280,7 +302,8 @@ clargs_error_t clargs_option_set_initial(clargs_option_t *option, bool on)
 {
     assert(option != NULL);
 
-    if (option->kind != CLARGS_OPTION_NEGATABLE) {
+    if (option->kind != CLARGS_OPTION_NEGATABLE)
+    {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }
 

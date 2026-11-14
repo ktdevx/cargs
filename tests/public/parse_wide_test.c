@@ -102,7 +102,8 @@ static void check_clean(void)
  *
  * --color is on at first. --tag has the default value "none".
  */
-typedef struct fixture {
+typedef struct fixture
+{
     clargs_command_t *root;
     clargs_option_t *verbose;
     clargs_option_t *debug;
@@ -174,9 +175,12 @@ static clargs_result_t *parse_wide_ok(const fixture_t *fixture, int argc, wchar_
  */
 static void check_text(const char *text, const char *expected)
 {
-    if (expected == NULL) {
+    if (expected == NULL)
+    {
         NAOS_CHECK_TRUE(text == NULL);
-    } else {
+    }
+    else
+    {
         NAOS_REQUIRE_TRUE(text != NULL);
         NAOS_CHECK_STR_EQ(text, expected);
     }
@@ -238,7 +242,8 @@ static void check_same_results(const fixture_t *fixture, const clargs_result_t *
     /* The selected commands. */
     count = clargs_result_command_count(narrow);
     NAOS_REQUIRE_TRUE(clargs_result_command_count(wide) == count);
-    for (i = 0; i < count; ++i) {
+    for (i = 0; i < count; ++i)
+    {
         NAOS_CHECK_TRUE(clargs_result_command_at(wide, i) == clargs_result_command_at(narrow, i));
     }
     NAOS_CHECK_TRUE(clargs_result_command(wide) == clargs_result_command(narrow));
@@ -269,7 +274,8 @@ static void check_same_results(const fixture_t *fixture, const clargs_result_t *
     NAOS_REQUIRE_TRUE(clargs_result_positional_count(wide, fixture->file) == count);
     NAOS_CHECK_INT_EQ(clargs_result_positional_source(wide, fixture->file),
                       clargs_result_positional_source(narrow, fixture->file));
-    for (i = 0; i < count; ++i) {
+    for (i = 0; i < count; ++i)
+    {
         const char *narrow_text = NULL;
 
         NAOS_REQUIRE_TRUE(clargs_result_positional_string(narrow, fixture->file, i, &narrow_text));
@@ -583,10 +589,12 @@ NAOS_TEST(the_strings_of_a_result_stay_valid_after_the_wide_argv_was_overwritten
     set_up(&fixture);
     result = parse_wide_ok(&fixture, ARGC(argv), argv);
 
-    for (i = 0; name[i] != L'\0'; ++i) {
+    for (i = 0; name[i] != L'\0'; ++i)
+    {
         name[i] = L'#';
     }
-    for (i = 0; file[i] != L'\0'; ++i) {
+    for (i = 0; file[i] != L'\0'; ++i)
+    {
         file[i] = L'#';
     }
     argv[1] = NULL;
@@ -635,7 +643,8 @@ NAOS_TEST(every_unit_that_cannot_be_converted_is_a_parse_error)
     argv[4] = bad;
 
     set_up(&fixture);
-    for (i = 0; i < BAD_UNIT_COUNT; ++i) {
+    for (i = 0; i < BAD_UNIT_COUNT; ++i)
+    {
         clargs_result_t *result;
 
         bad[1] = bad_units[i];

@@ -37,7 +37,8 @@
  * The schema of the tests: the command "tool" with one option of each kind
  * and more.
  */
-typedef struct fixture {
+typedef struct fixture
+{
     clargs_command_t *root;
     clargs_option_t *verbose; /* -v, --verbose: a flag */
     clargs_option_t *help;    /* --help: a flag */
@@ -263,7 +264,8 @@ NAOS_TEST(two_parses_with_one_schema_give_the_same_result)
      * The first and the third parse read the same; the parse between them
      * left nothing behind.
      */
-    for (i = 0; i < 3; i += 2) {
+    for (i = 0; i < 3; i += 2)
+    {
         NAOS_CHECK_TRUE(clargs_result_flag(results[i], fixture.verbose));
         NAOS_CHECK_UINT_EQ(clargs_result_count(results[i], fixture.debug), 2);
         NAOS_CHECK_FALSE(clargs_result_flag(results[i], fixture.pager));
@@ -867,7 +869,8 @@ NAOS_TEST(the_scan_stops_at_the_first_error)
 /* ---- Short options ------------------------------------------------------ */
 
 /* The schema of the tests of the short options: the command "short". */
-typedef struct short_fixture {
+typedef struct short_fixture
+{
     clargs_command_t *root;
     clargs_option_t *a;       /* -a: a flag */
     clargs_option_t *b;       /* -b: a flag */
@@ -904,7 +907,8 @@ static void set_up_short(short_fixture_t *fixture, bool with_digit)
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(clargs_command_add_value(root, 'n', "num", clargs_type_int(), &fixture->num) ==
                       CLARGS_ERROR_NONE);
-    if (with_digit) {
+    if (with_digit)
+    {
         NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, '1', NULL, &fixture->one) == CLARGS_ERROR_NONE);
     }
 
@@ -1441,7 +1445,8 @@ NAOS_TEST(a_negative_number_is_not_a_bundle_of_a_command_that_has_no_digit_as_a_
     clargs_result_destroy(result);
 
     /* The letters after the digit are not read as options. */
-    for (at = 0; at < sizeof(more) / sizeof(more[0]); at++) {
+    for (at = 0; at < sizeof(more) / sizeof(more[0]); at++)
+    {
         char *one[2];
 
         one[0] = "short";
@@ -1482,7 +1487,8 @@ static void check_every_allocation_failing(const fixture_t *fixture, int argc, c
 {
     size_t nth;
 
-    for (nth = 1; nth < 100; nth++) {
+    for (nth = 1; nth < 100; nth++)
+    {
         const size_t live = clargs_test_allocator_live();
         clargs_result_t *result = NULL;
         clargs_error_t error;
@@ -1491,7 +1497,8 @@ static void check_every_allocation_failing(const fixture_t *fixture, int argc, c
         error = clargs_parse(fixture->root, argc, argv, &result);
         clargs_test_allocator_fail_at(0);
 
-        if (error != CLARGS_ERROR_OUT_OF_MEMORY) {
+        if (error != CLARGS_ERROR_OUT_OF_MEMORY)
+        {
             /* The parse made fewer than nth allocations. */
             NAOS_CHECK_INT_EQ(error, expected);
             NAOS_REQUIRE_TRUE(result != NULL);

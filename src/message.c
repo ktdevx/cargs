@@ -17,13 +17,15 @@
 #define MAX_PIECES 8
 
 /* One piece of a message: length bytes at text, with no terminator. */
-typedef struct piece {
+typedef struct piece
+{
     const char *text;
     size_t length;
 } piece_t;
 
 /* The pieces of a message, in their order. */
-typedef struct pieces {
+typedef struct pieces
+{
     piece_t items[MAX_PIECES];
     size_t count;
 } pieces_t;
@@ -66,7 +68,8 @@ static void collect(pieces_t *pieces, const clargs_message_parts_t *parts)
 {
     pieces->count = 0;
 
-    switch (parts->kind) {
+    switch (parts->kind)
+    {
     case CLARGS_PARSE_ERROR_UNKNOWN_OPTION:
         ADD_TEXT(pieces, "unknown option '");
         add_name(pieces, parts);
@@ -88,15 +91,21 @@ static void collect(pieces_t *pieces, const clargs_message_parts_t *parts)
         ADD_TEXT(pieces, "' does not take a value");
         break;
     case CLARGS_PARSE_ERROR_INVALID_VALUE:
-        if (parts->source == CLARGS_SOURCE_DEFAULT) {
+        if (parts->source == CLARGS_SOURCE_DEFAULT)
+        {
             ADD_TEXT(pieces, "invalid default value '");
-        } else {
+        }
+        else
+        {
             ADD_TEXT(pieces, "invalid value '");
         }
         add_string(pieces, parts->value);
-        if (parts->for_positional) {
+        if (parts->for_positional)
+        {
             ADD_TEXT(pieces, "' for argument '");
-        } else {
+        }
+        else
+        {
             ADD_TEXT(pieces, "' for option '");
         }
         add_name(pieces, parts);
@@ -148,24 +157,30 @@ clargs_error_t clargs_message_build(const clargs_message_parts_t *parts, char **
 
     /* Count first: the sum of the lengths, then the terminator. */
     collect(&pieces, parts);
-    for (i = 0; i < pieces.count; ++i) {
-        if (pieces.items[i].length > SIZE_MAX - length) {
+    for (i = 0; i < pieces.count; ++i)
+    {
+        if (pieces.items[i].length > SIZE_MAX - length)
+        {
             return CLARGS_ERROR_OUT_OF_MEMORY;
         }
         length += pieces.items[i].length;
     }
-    if (length == SIZE_MAX) {
+    if (length == SIZE_MAX)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     message = clargs_malloc(length + 1);
-    if (message == NULL) {
+    if (message == NULL)
+    {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
     end = message;
-    for (i = 0; i < pieces.count; ++i) {
-        if (pieces.items[i].length > 0) {
+    for (i = 0; i < pieces.count; ++i)
+    {
+        if (pieces.items[i].length > 0)
+        {
             memcpy(end, pieces.items[i].text, pieces.items[i].length);
             end += pieces.items[i].length;
         }

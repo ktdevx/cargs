@@ -111,7 +111,8 @@ static clargs_option_t *add_value(clargs_command_t *command, char short_name, co
     NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_default(option, default_value) == CLARGS_ERROR_NONE);
     }
     return option;
@@ -140,7 +141,8 @@ static clargs_positional_t *add_positional(clargs_command_t *command, const char
     NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, arity, &positional) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_positional_set_default(positional, default_value) == CLARGS_ERROR_NONE);
     }
     return positional;
@@ -165,7 +167,8 @@ static void destroy_root(clargs_command_t *root)
  * Every field of a parse error. A string that is NULL is expected to read
  * as NULL.
  */
-typedef struct expected {
+typedef struct expected
+{
     clargs_parse_error_kind_t kind;
     const char *argument;
     const char *value;
@@ -222,9 +225,12 @@ static expected_t off_command_line(clargs_parse_error_kind_t kind, clargs_source
  */
 static void check_text(const char *text, const char *expected)
 {
-    if (expected == NULL) {
+    if (expected == NULL)
+    {
         NAOS_CHECK_TRUE(text == NULL);
-    } else {
+    }
+    else
+    {
         NAOS_REQUIRE_TRUE(text != NULL);
         NAOS_CHECK_STR_EQ(text, expected);
     }
@@ -296,7 +302,8 @@ static clargs_result_t *parse_ok(const clargs_command_t *root, int argc, char *c
  * "out.txt" and --name "anon". SRC is required; COUNT is optional and an
  * integer. status has no positional; tool and remote have subcommands.
  */
-typedef struct fixture {
+typedef struct fixture
+{
     clargs_command_t *root;
     clargs_option_t *verbose;
     clargs_option_t *debug;
@@ -727,7 +734,8 @@ NAOS_TEST(an_unexpected_positional_has_its_argument_as_its_value)
  * required and was added to push before its options. FILES takes one or
  * more.
  */
-typedef struct required_fixture {
+typedef struct required_fixture
+{
     clargs_command_t *root;
     clargs_option_t *token;
     clargs_command_t *push;
@@ -835,7 +843,8 @@ NAOS_TEST(a_missing_positional_has_no_position_and_the_positional)
  * value is the text. The validation of a schema converts the default values
  * with it; a text is rejected only afterwards.
  */
-typedef struct picky {
+typedef struct picky
+{
     const char *rejected; /* NULL: every text is taken. */
 } picky_t;
 
@@ -843,7 +852,8 @@ static clargs_error_t picky_convert(const char *text, void *value, void *context
 {
     const picky_t *picky = context;
 
-    if (picky->rejected != NULL && strcmp(text, picky->rejected) == 0) {
+    if (picky->rejected != NULL && strcmp(text, picky->rejected) == 0)
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
     memcpy(value, &text, sizeof(text));
@@ -1214,7 +1224,8 @@ NAOS_TEST(a_result_without_a_parse_error_reads_as_no_error)
     results[1] = parse_ok(fixture.root, ARGC(nothing), nothing);
     results[2] = parse_ok(fixture.root, 0, NULL);
 
-    for (index = 0; index < sizeof(results) / sizeof(results[0]); index++) {
+    for (index = 0; index < sizeof(results) / sizeof(results[0]); index++)
+    {
         const clargs_result_t *result = results[index];
 
         NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
@@ -1277,7 +1288,8 @@ NAOS_TEST(the_strings_of_an_error_stay_valid_after_argv_was_overwritten)
     memset(source, '#', sizeof(source) - 1);
     memset(jobs, '#', sizeof(jobs) - 1);
     memset(extra, '#', sizeof(extra) - 1);
-    for (index = 0; index < sizeof(argv) / sizeof(argv[0]); index++) {
+    for (index = 0; index < sizeof(argv) / sizeof(argv[0]); index++)
+    {
         argv[index] = NULL;
     }
     check_error(result, &expected);

@@ -67,7 +67,8 @@
 #define SETTING_MAX ((size_t)65535)
 
 /* What the write function of the tests has received. */
-typedef struct sink {
+typedef struct sink
+{
     char *text;         /* the parts, joined in the order of the calls */
     size_t size;        /* the number of bytes that text has room for */
     size_t length;      /* the number of bytes of text */
@@ -93,14 +94,17 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0) {
+    if (text == NULL || length == 0)
+    {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at) {
+    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    {
         return false;
     }
-    if (length > sink->size - sink->length) {
+    if (length > sink->size - sink->length)
+    {
         return false;
     }
 
@@ -155,7 +159,8 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
 
     NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(command, name, &sub) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sub != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         describe(sub, description);
     }
     return sub;
@@ -173,7 +178,8 @@ static void add_positional(clargs_command_t *command, const char *name, clargs_a
     NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, clargs_type_string(), arity,
                                                     &positional) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
                           CLARGS_ERROR_NONE);
     }
@@ -195,7 +201,8 @@ static void add_positional_default(clargs_command_t *command, const char *name,
     NAOS_REQUIRE_TRUE(positional != NULL);
     NAOS_REQUIRE_TRUE(clargs_positional_set_default(positional, default_value) ==
                       CLARGS_ERROR_NONE);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
                           CLARGS_ERROR_NONE);
     }
@@ -214,7 +221,8 @@ static void add_flag(clargs_command_t *command, char short_name, const char *lon
     NAOS_REQUIRE_TRUE(clargs_command_add_flag(command, short_name, long_name, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
     }
 }
@@ -234,10 +242,12 @@ static void add_value(clargs_command_t *command, char short_name, const char *lo
                                                &option) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_default(option, default_value) == CLARGS_ERROR_NONE);
     }
-    if (description != NULL) {
+    if (description != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
     }
 }
@@ -257,8 +267,10 @@ static bool has_blank_at_line_end(const char *text, size_t length)
 {
     size_t index;
 
-    for (index = 0; index < length; ++index) {
-        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n')) {
+    for (index = 0; index < length; ++index)
+    {
+        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n'))
+        {
             return true;
         }
     }
@@ -1216,7 +1228,8 @@ NAOS_TEST(one_options_object_serves_many_generations)
  * One piece of a long text: the bytes of literal and, behind them, count
  * times the byte fill.
  */
-typedef struct piece {
+typedef struct piece
+{
     const char *literal;
     char fill;
     size_t count;
@@ -1233,12 +1246,14 @@ static void check_pieces(const char *text, size_t length, const piece_t *pieces,
     size_t position = 0;
     size_t index;
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         expected += strlen(pieces[index].literal) + pieces[index].count;
     }
     NAOS_REQUIRE_TRUE(length == expected);
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         size_t literal = strlen(pieces[index].literal);
         size_t wrong = 0;
         size_t offset;
@@ -1246,8 +1261,10 @@ static void check_pieces(const char *text, size_t length, const piece_t *pieces,
         NAOS_CHECK_MEM_EQ(text + position, literal, pieces[index].literal, literal);
         position += literal;
 
-        for (offset = 0; offset < pieces[index].count; ++offset) {
-            if (text[position + offset] != pieces[index].fill) {
+        for (offset = 0; offset < pieces[index].count; ++offset)
+        {
+            if (text[position + offset] != pieces[index].fill)
+            {
                 ++wrong;
             }
         }
@@ -1315,7 +1332,8 @@ NAOS_TEST(width_above_the_limit_works_as_the_limit)
     validate(root);
 
     check_big_layout(root, SETTING_MAX, 2, 32, buffer, pieces, 2);
-    for (index = 0; index < BEYOND_COUNT; ++index) {
+    for (index = 0; index < BEYOND_COUNT; ++index)
+    {
         check_big_layout(root, beyond_the_limit[index], 2, 32, buffer, pieces, 2);
     }
 
@@ -1358,7 +1376,8 @@ NAOS_TEST(indent_above_the_limit_works_as_the_limit)
     validate(root);
 
     check_big_layout(root, 0, SETTING_MAX, 32, buffer, pieces, 3);
-    for (index = 0; index < BEYOND_COUNT; ++index) {
+    for (index = 0; index < BEYOND_COUNT; ++index)
+    {
         check_big_layout(root, 0, beyond_the_limit[index], 32, buffer, pieces, 3);
     }
     check_big_layout(root, 0, SETTING_MAX - 1, 32, buffer, one_less, 3);
@@ -1396,7 +1415,8 @@ NAOS_TEST(maximum_column_above_the_limit_works_as_the_limit)
     validate(root);
 
     check_big_layout(root, 0, 65533, SETTING_MAX, buffer, pieces, 3);
-    for (index = 0; index < BEYOND_COUNT; ++index) {
+    for (index = 0; index < BEYOND_COUNT; ++index)
+    {
         check_big_layout(root, 0, 65533, beyond_the_limit[index], buffer, pieces, 3);
         check_big_layout(root, 0, 65532, beyond_the_limit[index], buffer, same_line, 2);
     }
@@ -1711,8 +1731,10 @@ NAOS_TEST(blanks_of_the_trailing_run_are_ignored)
     size_t build;
     size_t index;
 
-    for (build = 0; build < sizeof builds / sizeof builds[0]; ++build) {
-        for (index = 0; index < sizeof descriptions / sizeof descriptions[0]; ++index) {
+    for (build = 0; build < sizeof builds / sizeof builds[0]; ++build)
+    {
+        for (index = 0; index < sizeof descriptions / sizeof descriptions[0]; ++index)
+        {
             check_same_text(builds[build], descriptions[index][0], descriptions[index][1]);
         }
     }

@@ -22,7 +22,8 @@ char *clargs_strdup(const char *str)
      */
     size = strlen(str) + 1;
     copy = clargs_malloc(size);
-    if (copy == NULL) {
+    if (copy == NULL)
+    {
         return NULL;
     }
 

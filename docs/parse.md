@@ -42,7 +42,8 @@ The example is one translation unit, and it includes only `<clargs/clargs.h>` an
  * The schema of pack, and the handles that the result is read with. The
  * root owns all of them.
  */
-typedef struct pack_schema {
+typedef struct pack_schema
+{
     clargs_command_t *root;
     clargs_command_t *create;
     clargs_command_t *list;
@@ -85,7 +86,8 @@ static clargs_error_t define_schema(pack_schema_t *schema)
         failed(&error, add_help(schema->root)) ||
         failed(&error, clargs_command_add_count(schema->root, 'v', "verbose", &schema->verbose)) ||
         failed(&error, clargs_command_add_negatable(schema->root, '\0', "color", &schema->color)) ||
-        failed(&error, clargs_option_set_initial(schema->color, true))) {
+        failed(&error, clargs_option_set_initial(schema->color, true)))
+    {
         return error;
     }
 
@@ -98,7 +100,8 @@ static clargs_error_t define_schema(pack_schema_t *schema)
                                                 &schema->level)) ||
         failed(&error, clargs_option_set_default(schema->level, "6")) ||
         failed(&error, clargs_command_add_positional(schema->create, "file", clargs_type_string(),
-                                                     CLARGS_ARITY_ONE_OR_MORE, &schema->files))) {
+                                                     CLARGS_ARITY_ONE_OR_MORE, &schema->files)))
+    {
         return error;
     }
 
@@ -108,7 +111,8 @@ static clargs_error_t define_schema(pack_schema_t *schema)
                                                      CLARGS_ARITY_REQUIRED, &schema->archive)) ||
         failed(&error, clargs_command_add_positional(schema->list, "pattern", clargs_type_string(),
                                                      CLARGS_ARITY_OPTIONAL, &schema->pattern)) ||
-        failed(&error, clargs_positional_set_default(schema->pattern, "*"))) {
+        failed(&error, clargs_positional_set_default(schema->pattern, "*")))
+    {
         return error;
     }
 
@@ -125,11 +129,13 @@ static bool help_was_given(const clargs_result_t *result)
 {
     size_t i;
 
-    for (i = 0; i < clargs_result_command_count(result); ++i) {
+    for (i = 0; i < clargs_result_command_count(result); ++i)
+    {
         const clargs_command_t *command = clargs_result_command_at(result, i);
         const clargs_option_t *help = clargs_command_find_long(command, "help", 4, NULL);
 
-        if (help != NULL && clargs_result_flag(result, help)) {
+        if (help != NULL && clargs_result_flag(result, help))
+        {
             return true;
         }
     }
@@ -139,11 +145,16 @@ static bool help_was_given(const clargs_result_t *result)
 /* Prints the usage of the command that the command line ends in. */
 static void print_usage(const pack_schema_t *schema, const clargs_command_t *command)
 {
-    if (command == schema->create) {
+    if (command == schema->create)
+    {
         printf("usage: pack create -o FILE [-l LEVEL] file...\n");
-    } else if (command == schema->list) {
+    }
+    else if (command == schema->list)
+    {
         printf("usage: pack list archive [pattern]\n");
-    } else {
+    }
+    else
+    {
         printf("usage: pack [-v]... [--color | --no-color] <command> ...\n");
         printf("commands: create, list\n");
     }
@@ -155,7 +166,8 @@ static void print_usage(const pack_schema_t *schema, const clargs_command_t *com
  */
 static const char *source_text(clargs_source_t source)
 {
-    switch (source) {
+    switch (source)
+    {
     case CLARGS_SOURCE_COMMAND_LINE:
         return "command line";
     case CLARGS_SOURCE_DEFAULT:
@@ -170,7 +182,8 @@ static int run(const pack_schema_t *schema, const clargs_result_t *result)
 {
     const clargs_command_t *command = clargs_result_command(result);
 
-    if (command != schema->create && command != schema->list) {
+    if (command != schema->create && command != schema->list)
+    {
         /* A command line that names no subcommand is not a parse error. */
         fprintf(stderr, "pack: a command is required\n");
         return EXIT_FAILURE;
@@ -180,7 +193,8 @@ static int run(const pack_schema_t *schema, const clargs_result_t *result)
     printf("verbose: %lu, color: %s\n", (unsigned long)clargs_result_count(result, schema->verbose),
            clargs_result_flag(result, schema->color) ? "on" : "off");
 
-    if (command == schema->create) {
+    if (command == schema->create)
+    {
         const char *output = NULL;
         const char *file = NULL;
         int64_t level = 0;
@@ -191,7 +205,8 @@ static int run(const pack_schema_t *schema, const clargs_result_t *result)
          * parse that succeeded, both have a value.
          */
         if (!clargs_result_option_string(result, schema->output, &output) ||
-            !clargs_result_option_int(result, schema->level, &level)) {
+            !clargs_result_option_int(result, schema->level, &level))
+        {
             return EXIT_FAILURE;
         }
         printf("create %s, level %" PRId64 " (%s)\n", output, level,
@@ -201,17 +216,22 @@ static int run(const pack_schema_t *schema, const clargs_result_t *result)
          * A positional that takes any number of arguments: its values in
          * the order of the command line.
          */
-        for (i = 0; i < clargs_result_positional_count(result, schema->files); ++i) {
-            if (clargs_result_positional_string(result, schema->files, i, &file)) {
+        for (i = 0; i < clargs_result_positional_count(result, schema->files); ++i)
+        {
+            if (clargs_result_positional_string(result, schema->files, i, &file))
+            {
                 printf("  %s\n", file);
             }
         }
-    } else {
+    }
+    else
+    {
         const char *archive = NULL;
         const char *pattern = NULL;
 
         if (!clargs_result_positional_string(result, schema->archive, 0, &archive) ||
-            !clargs_result_positional_string(result, schema->pattern, 0, &pattern)) {
+            !clargs_result_positional_string(result, schema->pattern, 0, &pattern))
+        {
             return EXIT_FAILURE;
         }
         printf("list %s, pattern %s (%s)\n", archive, pattern,
@@ -228,30 +248,41 @@ int main(int argc, char **argv)
     clargs_error_t error;
     int status = EXIT_FAILURE;
 
-    if (failed(&error, define_schema(&schema))) {
+    if (failed(&error, define_schema(&schema)))
+    {
         fprintf(stderr, "pack: cannot define the command line: %s\n", clargs_error_message(error));
-    } else {
+    }
+    else
+    {
         /* argc and argv go in as main() received them. */
         error = clargs_parse(schema.root, argc, argv, &result);
 
-        if (result == NULL) {
+        if (result == NULL)
+        {
             /* CLARGS_ERROR_OUT_OF_MEMORY: there is no result. */
             fprintf(stderr, "pack: %s\n", clargs_error_message(error));
-        } else if (help_was_given(result)) {
+        }
+        else if (help_was_given(result))
+        {
             /*
              * --help first: "pack create --help" leaves out what create
              * requires, and that must not hide the help.
              */
             print_usage(&schema, clargs_result_command(result));
             status = EXIT_SUCCESS;
-        } else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE) {
+        }
+        else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE)
+        {
             /* The message is one line with no prefix and no line break. */
             fprintf(stderr, "pack: %s\n", clargs_result_error_message(result));
-        } else {
+        }
+        else
+        {
             status = run(&schema, result);
         }
 
-        if (status != EXIT_SUCCESS) {
+        if (status != EXIT_SUCCESS)
+        {
             fprintf(stderr, "Try 'pack --help' for more information.\n");
         }
     }
@@ -598,26 +629,36 @@ int wmain(int argc, wchar_t **argv)
     int status = EXIT_FAILURE;
 
     error = clargs_command_create("greet", &root);
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         error = clargs_command_add_positional(root, "name", clargs_type_string(), CLARGS_ARITY_REQUIRED,
                                               &name);
     }
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         error = clargs_command_validate(root, NULL, NULL, NULL);
     }
 
-    if (error != CLARGS_ERROR_NONE) {
+    if (error != CLARGS_ERROR_NONE)
+    {
         fprintf(stderr, "greet: cannot define the command line: %s\n", clargs_error_message(error));
-    } else {
+    }
+    else
+    {
         /* The wide argv goes in as wmain() received it. */
         error = clargs_parse_wide(root, argc, argv, &result);
 
-        if (result == NULL) {
+        if (result == NULL)
+        {
             fprintf(stderr, "greet: %s\n", clargs_error_message(error));
-        } else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE) {
+        }
+        else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE)
+        {
             /* The message is UTF-8, like every string of the result. */
             fprintf(stderr, "greet: %s\n", clargs_result_error_message(result));
-        } else if (clargs_result_positional_string(result, name, 0, &text)) {
+        }
+        else if (clargs_result_positional_string(result, name, 0, &text))
+        {
             /* text is UTF-8, whatever the width of wchar_t is. */
             printf("hello, %s\n", text);
             status = EXIT_SUCCESS;

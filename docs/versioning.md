@@ -114,7 +114,8 @@ like `CLARGS_VERSION_NUMBER`. Compare the two to check that the headers and the
 library match:
 
 ```c
-if (clargs_version() != CLARGS_VERSION_NUMBER) {
+if (clargs_version() != CLARGS_VERSION_NUMBER)
+{
     /* The headers and the library are different versions. */
 }
 ```

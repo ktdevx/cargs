@@ -97,7 +97,8 @@ NAOS_TEST(negative_number_accepts_hyphen_and_digit)
 
     arg[0] = '-';
     arg[2] = '\0';
-    for (i = 0; i < sizeof digits - 1; ++i) {
+    for (i = 0; i < sizeof digits - 1; ++i)
+    {
         arg[1] = digits[i];
         NAOS_CHECK_TRUE(clargs_lex_is_negative_number(arg));
     }
@@ -171,7 +172,8 @@ NAOS_TEST(negative_number_is_classified_as_short)
     const char *const args[] = { "-1", "-.5", "-1x", "-0", "-9.25", "-.0e1" };
     size_t i;
 
-    for (i = 0; i < sizeof args / sizeof args[0]; ++i) {
+    for (i = 0; i < sizeof args / sizeof args[0]; ++i)
+    {
         NAOS_CHECK_TRUE(clargs_lex_is_negative_number(args[i]));
         NAOS_CHECK_TRUE(clargs_lex_classify(args[i]) == CLARGS_LEX_SHORT);
     }

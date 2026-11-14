@@ -29,17 +29,20 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
     unsigned long unit = (unsigned long)text[0];
     unsigned long next;
 
-    if (unit < 0xD800UL || unit > 0xDFFFUL) {
+    if (unit < 0xD800UL || unit > 0xDFFFUL)
+    {
         *code_point = unit;
         return 1;
     }
-    if (unit <= 0xDBFFUL) {
+    if (unit <= 0xDBFFUL)
+    {
         /*
          * A high surrogate. The next unit exists: it is a unit or the
          * terminator, and the terminator is not a low surrogate.
          */
         next = (unsigned long)text[1];
-        if (next >= 0xDC00UL && next <= 0xDFFFUL) {
+        if (next >= 0xDC00UL && next <= 0xDFFFUL)
+        {
             *code_point = 0x10000UL + ((unit - 0xD800UL) << 10) + (next - 0xDC00UL);
             return 2;
         }
@@ -65,7 +68,8 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
      */
     unsigned long unit = (unsigned long)text[0];
 
-    if (unit > 0x10FFFFUL || (unit >= 0xD800UL && unit <= 0xDFFFUL)) {
+    if (unit > 0x10FFFFUL || (unit >= 0xD800UL && unit <= 0xDFFFUL))
+    {
         *code_point = REPLACEMENT;
         *valid = false;
         return 1;
@@ -83,16 +87,19 @@ static size_t decode(const wchar_t *text, unsigned long *code_point, bool *valid
  */
 static size_t encode(unsigned long code_point, unsigned char bytes[UTF8_MAX_BYTES])
 {
-    if (code_point < 0x80UL) {
+    if (code_point < 0x80UL)
+    {
         bytes[0] = (unsigned char)code_point;
         return 1;
     }
-    if (code_point < 0x800UL) {
+    if (code_point < 0x800UL)
+    {
         bytes[0] = (unsigned char)(0xC0UL | (code_point >> 6));
         bytes[1] = (unsigned char)(0x80UL | (code_point & 0x3FUL));
         return 2;
     }
-    if (code_point < 0x10000UL) {
+    if (code_point < 0x10000UL)
+    {
         bytes[0] = (unsigned char)(0xE0UL | (code_point >> 12));
         bytes[1] = (unsigned char)(0x80UL | ((code_point >> 6) & 0x3FUL));
         bytes[2] = (unsigned char)(0x80UL | (code_point & 0x3FUL));
@@ -120,7 +127,8 @@ size_t clargs_utf8_length(const wchar_t *text, bool *valid)
     assert(valid != NULL);
 
     *valid = true;
-    while (*text != 0) {
+    while (*text != 0)
+    {
         text += decode(text, &code_point, valid);
         length += encode(code_point, bytes);
     }
@@ -138,7 +146,8 @@ size_t clargs_utf8_write(const wchar_t *text, char *out)
     assert(text != NULL);
     assert(out != NULL);
 
-    while (*text != 0) {
+    while (*text != 0)
+    {
         text += decode(text, &code_point, &valid);
         count = encode(code_point, bytes);
         /*

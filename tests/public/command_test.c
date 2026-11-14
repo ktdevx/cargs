@@ -108,7 +108,8 @@ NAOS_TEST(a_root_takes_any_name_that_is_not_empty)
 
     clargs_test_allocator_install();
 
-    for (index = 0; index < sizeof(names) / sizeof(names[0]); ++index) {
+    for (index = 0; index < sizeof(names) / sizeof(names[0]); ++index)
+    {
         clargs_command_t *root = NULL;
 
         NAOS_CHECK_INT_EQ(clargs_command_create(names[index], &root), CLARGS_ERROR_NONE);
@@ -217,12 +218,14 @@ NAOS_TEST(handles_stay_valid_while_the_tree_grows)
     clargs_command_t *subs[sizeof(names) / sizeof(names[0])];
     size_t index;
 
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         subs[index] = add(root, names[index]);
     }
 
     NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(root), count);
-    for (index = 0; index < count; ++index) {
+    for (index = 0; index < count; ++index)
+    {
         NAOS_CHECK_TRUE(clargs_command_subcommand_at(root, index) == subs[index]);
         NAOS_CHECK_STR_EQ(clargs_command_name(subs[index]), names[index]);
         NAOS_CHECK_TRUE(clargs_command_parent(subs[index]) == root);
@@ -305,7 +308,8 @@ NAOS_TEST(a_subcommand_name_follows_the_rule_of_names)
     size_t requests;
     size_t index;
 
-    for (index = 0; index < sizeof(valid) / sizeof(valid[0]); ++index) {
+    for (index = 0; index < sizeof(valid) / sizeof(valid[0]); ++index)
+    {
         clargs_command_t *sub = NULL;
 
         NAOS_CHECK_INT_EQ(clargs_command_add_subcommand(root, valid[index], &sub), CLARGS_ERROR_NONE);
@@ -314,7 +318,8 @@ NAOS_TEST(a_subcommand_name_follows_the_rule_of_names)
     NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(root), sizeof(valid) / sizeof(valid[0]));
 
     requests = clargs_test_allocator_requests();
-    for (index = 0; index < sizeof(invalid) / sizeof(invalid[0]); ++index) {
+    for (index = 0; index < sizeof(invalid) / sizeof(invalid[0]); ++index)
+    {
         clargs_command_t *sub = root;
 
         NAOS_CHECK_INT_EQ(clargs_command_add_subcommand(root, invalid[index], &sub),
@@ -393,12 +398,14 @@ NAOS_TEST(subcommands_nest_deeply)
     const clargs_command_t *up;
     size_t level;
 
-    for (level = 0; level < depth; ++level) {
+    for (level = 0; level < depth; ++level)
+    {
         command = add(command, "sub");
     }
 
     up = command;
-    for (level = 0; level < depth; ++level) {
+    for (level = 0; level < depth; ++level)
+    {
         NAOS_REQUIRE_TRUE(up != NULL);
         NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(up), level == 0 ? 0u : 1u);
         up = clargs_command_parent(up);
@@ -519,7 +526,8 @@ NAOS_TEST(creation_frees_everything_when_an_allocation_fails)
     NAOS_REQUIRE_TRUE(clargs_command_create("other", &other) == CLARGS_ERROR_NONE);
     clargs_command_destroy(other);
 
-    for (n = 1; n <= limit; ++n) {
+    for (n = 1; n <= limit; ++n)
+    {
         clargs_command_t *root = other;
         clargs_error_t error;
 
@@ -528,7 +536,8 @@ NAOS_TEST(creation_frees_everything_when_an_allocation_fails)
 
         error = clargs_command_create("app", &root);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < n) {
+        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < n)
+        {
             /* Every allocation point has been passed. */
             NAOS_CHECK_TRUE(root != NULL);
             clargs_command_destroy(root);
@@ -564,7 +573,8 @@ static clargs_command_t *build_root_with(size_t existing)
 
     NAOS_REQUIRE_TRUE(existing <= sizeof(names) / sizeof(names[0]));
     NAOS_REQUIRE_TRUE(clargs_command_create("app", &root) == CLARGS_ERROR_NONE);
-    for (index = 0; index < existing; ++index) {
+    for (index = 0; index < existing; ++index)
+    {
         (void)add(root, names[index]);
     }
     NAOS_REQUIRE_TRUE(clargs_command_set_description(root, "Text.") == CLARGS_ERROR_NONE);
@@ -582,7 +592,8 @@ static size_t fail_each_allocation_of_an_addition(size_t existing)
     bool completed = false;
     size_t n;
 
-    for (n = 1; n <= limit; ++n) {
+    for (n = 1; n <= limit; ++n)
+    {
         clargs_command_t *root;
         clargs_command_t *sub;
         clargs_error_t error;
@@ -599,7 +610,8 @@ static size_t fail_each_allocation_of_an_addition(size_t existing)
         sub = root;
         error = clargs_command_add_subcommand(root, "new", &sub);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < requests + n) {
+        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < requests + n)
+        {
             /* Every allocation point has been passed. */
             NAOS_CHECK_TRUE(sub != NULL);
             NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(root), existing + 1);
@@ -622,7 +634,8 @@ static size_t fail_each_allocation_of_an_addition(size_t existing)
         NAOS_CHECK_TRUE(clargs_command_find_subcommand(root, "new") == NULL);
         NAOS_CHECK_STR_EQ(clargs_command_name(root), "app");
         NAOS_CHECK_STR_EQ(clargs_command_description(root), "Text.");
-        for (index = 0; index < existing; ++index) {
+        for (index = 0; index < existing; ++index)
+        {
             const clargs_command_t *old = clargs_command_subcommand_at(root, index);
 
             NAOS_CHECK_TRUE(clargs_command_find_subcommand(root, clargs_command_name(old)) == old);

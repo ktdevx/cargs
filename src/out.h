@@ -39,7 +39,8 @@
  * The state of the output. The members are read and written by the
  * functions of this header only.
  */
-typedef struct clargs_out {
+typedef struct clargs_out
+{
     clargs_help_write_fn_t write_fn; /* NULL: only the columns are counted */
     void *user_data;                 /* passed on to write_fn as it is */
     size_t column;                   /* the current column, with the blanks not yet written */

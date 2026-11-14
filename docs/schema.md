@@ -41,7 +41,8 @@ The example is one translation unit, and it includes only `<clargs/clargs.h>` an
 #include <stdlib.h>
 
 /* The user data of the value type "size": the largest size it takes. */
-typedef struct size_limit {
+typedef struct size_limit
+{
     unsigned long max;
 } size_limit_t;
 
@@ -61,25 +62,32 @@ static clargs_error_t convert_size(const char *text, void *value, void *context)
     unsigned long bytes = 0;
     unsigned long unit = 1;
 
-    if (*p < '0' || *p > '9') {
+    if (*p < '0' || *p > '9')
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
-    for (; *p >= '0' && *p <= '9'; ++p) {
+    for (; *p >= '0' && *p <= '9'; ++p)
+    {
         unsigned long digit = (unsigned long)(*p - '0');
 
-        if (bytes > (limit->max - digit) / 10) {
+        if (bytes > (limit->max - digit) / 10)
+        {
             return CLARGS_ERROR_INVALID_VALUE;
         }
         bytes = bytes * 10 + digit;
     }
-    if (*p == 'k') {
+    if (*p == 'k')
+    {
         unit = 1024UL;
         ++p;
-    } else if (*p == 'm') {
+    }
+    else if (*p == 'm')
+    {
         unit = 1024UL * 1024UL;
         ++p;
     }
-    if (*p != '\0' || bytes > limit->max / unit) {
+    if (*p != '\0' || bytes > limit->max / unit)
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
 
@@ -102,13 +110,15 @@ static clargs_error_t define_common_options(clargs_command_t *root)
 
     /* A count: -v, -vv, --verbose. */
     if (failed(&error, clargs_command_add_count(root, 'v', "verbose", &option)) ||
-        failed(&error, clargs_option_set_description(option, "Print more; can be repeated."))) {
+        failed(&error, clargs_option_set_description(option, "Print more; can be repeated.")))
+    {
         return error;
     }
 
     /* A flag: -q, --quiet. */
     if (failed(&error, clargs_command_add_flag(root, 'q', "quiet", &option)) ||
-        failed(&error, clargs_option_set_description(option, "Print nothing."))) {
+        failed(&error, clargs_option_set_description(option, "Print nothing.")))
+    {
         return error;
     }
 
@@ -118,7 +128,8 @@ static clargs_error_t define_common_options(clargs_command_t *root)
      */
     if (failed(&error, clargs_command_add_negatable(root, '\0', "color", &option)) ||
         failed(&error, clargs_option_set_description(option, "Color the output.")) ||
-        failed(&error, clargs_option_set_initial(option, true))) {
+        failed(&error, clargs_option_set_initial(option, true)))
+    {
         return error;
     }
 
@@ -135,7 +146,8 @@ static clargs_error_t define_create(clargs_command_t *root, const clargs_type_t 
     clargs_error_t error;
 
     if (failed(&error, clargs_command_add_subcommand(root, "create", &create)) ||
-        failed(&error, clargs_command_set_description(create, "Create an archive."))) {
+        failed(&error, clargs_command_set_description(create, "Create an archive.")))
+    {
         return error;
     }
 
@@ -144,7 +156,8 @@ static clargs_error_t define_create(clargs_command_t *root, const clargs_type_t 
                                                 &option)) ||
         failed(&error, clargs_option_set_description(option, "The archive to write.")) ||
         failed(&error, clargs_option_set_value_name(option, "FILE")) ||
-        failed(&error, clargs_option_set_required(option, true))) {
+        failed(&error, clargs_option_set_required(option, true)))
+    {
         return error;
     }
 
@@ -156,7 +169,8 @@ static clargs_error_t define_create(clargs_command_t *root, const clargs_type_t 
                                                 &option)) ||
         failed(&error, clargs_option_set_description(option, "The compression level.")) ||
         failed(&error, clargs_option_set_value_name(option, "LEVEL")) ||
-        failed(&error, clargs_option_set_default(option, "6"))) {
+        failed(&error, clargs_option_set_default(option, "6")))
+    {
         return error;
     }
 
@@ -165,14 +179,16 @@ static clargs_error_t define_create(clargs_command_t *root, const clargs_type_t 
                                                 &option)) ||
         failed(&error, clargs_option_set_description(option, "Stop below this ratio.")) ||
         failed(&error, clargs_option_set_value_name(option, "RATIO")) ||
-        failed(&error, clargs_option_set_default(option, "0.5"))) {
+        failed(&error, clargs_option_set_default(option, "0.5")))
+    {
         return error;
     }
 
     /* A choice. */
     if (failed(&error, clargs_command_add_value(create, '\0', "format", format, &option)) ||
         failed(&error, clargs_option_set_description(option, "The format of the archive.")) ||
-        failed(&error, clargs_option_set_default(option, "tar"))) {
+        failed(&error, clargs_option_set_default(option, "tar")))
+    {
         return error;
     }
 
@@ -180,14 +196,16 @@ static clargs_error_t define_create(clargs_command_t *root, const clargs_type_t 
     if (failed(&error, clargs_command_add_value(create, '\0', "block-size", size, &option)) ||
         failed(&error, clargs_option_set_description(option, "The size of a block.")) ||
         failed(&error, clargs_option_set_value_name(option, "SIZE")) ||
-        failed(&error, clargs_option_set_default(option, "64k"))) {
+        failed(&error, clargs_option_set_default(option, "64k")))
+    {
         return error;
     }
 
     /* One or more files. */
     if (failed(&error, clargs_command_add_positional(create, "file", clargs_type_string(),
                                                      CLARGS_ARITY_ONE_OR_MORE, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The files to pack."))) {
+        failed(&error, clargs_positional_set_description(positional, "The files to pack.")))
+    {
         return error;
     }
 
@@ -202,13 +220,15 @@ static clargs_error_t define_list(clargs_command_t *root)
     clargs_error_t error;
 
     if (failed(&error, clargs_command_add_subcommand(root, "list", &list)) ||
-        failed(&error, clargs_command_set_description(list, "List the files of an archive."))) {
+        failed(&error, clargs_command_set_description(list, "List the files of an archive.")))
+    {
         return error;
     }
 
     if (failed(&error, clargs_command_add_positional(list, "archive", clargs_type_string(),
                                                      CLARGS_ARITY_REQUIRED, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The archive to read."))) {
+        failed(&error, clargs_positional_set_description(positional, "The archive to read.")))
+    {
         return error;
     }
 
@@ -216,7 +236,8 @@ static clargs_error_t define_list(clargs_command_t *root)
     if (failed(&error, clargs_command_add_positional(list, "pattern", clargs_type_string(),
                                                      CLARGS_ARITY_OPTIONAL, &positional)) ||
         failed(&error, clargs_positional_set_description(positional, "The files to list.")) ||
-        failed(&error, clargs_positional_set_default(positional, "*"))) {
+        failed(&error, clargs_positional_set_default(positional, "*")))
+    {
         return error;
     }
 
@@ -229,22 +250,30 @@ static void report_fault(clargs_error_t error, const clargs_command_t *command,
 {
     fprintf(stderr, "pack: the schema is not valid: %s\n", clargs_error_message(error));
 
-    if (command != NULL) {
+    if (command != NULL)
+    {
         fprintf(stderr, "  in the command \"%s\"\n", clargs_command_name(command));
     }
-    if (option != NULL) {
-        if (clargs_option_long_name(option) != NULL) {
+    if (option != NULL)
+    {
+        if (clargs_option_long_name(option) != NULL)
+        {
             fprintf(stderr, "  at the option --%s\n", clargs_option_long_name(option));
-        } else {
+        }
+        else
+        {
             fprintf(stderr, "  at the option -%c\n", clargs_option_short_name(option));
         }
-        if (clargs_option_default(option) != NULL) {
+        if (clargs_option_default(option) != NULL)
+        {
             fprintf(stderr, "  whose default value is \"%s\"\n", clargs_option_default(option));
         }
     }
-    if (positional != NULL) {
+    if (positional != NULL)
+    {
         fprintf(stderr, "  at the positional \"%s\"\n", clargs_positional_name(positional));
-        if (clargs_positional_default(positional) != NULL) {
+        if (clargs_positional_default(positional) != NULL)
+        {
             fprintf(stderr, "  whose default value is \"%s\"\n",
                     clargs_positional_default(positional));
         }
@@ -273,7 +302,8 @@ int main(void)
         failed(&error, clargs_command_set_description(root, "Pack files into an archive.")) ||
         failed(&error, define_common_options(root)) ||
         failed(&error, define_create(root, format, size)) ||
-        failed(&error, define_list(root))) {
+        failed(&error, define_list(root)))
+    {
         /*
          * An addition or a set failed. The schema is as it was before the
          * call that failed, and it can still be destroyed.
@@ -281,9 +311,12 @@ int main(void)
         fprintf(stderr, "pack: cannot define the command line: %s\n",
                 clargs_error_message(error));
     } else if (failed(&error, clargs_command_validate(root, &faulty_command, &faulty_option,
-                                                      &faulty_positional))) {
+                                                      &faulty_positional)))
+    {
         report_fault(error, faulty_command, faulty_option, faulty_positional);
-    } else if (clargs_command_is_validated(root)) {
+    }
+    else if (clargs_command_is_validated(root))
+    {
         printf("the schema of %s is valid\n", clargs_command_name(root));
         status = EXIT_SUCCESS;
     }

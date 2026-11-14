@@ -68,7 +68,8 @@ static void check_clean(void)
  * string. Two pictures are equal exactly when nothing that can be read has
  * changed.
  */
-typedef struct picture {
+typedef struct picture
+{
     char text[16384];
     size_t length;
     bool overflow;
@@ -78,7 +79,8 @@ static void put(picture_t *picture, const char *text)
 {
     const size_t length = strlen(text);
 
-    if (length >= sizeof(picture->text) - picture->length) {
+    if (length >= sizeof(picture->text) - picture->length)
+    {
         picture->overflow = true;
         return;
     }
@@ -92,7 +94,8 @@ static void put_count(picture_t *picture, const char *label, size_t count)
     size_t at = sizeof(digits) - 1;
 
     digits[at] = '\0';
-    do {
+    do
+    {
         --at;
         digits[at] = (char)('0' + (int)(count % 10));
         count /= 10;
@@ -109,9 +112,12 @@ static void put_count(picture_t *picture, const char *label, size_t count)
 static void put_text(picture_t *picture, const char *label, const char *text)
 {
     put(picture, label);
-    if (text == NULL) {
+    if (text == NULL)
+    {
         put(picture, "(unset)");
-    } else {
+    }
+    else
+    {
         put(picture, "'");
         put(picture, text);
         put(picture, "'");
@@ -123,7 +129,8 @@ static void put_type(picture_t *picture, const char *label, const clargs_type_t 
     size_t index;
 
     put(picture, label);
-    if (type == NULL) {
+    if (type == NULL)
+    {
         put(picture, "(none)");
         return;
     }
@@ -131,7 +138,8 @@ static void put_type(picture_t *picture, const char *label, const clargs_type_t 
     put_count(picture, " kind=", (size_t)clargs_type_kind(type));
     put_count(picture, " size=", clargs_type_value_size(type));
     put_count(picture, " choices=", clargs_type_choice_count(type));
-    for (index = 0; index < clargs_type_choice_count(type); ++index) {
+    for (index = 0; index < clargs_type_choice_count(type); ++index)
+    {
         put_text(picture, " ", clargs_type_choice_at(type, index));
     }
 }
@@ -180,19 +188,22 @@ static void put_command(picture_t *picture, const clargs_command_t *command)
     put_count(picture, " subcommands=", clargs_command_subcommand_count(command));
     put(picture, "\n");
 
-    for (index = 0; index < clargs_command_option_count(command); ++index) {
+    for (index = 0; index < clargs_command_option_count(command); ++index)
+    {
         const clargs_option_t *option = clargs_command_option_at(command, index);
 
         NAOS_CHECK_TRUE(clargs_option_command(option) == command);
         put_option(picture, option);
     }
-    for (index = 0; index < clargs_command_positional_count(command); ++index) {
+    for (index = 0; index < clargs_command_positional_count(command); ++index)
+    {
         const clargs_positional_t *positional = clargs_command_positional_at(command, index);
 
         NAOS_CHECK_TRUE(clargs_positional_command(positional) == command);
         put_positional(picture, positional);
     }
-    for (index = 0; index < clargs_command_subcommand_count(command); ++index) {
+    for (index = 0; index < clargs_command_subcommand_count(command); ++index)
+    {
         put_command(picture, clargs_command_subcommand_at(command, index));
     }
 }
@@ -203,7 +214,8 @@ static void put_command(picture_t *picture, const clargs_command_t *command)
  * The state of one run: which request of the operation fails, what exists,
  * and what the calls are given as the previous content of their outputs.
  */
-typedef struct sweep {
+typedef struct sweep
+{
     /* The request of the operation that fails, from 1; 0 for none. */
     size_t nth;
     /* The requests that the calls of the operation have made so far. */
@@ -241,7 +253,8 @@ typedef struct sweep {
 } sweep_t;
 
 /* The handles of the tree that the operations build and work on. */
-typedef struct tree {
+typedef struct tree
+{
     clargs_command_t *build;
     clargs_command_t *run;
     clargs_option_t *verbose;
@@ -264,9 +277,12 @@ static void draw(const sweep_t *sweep, picture_t *picture)
     put_type(picture, "choice type: ", sweep->choice);
     put_type(picture, "\ncustom type: ", sweep->custom);
     put(picture, "\n");
-    if (sweep->root == NULL) {
+    if (sweep->root == NULL)
+    {
         put(picture, "no tree\n");
-    } else {
+    }
+    else
+    {
         put_count(picture, "validated=", clargs_command_is_validated(sweep->root) ? 1u : 0u);
         put(picture, "\n");
         put_command(picture, sweep->root);
@@ -284,15 +300,19 @@ static clargs_error_t port_convert(const char *text, void *value, void *context)
 
     (void)context;
 
-    if (text[0] == '\0') {
+    if (text[0] == '\0')
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
-    for (index = 0; text[index] != '\0'; ++index) {
-        if (text[index] < '0' || text[index] > '9') {
+    for (index = 0; text[index] != '\0'; ++index)
+    {
+        if (text[index] < '0' || text[index] > '9')
+        {
             return CLARGS_ERROR_INVALID_VALUE;
         }
         port = port * 10 + (text[index] - '0');
-        if (port > 65535) {
+        if (port > 65535)
+        {
             return CLARGS_ERROR_INVALID_VALUE;
         }
     }
@@ -361,7 +381,8 @@ static void arm_sweep(sweep_t *sweep, size_t nth, bool validates)
  */
 static void begin_call(sweep_t *sweep)
 {
-    if (sweep->validates && sweep->root != NULL) {
+    if (sweep->validates && sweep->root != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_command_validate(sweep->root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
         NAOS_REQUIRE_TRUE(clargs_command_is_validated(sweep->root));
     }
@@ -369,7 +390,8 @@ static void begin_call(sweep_t *sweep)
     draw(sweep, &sweep->before);
     sweep->live_before = clargs_test_allocator_live();
     sweep->requests_before = clargs_test_allocator_requests();
-    if (sweep->nth > sweep->used) {
+    if (sweep->nth > sweep->used)
+    {
         clargs_test_allocator_fail_at(sweep->requests_before + (sweep->nth - sweep->used));
     }
 }
@@ -386,7 +408,8 @@ static bool end_call(sweep_t *sweep, clargs_error_t error, bool outputs_are_null
     sweep->used += clargs_test_allocator_requests() - sweep->requests_before;
     clargs_test_allocator_fail_at(0);
 
-    if (error == CLARGS_ERROR_NONE) {
+    if (error == CLARGS_ERROR_NONE)
+    {
         return true;
     }
     sweep->failed = true;
@@ -406,7 +429,8 @@ static bool end_call(sweep_t *sweep, clargs_error_t error, bool outputs_are_null
     /* The value types and the tree are as they were before the call. */
     draw(sweep, &after);
     NAOS_CHECK_STR_EQ(after.text, sweep->before.text);
-    if (sweep->validates && sweep->root != NULL) {
+    if (sweep->validates && sweep->root != NULL)
+    {
         NAOS_CHECK_TRUE(clargs_command_is_validated(sweep->root));
     }
     return false;
@@ -427,7 +451,8 @@ static bool create_choice_type(sweep_t *sweep)
 
     begin_call(sweep);
     error = clargs_type_create_choice(choices, sizeof(choices) / sizeof(choices[0]), &type);
-    if (!end_call(sweep, error, type == NULL)) {
+    if (!end_call(sweep, error, type == NULL))
+    {
         return false;
     }
     NAOS_REQUIRE_TRUE(type != NULL && type != sweep->other_type);
@@ -442,7 +467,8 @@ static bool create_custom_type(sweep_t *sweep)
 
     begin_call(sweep);
     error = clargs_type_create("port", sizeof(int), port_convert, NULL, NULL, &type);
-    if (!end_call(sweep, error, type == NULL)) {
+    if (!end_call(sweep, error, type == NULL))
+    {
         return false;
     }
     NAOS_REQUIRE_TRUE(type != NULL && type != sweep->other_type);
@@ -457,7 +483,8 @@ static bool create_root(sweep_t *sweep)
 
     begin_call(sweep);
     error = clargs_command_create("app", &root);
-    if (!end_call(sweep, error, root == NULL)) {
+    if (!end_call(sweep, error, root == NULL))
+    {
         return false;
     }
     NAOS_REQUIRE_TRUE(root != NULL && root != sweep->other);
@@ -473,11 +500,13 @@ static bool add_subcommand(sweep_t *sweep, clargs_command_t *command, const char
 
     begin_call(sweep);
     error = clargs_command_add_subcommand(command, name, &sub);
-    if (!end_call(sweep, error, sub == NULL)) {
+    if (!end_call(sweep, error, sub == NULL))
+    {
         return false;
     }
     NAOS_REQUIRE_TRUE(sub != NULL && sub != sweep->other);
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = sub;
     }
     return true;
@@ -495,7 +524,8 @@ static bool add_option(sweep_t *sweep, clargs_command_t *command, clargs_option_
     clargs_error_t error = CLARGS_ERROR_NONE;
 
     begin_call(sweep);
-    switch (kind) {
+    switch (kind)
+    {
     case CLARGS_OPTION_FLAG:
         error = clargs_command_add_flag(command, short_name, long_name, &option);
         break;
@@ -512,11 +542,13 @@ static bool add_option(sweep_t *sweep, clargs_command_t *command, clargs_option_
         NAOS_FAIL("a test asked for an unknown kind of option");
         break;
     }
-    if (!end_call(sweep, error, option == NULL)) {
+    if (!end_call(sweep, error, option == NULL))
+    {
         return false;
     }
     NAOS_REQUIRE_TRUE(option != NULL && option != sweep->other_option);
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = option;
     }
     return true;
@@ -531,18 +563,21 @@ static bool add_positional(sweep_t *sweep, clargs_command_t *command, const char
 
     begin_call(sweep);
     error = clargs_command_add_positional(command, name, type, arity, &positional);
-    if (!end_call(sweep, error, positional == NULL)) {
+    if (!end_call(sweep, error, positional == NULL))
+    {
         return false;
     }
     NAOS_REQUIRE_TRUE(positional != NULL && positional != sweep->other_positional);
-    if (out != NULL) {
+    if (out != NULL)
+    {
         *out = positional;
     }
     return true;
 }
 
 /* The attributes that are strings. A set has no output. */
-typedef enum text_attribute {
+typedef enum text_attribute
+{
     COMMAND_DESCRIPTION,
     OPTION_DESCRIPTION,
     OPTION_VALUE_NAME,
@@ -552,7 +587,8 @@ typedef enum text_attribute {
 } text_attribute_t;
 
 /* The attributes of an option that are not strings. */
-typedef enum bool_attribute {
+typedef enum bool_attribute
+{
     OPTION_REQUIRED,
     OPTION_INITIAL
 } bool_attribute_t;
@@ -563,7 +599,8 @@ static bool set_command_text(sweep_t *sweep, clargs_command_t *command, const ch
 
     begin_call(sweep);
     error = clargs_command_set_description(command, text);
-    if (!end_call(sweep, error, true)) {
+    if (!end_call(sweep, error, true))
+    {
         return false;
     }
     NAOS_CHECK_STR_EQ(clargs_command_description(command), text);
@@ -577,7 +614,8 @@ static bool set_option_text(sweep_t *sweep, text_attribute_t attribute, clargs_o
     const char *read = NULL;
 
     begin_call(sweep);
-    switch (attribute) {
+    switch (attribute)
+    {
     case OPTION_DESCRIPTION:
         error = clargs_option_set_description(option, text);
         read = clargs_option_description(option);
@@ -597,7 +635,8 @@ static bool set_option_text(sweep_t *sweep, text_attribute_t attribute, clargs_o
         NAOS_FAIL("a test asked for an attribute that an option does not have");
         break;
     }
-    if (!end_call(sweep, error, true)) {
+    if (!end_call(sweep, error, true))
+    {
         return false;
     }
     NAOS_REQUIRE_TRUE(read != NULL);
@@ -612,7 +651,8 @@ static bool set_positional_text(sweep_t *sweep, text_attribute_t attribute,
     const char *read = NULL;
 
     begin_call(sweep);
-    switch (attribute) {
+    switch (attribute)
+    {
     case POSITIONAL_DESCRIPTION:
         error = clargs_positional_set_description(positional, text);
         read = clargs_positional_description(positional);
@@ -629,7 +669,8 @@ static bool set_positional_text(sweep_t *sweep, text_attribute_t attribute,
         NAOS_FAIL("a test asked for an attribute that a positional does not have");
         break;
     }
-    if (!end_call(sweep, error, true)) {
+    if (!end_call(sweep, error, true))
+    {
         return false;
     }
     NAOS_REQUIRE_TRUE(read != NULL);
@@ -644,7 +685,8 @@ static bool set_option_bool(sweep_t *sweep, bool_attribute_t attribute, clargs_o
     bool read = !value;
 
     begin_call(sweep);
-    switch (attribute) {
+    switch (attribute)
+    {
     case OPTION_REQUIRED:
         error = clargs_option_set_required(option, value);
         read = clargs_option_is_required(option);
@@ -657,7 +699,8 @@ static bool set_option_bool(sweep_t *sweep, bool_attribute_t attribute, clargs_o
         NAOS_FAIL("a test asked for an unknown attribute");
         break;
     }
-    if (!end_call(sweep, error, true)) {
+    if (!end_call(sweep, error, true))
+    {
         return false;
     }
     NAOS_CHECK_TRUE(read == value);
@@ -674,7 +717,8 @@ static bool validate_tree(sweep_t *sweep)
 
     begin_call(sweep);
     error = clargs_command_validate(sweep->root, &command, &option, &positional);
-    if (!end_call(sweep, error, command == NULL && option == NULL && positional == NULL)) {
+    if (!end_call(sweep, error, command == NULL && option == NULL && positional == NULL))
+    {
         return false;
     }
     NAOS_CHECK_TRUE(command == NULL && option == NULL && positional == NULL);
@@ -718,7 +762,8 @@ static bool build_tree(sweep_t *sweep, tree_t *tree)
 {
     clargs_command_t *root;
 
-    if (!create_root(sweep)) {
+    if (!create_root(sweep))
+    {
         return false;
     }
     root = sweep->root;
@@ -807,7 +852,8 @@ static bool validate_twice(sweep_t *sweep)
 
 /* ---- The tests ----------------------------------------------------------- */
 
-typedef enum operation {
+typedef enum operation
+{
     OPERATION_BUILD_TREE,
     OPERATION_SET_ATTRIBUTES,
     OPERATION_CREATE_TYPES,
@@ -826,12 +872,14 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
     memset(&tree, 0, sizeof(tree));
     *least = 1;
 
-    switch (operation) {
+    switch (operation)
+    {
     case OPERATION_BUILD_TREE:
         NAOS_REQUIRE_TRUE(create_types(sweep));
         arm_sweep(sweep, nth, true);
         *least = BUILD_TREE_CALLS;
-        if (!build_tree(sweep, &tree)) {
+        if (!build_tree(sweep, &tree))
+        {
             return false;
         }
         NAOS_CHECK_UINT_EQ(clargs_command_option_count(sweep->root), 7);
@@ -847,7 +895,8 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
         NAOS_REQUIRE_TRUE(build_tree(sweep, &tree));
         arm_sweep(sweep, nth, true);
         *least = SET_ATTRIBUTES_CALLS;
-        if (!set_attributes(sweep, &tree)) {
+        if (!set_attributes(sweep, &tree))
+        {
             return false;
         }
         NAOS_CHECK_FALSE(clargs_command_is_validated(sweep->root));
@@ -856,7 +905,8 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
     case OPERATION_CREATE_TYPES:
         arm_sweep(sweep, nth, false);
         *least = CREATE_TYPES_CALLS;
-        if (!create_types(sweep)) {
+        if (!create_types(sweep))
+        {
             return false;
         }
         NAOS_CHECK_TRUE(clargs_type_kind(sweep->choice) == CLARGS_TYPE_CHOICE);
@@ -872,7 +922,8 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
         NAOS_REQUIRE_TRUE(set_attributes(sweep, &tree));
         arm_sweep(sweep, nth, false);
         *least = VALIDATE_TWICE_REQUESTS;
-        if (!validate_twice(sweep)) {
+        if (!validate_twice(sweep))
+        {
             return false;
         }
         NAOS_CHECK_TRUE(clargs_command_is_validated(sweep->root));
@@ -896,7 +947,8 @@ static void fail_every_allocation_of(operation_t operation)
 
     clargs_test_allocator_install();
 
-    for (n = 1; n <= REQUEST_LIMIT; ++n) {
+    for (n = 1; n <= REQUEST_LIMIT; ++n)
+    {
         size_t least = 0;
         bool succeeded;
 
@@ -905,7 +957,8 @@ static void fail_every_allocation_of(operation_t operation)
         /* The operation. */
         succeeded = run_operation(&sweep, operation, n, &least);
 
-        if (succeeded && sweep.used < n) {
+        if (succeeded && sweep.used < n)
+        {
             /*
              * The operation ended before the request to fail was reached:
              * every allocation point has failed once. The operation is not

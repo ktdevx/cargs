@@ -157,7 +157,8 @@ NAOS_TEST(copies_a_long_string)
     char *copy;
     size_t i;
 
-    for (i = 0; i < sizeof original - 1; ++i) {
+    for (i = 0; i < sizeof original - 1; ++i)
+    {
         original[i] = (char)('a' + i % 26);
     }
     original[sizeof original - 1] = '\0';
@@ -220,7 +221,8 @@ NAOS_TEST(copies_are_separate_from_each_other)
     second = clargs_strdup(original);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 2);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 2);
-    if (second == NULL) {
+    if (second == NULL)
+    {
         clargs_free(first);
     }
     NAOS_REQUIRE_TRUE(second != NULL);
@@ -279,7 +281,8 @@ NAOS_TEST(requests_the_bytes_of_the_string)
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_malloc_size, 3);
     NAOS_CHECK_UINT_EQ(wrap_other_calls, 0);
-    if (copy != NULL) {
+    if (copy != NULL)
+    {
         NAOS_CHECK_STR_EQ(copy, "ab");
     }
     clargs_free(copy);

@@ -73,27 +73,38 @@ int main(int argc, char **argv)
         failed(&error, clargs_command_add_positional(root, "name", clargs_type_string(),
                                                      CLARGS_ARITY_REQUIRED, &name)) ||
         failed(&error, clargs_positional_set_description(name, "Whom to greet.")) ||
-        failed(&error, clargs_command_validate(root, NULL, NULL, NULL))) {
+        failed(&error, clargs_command_validate(root, NULL, NULL, NULL)))
+    {
         fprintf(stderr, "greet: cannot define the command line: %s\n", clargs_error_message(error));
-    } else {
+    }
+    else
+    {
         /* argc and argv go in as main() received them. */
         error = clargs_parse(root, argc, argv, &result);
 
-        if (result == NULL) {
+        if (result == NULL)
+        {
             /* CLARGS_ERROR_OUT_OF_MEMORY: there is no result. */
             fprintf(stderr, "greet: %s\n", clargs_error_message(error));
-        } else if (clargs_result_flag(result, help)) {
+        }
+        else if (clargs_result_flag(result, help))
+        {
             /*
              * --help first: "greet --help" leaves out the name, and that
              * must not hide the help. The text is made from the schema.
              */
-            if (clargs_help_write(root, NULL, write_to_stream, stdout) == CLARGS_ERROR_NONE) {
+            if (clargs_help_write(root, NULL, write_to_stream, stdout) == CLARGS_ERROR_NONE)
+            {
                 status = EXIT_SUCCESS;
             }
-        } else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE) {
+        }
+        else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE)
+        {
             /* The message is one line with no prefix and no line break. */
             fprintf(stderr, "greet: %s\n", clargs_result_error_message(result));
-        } else {
+        }
+        else
+        {
             const char *text = NULL;
             int64_t times = 0;
             int64_t i;
@@ -103,8 +114,10 @@ int main(int argc, char **argv)
              * a parse that succeeded, both have a value.
              */
             if (clargs_result_positional_string(result, name, 0, &text) &&
-                clargs_result_option_int(result, count, &times)) {
-                for (i = 0; i < times; ++i) {
+                clargs_result_option_int(result, count, &times))
+            {
+                for (i = 0; i < times; ++i)
+                {
                     printf("hello, %s%s\n", text, clargs_result_flag(result, loud) ? "!" : "");
                 }
                 printf("greeted %" PRId64 " time(s)\n", times);

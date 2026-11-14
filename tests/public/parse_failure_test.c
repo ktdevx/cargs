@@ -83,7 +83,8 @@ static void check_clean(void)
  * The value of the user-defined value type "word": the text that the
  * conversion was given, not a copy of it, and the length of the text.
  */
-typedef struct word {
+typedef struct word
+{
     const char *text;
     size_t length;
 } word_t;
@@ -93,7 +94,8 @@ typedef struct word {
  * succeeded and the cleanups, and tells whether the text "bad" is
  * rejected.
  */
-typedef struct word_log {
+typedef struct word_log
+{
     size_t converted;
     size_t released;
     bool reject;
@@ -104,7 +106,8 @@ static clargs_error_t word_convert(const char *text, void *value, void *context)
     word_log_t *log = context;
     word_t word;
 
-    if (log->reject && strcmp(text, "bad") == 0) {
+    if (log->reject && strcmp(text, "bad") == 0)
+    {
         return CLARGS_ERROR_INVALID_VALUE;
     }
     word.text = text;
@@ -140,7 +143,8 @@ static void word_release(void *value, void *context)
  * NAME, URL and DIR are of the value type "word". The conversion takes
  * "bad" until log.reject is set, which is done after the validation.
  */
-typedef struct fixture {
+typedef struct fixture
+{
     word_log_t log;
     clargs_type_t *word;
     clargs_type_t *color_type;
@@ -218,7 +222,8 @@ static clargs_option_t *add_value(clargs_command_t *command, char short_name, co
     NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_option_set_default(option, default_value) == CLARGS_ERROR_NONE);
     }
     return option;
@@ -237,7 +242,8 @@ static clargs_positional_t *add_positional(clargs_command_t *command, const char
     NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, arity, &positional) ==
                       CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
-    if (default_value != NULL) {
+    if (default_value != NULL)
+    {
         NAOS_REQUIRE_TRUE(clargs_positional_set_default(positional, default_value) == CLARGS_ERROR_NONE);
     }
     return positional;
@@ -403,7 +409,8 @@ typedef void (*check_fn_t)(const fixture_t *fixture, const clargs_result_t *resu
  * One parse: a command line for one of the two entries, what the parse
  * returns when no request fails, and the check of its result.
  */
-typedef struct parse_case {
+typedef struct parse_case
+{
     int argc;
     char *const *argv;          /* NULL: the parse goes through the wide entry */
     wchar_t *const *wide_argv;  /* used when argv is NULL */
@@ -416,7 +423,8 @@ typedef struct parse_case {
 static clargs_error_t run_parse(const fixture_t *fixture, const parse_case_t *parse_case,
                                 clargs_result_t **out)
 {
-    if (parse_case->argv != NULL) {
+    if (parse_case->argv != NULL)
+    {
         return clargs_parse(fixture->root, parse_case->argc, parse_case->argv, out);
     }
     return clargs_parse_wide(fixture->root, parse_case->argc, parse_case->wide_argv, out);
@@ -469,7 +477,8 @@ static void fail_every_request(const parse_case_t *parse_case)
 
     clargs_test_allocator_install();
 
-    for (n = 1; n <= REQUEST_LIMIT; ++n) {
+    for (n = 1; n <= REQUEST_LIMIT; ++n)
+    {
         fixture_t fixture;
         clargs_result_t *other = NULL;
         clargs_result_t *result;
@@ -502,7 +511,8 @@ static void fail_every_request(const parse_case_t *parse_case)
         made = clargs_test_allocator_requests() - before;
         clargs_test_allocator_fail_at(0);
 
-        if (error != CLARGS_ERROR_OUT_OF_MEMORY && made < n) {
+        if (error != CLARGS_ERROR_OUT_OF_MEMORY && made < n)
+        {
             size_t expected = 0;
 
             /*
