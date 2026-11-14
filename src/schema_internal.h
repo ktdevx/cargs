@@ -105,14 +105,6 @@ struct argx_positional
 };
 
 /*
- * Returns the root of the tree that command belongs to; command itself when
- * it is a root.
- *
- * Precondition: command is not NULL. It is checked with assert.
- */
-argx_command_t *argx_schema_root(argx_command_t *command);
-
-/*
  * Marks the tree that command belongs to as not validated. It is called
  * last in a change that succeeded, and never in one that failed.
  *

@@ -399,6 +399,7 @@ unsigned long argx_version_pack(unsigned int major, unsigned int minor, unsigned
 **Implementation Notes**
 
 - `argx_version_pack()` は、内部関数のテストと export の確認が対象を持てるように置く最小の内部関数である。`argx_version()` はこれを通して値を作る。
+  - 後の変更で削除した: ほかのスペックで本物の内部関数（`argx_vec_push` など）と、その内部テストがそろったため、足場の役目を終えた。`argx_version()` は `ARGX_VERSION_NUMBER` を返し、`ARGX_MAKE_VERSION` の値の並びと境界は `tests/public/version_test.c` で確かめる。
 - このスペックでは、ほかの公開関数を足さない（5.5）。
 
 ### ビルド

@@ -33,6 +33,30 @@ NAOS_TEST(number_has_no_other_bits)
     NAOS_CHECK_UINT_EQ(argx_version() >> 24, 0);
 }
 
+/* ARGX_MAKE_VERSION puts each part in its own byte: 0x00MMmmpp. */
+NAOS_TEST(make_version_puts_each_part_in_its_byte)
+{
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(1, 2, 3), 0x010203UL);
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(1, 0, 0), 0x010000UL);
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(0, 1, 0), 0x000100UL);
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(0, 0, 1), 0x000001UL);
+}
+
+/* The bounds: every part 0, every part 255. */
+NAOS_TEST(make_version_packs_the_bounds)
+{
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(0, 0, 0), 0UL);
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(255, 255, 255), 0xFFFFFFUL);
+}
+
+/* One part at 255 does not spill into the bytes of the other parts. */
+NAOS_TEST(make_version_keeps_the_bounds_apart)
+{
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(255, 0, 0), 0xFF0000UL);
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(0, 255, 0), 0x00FF00UL);
+    NAOS_CHECK_UINT_EQ(ARGX_MAKE_VERSION(0, 0, 255), 0x0000FFUL);
+}
+
 /*
  * ARGX_VERSION_PRERELEASE is one string literal: it initializes a character
  * array and joins other literals at compile time. The build checks its
@@ -55,6 +79,9 @@ NAOS_SUITE(version,
     NAOS_ADD_TEST(minor_matches_the_headers),
     NAOS_ADD_TEST(patch_matches_the_headers),
     NAOS_ADD_TEST(number_has_no_other_bits),
+    NAOS_ADD_TEST(make_version_puts_each_part_in_its_byte),
+    NAOS_ADD_TEST(make_version_packs_the_bounds),
+    NAOS_ADD_TEST(make_version_keeps_the_bounds_apart),
     NAOS_ADD_TEST(prerelease_is_a_string_literal)
 )
 

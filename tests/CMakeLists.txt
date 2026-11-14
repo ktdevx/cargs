@@ -38,7 +38,6 @@ argx_add_test(utf8 SOURCES internal/utf8_test.c INTERNAL)
 argx_add_test(validate SOURCES public/validate_test.c support/test_allocator.c)
 argx_add_test(vec SOURCES internal/vec_test.c support/test_allocator.c INTERNAL)
 argx_add_test(version SOURCES public/version_test.c)
-argx_add_test(version_internal SOURCES internal/version_internal_test.c INTERNAL)
 argx_add_test(wrap SOURCES internal/wrap_test.c INTERNAL)
 
 # The tests of the release scripts and modules: tests/release/<name>_test.cmake,

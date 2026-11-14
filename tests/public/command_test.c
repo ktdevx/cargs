@@ -2,9 +2,9 @@
  * Tests of the public command API: the command part of <argx/schema.h>.
  *
  * A tree of commands is created, read and destroyed the way a consumer does
- * it. Options and positionals cannot be added here yet; their counts and
- * lookups are tested on commands that have none. The tests with options are
- * in option_test.c, those with positionals in positional_test.c.
+ * it. The commands here have no options and no positionals: their counts
+ * and lookups are tested on commands that have none. The tests with options
+ * are in option_test.c, those with positionals in positional_test.c.
  *
  * Every test that creates a command uses the test allocator
  * ("../support/test_allocator.h"). Its state and the allocator that is set

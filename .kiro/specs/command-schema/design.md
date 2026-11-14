@@ -591,6 +591,8 @@ void argx_schema_touch(argx_command_t *command);
 argx_error_t argx_schema_replace_string(char **slot, const char *text);
 ```
 
+- 後の変更で直した: `argx_schema_root` は `command.c` の中でしか使わないので、`static` の `root_of` にして内部ヘッダから外した。
+
 ##### State Management
 
 - State model: ルートが `validated`（真偽値）を 1 つ持つ。生成の直後は偽である。

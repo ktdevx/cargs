@@ -1,11 +1,11 @@
 /*
  * Tests of the public allocator API: <argx/alloc.h>.
  *
- * No public function allocates memory yet, so these tests cannot observe
- * which allocator the library uses. They check that the type takes the
- * standard functions as they are and that the allocator can be set and
- * reset. The tests of the internal memory functions check that the
- * allocator that was set is the one that is called.
+ * These tests check that the type takes the standard functions as they are
+ * and that the allocator can be set and reset. That the allocator that was
+ * set is the one that is called is checked elsewhere: by the tests of the
+ * internal memory functions, and by every test of the public API that
+ * counts the requests of the test allocator ("../support/test_allocator.h").
  *
  * Every test ends with argx_set_allocator(NULL), so that it leaves the
  * default allocator behind.

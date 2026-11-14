@@ -118,12 +118,12 @@ static argx_command_t *new_command(const char *name, argx_command_t *parent)
     return command;
 }
 
-/* ---- Shared helper functions -------------------------------------------- */
-
-argx_command_t *argx_schema_root(argx_command_t *command)
+/*
+ * Returns the root of the tree that command belongs to; command itself when
+ * it is a root. command is not NULL.
+ */
+static argx_command_t *root_of(argx_command_t *command)
 {
-    assert(command != NULL);
-
     while (command->parent != NULL)
     {
         command = command->parent;
@@ -131,11 +131,13 @@ argx_command_t *argx_schema_root(argx_command_t *command)
     return command;
 }
 
+/* ---- Shared helper functions -------------------------------------------- */
+
 void argx_schema_touch(argx_command_t *command)
 {
     assert(command != NULL);
 
-    argx_schema_root(command)->validated = false;
+    root_of(command)->validated = false;
 }
 
 argx_error_t argx_schema_replace_string(char **slot, const char *text)
