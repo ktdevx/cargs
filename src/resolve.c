@@ -102,11 +102,13 @@ static argx_error_t fail_missing(argx_result_t *result, const argx_command_t *co
         name_positional(&name, positional);
         failure.kind = ARGX_PARSE_ERROR_MISSING_POSITIONAL;
     }
+
     locate(&failure.where, ARGX_SOURCE_NONE, &name);
     failure.value = NULL;
     failure.command = command;
     failure.option = option;
     failure.positional = positional;
+
     return argx_result_fail(result, &failure);
 }
 
@@ -132,6 +134,7 @@ static argx_error_t check_required(argx_result_t *result, const argx_command_t *
             return fail_missing(result, command, option, NULL);
         }
     }
+
     for (index = 0; index < positional_count; index++)
     {
         const argx_positional_t *positional = argx_command_positional_at(command, index);
@@ -143,6 +146,7 @@ static argx_error_t check_required(argx_result_t *result, const argx_command_t *
             return fail_missing(result, command, NULL, positional);
         }
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -171,19 +175,23 @@ static argx_error_t apply_defaults(argx_result_t *result, const argx_command_t *
         {
             continue;
         }
+
         value = argx_option_default(option);
         if (value == NULL)
         {
             continue;
         }
+
         name_option(&name, option);
         locate(&where, ARGX_SOURCE_DEFAULT, &name);
+
         error = argx_result_record_option_value(result, option, value, &where);
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
     }
+
     for (index = 0; index < positional_count; index++)
     {
         const argx_positional_t *positional = argx_command_positional_at(command, index);
@@ -194,19 +202,23 @@ static argx_error_t apply_defaults(argx_result_t *result, const argx_command_t *
         {
             continue;
         }
+
         value = argx_positional_default(positional);
         if (value == NULL)
         {
             continue;
         }
+
         name_positional(&name, positional);
         locate(&where, ARGX_SOURCE_DEFAULT, &name);
+
         error = argx_result_record_positional_value(result, positional, value, &where);
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -227,6 +239,7 @@ argx_error_t argx_resolve(argx_result_t *result)
             return error;
         }
     }
+
     for (index = 0; index < command_count; index++)
     {
         const argx_error_t error = apply_defaults(result, argx_result_command_at(result, index));
@@ -241,8 +254,10 @@ argx_error_t argx_resolve(argx_result_t *result)
             {
                 argx_result_discard_defaults(result);
             }
+
             return error;
         }
     }
+
     return ARGX_ERROR_NONE;
 }

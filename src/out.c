@@ -32,6 +32,7 @@ static void out_write(argx_out_t *out, const char *text, size_t length)
     {
         return;
     }
+
     if (!out->write_fn(out->user_data, text, length))
     {
         out->failed = true;

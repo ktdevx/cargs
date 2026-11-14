@@ -19,9 +19,15 @@
 
 #include <argx/export.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define ARGX_VERSION_MAJOR 0
 #define ARGX_VERSION_MINOR 1
 #define ARGX_VERSION_PATCH 0
+
 /*
  * The version's pre-release identifiers without the leading hyphen, such
  * as "rc.1". An empty string for a release.
@@ -35,11 +41,6 @@
 /* The version of these headers, packed with ARGX_MAKE_VERSION. */
 #define ARGX_VERSION_NUMBER \
     ARGX_MAKE_VERSION(ARGX_VERSION_MAJOR, ARGX_VERSION_MINOR, ARGX_VERSION_PATCH)
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /*
  * Returns the version of the linked library, packed like

@@ -32,6 +32,7 @@ static bool name_is_in_use(const argx_command_t *command, const char *name)
             return true;
         }
     }
+
     return false;
 }
 
@@ -103,10 +104,12 @@ argx_error_t argx_command_add_positional(argx_command_t *command, const char *na
     {
         return ARGX_ERROR_INVALID_NAME;
     }
+
     if (argx_command_subcommand_count(command) != 0)
     {
         return ARGX_ERROR_INVALID_DEFINITION;
     }
+
     if (name_is_in_use(command, name))
     {
         return ARGX_ERROR_NAME_CONFLICT;
@@ -134,6 +137,7 @@ argx_error_t argx_command_add_positional(argx_command_t *command, const char *na
     {
         *out = positional;
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -153,6 +157,7 @@ static argx_error_t set_string(argx_positional_t *positional, char **slot, const
     }
 
     argx_schema_touch(positional->command);
+
     return ARGX_ERROR_NONE;
 }
 

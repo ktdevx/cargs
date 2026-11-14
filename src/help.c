@@ -100,6 +100,7 @@ static void help_write_path(argx_out_t *out, const argx_command_t *command)
         {
             argx_out_spaces(out, 1);
         }
+
         argx_help_item_string(out, argx_command_name(ancestor));
     }
 }
@@ -120,6 +121,7 @@ static bool help_has_optional_option(const argx_command_t *command)
             return true;
         }
     }
+
     return false;
 }
 
@@ -189,6 +191,7 @@ static bool help_count_write(void *user_data, const char *text, size_t length)
 
     (void)text;
     *total = help_add(*total, length);
+
     return true;
 }
 
@@ -220,6 +223,7 @@ static size_t help_usage_item_width(const help_usage_item_t *item)
 
     help_counter_init(&counter, &width);
     help_usage_item_write(&counter, item);
+
     return width;
 }
 
@@ -399,6 +403,7 @@ static size_t help_heading_width(const help_heading_t *heading)
 
     help_counter_init(&counter, &width);
     help_heading_write(&counter, heading);
+
     return width;
 }
 
@@ -411,6 +416,7 @@ static help_heading_t help_subcommand_heading(const argx_command_t *command, siz
     heading.subcommand = argx_command_subcommand_at(command, index);
     heading.positional = NULL;
     heading.option = NULL;
+
     return heading;
 }
 
@@ -423,6 +429,7 @@ static help_heading_t help_positional_heading(const argx_command_t *command, siz
     heading.subcommand = NULL;
     heading.positional = argx_command_positional_at(command, index);
     heading.option = NULL;
+
     return heading;
 }
 
@@ -435,6 +442,7 @@ static help_heading_t help_option_heading(const argx_command_t *command, size_t 
     heading.subcommand = NULL;
     heading.positional = NULL;
     heading.option = argx_command_option_at(command, index);
+
     return heading;
 }
 
@@ -541,6 +549,7 @@ static bool help_is_blank(const char *text, size_t length)
             return false;
         }
     }
+
     return true;
 }
 
@@ -570,6 +579,7 @@ static size_t help_whole_length(const char *text, size_t *newlines)
     {
         return 0;
     }
+
     while ((text[length - 1] == ' ') || (text[length - 1] == '\n'))
     {
         if (text[length - 1] == '\n')
@@ -578,6 +588,7 @@ static size_t help_whole_length(const char *text, size_t *newlines)
         }
         --length;
     }
+
     return length;
 }
 
@@ -599,6 +610,7 @@ static size_t help_first_line_length(const char *text)
 
     end = strchr(text, '\n');
     length = (end != NULL) ? (size_t)(end - text) : strlen(text);
+
     return help_is_blank(text, length) ? 0 : length;
 }
 
@@ -697,12 +709,14 @@ static argx_error_t help_cell_start(help_context_t *context, const char *descrip
     {
         return ARGX_ERROR_NONE;
     }
+
     error = argx_help_item_text_append(&context->text, description, length);
     while ((error == ARGX_ERROR_NONE) && (newlines != 0))
     {
         error = argx_help_item_text_append(&context->text, "\n", 1);
         --newlines;
     }
+
     return error;
 }
 
@@ -775,12 +789,15 @@ static argx_error_t help_write_arguments(help_context_t *context)
         {
             error = argx_help_item_positional_notes(&context->text, heading.positional);
         }
+
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
+
         help_write_cell_item(context, &heading);
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -814,12 +831,15 @@ static argx_error_t help_write_options(help_context_t *context)
         {
             error = argx_help_item_option_notes(&context->text, heading.option);
         }
+
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
+
         help_write_cell_item(context, &heading);
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -858,6 +878,7 @@ argx_error_t argx_help_write(const argx_command_t *command,
     {
         return error;
     }
+
     return help_context_result(&context);
 }
 
@@ -893,7 +914,9 @@ static bool help_buffer_write(void *user_data, const char *text, size_t length)
 
         memcpy(target->buffer + target->length, text, (length < room) ? length : room);
     }
+
     target->length = help_add(target->length, length);
+
     return true;
 }
 
@@ -910,15 +933,17 @@ static argx_error_t help_buffer_finish(help_buffer_t *target, argx_error_t error
     {
         target->length = 0;
     }
+
     if (target->size != 0)
     {
-        target->buffer[(target->length < (target->size - 1)) ? target->length : (target->size - 1)] =
-            '\0';
+        target->buffer[(target->length < (target->size - 1)) ? target->length : (target->size - 1)] = '\0';
     }
+
     if (length != NULL)
     {
         *length = target->length;
     }
+
     return error;
 }
 
@@ -933,6 +958,7 @@ argx_error_t argx_help_format(const argx_command_t *command,
     target.buffer = buffer;
     target.size = size;
     target.length = 0;
+
     return help_buffer_finish(
         &target, argx_help_write(command, options, help_buffer_write, &target), length);
 }
@@ -948,6 +974,7 @@ argx_error_t argx_help_format_usage(const argx_command_t *command,
     target.buffer = buffer;
     target.size = size;
     target.length = 0;
+
     return help_buffer_finish(
         &target, argx_help_write_usage(command, options, help_buffer_write, &target), length);
 }

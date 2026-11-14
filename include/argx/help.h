@@ -50,6 +50,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
  * The write function: a function that the caller provides to receive the
  * text that the library generates.
@@ -98,11 +103,6 @@ typedef bool (*argx_help_write_fn_t)(void *user_data, const char *text, size_t l
  * No setting is greater than 65535: a greater value is clamped to 65535.
  */
 typedef struct argx_help_options argx_help_options_t;
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /*
  * Creates help options and writes them to *out. Every setting has its

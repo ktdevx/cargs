@@ -30,15 +30,18 @@ argx_lex_kind_t argx_lex_classify(const char *arg)
     {
         return ARGX_LEX_PLAIN;
     }
+
     /* "-" alone. */
     if (arg[1] == '\0')
     {
         return ARGX_LEX_PLAIN;
     }
+
     if (arg[1] != '-')
     {
         return ARGX_LEX_SHORT;
     }
+
     return (arg[2] == '\0') ? ARGX_LEX_TERMINATOR : ARGX_LEX_LONG;
 }
 
@@ -50,6 +53,7 @@ bool argx_lex_is_negative_number(const char *arg)
     {
         return false;
     }
+
     /*
      * arg[1] exists: it is a character or the terminating '\0'. arg[2] is
      * read only once arg[1] is known to be '.'.
@@ -58,6 +62,7 @@ bool argx_lex_is_negative_number(const char *arg)
     {
         return true;
     }
+
     return (arg[1] == '.') && is_digit(arg[2]);
 }
 

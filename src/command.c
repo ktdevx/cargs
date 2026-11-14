@@ -74,10 +74,12 @@ static void free_command(argx_command_t *command)
     {
         free_command(subcommand_at(command, index));
     }
+
     for (index = 0; index < command->options.count; ++index)
     {
         free_option(option_at(command, index));
     }
+
     for (index = 0; index < command->positionals.count; ++index)
     {
         free_positional(positional_at(command, index));
@@ -118,6 +120,7 @@ static argx_command_t *new_command(const char *name, argx_command_t *parent)
     argx_vec_init(&command->positionals, sizeof(argx_positional_t *));
     argx_vec_init(&command->subcommands, sizeof(argx_command_t *));
     command->validated = false;
+
     return command;
 }
 
@@ -131,6 +134,7 @@ static argx_command_t *root_of(argx_command_t *command)
     {
         command = command->parent;
     }
+
     return command;
 }
 
@@ -158,6 +162,7 @@ argx_error_t argx_schema_replace_string(char **slot, const char *text)
 
     argx_free(*slot);
     *slot = copy;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -184,6 +189,7 @@ argx_error_t argx_command_create(const char *name, argx_command_t **out)
     }
 
     *out = root;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -220,10 +226,12 @@ argx_error_t argx_command_add_subcommand(argx_command_t *command, const char *na
     {
         return ARGX_ERROR_INVALID_NAME;
     }
+
     if (command->positionals.count != 0)
     {
         return ARGX_ERROR_INVALID_DEFINITION;
     }
+
     if (argx_command_find_subcommand(command, name) != NULL)
     {
         return ARGX_ERROR_NAME_CONFLICT;
@@ -251,6 +259,7 @@ argx_error_t argx_command_add_subcommand(argx_command_t *command, const char *na
     {
         *out = subcommand;
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -268,6 +277,7 @@ argx_error_t argx_command_set_description(argx_command_t *command, const char *t
     }
 
     argx_schema_touch(command);
+
     return ARGX_ERROR_NONE;
 }
 
@@ -365,6 +375,7 @@ const argx_option_t *argx_command_find_short(const argx_command_t *command, char
             return option;
         }
     }
+
     return NULL;
 }
 
@@ -387,9 +398,11 @@ const argx_option_t *argx_command_find_long(const argx_command_t *command, const
             {
                 *negated = !is_long;
             }
+
             return option;
         }
     }
+
     return NULL;
 }
 
@@ -409,5 +422,6 @@ const argx_command_t *argx_command_find_subcommand(const argx_command_t *command
             return subcommand;
         }
     }
+
     return NULL;
 }

@@ -21,6 +21,11 @@
 
 #include <argx/export.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
  * The error code list. ARGX_ERROR_LIST(X) expands to one X(name, message)
  * for each error code, in value order. The enumeration below and
@@ -50,11 +55,6 @@ typedef enum argx_error
     ARGX_ERROR_LIST(ARGX_ERROR_ENUM)
 #undef ARGX_ERROR_ENUM
 } argx_error_t;
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /*
  * Returns the message for an error code: a short English phrase, such as

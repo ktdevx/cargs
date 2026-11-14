@@ -167,6 +167,7 @@ argx_error_t argx_message_build(const argx_message_parts_t *parts, char **out)
         }
         length += pieces.items[i].length;
     }
+
     if (length == SIZE_MAX)
     {
         return ARGX_ERROR_OUT_OF_MEMORY;
@@ -190,5 +191,6 @@ argx_error_t argx_message_build(const argx_message_parts_t *parts, char **out)
     *end = '\0';
 
     *out = message;
+
     return ARGX_ERROR_NONE;
 }

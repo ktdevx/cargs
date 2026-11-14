@@ -39,6 +39,7 @@ static bool is_name(const char *name)
     {
         return false;
     }
+
     for (p = name + 1; *p != '\0'; ++p)
     {
         if (!is_name_continue(*p))
@@ -46,6 +47,7 @@ static bool is_name(const char *name)
             return false;
         }
     }
+
     return true;
 }
 

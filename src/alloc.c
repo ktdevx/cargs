@@ -85,6 +85,7 @@ void *argx_calloc(size_t count, size_t size)
     {
         return NULL;
     }
+
     /* count * size would not fit in a size_t. */
     if (count > (SIZE_MAX / size))
     {
@@ -100,6 +101,7 @@ void *argx_realloc(void *ptr, size_t size)
     {
         return argx_malloc(size);
     }
+
     if (size == 0)
     {
         argx_free(ptr);

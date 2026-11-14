@@ -206,6 +206,7 @@ argx_error_t argx_help_item_text_append(argx_vec_t *text, const char *part, size
             return error;
         }
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -231,6 +232,7 @@ static argx_error_t item_note_open(argx_vec_t *text, const char *opening)
             return error;
         }
     }
+
     return item_text_string(text, opening);
 }
 
@@ -265,15 +267,18 @@ static argx_error_t item_choices_note(argx_vec_t *text, const argx_type_t *type)
         {
             error = argx_help_item_text_append(text, ", ", 2);
         }
+
         if (error == ARGX_ERROR_NONE)
         {
             error = item_text_string(text, argx_type_choice_at(type, index));
         }
     }
+
     if (error == ARGX_ERROR_NONE)
     {
         error = argx_help_item_text_append(text, "]", 1);
     }
+
     return error;
 }
 
@@ -289,10 +294,12 @@ static argx_error_t item_default_note(argx_vec_t *text, const char *value)
     {
         error = item_text_string(text, value);
     }
+
     if (error == ARGX_ERROR_NONE)
     {
         error = argx_help_item_text_append(text, "]", 1);
     }
+
     return error;
 }
 
@@ -309,6 +316,7 @@ static argx_error_t item_value_notes(argx_vec_t *text, const argx_type_t *type,
     {
         error = item_default_note(text, default_value);
     }
+
     return error;
 }
 

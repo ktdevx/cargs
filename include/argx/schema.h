@@ -52,6 +52,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
  * A command: the root of a schema, or a subcommand. The contents are not
  * public.
@@ -91,11 +96,6 @@ typedef enum argx_arity
     ARGX_ARITY_ZERO_OR_MORE, /* None or more. */
     ARGX_ARITY_ONE_OR_MORE   /* One or more. */
 } argx_arity_t;
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /* ---- Commands ----------------------------------------------------------- */
 

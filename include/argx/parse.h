@@ -53,6 +53,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
  * A parse result: what a command line was read into. Its contents are not
  * public.
@@ -93,11 +98,6 @@ typedef enum argx_parse_error_kind
     ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL, /* One positional argument too many. */
     ARGX_PARSE_ERROR_INVALID_ENCODING       /* A wide argument that cannot be converted to UTF-8. */
 } argx_parse_error_kind_t;
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /*
  * Parses the command line argv, which has argc arguments, with root's

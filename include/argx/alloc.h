@@ -41,6 +41,11 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
  * The four function types, with the same signatures as the standard
  * malloc, realloc, calloc and free.
@@ -65,11 +70,6 @@ typedef struct argx_allocator
     argx_calloc_fn_t calloc_fn;
     argx_free_fn_t free_fn;
 } argx_allocator_t;
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /*
  * Sets the allocator for the whole library. From then on, the library

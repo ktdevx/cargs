@@ -55,6 +55,7 @@ argx_error_t argx_number_parse_int(const char *text, int64_t *out)
         negative = *p == '-';
         ++p;
     }
+
     if (!is_digit(*p))
     {
         return ARGX_ERROR_INVALID_VALUE;
@@ -76,11 +77,13 @@ argx_error_t argx_number_parse_int(const char *text, int64_t *out)
         {
             return ARGX_ERROR_INVALID_VALUE;
         }
+
         digit = *p - '0';
         if (value < ((INT64_MIN + digit) / 10))
         {
             return ARGX_ERROR_INVALID_VALUE;
         }
+
         value = (value * 10) - digit;
     }
 
@@ -91,10 +94,12 @@ argx_error_t argx_number_parse_int(const char *text, int64_t *out)
         {
             return ARGX_ERROR_INVALID_VALUE;
         }
+
         value = -value;
     }
 
     *out = value;
+
     return ARGX_ERROR_NONE;
 }
 
@@ -116,10 +121,12 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
     {
         ++p;
     }
+
     for (; is_digit(*p); ++p)
     {
         has_digit = true;
     }
+
     if (*p == '.')
     {
         dot = p;
@@ -129,11 +136,13 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
             has_digit = true;
         }
     }
+
     /* A digit before the '.', after it, or both. */
     if (!has_digit)
     {
         return false;
     }
+
     if ((*p == 'e') || (*p == 'E'))
     {
         ++p;
@@ -141,15 +150,18 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
         {
             ++p;
         }
+
         if (!is_digit(*p))
         {
             return false;
         }
+
         for (; is_digit(*p); ++p)
         {
             /* The exponent digits. */
         }
     }
+
     if (*p != '\0')
     {
         return false;
@@ -157,6 +169,7 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
 
     *length = (size_t)(p - text);
     *point = (dot != NULL) ? (size_t)(dot - text) : *length;
+
     return true;
 }
 
@@ -257,6 +270,7 @@ argx_error_t argx_number_parse_float(const char *text, double *out)
     {
         argx_free(copy);
     }
+
     errno = saved_errno;
 
     /*
@@ -270,5 +284,6 @@ argx_error_t argx_number_parse_float(const char *text, double *out)
     }
 
     *out = value;
+
     return ARGX_ERROR_NONE;
 }

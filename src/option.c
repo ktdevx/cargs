@@ -54,6 +54,7 @@ static bool negated_name_is_in_use(const argx_command_t *command, const char *lo
             return true;
         }
     }
+
     return false;
 }
 
@@ -73,6 +74,7 @@ static char *new_negated_name(const char *long_name)
 
     memcpy(negated_name, NEGATED_PREFIX, NEGATED_PREFIX_LENGTH);
     memcpy(negated_name + NEGATED_PREFIX_LENGTH, long_name, length + 1);
+
     return negated_name;
 }
 
@@ -159,26 +161,32 @@ static argx_error_t add_option(argx_command_t *command, argx_option_kind_t kind,
     {
         return ARGX_ERROR_INVALID_NAME;
     }
+
     if ((kind == ARGX_OPTION_NEGATABLE) && (long_name == NULL))
     {
         return ARGX_ERROR_INVALID_NAME;
     }
+
     if ((short_name != '\0') && !argx_name_is_short(short_name))
     {
         return ARGX_ERROR_INVALID_NAME;
     }
+
     if ((long_name != NULL) && !argx_name_is_long(long_name))
     {
         return ARGX_ERROR_INVALID_NAME;
     }
+
     if (argx_command_find_short(command, short_name) != NULL)
     {
         return ARGX_ERROR_NAME_CONFLICT;
     }
+
     if ((long_name != NULL) && (argx_command_find_long(command, long_name, strlen(long_name), NULL) != NULL))
     {
         return ARGX_ERROR_NAME_CONFLICT;
     }
+
     if ((kind == ARGX_OPTION_NEGATABLE) && negated_name_is_in_use(command, long_name))
     {
         return ARGX_ERROR_NAME_CONFLICT;
@@ -206,6 +214,7 @@ static argx_error_t add_option(argx_command_t *command, argx_option_kind_t kind,
     {
         *out = option;
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -261,6 +270,7 @@ static argx_error_t set_string(argx_option_t *option, char **slot, const char *t
     }
 
     argx_schema_touch(option->command);
+
     return ARGX_ERROR_NONE;
 }
 
@@ -291,6 +301,7 @@ argx_error_t argx_option_set_required(argx_option_t *option, bool required)
 
     option->required = required;
     argx_schema_touch(option->command);
+
     return ARGX_ERROR_NONE;
 }
 
@@ -313,6 +324,7 @@ argx_error_t argx_option_set_initial(argx_option_t *option, bool on)
 
     option->initial = on;
     argx_schema_touch(option->command);
+
     return ARGX_ERROR_NONE;
 }
 

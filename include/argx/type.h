@@ -47,6 +47,11 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* A value type. The contents are not public. */
 typedef struct argx_type argx_type_t;
 
@@ -96,11 +101,6 @@ typedef argx_error_t (*argx_convert_fn_t)(const char *text, void *value, void *c
  * conversion.
  */
 typedef void (*argx_release_fn_t)(void *value, void *context);
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /*
  * Return the built-in value types of kind ARGX_TYPE_STRING, ARGX_TYPE_INT

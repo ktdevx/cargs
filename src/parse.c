@@ -74,6 +74,7 @@ static argx_error_t fail_at(argx_result_t *result, const scan_t *scan, argx_pars
     failure.command = scan->command;
     failure.option = option;
     failure.positional = NULL;
+
     return argx_result_fail(result, &failure);
 }
 
@@ -103,6 +104,7 @@ static argx_error_t check_encoding(argx_result_t *result, const scan_t *scan)
     where.name_prefix = "";
     where.name = NULL;
     where.name_length = 0;
+
     return fail_at(result, scan, ARGX_PARSE_ERROR_INVALID_ENCODING, &where,
                    argx_result_arg(result, scan->index), NULL);
 }
@@ -132,15 +134,18 @@ static argx_error_t record_option(argx_result_t *result, scan_t *scan, const arg
             {
                 return fail_at(result, scan, ARGX_PARSE_ERROR_MISSING_VALUE, where, NULL, option);
             }
+
             scan->index++;
             error = check_encoding(result, scan);
             if (error != ARGX_ERROR_NONE)
             {
                 return error;
             }
+
             where->index = scan->index;
             value = argx_result_arg(result, scan->index);
         }
+
         return argx_result_record_option_value(result, option, value, where);
     }
 
@@ -148,6 +153,7 @@ static argx_error_t record_option(argx_result_t *result, scan_t *scan, const arg
     {
         return fail_at(result, scan, ARGX_PARSE_ERROR_UNEXPECTED_VALUE, where, value, option);
     }
+
     switch (kind)
     {
     case ARGX_OPTION_FLAG:
@@ -168,6 +174,7 @@ static argx_error_t record_option(argx_result_t *result, scan_t *scan, const arg
          */
         break;
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -193,6 +200,7 @@ static argx_error_t scan_long(argx_result_t *result, scan_t *scan, const char *a
     {
         return fail_at(result, scan, ARGX_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
     }
+
     return record_option(result, scan, option, !negated, value, &where);
 }
 
@@ -231,16 +239,19 @@ static argx_error_t scan_bundle(argx_result_t *result, scan_t *scan, const char 
         {
             return fail_at(result, scan, ARGX_PARSE_ERROR_UNKNOWN_OPTION, &where, NULL, NULL);
         }
+
         if (argx_option_kind(option) == ARGX_OPTION_VALUE)
         {
             return record_option(result, scan, option, true, (letter[1] != '\0') ? (letter + 1) : NULL, &where);
         }
+
         error = record_option(result, scan, option, true, NULL, &where);
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -285,17 +296,21 @@ static argx_error_t scan_plain(argx_result_t *result, scan_t *scan, const char *
         {
             return fail_at(result, scan, ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL, &where, arg, NULL);
         }
+
         subcommand = argx_command_find_subcommand(scan->command, arg);
         if (subcommand == NULL)
         {
             return fail_at(result, scan, ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND, &where, arg, NULL);
         }
+
         error = argx_result_push_command(result, subcommand);
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
+
         enter_command(scan, subcommand);
+
         return ARGX_ERROR_NONE;
     }
 
@@ -323,6 +338,7 @@ static argx_error_t scan_plain(argx_result_t *result, scan_t *scan, const char *
      */
     where.name = argx_positional_name(positional);
     where.name_length = strlen(where.name);
+
     return argx_result_record_positional_value(result, positional, arg, &where);
 }
 
@@ -355,6 +371,7 @@ static argx_error_t scan_arguments(argx_result_t *result, const argx_command_t *
         {
             return error;
         }
+
         if (scan.options_ended)
         {
             /*
@@ -397,11 +414,13 @@ static argx_error_t scan_arguments(argx_result_t *result, const argx_command_t *
                 break;
             }
         }
+
         if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
     }
+
     return ARGX_ERROR_NONE;
 }
 
@@ -428,7 +447,9 @@ static argx_error_t parse_result(argx_result_t *result, const argx_command_t *ro
         *out = NULL;
         return error;
     }
+
     *out = result;
+
     return error;
 }
 
@@ -452,6 +473,7 @@ argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
         *out = NULL;
         return error;
     }
+
     return parse_result(result, root, (size_t)argc, out);
 }
 
@@ -479,5 +501,6 @@ argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *cons
         *out = NULL;
         return error;
     }
+
     return parse_result(result, root, (size_t)argc, out);
 }
