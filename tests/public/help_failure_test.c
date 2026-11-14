@@ -494,7 +494,7 @@ typedef struct help_case
 {
     const argx_command_t *command;
     const argx_help_options_t *options; /* NULL: the default settings */
-    char text[SINK_SIZE];                 /* the help */
+    char text[SINK_SIZE];               /* the help */
     size_t length;
     size_t requests;                      /* of one generation of the help */
     char usage[SINK_SIZE];                /* the usage line */
@@ -723,7 +723,7 @@ static void fixture_start(fixture_t *fixture)
 
         sink_init(&sink);
         NAOS_REQUIRE_TRUE(argx_help_write_usage(item->command, item->options, sink_write,
-                                                  &sink) == ARGX_ERROR_NONE);
+                                                &sink) == ARGX_ERROR_NONE);
         memcpy(item->usage, sink.text, sink.length);
         item->usage_length = sink.length;
         NAOS_REQUIRE_TRUE(item->usage_length >= 2);
@@ -798,14 +798,14 @@ static void check_unchanged(const fixture_t *fixture)
 
         memset(buffer, SENTINEL, sizeof buffer);
         NAOS_CHECK_TRUE(argx_help_format(item->command, item->options, buffer, sizeof buffer,
-                                           &length) == ARGX_ERROR_NONE);
+                                         &length) == ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, item->length);
         NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
         check_same_text(buffer, strlen(buffer), item->text, item->length);
 
         sink_init(&sink);
         NAOS_CHECK_TRUE(argx_help_write_usage(item->command, item->options, sink_write,
-                                                &sink) == ARGX_ERROR_NONE);
+                                              &sink) == ARGX_ERROR_NONE);
         check_same_text(sink.text, sink.length, item->usage, item->usage_length);
     }
 
@@ -846,8 +846,8 @@ static void check_format_failure(const help_case_t *item, size_t nth, format_cal
 
     argx_test_allocator_fail_at(requests + nth);
     error = argx_help_format(item->command, item->options,
-                               call.null_buffer ? NULL : (area + GUARD_SIZE), call.size,
-                               call.with_length ? &length : NULL);
+                             call.null_buffer ? NULL : (area + GUARD_SIZE), call.size,
+                             call.with_length ? &length : NULL);
     argx_test_allocator_fail_at(0);
 
     NAOS_CHECK_TRUE(error == ARGX_ERROR_OUT_OF_MEMORY);
@@ -1044,7 +1044,7 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
             memset(buffer, SENTINEL, sizeof buffer);
             argx_test_allocator_fail_at(requests + item->requests + 1);
             NAOS_CHECK_TRUE(argx_help_format(item->command, item->options, buffer,
-                                               sizeof buffer, &length) == ARGX_ERROR_NONE);
+                                             sizeof buffer, &length) == ARGX_ERROR_NONE);
             argx_test_allocator_fail_at(0);
 
             NAOS_CHECK_UINT_EQ(argx_test_allocator_requests() - requests, item->requests);
@@ -1083,14 +1083,14 @@ NAOS_TEST(generating_a_usage_line_never_allocates)
 
         sink_init(&sink);
         NAOS_CHECK_TRUE(argx_help_write_usage(item->command, item->options, sink_write,
-                                                &sink) == ARGX_ERROR_NONE);
+                                              &sink) == ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
         check_same_text(sink.text, sink.length, item->usage, item->usage_length);
         NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
 
         memset(buffer, SENTINEL, sizeof buffer);
         NAOS_CHECK_TRUE(argx_help_format_usage(item->command, item->options, buffer,
-                                                 sizeof buffer, &length) == ARGX_ERROR_NONE);
+                                               sizeof buffer, &length) == ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
         NAOS_CHECK_UINT_EQ(length, item->usage_length);
         NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
@@ -1098,10 +1098,10 @@ NAOS_TEST(generating_a_usage_line_never_allocates)
 
         /* Also an array that cuts the text, the size 0 and no length. */
         NAOS_CHECK_TRUE(argx_help_format_usage(item->command, item->options, buffer, 5,
-                                                 NULL) == ARGX_ERROR_NONE);
+                                               NULL) == ARGX_ERROR_NONE);
         length = LENGTH_UNSET;
         NAOS_CHECK_TRUE(argx_help_format_usage(item->command, item->options, NULL, 0,
-                                                 &length) == ARGX_ERROR_NONE);
+                                               &length) == ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, item->usage_length);
         NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
 

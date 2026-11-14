@@ -71,7 +71,7 @@ int main(int argc, char **argv)
         failed(&error, argx_option_set_value_name(count, "COUNT")) ||
         failed(&error, argx_option_set_default(count, "1")) ||
         failed(&error, argx_command_add_positional(root, "name", argx_type_string(),
-                                                     ARGX_ARITY_REQUIRED, &name)) ||
+                                                   ARGX_ARITY_REQUIRED, &name)) ||
         failed(&error, argx_positional_set_description(name, "Whom to greet.")) ||
         failed(&error, argx_command_validate(root, NULL, NULL, NULL)))
     {

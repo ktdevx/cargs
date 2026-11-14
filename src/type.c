@@ -185,7 +185,7 @@ argx_error_t argx_type_create_choice(const char *const *choices, size_t count, a
 }
 
 argx_error_t argx_type_create(const char *name, size_t value_size, argx_convert_fn_t convert_fn,
-                                  argx_release_fn_t release_fn, void *context, argx_type_t **out)
+                              argx_release_fn_t release_fn, void *context, argx_type_t **out)
 {
     argx_type_t *type;
 

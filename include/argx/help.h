@@ -253,8 +253,8 @@ ARGX_API void argx_help_options_set_max_column(argx_help_options_t *options, siz
  * - user_data may be NULL.
  */
 ARGX_API argx_error_t argx_help_write_usage(const argx_command_t *command,
-                                                  const argx_help_options_t *options,
-                                                  argx_help_write_fn_t write_fn, void *user_data);
+                                            const argx_help_options_t *options,
+                                            argx_help_write_fn_t write_fn, void *user_data);
 
 /*
  * Generates the help of command, such as
@@ -411,8 +411,8 @@ ARGX_API argx_error_t argx_help_write_usage(const argx_command_t *command,
  * - user_data may be NULL.
  */
 ARGX_API argx_error_t argx_help_write(const argx_command_t *command,
-                                            const argx_help_options_t *options,
-                                            argx_help_write_fn_t write_fn, void *user_data);
+                                      const argx_help_options_t *options,
+                                      argx_help_write_fn_t write_fn, void *user_data);
 
 /*
  * Generates the help of command, the text of argx_help_write() for the
@@ -465,8 +465,8 @@ ARGX_API argx_error_t argx_help_write(const argx_command_t *command,
  * - length may be NULL.
  */
 ARGX_API argx_error_t argx_help_format(const argx_command_t *command,
-                                             const argx_help_options_t *options, char *buffer,
-                                             size_t size, size_t *length);
+                                       const argx_help_options_t *options, char *buffer,
+                                       size_t size, size_t *length);
 
 /*
  * Generates the usage line of command, the text of
@@ -506,8 +506,8 @@ ARGX_API argx_error_t argx_help_format(const argx_command_t *command,
  * - length may be NULL.
  */
 ARGX_API argx_error_t argx_help_format_usage(const argx_command_t *command,
-                                                   const argx_help_options_t *options,
-                                                   char *buffer, size_t size, size_t *length);
+                                             const argx_help_options_t *options,
+                                             char *buffer, size_t size, size_t *length);
 
 #ifdef __cplusplus
 }

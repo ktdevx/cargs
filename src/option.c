@@ -78,7 +78,7 @@ static char *new_negated_name(const char *long_name)
  * an allocation fails.
  */
 static argx_option_t *new_option(argx_command_t *command, argx_option_kind_t kind, char short_name,
-                                   const char *long_name, const argx_type_t *type)
+                                 const char *long_name, const argx_type_t *type)
 {
     argx_option_t *option = (argx_option_t *)argx_malloc(sizeof(*option));
 
@@ -136,7 +136,7 @@ static void free_new_option(argx_option_t *option)
  * value, and NULL for every other kind.
  */
 static argx_error_t add_option(argx_command_t *command, argx_option_kind_t kind, char short_name,
-                                 const char *long_name, const argx_type_t *type, argx_option_t **out)
+                               const char *long_name, const argx_type_t *type, argx_option_t **out)
 {
     argx_option_t *option;
 
@@ -208,25 +208,25 @@ static argx_error_t add_option(argx_command_t *command, argx_option_kind_t kind,
 /* ---- Addition ----------------------------------------------------------- */
 
 argx_error_t argx_command_add_flag(argx_command_t *command, char short_name, const char *long_name,
-                                       argx_option_t **out)
+                                   argx_option_t **out)
 {
     return add_option(command, ARGX_OPTION_FLAG, short_name, long_name, NULL, out);
 }
 
 argx_error_t argx_command_add_negatable(argx_command_t *command, char short_name,
-                                            const char *long_name, argx_option_t **out)
+                                        const char *long_name, argx_option_t **out)
 {
     return add_option(command, ARGX_OPTION_NEGATABLE, short_name, long_name, NULL, out);
 }
 
 argx_error_t argx_command_add_count(argx_command_t *command, char short_name, const char *long_name,
-                                        argx_option_t **out)
+                                    argx_option_t **out)
 {
     return add_option(command, ARGX_OPTION_COUNT, short_name, long_name, NULL, out);
 }
 
 argx_error_t argx_command_add_value(argx_command_t *command, char short_name, const char *long_name,
-                                        const argx_type_t *type, argx_option_t **out)
+                                    const argx_type_t *type, argx_option_t **out)
 {
     assert(type != NULL);
 

@@ -215,7 +215,7 @@ static argx_option_t *add_negatable(argx_command_t *command, char short_name, co
  * NULL: the option has no default value then.
  */
 static argx_option_t *add_value(argx_command_t *command, char short_name, const char *long_name,
-                                  const argx_type_t *type, const char *default_value)
+                                const argx_type_t *type, const char *default_value)
 {
     argx_option_t *option = NULL;
 
@@ -234,8 +234,8 @@ static argx_option_t *add_value(argx_command_t *command, char short_name, const 
  * has no default value then.
  */
 static argx_positional_t *add_positional(argx_command_t *command, const char *name,
-                                           const argx_type_t *type, argx_arity_t arity,
-                                           const char *default_value)
+                                         const argx_type_t *type, argx_arity_t arity,
+                                         const char *default_value)
 {
     argx_positional_t *positional = NULL;
 
@@ -265,9 +265,9 @@ static void set_up(fixture_t *fixture)
     fixture->root = NULL;
 
     NAOS_REQUIRE_TRUE(argx_type_create("word", sizeof(word_t), word_convert, word_release, &fixture->log,
-                                         &fixture->word) == ARGX_ERROR_NONE);
+                                       &fixture->word) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_type_create_choice(colors, sizeof(colors) / sizeof(colors[0]),
-                                                &fixture->color_type) == ARGX_ERROR_NONE);
+                                              &fixture->color_type) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_create("tool", &fixture->root) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(fixture->root != NULL);
 
@@ -415,13 +415,13 @@ typedef struct parse_case
     char *const *argv;          /* NULL: the parse goes through the wide entry */
     wchar_t *const *wide_argv;  /* used when argv is NULL */
     bool reject;                /* whether the value type "word" rejects "bad" */
-    argx_error_t outcome;     /* ARGX_ERROR_NONE or ARGX_ERROR_INVALID_COMMAND_LINE */
+    argx_error_t outcome;       /* ARGX_ERROR_NONE or ARGX_ERROR_INVALID_COMMAND_LINE */
     check_fn_t check_fn;
     size_t least;               /* the least number of requests that the parse must make */
 } parse_case_t;
 
 static argx_error_t run_parse(const fixture_t *fixture, const parse_case_t *parse_case,
-                                argx_result_t **out)
+                              argx_result_t **out)
 {
     if (parse_case->argv != NULL)
     {

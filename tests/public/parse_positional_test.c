@@ -60,7 +60,7 @@ static argx_command_t *create_root(const char *name)
 
 /* Adds a positional to command. */
 static argx_positional_t *add_positional(argx_command_t *command, const char *name,
-                                           const argx_type_t *type, argx_arity_t arity)
+                                         const argx_type_t *type, argx_arity_t arity)
 {
     argx_positional_t *positional = NULL;
 
@@ -105,8 +105,8 @@ static argx_result_t *parse_ok(const argx_command_t *root, int argc, char *const
  * the current command, with the message. Returns the result.
  */
 static argx_result_t *parse_bad_in(const argx_command_t *root, int argc, char *const *argv,
-                                     argx_parse_error_kind_t kind, size_t index,
-                                     const argx_command_t *command, const char *message)
+                                   argx_parse_error_kind_t kind, size_t index,
+                                   const argx_command_t *command, const char *message)
 {
     argx_result_t *result = NULL;
 
@@ -133,7 +133,7 @@ static argx_result_t *parse_bad_in(const argx_command_t *root, int argc, char *c
  * command.
  */
 static argx_result_t *parse_bad(const argx_command_t *root, int argc, char *const *argv,
-                                  argx_parse_error_kind_t kind, size_t index, const char *message)
+                                argx_parse_error_kind_t kind, size_t index, const char *message)
 {
     return parse_bad_in(root, argc, argv, kind, index, root, message);
 }
@@ -144,8 +144,8 @@ static argx_result_t *parse_bad(const argx_command_t *root, int argc, char *cons
  * the result.
  */
 static argx_result_t *parse_unknown_option(const argx_command_t *root, int argc, char *const *argv,
-                                             size_t index, const argx_command_t *command,
-                                             const char *message)
+                                           size_t index, const argx_command_t *command,
+                                           const char *message)
 {
     argx_result_t *result = NULL;
 
@@ -755,7 +755,7 @@ static void set_up_tool(tool_fixture_t *fixture)
     fixture->root = root;
     NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'v', "verbose", &fixture->verbose) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_value(root, '\0', "config", argx_type_string(),
-                                               &fixture->config) == ARGX_ERROR_NONE);
+                                             &fixture->config) == ARGX_ERROR_NONE);
     fixture->status = add_subcommand(root, "status");
     fixture->remote = add_subcommand(root, "remote");
     NAOS_REQUIRE_TRUE(argx_command_add_count(fixture->remote, 'v', "verbose", &fixture->remote_verbose) ==
@@ -765,7 +765,7 @@ static void set_up_tool(tool_fixture_t *fixture)
                       ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_flag(fixture->add, '1', NULL, &fixture->one) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_value(fixture->add, 'o', "out", argx_type_string(),
-                                               &fixture->out) == ARGX_ERROR_NONE);
+                                             &fixture->out) == ARGX_ERROR_NONE);
     fixture->name = add_positional(fixture->add, "NAME", argx_type_string(), ARGX_ARITY_REQUIRED);
     fixture->urls = add_positional(fixture->add, "URLS", argx_type_string(), ARGX_ARITY_ZERO_OR_MORE);
     fixture->remove = add_subcommand(fixture->remote, "remove");

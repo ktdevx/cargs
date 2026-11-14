@@ -7,14 +7,14 @@
 #         -D ARGX_SHARED=<ON|OFF> -P tests/consumer/run.cmake
 #
 #   ARGX_BUILD_DIR  The build directory of ArgX, configured with
-#                     ARGX_INSTALL=ON and built. Required.
+#                   ARGX_INSTALL=ON and built. Required.
 #   ARGX_CONFIG     The configuration to install and to build the consumer
-#                     with. Required. It must be a configuration of the build
-#                     directory: its CMAKE_BUILD_TYPE, or one of its
-#                     CMAKE_CONFIGURATION_TYPES.
+#                   with. Required. It must be a configuration of the build
+#                   directory: its CMAKE_BUILD_TYPE, or one of its
+#                   CMAKE_CONFIGURATION_TYPES.
 #   ARGX_SHARED     ON if the build directory builds a shared library, OFF
-#                     if a static one. Required. It must agree with the build
-#                     directory; the embedded modes build the same shape.
+#                   if a static one. Required. It must agree with the build
+#                   directory; the embedded modes build the same shape.
 #
 # The steps:
 #

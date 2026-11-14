@@ -138,7 +138,7 @@ static argx_error_t define_common_options(argx_command_t *root)
 
 /* The subcommand "create": options that take a value, and its positional. */
 static argx_error_t define_create(argx_command_t *root, const argx_type_t *format,
-                                    const argx_type_t *size)
+                                  const argx_type_t *size)
 {
     argx_command_t *create;
     argx_option_t *option;
@@ -153,7 +153,7 @@ static argx_error_t define_create(argx_command_t *root, const argx_type_t *forma
 
     /* A required option with the built-in value type string. */
     if (failed(&error, argx_command_add_value(create, 'o', "output", argx_type_string(),
-                                                &option)) ||
+                                              &option)) ||
         failed(&error, argx_option_set_description(option, "The archive to write.")) ||
         failed(&error, argx_option_set_value_name(option, "FILE")) ||
         failed(&error, argx_option_set_required(option, true)))
@@ -166,7 +166,7 @@ static argx_error_t define_create(argx_command_t *root, const argx_type_t *forma
      * value is a string, written as on a command line.
      */
     if (failed(&error, argx_command_add_value(create, 'l', "level", argx_type_int(),
-                                                &option)) ||
+                                              &option)) ||
         failed(&error, argx_option_set_description(option, "The compression level.")) ||
         failed(&error, argx_option_set_value_name(option, "LEVEL")) ||
         failed(&error, argx_option_set_default(option, "6")))
@@ -176,7 +176,7 @@ static argx_error_t define_create(argx_command_t *root, const argx_type_t *forma
 
     /* The built-in value type float; only a long name. */
     if (failed(&error, argx_command_add_value(create, '\0', "ratio", argx_type_float(),
-                                                &option)) ||
+                                              &option)) ||
         failed(&error, argx_option_set_description(option, "Stop below this ratio.")) ||
         failed(&error, argx_option_set_value_name(option, "RATIO")) ||
         failed(&error, argx_option_set_default(option, "0.5")))
@@ -203,7 +203,7 @@ static argx_error_t define_create(argx_command_t *root, const argx_type_t *forma
 
     /* One or more files. */
     if (failed(&error, argx_command_add_positional(create, "file", argx_type_string(),
-                                                     ARGX_ARITY_ONE_OR_MORE, &positional)) ||
+                                                   ARGX_ARITY_ONE_OR_MORE, &positional)) ||
         failed(&error, argx_positional_set_description(positional, "The files to pack.")))
     {
         return error;
@@ -226,7 +226,7 @@ static argx_error_t define_list(argx_command_t *root)
     }
 
     if (failed(&error, argx_command_add_positional(list, "archive", argx_type_string(),
-                                                     ARGX_ARITY_REQUIRED, &positional)) ||
+                                                   ARGX_ARITY_REQUIRED, &positional)) ||
         failed(&error, argx_positional_set_description(positional, "The archive to read.")))
     {
         return error;
@@ -234,7 +234,7 @@ static argx_error_t define_list(argx_command_t *root)
 
     /* Only an optional positional can have a default value. */
     if (failed(&error, argx_command_add_positional(list, "pattern", argx_type_string(),
-                                                     ARGX_ARITY_OPTIONAL, &positional)) ||
+                                                   ARGX_ARITY_OPTIONAL, &positional)) ||
         failed(&error, argx_positional_set_description(positional, "The files to list.")) ||
         failed(&error, argx_positional_set_default(positional, "*")))
     {
@@ -297,7 +297,7 @@ int main(void)
     /* The value types come first: the schema borrows them. */
     if (failed(&error, argx_type_create_choice(formats, 2, &format)) ||
         failed(&error, argx_type_create("size", sizeof(unsigned long), convert_size, NULL,
-                                          &limit, &size)) ||
+                                        &limit, &size)) ||
         failed(&error, argx_command_create("pack", &root)) ||
         failed(&error, argx_command_set_description(root, "Pack files into an archive.")) ||
         failed(&error, define_common_options(root)) ||
@@ -311,7 +311,7 @@ int main(void)
         fprintf(stderr, "pack: cannot define the command line: %s\n",
                 argx_error_message(error));
     } else if (failed(&error, argx_command_validate(root, &faulty_command, &faulty_option,
-                                                      &faulty_positional)))
+                                                    &faulty_positional)))
     {
         report_fault(error, faulty_command, faulty_option, faulty_positional);
     }
@@ -451,9 +451,9 @@ Pass the type name, the size of the value, the conversion function, the release 
 
 ```
 argx_error_t argx_type_create(const char *name, size_t value_size,
-                                  argx_convert_fn_t convert_fn,
-                                  argx_release_fn_t release_fn, void *context,
-                                  argx_type_t **out);
+                              argx_convert_fn_t convert_fn,
+                              argx_release_fn_t release_fn, void *context,
+                              argx_type_t **out);
 ```
 
 | Argument | Contents |
@@ -576,9 +576,9 @@ A `NULL` for a required argument, an index out of range, a value that is not in 
 
 ```
 argx_error_t argx_command_validate(argx_command_t *root,
-                                       const argx_command_t **command,
-                                       const argx_option_t **option,
-                                       const argx_positional_t **positional);
+                                   const argx_command_t **command,
+                                   const argx_option_t **option,
+                                   const argx_positional_t **positional);
 bool argx_command_is_validated(const argx_command_t *command);
 ```
 

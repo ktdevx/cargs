@@ -458,11 +458,11 @@ ARGX_API const argx_type_t *argx_type_int(void);
 ARGX_API const argx_type_t *argx_type_float(void);
 
 ARGX_API argx_error_t argx_type_create_choice(const char *const *choices, size_t count,
-                                                    argx_type_t **out);
+                                              argx_type_t **out);
 ARGX_API argx_error_t argx_type_create(const char *name, size_t value_size,
-                                             argx_convert_fn_t convert_fn,
-                                             argx_release_fn_t release_fn, void *context,
-                                             argx_type_t **out);
+                                       argx_convert_fn_t convert_fn,
+                                       argx_release_fn_t release_fn, void *context,
+                                       argx_type_t **out);
 ARGX_API void argx_type_destroy(argx_type_t *type);
 
 ARGX_API const char *argx_type_name(const argx_type_t *type);
@@ -542,7 +542,7 @@ typedef enum argx_arity {
 ARGX_API argx_error_t argx_command_create(const char *name, argx_command_t **out);
 ARGX_API void argx_command_destroy(argx_command_t *root);
 ARGX_API argx_error_t argx_command_add_subcommand(argx_command_t *command, const char *name,
-                                                        argx_command_t **out);
+                                                  argx_command_t **out);
 ARGX_API argx_error_t argx_command_set_description(argx_command_t *command, const char *text);
 
 ARGX_API const char *argx_command_name(const argx_command_t *command);
@@ -553,17 +553,17 @@ ARGX_API size_t argx_command_option_count(const argx_command_t *command);
 ARGX_API const argx_option_t *argx_command_option_at(const argx_command_t *command, size_t index);
 ARGX_API size_t argx_command_positional_count(const argx_command_t *command);
 ARGX_API const argx_positional_t *argx_command_positional_at(const argx_command_t *command,
-                                                                   size_t index);
+                                                             size_t index);
 ARGX_API size_t argx_command_subcommand_count(const argx_command_t *command);
 ARGX_API const argx_command_t *argx_command_subcommand_at(const argx_command_t *command,
-                                                                size_t index);
+                                                          size_t index);
 
 ARGX_API const argx_option_t *argx_command_find_short(const argx_command_t *command, char name);
 ARGX_API const argx_option_t *argx_command_find_long(const argx_command_t *command,
-                                                           const char *name, size_t length,
-                                                           bool *negated);
+                                                     const char *name, size_t length,
+                                                     bool *negated);
 ARGX_API const argx_command_t *argx_command_find_subcommand(const argx_command_t *command,
-                                                                  const char *name);
+                                                            const char *name);
 ```
 
 | 関数 | 契約 |
@@ -648,14 +648,14 @@ argx_error_t argx_schema_replace_string(char **slot, const char *text);
 ```c
 /* include/argx/schema.h（オプション） */
 ARGX_API argx_error_t argx_command_add_flag(argx_command_t *command, char short_name,
-                                                  const char *long_name, argx_option_t **out);
+                                            const char *long_name, argx_option_t **out);
 ARGX_API argx_error_t argx_command_add_negatable(argx_command_t *command, char short_name,
-                                                       const char *long_name, argx_option_t **out);
+                                                 const char *long_name, argx_option_t **out);
 ARGX_API argx_error_t argx_command_add_count(argx_command_t *command, char short_name,
-                                                   const char *long_name, argx_option_t **out);
+                                             const char *long_name, argx_option_t **out);
 ARGX_API argx_error_t argx_command_add_value(argx_command_t *command, char short_name,
-                                                   const char *long_name, const argx_type_t *type,
-                                                   argx_option_t **out);
+                                             const char *long_name, const argx_type_t *type,
+                                             argx_option_t **out);
 
 ARGX_API argx_error_t argx_option_set_description(argx_option_t *option, const char *text);
 ARGX_API argx_error_t argx_option_set_value_name(argx_option_t *option, const char *name);
@@ -712,12 +712,12 @@ ARGX_API bool argx_option_initial(const argx_option_t *option);
 ```c
 /* include/argx/schema.h（位置引数） */
 ARGX_API argx_error_t argx_command_add_positional(argx_command_t *command, const char *name,
-                                                        const argx_type_t *type, argx_arity_t arity,
-                                                        argx_positional_t **out);
+                                                  const argx_type_t *type, argx_arity_t arity,
+                                                  argx_positional_t **out);
 ARGX_API argx_error_t argx_positional_set_description(argx_positional_t *positional,
-                                                            const char *text);
+                                                      const char *text);
 ARGX_API argx_error_t argx_positional_set_default(argx_positional_t *positional,
-                                                        const char *value);
+                                                  const char *value);
 
 ARGX_API const argx_command_t *argx_positional_command(const argx_positional_t *positional);
 ARGX_API const char *argx_positional_name(const argx_positional_t *positional);
@@ -764,9 +764,9 @@ ARGX_API const char *argx_positional_default(const argx_positional_t *positional
 ```c
 /* include/argx/schema.h（検証） */
 ARGX_API argx_error_t argx_command_validate(argx_command_t *root,
-                                                  const argx_command_t **command,
-                                                  const argx_option_t **option,
-                                                  const argx_positional_t **positional);
+                                            const argx_command_t **command,
+                                            const argx_option_t **option,
+                                            const argx_positional_t **positional);
 ARGX_API bool argx_command_is_validated(const argx_command_t *command);
 ```
 

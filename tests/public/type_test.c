@@ -700,7 +700,7 @@ NAOS_TEST(custom_has_its_name_kind_and_value_size)
     argx_test_allocator_install();
 
     NAOS_REQUIRE_TRUE(argx_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(type != NULL);
     NAOS_CHECK_STR_EQ(argx_type_name(type), "port");
     NAOS_CHECK_INT_EQ(argx_type_kind(type), ARGX_TYPE_CUSTOM);
@@ -785,7 +785,7 @@ NAOS_TEST(custom_name_can_be_any_string_that_is_not_empty)
         argx_type_t *type = NULL;
 
         NAOS_REQUIRE_TRUE(argx_type_create(names[index], sizeof(int), probe_convert, NULL, &probe,
-                                             &type) == ARGX_ERROR_NONE);
+                                           &type) == ARGX_ERROR_NONE);
         NAOS_CHECK_STR_EQ(argx_type_name(type), names[index]);
         NAOS_CHECK_INT_EQ(argx_type_kind(type), ARGX_TYPE_CUSTOM);
         argx_type_destroy(type);
@@ -830,7 +830,7 @@ NAOS_TEST(custom_conversion_passes_the_input_and_the_user_data)
     probe_init(&probe, ARGX_ERROR_NONE);
     argx_test_allocator_install();
     NAOS_REQUIRE_TRUE(argx_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
     requests = argx_test_allocator_requests();
 
     NAOS_CHECK_INT_EQ(argx_type_convert(type, input, &value), ARGX_ERROR_NONE);
@@ -868,7 +868,7 @@ NAOS_TEST(custom_user_data_can_be_null)
 
     argx_test_allocator_install();
     NAOS_REQUIRE_TRUE(argx_type_create("length", sizeof(int), plain_convert, plain_release, NULL,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
 
     seen_convert_context = &marker;
     seen_release_context = &marker;
@@ -900,7 +900,7 @@ NAOS_TEST(custom_conversion_returns_what_the_function_returns)
     probe_init(&probe, ARGX_ERROR_NONE);
     argx_test_allocator_install();
     NAOS_REQUIRE_TRUE(argx_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
 
     for (index = 0; index < (sizeof(results) / sizeof(results[0])); ++index)
     {
@@ -937,7 +937,7 @@ NAOS_TEST(custom_cleanup_is_called_once_for_each_successful_conversion)
     probe_init(&probe, ARGX_ERROR_NONE);
     argx_test_allocator_install();
     NAOS_REQUIRE_TRUE(argx_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
 
     for (index = 0; index < (sizeof(inputs) / sizeof(inputs[0])); ++index)
     {
@@ -1017,7 +1017,7 @@ NAOS_TEST(custom_and_builtin_types_are_used_the_same_way)
     probe_init(&probe, ARGX_ERROR_NONE);
     argx_test_allocator_install();
     NAOS_REQUIRE_TRUE(argx_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
-                                         &custom) == ARGX_ERROR_NONE);
+                                       &custom) == ARGX_ERROR_NONE);
 
     types[0] = argx_type_string();
     types[1] = custom;
@@ -1079,9 +1079,9 @@ NAOS_TEST(custom_types_keep_their_own_user_data)
     probe_init(&second_probe, ARGX_ERROR_INVALID_VALUE);
     argx_test_allocator_install();
     NAOS_REQUIRE_TRUE(argx_type_create("first", sizeof(int), probe_convert, probe_release,
-                                         &first_probe, &first) == ARGX_ERROR_NONE);
+                                       &first_probe, &first) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_type_create("second", sizeof(int), probe_convert, probe_release,
-                                         &second_probe, &second) == ARGX_ERROR_NONE);
+                                       &second_probe, &second) == ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(first != second);
 
     NAOS_CHECK_INT_EQ(argx_type_convert(first, "abc", &value), ARGX_ERROR_NONE);
@@ -1120,7 +1120,7 @@ NAOS_TEST(custom_creation_frees_everything_when_an_allocation_fails)
 
     /* How many requests a creation takes. */
     NAOS_REQUIRE_TRUE(argx_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
     allocation_points = argx_test_allocator_requests();
     argx_type_destroy(type);
     NAOS_REQUIRE_TRUE(allocation_points > 0);
@@ -1133,7 +1133,7 @@ NAOS_TEST(custom_creation_frees_everything_when_an_allocation_fails)
 
         type = as_destroyable(argx_type_string());
         NAOS_CHECK_INT_EQ(argx_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
-                                             &type),
+                                           &type),
                           ARGX_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_TRUE(type == NULL);
         NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), n);
@@ -1144,7 +1144,7 @@ NAOS_TEST(custom_creation_frees_everything_when_an_allocation_fails)
     /* The creation works again afterwards. */
     argx_test_allocator_reset();
     NAOS_CHECK_INT_EQ(argx_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
-                                         &type),
+                                       &type),
                       ARGX_ERROR_NONE);
     argx_type_destroy(type);
 
@@ -1186,7 +1186,7 @@ NAOS_TEST(destroy_frees_everything_of_a_custom_type)
     argx_test_allocator_install();
 
     NAOS_REQUIRE_TRUE(argx_type_create("port", sizeof(int), probe_convert, probe_release, &probe,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(argx_test_allocator_live() > 0);
     argx_type_destroy(type);
     NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);

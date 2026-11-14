@@ -94,13 +94,13 @@ static argx_error_t define_schema(pack_schema_t *schema)
     if (failed(&error, argx_command_add_subcommand(schema->root, "create", &schema->create)) ||
         failed(&error, add_help(schema->create)) ||
         failed(&error, argx_command_add_value(schema->create, 'o', "output", argx_type_string(),
-                                                &schema->output)) ||
+                                              &schema->output)) ||
         failed(&error, argx_option_set_required(schema->output, true)) ||
         failed(&error, argx_command_add_value(schema->create, 'l', "level", argx_type_int(),
-                                                &schema->level)) ||
+                                              &schema->level)) ||
         failed(&error, argx_option_set_default(schema->level, "6")) ||
         failed(&error, argx_command_add_positional(schema->create, "file", argx_type_string(),
-                                                     ARGX_ARITY_ONE_OR_MORE, &schema->files)))
+                                                   ARGX_ARITY_ONE_OR_MORE, &schema->files)))
     {
         return error;
     }
@@ -108,9 +108,9 @@ static argx_error_t define_schema(pack_schema_t *schema)
     if (failed(&error, argx_command_add_subcommand(schema->root, "list", &schema->list)) ||
         failed(&error, add_help(schema->list)) ||
         failed(&error, argx_command_add_positional(schema->list, "archive", argx_type_string(),
-                                                     ARGX_ARITY_REQUIRED, &schema->archive)) ||
+                                                   ARGX_ARITY_REQUIRED, &schema->archive)) ||
         failed(&error, argx_command_add_positional(schema->list, "pattern", argx_type_string(),
-                                                     ARGX_ARITY_OPTIONAL, &schema->pattern)) ||
+                                                   ARGX_ARITY_OPTIONAL, &schema->pattern)) ||
         failed(&error, argx_positional_set_default(schema->pattern, "*")))
     {
         return error;
@@ -334,9 +334,9 @@ Notes on the example:
 
 ```
 argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
-                            argx_result_t **out);
+                        argx_result_t **out);
 argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *const *argv,
-                                 argx_result_t **out);
+                             argx_result_t **out);
 ```
 
 `argx_parse` parses a `char` argv. `argx_parse_wide` converts a wide-character argv to UTF-8 and then parses it in the same way ([Wide-character argv](#wide-character-argv)).
@@ -632,7 +632,7 @@ int wmain(int argc, wchar_t **argv)
     if (error == ARGX_ERROR_NONE)
     {
         error = argx_command_add_positional(root, "name", argx_type_string(), ARGX_ARITY_REQUIRED,
-                                              &name);
+                                            &name);
     }
     if (error == ARGX_ERROR_NONE)
     {

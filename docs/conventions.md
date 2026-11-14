@@ -80,8 +80,8 @@ cmake/                Build support files (CMake modules, scripts, templates)
 ├── ArgXVersion.cmake         Reads the version from include/argx/version.h
 └── argx.pc.in                The pkg-config file
 include/
-└── argx/           Public headers. All of them go here. They are installed
-    ├── argx.h      The only entry point users include. It only includes the other public headers
+└── argx/             Public headers. All of them go here. They are installed
+    ├── argx.h        The only entry point users include. It only includes the other public headers
     ├── alloc.h       The allocator type and the declaration of argx_set_allocator()
     ├── error.h       The list of error codes ARGX_ERROR_LIST, argx_error_t, the declaration of argx_error_message()
     ├── export.h      ARGX_API
@@ -108,8 +108,8 @@ tools/                Scripts that are not part of the build
 ├── ci/
 │   └── changes.cmake Decides whether a change touches documentation only, so that CI can skip the builds and tests
 └── release/          The release scripts and the modules they include, run with cmake -P by the release workflows
-    ├── prepare.cmake             Checks a release and rewrites the version header and the changelog (Release PR)
-    ├── publish.cmake             Checks a merged release commit and makes the release notes (Release)
+    ├── prepare.cmake           Checks a release and rewrites the version header and the changelog (Release PR)
+    ├── publish.cmake           Checks a merged release commit and makes the release notes (Release)
     ├── ArgXChangelog.cmake     Reads and updates CHANGELOG.md
     ├── ArgXReadBytes.cmake     Reads and writes a text file byte for byte, line endings included
     ├── ArgXSemver.cmake        Checks a version and compares versions by SemVer precedence
@@ -585,8 +585,8 @@ if (((arity == ARGX_ARITY_REQUIRED) || (arity == ARGX_ARITY_ONE_OR_MORE)) &&
     (argx_result_positional_count(result, positional) == 0))
 
 parts.type_name = argx_type_name((failure->positional != NULL) ?
-                                   argx_positional_type(failure->positional) :
-                                   argx_option_type(failure->option));
+                                 argx_positional_type(failure->positional) :
+                                 argx_option_type(failure->option));
 
 return add_subcommand(sweep, root, "build", &tree->build) &&
        add_subcommand(sweep, root, "run", &tree->run);

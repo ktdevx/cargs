@@ -251,14 +251,14 @@ extern "C"
  * What is returned, and what is written to *out:
  *
  *     ARGX_ERROR_NONE                  a result  The command line matches
- *                                                  the schema.
+ *                                                the schema.
  *     ARGX_ERROR_INVALID_COMMAND_LINE  a result  It does not. The result
- *                                                  holds the parse error and
- *                                                  what was read before it.
+ *                                                holds the parse error and
+ *                                                what was read before it.
  *     ARGX_ERROR_OUT_OF_MEMORY         NULL      An allocation failed, or
- *                                                  a value type returned
- *                                                  this code. Nothing stays
- *                                                  allocated.
+ *                                                a value type returned
+ *                                                this code. Nothing stays
+ *                                                allocated.
  *
  * A parse error is read with argx_result_error_kind() and the functions
  * next to it.
@@ -300,7 +300,7 @@ extern "C"
  *   result is destroyed. Not checked.
  */
 ARGX_API argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
-                                       argx_result_t **out);
+                                 argx_result_t **out);
 
 /*
  * Parses a command line of wide strings, such as the argv of wmain(), with
@@ -336,7 +336,7 @@ ARGX_API argx_error_t argx_parse(const argx_command_t *root, int argc, char *con
  * strings in the place of argv and its strings.
  */
 ARGX_API argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *const *argv,
-                                            argx_result_t **out);
+                                      argx_result_t **out);
 
 /*
  * Destroys result: frees the copy of the arguments and everything else the
@@ -433,7 +433,7 @@ ARGX_API size_t argx_result_count(const argx_result_t *result, const argx_option
  *   assert.
  */
 ARGX_API argx_source_t argx_result_option_source(const argx_result_t *result,
-                                                       const argx_option_t *option);
+                                                 const argx_option_t *option);
 
 /*
  * Read the value of an option that takes a value.
@@ -472,15 +472,15 @@ ARGX_API argx_source_t argx_result_option_source(const argx_result_t *result,
  *   Checked with assert.
  */
 ARGX_API bool argx_result_option_string(const argx_result_t *result, const argx_option_t *option,
-                                            const char **out);
+                                        const char **out);
 ARGX_API bool argx_result_option_int(const argx_result_t *result, const argx_option_t *option,
-                                         int64_t *out);
+                                     int64_t *out);
 ARGX_API bool argx_result_option_float(const argx_result_t *result, const argx_option_t *option,
-                                           double *out);
+                                       double *out);
 ARGX_API bool argx_result_option_choice(const argx_result_t *result, const argx_option_t *option,
-                                            size_t *out);
+                                        size_t *out);
 ARGX_API const void *argx_result_option_value(const argx_result_t *result,
-                                                  const argx_option_t *option);
+                                              const argx_option_t *option);
 
 /*
  * Read the values of a positional.
@@ -518,23 +518,23 @@ ARGX_API const void *argx_result_option_value(const argx_result_t *result,
  *   Checked with assert.
  */
 ARGX_API size_t argx_result_positional_count(const argx_result_t *result,
-                                                 const argx_positional_t *positional);
+                                             const argx_positional_t *positional);
 ARGX_API argx_source_t argx_result_positional_source(const argx_result_t *result,
-                                                           const argx_positional_t *positional);
+                                                     const argx_positional_t *positional);
 ARGX_API bool argx_result_positional_string(const argx_result_t *result,
-                                                const argx_positional_t *positional, size_t index,
-                                                const char **out);
+                                            const argx_positional_t *positional, size_t index,
+                                            const char **out);
 ARGX_API bool argx_result_positional_int(const argx_result_t *result,
-                                             const argx_positional_t *positional, size_t index,
-                                             int64_t *out);
+                                         const argx_positional_t *positional, size_t index,
+                                         int64_t *out);
 ARGX_API bool argx_result_positional_float(const argx_result_t *result,
-                                               const argx_positional_t *positional, size_t index,
-                                               double *out);
+                                           const argx_positional_t *positional, size_t index,
+                                           double *out);
 ARGX_API bool argx_result_positional_choice(const argx_result_t *result,
-                                                const argx_positional_t *positional, size_t index,
-                                                size_t *out);
+                                            const argx_positional_t *positional, size_t index,
+                                            size_t *out);
 ARGX_API const void *argx_result_positional_value(const argx_result_t *result,
-                                                      const argx_positional_t *positional, size_t index);
+                                                  const argx_positional_t *positional, size_t index);
 
 /*
  * Read the parse error of a result: what is wrong with a command line that

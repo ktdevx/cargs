@@ -157,7 +157,7 @@ ARGX_API const argx_type_t *argx_type_float(void);
  *   Checked with assert.
  */
 ARGX_API argx_error_t argx_type_create_choice(const char *const *choices, size_t count,
-                                                    argx_type_t **out);
+                                              argx_type_t **out);
 
 /*
  * Creates a user-defined value type, of the kind ARGX_TYPE_CUSTOM, and
@@ -197,9 +197,9 @@ ARGX_API argx_error_t argx_type_create_choice(const char *const *choices, size_t
  * - convert_fn is not NULL. Checked with assert.
  */
 ARGX_API argx_error_t argx_type_create(const char *name, size_t value_size,
-                                             argx_convert_fn_t convert_fn,
-                                             argx_release_fn_t release_fn, void *context,
-                                             argx_type_t **out);
+                                       argx_convert_fn_t convert_fn,
+                                       argx_release_fn_t release_fn, void *context,
+                                       argx_type_t **out);
 
 /*
  * Destroys a value type that argx_type_create_choice() or

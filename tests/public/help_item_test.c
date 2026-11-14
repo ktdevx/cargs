@@ -206,7 +206,7 @@ static argx_type_t *create_type(const char *name)
  * description, or NULL to set none.
  */
 static argx_command_t *add_sub(argx_command_t *command, const char *name,
-                                 const char *description)
+                               const char *description)
 {
     argx_command_t *sub = NULL;
 
@@ -616,8 +616,8 @@ NAOS_TEST(option_description_is_written_whole)
  * so that the test can set what add_value() does not.
  */
 static argx_option_t *add_value_option(argx_command_t *command, char short_name,
-                                         const char *long_name, const argx_type_t *type,
-                                         const char *value_name, const char *description)
+                                       const char *long_name, const argx_type_t *type,
+                                       const char *value_name, const char *description)
 {
     argx_option_t *option = NULL;
 
@@ -650,8 +650,8 @@ static void add_negatable_initial(argx_command_t *command, char short_name,
  * description, or NULL to set none.
  */
 static argx_positional_t *add_positional(argx_command_t *command, const char *name,
-                                           const argx_type_t *type, argx_arity_t arity,
-                                           const char *description)
+                                         const argx_type_t *type, argx_arity_t arity,
+                                         const char *description)
 {
     argx_positional_t *positional = NULL;
 

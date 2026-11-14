@@ -22,7 +22,7 @@ typedef struct help_context
     size_t indent;                   /* the blanks before each item of a list */
     size_t max_column;               /* the last column at which the descriptions may start */
     size_t column;                   /* the description column; set before the lists are written */
-    argx_out_t out;                /* where the text goes */
+    argx_out_t out;                  /* where the text goes */
     /*
      * the cell text of one item, as bytes; used again for the
      * next item, freed before the generation returns
@@ -328,8 +328,8 @@ static void help_write_usage_line(help_context_t *context)
 }
 
 argx_error_t argx_help_write_usage(const argx_command_t *command,
-                                       const argx_help_options_t *options,
-                                       argx_help_write_fn_t write_fn, void *user_data)
+                                   const argx_help_options_t *options,
+                                   argx_help_write_fn_t write_fn, void *user_data)
 {
     help_context_t context;
 
@@ -823,8 +823,8 @@ static argx_error_t help_write_options(help_context_t *context)
 }
 
 argx_error_t argx_help_write(const argx_command_t *command,
-                                 const argx_help_options_t *options,
-                                 argx_help_write_fn_t write_fn, void *user_data)
+                             const argx_help_options_t *options,
+                             argx_help_write_fn_t write_fn, void *user_data)
 {
     help_context_t context;
     argx_error_t error;
@@ -903,7 +903,7 @@ static bool help_buffer_write(void *user_data, const char *text, size_t length)
  * not NULL, the length of the whole text. Returns error.
  */
 static argx_error_t help_buffer_finish(help_buffer_t *target, argx_error_t error,
-                                         size_t *length)
+                                       size_t *length)
 {
     if (error != ARGX_ERROR_NONE)
     {
@@ -922,8 +922,8 @@ static argx_error_t help_buffer_finish(help_buffer_t *target, argx_error_t error
 }
 
 argx_error_t argx_help_format(const argx_command_t *command,
-                                  const argx_help_options_t *options, char *buffer, size_t size,
-                                  size_t *length)
+                              const argx_help_options_t *options, char *buffer, size_t size,
+                              size_t *length)
 {
     help_buffer_t target;
 
@@ -937,8 +937,8 @@ argx_error_t argx_help_format(const argx_command_t *command,
 }
 
 argx_error_t argx_help_format_usage(const argx_command_t *command,
-                                        const argx_help_options_t *options, char *buffer,
-                                        size_t size, size_t *length)
+                                    const argx_help_options_t *options, char *buffer,
+                                    size_t size, size_t *length)
 {
     help_buffer_t target;
 

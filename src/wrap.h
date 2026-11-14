@@ -45,6 +45,6 @@
  * checked with assert.
  */
 void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
-                       size_t column, size_t width);
+                     size_t column, size_t width);
 
 #endif /* ARGX_WRAP_H */

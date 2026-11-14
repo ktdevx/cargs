@@ -38,7 +38,7 @@ static bool name_is_in_use(const argx_command_t *command, const char *name)
  * when an allocation fails.
  */
 static argx_positional_t *new_positional(argx_command_t *command, const char *name,
-                                           const argx_type_t *type, argx_arity_t arity)
+                                         const argx_type_t *type, argx_arity_t arity)
 {
     argx_positional_t *positional = (argx_positional_t *)argx_malloc(sizeof(*positional));
 
@@ -76,8 +76,8 @@ static void free_new_positional(argx_positional_t *positional)
 /* ---- Addition ----------------------------------------------------------- */
 
 argx_error_t argx_command_add_positional(argx_command_t *command, const char *name,
-                                             const argx_type_t *type, argx_arity_t arity,
-                                             argx_positional_t **out)
+                                         const argx_type_t *type, argx_arity_t arity,
+                                         argx_positional_t **out)
 {
     argx_positional_t *positional;
 

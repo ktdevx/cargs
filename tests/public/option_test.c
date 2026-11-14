@@ -66,7 +66,7 @@ static argx_command_t *add_sub(argx_command_t *command, const char *name)
  * with a value gets the value type of strings.
  */
 static argx_error_t add_kind(argx_option_kind_t kind, argx_command_t *command, char short_name,
-                               const char *long_name, argx_option_t **out)
+                             const char *long_name, argx_option_t **out)
 {
     switch (kind)
     {
@@ -86,7 +86,7 @@ static argx_error_t add_kind(argx_option_kind_t kind, argx_command_t *command, c
 
 /* Adds an option that must succeed, and returns it. */
 static argx_option_t *add(argx_option_kind_t kind, argx_command_t *command, char short_name,
-                            const char *long_name)
+                          const char *long_name)
 {
     argx_option_t *option = NULL;
 

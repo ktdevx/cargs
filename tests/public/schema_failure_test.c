@@ -342,10 +342,10 @@ static void open_sweep(sweep_t *sweep)
     NAOS_REQUIRE_TRUE(argx_command_add_flag(sweep->other, 's', "sentinel", &sweep->other_option) ==
                       ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(sweep->other, "sentinel", argx_type_string(),
-                                                    ARGX_ARITY_REQUIRED,
-                                                    &sweep->other_positional) == ARGX_ERROR_NONE);
+                                                  ARGX_ARITY_REQUIRED,
+                                                  &sweep->other_positional) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_type_create("other", sizeof(int), port_convert, NULL, NULL,
-                                         &sweep->other_type) == ARGX_ERROR_NONE);
+                                       &sweep->other_type) == ARGX_ERROR_NONE);
 }
 
 /*

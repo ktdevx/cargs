@@ -56,9 +56,9 @@ typedef struct argx_result_frame
 {
     const argx_command_t *command;
     argx_option_slot_t *options;         /* NULL when option_count is 0. */
-    size_t option_count;                   /* argx_command_option_count(command) */
+    size_t option_count;                 /* argx_command_option_count(command) */
     argx_positional_slot_t *positionals; /* NULL when positional_count is 0. */
-    size_t positional_count;               /* argx_command_positional_count(command) */
+    size_t positional_count;             /* argx_command_positional_count(command) */
 } argx_result_frame_t;
 
 struct argx_result
@@ -119,9 +119,9 @@ struct argx_result
  *   argv[argc - 1] is NULL.
  */
 argx_error_t argx_result_create(const argx_command_t *root, int argc, char *const *argv,
-                                    argx_result_t **out);
+                                argx_result_t **out);
 argx_error_t argx_result_create_wide(const argx_command_t *root, int argc, wchar_t *const *argv,
-                                         argx_result_t **out);
+                                     argx_result_t **out);
 
 /*
  * Returns the copy of the argument at index, the index it had in argv. The
@@ -252,10 +252,10 @@ typedef struct argx_result_where
  *   fails.
  */
 argx_error_t argx_result_record_option_value(argx_result_t *result, const argx_option_t *option,
-                                                 const char *text, const argx_result_where_t *where);
+                                             const char *text, const argx_result_where_t *where);
 argx_error_t argx_result_record_positional_value(argx_result_t *result,
-                                                     const argx_positional_t *positional,
-                                                     const char *text, const argx_result_where_t *where);
+                                                 const argx_positional_t *positional,
+                                                 const char *text, const argx_result_where_t *where);
 
 /*
  * Takes back every default value that was applied: releases each value of

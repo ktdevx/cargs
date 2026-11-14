@@ -99,18 +99,18 @@ static argx_option_t *add_value(argx_command_t *command, char short_name, const 
     argx_option_t *option = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, argx_type_string(),
-                                               &option) == ARGX_ERROR_NONE);
+                                             &option) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     return option;
 }
 
 static argx_positional_t *add_positional(argx_command_t *command, const char *name,
-                                           argx_arity_t arity)
+                                         argx_arity_t arity)
 {
     argx_positional_t *positional = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, argx_type_string(), arity,
-                                                    &positional) == ARGX_ERROR_NONE);
+                                                  &positional) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     return positional;
 }
@@ -158,8 +158,8 @@ static void check_validate(argx_command_t *root, argx_error_t expected,
         const bool with_positional = (mask & 4u) != 0;
 
         NAOS_CHECK_INT_EQ(argx_command_validate(root, with_command ? &command : NULL,
-                                                  with_option ? &option : NULL,
-                                                  with_positional ? &positional : NULL),
+                                                with_option ? &option : NULL,
+                                                with_positional ? &positional : NULL),
                           expected);
 
         if (with_command)
@@ -273,8 +273,8 @@ static void build_full_tree(full_tree_t *tree)
     tree->profile = add_positional(tree->build, "profile", ARGX_ARITY_OPTIONAL);
     NAOS_REQUIRE_TRUE(argx_positional_set_default(tree->profile, "debug") == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(tree->build, "rest", argx_type_string(),
-                                                    ARGX_ARITY_ZERO_OR_MORE,
-                                                    NULL) == ARGX_ERROR_NONE);
+                                                  ARGX_ARITY_ZERO_OR_MORE,
+                                                  NULL) == ARGX_ERROR_NONE);
 
     tree->remote = add_sub(tree->root, "remote");
     tree->add = add_sub(tree->remote, "add");
@@ -1043,7 +1043,7 @@ static argx_error_t mutate(const fixture_t *fixture, mutation_t mutation)
         return argx_command_add_value(fixture->target, 'n', "new", argx_type_string(), NULL);
     case ADD_POSITIONAL:
         return argx_command_add_positional(fixture->target, "new", argx_type_string(),
-                                             ARGX_ARITY_OPTIONAL, NULL);
+                                           ARGX_ARITY_OPTIONAL, NULL);
     case SET_COMMAND_DESCRIPTION:
         return argx_command_set_description(fixture->target, "A description.");
     case SET_OPTION_DESCRIPTION:
@@ -1258,7 +1258,7 @@ static argx_error_t attempt(const fixture_t *fixture, refusal_t refusal)
         return argx_command_add_value(fixture->target, 'n', "new=name", argx_type_string(), NULL);
     case POSITIONAL_WITH_AN_EMPTY_NAME:
         return argx_command_add_positional(fixture->target, "", argx_type_string(),
-                                             ARGX_ARITY_OPTIONAL, NULL);
+                                           ARGX_ARITY_OPTIONAL, NULL);
     case SUBCOMMAND_WITH_A_NAME_IN_USE:
         return argx_command_add_subcommand(fixture->target, "child", NULL);
     case FLAG_WITH_A_SHORT_NAME_IN_USE:
@@ -1271,12 +1271,12 @@ static argx_error_t attempt(const fixture_t *fixture, refusal_t refusal)
         return argx_command_add_negatable(fixture->target, 'n', "color", NULL);
     case POSITIONAL_WITH_A_NAME_IN_USE:
         return argx_command_add_positional(fixture->target, "input", argx_type_string(),
-                                             ARGX_ARITY_OPTIONAL, NULL);
+                                           ARGX_ARITY_OPTIONAL, NULL);
     case SUBCOMMAND_NEXT_TO_POSITIONALS:
         return argx_command_add_subcommand(fixture->target, "new", NULL);
     case POSITIONAL_NEXT_TO_SUBCOMMANDS:
         return argx_command_add_positional(fixture->target, "new", argx_type_string(),
-                                             ARGX_ARITY_OPTIONAL, NULL);
+                                           ARGX_ARITY_OPTIONAL, NULL);
     case VALUE_NAME_OF_A_FLAG:
         return argx_option_set_value_name(fixture->flag, "FILE");
     case REQUIRED_OF_A_FLAG:
@@ -1402,7 +1402,7 @@ NAOS_TEST(a_change_that_fails_for_a_lack_of_memory_leaves_a_validated_tree_valid
 
 /* Additions with a value type that must succeed. */
 static argx_option_t *add_typed_value(argx_command_t *command, char short_name,
-                                        const char *long_name, const argx_type_t *type)
+                                      const char *long_name, const argx_type_t *type)
 {
     argx_option_t *option = NULL;
 
@@ -1414,12 +1414,12 @@ static argx_option_t *add_typed_value(argx_command_t *command, char short_name,
 
 /* Adds an optional positional: the only kind that takes a default value. */
 static argx_positional_t *add_typed_positional(argx_command_t *command, const char *name,
-                                                 const argx_type_t *type)
+                                               const argx_type_t *type)
 {
     argx_positional_t *positional = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, type, ARGX_ARITY_OPTIONAL,
-                                                    &positional) == ARGX_ERROR_NONE);
+                                                  &positional) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     return positional;
 }
@@ -1542,7 +1542,7 @@ static argx_type_t *new_probe_type(probe_t *probe)
     probe->mismatches = 0;
 
     NAOS_REQUIRE_TRUE(argx_type_create("probe", sizeof(probe_value_t), probe_convert, probe_release,
-                                         probe, &type) == ARGX_ERROR_NONE);
+                                       probe, &type) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(type != NULL);
     return type;
 }
@@ -1619,8 +1619,8 @@ static void check_validate_without_memory(argx_command_t *root, size_t nth)
 
         argx_test_allocator_fail_at(requests + nth);
         error = argx_command_validate(root, with_command ? &command : NULL,
-                                        with_option ? &option : NULL,
-                                        with_positional ? &positional : NULL);
+                                      with_option ? &option : NULL,
+                                      with_positional ? &positional : NULL);
         argx_test_allocator_fail_at(0);
 
         NAOS_CHECK_INT_EQ(error, ARGX_ERROR_OUT_OF_MEMORY);

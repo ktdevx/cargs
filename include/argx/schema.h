@@ -168,7 +168,7 @@ ARGX_API void argx_command_destroy(argx_command_t *root);
  * - out may be NULL, when the handle is not needed.
  */
 ARGX_API argx_error_t argx_command_add_subcommand(argx_command_t *command, const char *name,
-                                                        argx_command_t **out);
+                                                  argx_command_t **out);
 
 /*
  * Sets the description of command to a copy of text. A description that
@@ -228,10 +228,10 @@ ARGX_API size_t argx_command_option_count(const argx_command_t *command);
 ARGX_API const argx_option_t *argx_command_option_at(const argx_command_t *command, size_t index);
 ARGX_API size_t argx_command_positional_count(const argx_command_t *command);
 ARGX_API const argx_positional_t *argx_command_positional_at(const argx_command_t *command,
-                                                                   size_t index);
+                                                             size_t index);
 ARGX_API size_t argx_command_subcommand_count(const argx_command_t *command);
 ARGX_API const argx_command_t *argx_command_subcommand_at(const argx_command_t *command,
-                                                                size_t index);
+                                                          size_t index);
 
 /*
  * Returns the option of command whose short name is name, or NULL when
@@ -269,8 +269,8 @@ ARGX_API const argx_option_t *argx_command_find_short(const argx_command_t *comm
  * - negated may be NULL.
  */
 ARGX_API const argx_option_t *argx_command_find_long(const argx_command_t *command,
-                                                           const char *name, size_t length,
-                                                           bool *negated);
+                                                     const char *name, size_t length,
+                                                     bool *negated);
 
 /*
  * Returns the subcommand of command whose name is name, or NULL when there
@@ -284,7 +284,7 @@ ARGX_API const argx_option_t *argx_command_find_long(const argx_command_t *comma
  * - name is not NULL. Checked with assert.
  */
 ARGX_API const argx_command_t *argx_command_find_subcommand(const argx_command_t *command,
-                                                                  const char *name);
+                                                            const char *name);
 
 /* ---- Options ------------------------------------------------------------ */
 
@@ -341,14 +341,14 @@ ARGX_API const argx_command_t *argx_command_find_subcommand(const argx_command_t
  * - out may be NULL, when the handle is not needed.
  */
 ARGX_API argx_error_t argx_command_add_flag(argx_command_t *command, char short_name,
-                                                  const char *long_name, argx_option_t **out);
+                                            const char *long_name, argx_option_t **out);
 ARGX_API argx_error_t argx_command_add_negatable(argx_command_t *command, char short_name,
-                                                       const char *long_name, argx_option_t **out);
+                                                 const char *long_name, argx_option_t **out);
 ARGX_API argx_error_t argx_command_add_count(argx_command_t *command, char short_name,
-                                                   const char *long_name, argx_option_t **out);
+                                             const char *long_name, argx_option_t **out);
 ARGX_API argx_error_t argx_command_add_value(argx_command_t *command, char short_name,
-                                                   const char *long_name, const argx_type_t *type,
-                                                   argx_option_t **out);
+                                             const char *long_name, const argx_type_t *type,
+                                             argx_option_t **out);
 
 /*
  * Returns the command that option belongs to. Never NULL.
@@ -546,8 +546,8 @@ ARGX_API bool argx_option_initial(const argx_option_t *option);
  * - out may be NULL, when the handle is not needed.
  */
 ARGX_API argx_error_t argx_command_add_positional(argx_command_t *command, const char *name,
-                                                        const argx_type_t *type, argx_arity_t arity,
-                                                        argx_positional_t **out);
+                                                  const argx_type_t *type, argx_arity_t arity,
+                                                  argx_positional_t **out);
 
 /*
  * Set an attribute of positional. Both attributes are optional, and each is
@@ -581,9 +581,9 @@ ARGX_API argx_error_t argx_command_add_positional(argx_command_t *command, const
  * - text and value are not NULL. Checked with assert.
  */
 ARGX_API argx_error_t argx_positional_set_description(argx_positional_t *positional,
-                                                            const char *text);
+                                                      const char *text);
 ARGX_API argx_error_t argx_positional_set_default(argx_positional_t *positional,
-                                                        const char *value);
+                                                  const char *value);
 
 /*
  * Returns the command that positional belongs to. Never NULL.
@@ -715,9 +715,9 @@ ARGX_API const char *argx_positional_default(const argx_positional_t *positional
  *   by every call.
  */
 ARGX_API argx_error_t argx_command_validate(argx_command_t *root,
-                                                  const argx_command_t **command,
-                                                  const argx_option_t **option,
-                                                  const argx_positional_t **positional);
+                                            const argx_command_t **command,
+                                            const argx_option_t **option,
+                                            const argx_positional_t **positional);
 
 /*
  * Returns whether the tree that command belongs to is validated: whether

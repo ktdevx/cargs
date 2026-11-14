@@ -168,7 +168,7 @@ static argx_error_t check_options(const argx_command_t *command, const argx_opti
  * default value is taken.
  */
 static argx_error_t check_positional_defaults(const argx_command_t *command,
-                                                const argx_positional_t **faulty)
+                                              const argx_positional_t **faulty)
 {
     const size_t count = argx_command_positional_count(command);
     size_t index;
@@ -263,8 +263,8 @@ static argx_error_t check_command(const argx_command_t *command, fault_t *fault)
 }
 
 argx_error_t argx_command_validate(argx_command_t *root, const argx_command_t **command,
-                                       const argx_option_t **option,
-                                       const argx_positional_t **positional)
+                                   const argx_option_t **option,
+                                   const argx_positional_t **positional)
 {
     fault_t fault;
     argx_error_t error;

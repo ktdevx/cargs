@@ -131,16 +131,16 @@ static void set_up(fixture_t *fixture)
     NAOS_REQUIRE_TRUE(argx_command_add_value(fixture->root, 'n', "num", argx_type_int(), &fixture->num) ==
                       ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_value(fixture->root, 'o', "name", argx_type_string(),
-                                               &fixture->name) == ARGX_ERROR_NONE);
+                                             &fixture->name) == ARGX_ERROR_NONE);
 
     NAOS_REQUIRE_TRUE(argx_command_add_subcommand(fixture->root, "run", &fixture->run) ==
                       ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_value(fixture->run, 't', "tag", argx_type_string(),
-                                               &fixture->tag) == ARGX_ERROR_NONE);
+                                             &fixture->tag) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_option_set_default(fixture->tag, "none") == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(fixture->run, "FILE", argx_type_string(),
-                                                    ARGX_ARITY_ZERO_OR_MORE,
-                                                    &fixture->file) == ARGX_ERROR_NONE);
+                                                  ARGX_ARITY_ZERO_OR_MORE,
+                                                  &fixture->file) == ARGX_ERROR_NONE);
 
     NAOS_REQUIRE_TRUE(argx_command_validate(fixture->root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
 }
@@ -303,7 +303,7 @@ static void check_same_results(const fixture_t *fixture, const argx_result_t *wi
  * destroys.
  */
 static argx_result_t *parse_both(const fixture_t *fixture, int argc, wchar_t *const *wide_argv,
-                                   char *const *argv, argx_error_t expected)
+                                 char *const *argv, argx_error_t expected)
 {
     argx_result_t *wide = NULL;
     argx_result_t *narrow = NULL;
@@ -946,7 +946,7 @@ NAOS_TEST(an_error_is_reported_before_something_required_that_is_missing_is_look
                       ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_option_set_required(key, true) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_add_positional(root, "FILE", argx_type_string(),
-                                                    ARGX_ARITY_ZERO_OR_MORE, &fixture.file) ==
+                                                  ARGX_ARITY_ZERO_OR_MORE, &fixture.file) ==
                       ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(argx_command_validate(root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
     fixture.root = root;

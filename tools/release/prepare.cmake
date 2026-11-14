@@ -7,27 +7,27 @@
 #         [-D ARGX_RELEASE_CHECK_ONLY=ON] -P tools/release/prepare.cmake
 #
 #   ARGX_RELEASE_VERSION     The version to release, such as 0.2.0 or
-#                              0.2.0-rc.1, without a leading "v".
+#                            0.2.0-rc.1, without a leading "v".
 #   ARGX_RELEASE_DATE        The date of the release, YYYY-MM-DD (the release
-#                              workflow passes the day in UTC).
+#                            workflow passes the day in UTC).
 #   ARGX_RELEASE_REPO_URL    https://github.com/<owner>/<repo>, for the links
-#                              at the end of the changelog.
+#                            at the end of the changelog.
 #   ARGX_SOURCE_DIR          The root of the source tree to rewrite: it holds
-#                              include/argx/version.h and CHANGELOG.md. It
-#                              may be a copy of the working tree, to try a
-#                              release by hand.
+#                            include/argx/version.h and CHANGELOG.md. It
+#                            may be a copy of the working tree, to try a
+#                            release by hand.
 #   ARGX_RELEASE_TAGS_FILE   A file with the existing tags of the repository,
-#                              one per line (it may be empty). Only a tag that
-#                              is "v" followed by a valid version counts as a
-#                              release; other lines are ignored.
+#                            one per line (it may be empty). Only a tag that
+#                            is "v" followed by a valid version counts as a
+#                            release; other lines are ignored.
 #   ARGX_RELEASE_OUTPUT      Optional. A file to append the results to, one
-#                              "key=value" line each, such as $GITHUB_OUTPUT:
+#                            "key=value" line each, such as $GITHUB_OUTPUT:
 #                                version=<version>
 #                                tag=v<version>
 #                                prerelease=<true|false>
 #   ARGX_RELEASE_CHECK_ONLY  Optional. When true, runs every check and
-#                              prepares the new files, but writes nothing: not
-#                              the two files and not the output file.
+#                            prepares the new files, but writes nothing: not
+#                            the two files and not the output file.
 #
 # The checks run in this order and the first one that fails stops the script
 # with a FATAL_ERROR that starts with "error: " and gives the reason. They all

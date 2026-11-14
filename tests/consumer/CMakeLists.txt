@@ -10,8 +10,8 @@
 # ARGX_CONSUME_MODE chooses how ArgX is brought in:
 #
 #   mode              how                              also give
-#   find_package      find_package(ArgX <version>)   CMAKE_PREFIX_PATH=<install prefix>
-#   pkg_config        pkg-config, module argx        CMAKE_PREFIX_PATH=<install prefix>
+#   find_package      find_package(ArgX <version>)     CMAKE_PREFIX_PATH=<install prefix>
+#   pkg_config        pkg-config, module argx          CMAKE_PREFIX_PATH=<install prefix>
 #                                                      (or PKG_CONFIG_PATH)
 #   add_subdirectory  add_subdirectory(<checkout>)     ARGX_CONSUME_SOURCE_DIR=<checkout>
 #   fetch_content     FetchContent on <checkout>,      ARGX_CONSUME_SOURCE_DIR=<checkout>

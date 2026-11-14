@@ -88,7 +88,7 @@ static argx_option_t *add_count(argx_command_t *command, char short_name, const 
 
 /* Adds a negatable flag with the initial state initial to command. */
 static argx_option_t *add_negatable(argx_command_t *command, char short_name, const char *long_name,
-                                      bool initial)
+                                    bool initial)
 {
     argx_option_t *option = NULL;
 
@@ -104,7 +104,7 @@ static argx_option_t *add_negatable(argx_command_t *command, char short_name, co
  * NULL: the option has no default value then.
  */
 static argx_option_t *add_value(argx_command_t *command, char short_name, const char *long_name,
-                                  const argx_type_t *type, const char *default_value)
+                                const argx_type_t *type, const char *default_value)
 {
     argx_option_t *option = NULL;
 
@@ -120,7 +120,7 @@ static argx_option_t *add_value(argx_command_t *command, char short_name, const 
 
 /* Adds an option that takes a value and must be given to command. */
 static argx_option_t *add_required(argx_command_t *command, char short_name, const char *long_name,
-                                     const argx_type_t *type)
+                                   const argx_type_t *type)
 {
     argx_option_t *option = add_value(command, short_name, long_name, type, NULL);
 
@@ -133,8 +133,8 @@ static argx_option_t *add_required(argx_command_t *command, char short_name, con
  * has no default value then.
  */
 static argx_positional_t *add_positional(argx_command_t *command, const char *name,
-                                           const argx_type_t *type, argx_arity_t arity,
-                                           const char *default_value)
+                                         const argx_type_t *type, argx_arity_t arity,
+                                         const char *default_value)
 {
     argx_positional_t *positional = NULL;
 
@@ -257,7 +257,7 @@ static void check_error(const argx_result_t *result, const expected_t *expected)
  * field of the error. Returns the result, which the caller destroys.
  */
 static argx_result_t *parse_error(const argx_command_t *root, int argc, char *const *argv,
-                                    const expected_t *expected)
+                                  const expected_t *expected)
 {
     argx_result_t *result = NULL;
 
@@ -873,7 +873,7 @@ NAOS_TEST(an_invalid_default_value_has_the_default_as_its_value_and_no_argument)
     expected_t expected;
 
     NAOS_REQUIRE_TRUE(argx_type_create("word", sizeof(const char *), picky_convert, NULL, &picky,
-                                         &type) == ARGX_ERROR_NONE);
+                                       &type) == ARGX_ERROR_NONE);
     mode = add_value(root, 'm', "mode", type, "bad-mode");
     make = add_subcommand(root, "make");
     (void)add_flag(make, 'v', NULL);

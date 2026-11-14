@@ -85,7 +85,7 @@ int main(void)
         failed(&error, argx_option_set_description(option, "How often to try again.")) ||
         failed(&error, argx_option_set_default(option, "3")) ||
         failed(&error, argx_command_add_positional(root, "url", argx_type_string(),
-                                                     ARGX_ARITY_REQUIRED, &positional)) ||
+                                                   ARGX_ARITY_REQUIRED, &positional)) ||
         failed(&error, argx_positional_set_description(positional, "The address to read.")) ||
         failed(&error, argx_command_validate(root, NULL, NULL, NULL)))
     {
@@ -205,7 +205,7 @@ static argx_error_t define_schema(pack_schema_t *schema)
 
     if (failed(&error, argx_command_create("pack", &schema->root)) ||
         failed(&error, argx_command_set_description(schema->root,
-                                                      "Pack files into an archive.")) ||
+                                                    "Pack files into an archive.")) ||
         failed(&error, add_help(schema->root)) ||
         failed(&error, argx_command_add_count(schema->root, 'v', "verbose", &option)) ||
         failed(&error, argx_option_set_description(option, "Print more; can be repeated.")) ||
@@ -220,7 +220,7 @@ static argx_error_t define_schema(pack_schema_t *schema)
         failed(&error, argx_command_set_description(schema->create, "Create an archive.")) ||
         failed(&error, add_help(schema->create)) ||
         failed(&error, argx_command_add_value(schema->create, 'o', "output", argx_type_string(),
-                                                &option)) ||
+                                              &option)) ||
         failed(&error, argx_option_set_description(option, "The archive to write.")) ||
         failed(&error, argx_option_set_value_name(option, "FILE")) ||
         failed(&error, argx_option_set_required(option, true)) ||
@@ -230,7 +230,7 @@ static argx_error_t define_schema(pack_schema_t *schema)
         failed(&error, argx_option_set_value_name(option, "LEVEL")) ||
         failed(&error, argx_option_set_default(option, "6")) ||
         failed(&error, argx_command_add_positional(schema->create, "file", argx_type_string(),
-                                                     ARGX_ARITY_ONE_OR_MORE, &positional)) ||
+                                                   ARGX_ARITY_ONE_OR_MORE, &positional)) ||
         failed(&error, argx_positional_set_description(positional, "The files to pack.")))
     {
         return error;
@@ -241,10 +241,10 @@ static argx_error_t define_schema(pack_schema_t *schema)
                argx_command_set_description(schema->list, "List the files of an archive.")) ||
         failed(&error, add_help(schema->list)) ||
         failed(&error, argx_command_add_positional(schema->list, "archive", argx_type_string(),
-                                                     ARGX_ARITY_REQUIRED, &positional)) ||
+                                                   ARGX_ARITY_REQUIRED, &positional)) ||
         failed(&error, argx_positional_set_description(positional, "The archive to read.")) ||
         failed(&error, argx_command_add_positional(schema->list, "pattern", argx_type_string(),
-                                                     ARGX_ARITY_OPTIONAL, &positional)) ||
+                                                   ARGX_ARITY_OPTIONAL, &positional)) ||
         failed(&error, argx_positional_set_description(positional, "The files to list.")) ||
         failed(&error, argx_positional_set_default(positional, "*")))
     {
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
              */
             fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
             argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream,
-                                    stderr);
+                                  stderr);
             fprintf(stderr, "Try 'pack --help' for more information.\n");
         }
         else
@@ -404,17 +404,17 @@ Points of the example:
 
 ```
 argx_error_t argx_help_write(const argx_command_t *command,
-                                 const argx_help_options_t *options,
-                                 argx_help_write_fn_t write_fn, void *user_data);
+                             const argx_help_options_t *options,
+                             argx_help_write_fn_t write_fn, void *user_data);
 argx_error_t argx_help_write_usage(const argx_command_t *command,
-                                       const argx_help_options_t *options,
-                                       argx_help_write_fn_t write_fn, void *user_data);
+                                   const argx_help_options_t *options,
+                                   argx_help_write_fn_t write_fn, void *user_data);
 argx_error_t argx_help_format(const argx_command_t *command,
-                                  const argx_help_options_t *options,
-                                  char *buffer, size_t size, size_t *length);
+                              const argx_help_options_t *options,
+                              char *buffer, size_t size, size_t *length);
 argx_error_t argx_help_format_usage(const argx_command_t *command,
-                                        const argx_help_options_t *options,
-                                        char *buffer, size_t size, size_t *length);
+                                    const argx_help_options_t *options,
+                                    char *buffer, size_t size, size_t *length);
 ```
 
 | Function | Generates | Destination |

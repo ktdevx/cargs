@@ -144,8 +144,8 @@ tools/
 │   ├── ArgXChangelog.cmake     # CHANGELOG の解析、Unreleased の移動、リンクの更新、ノートの取り出し
 │   ├── ArgXVersionHeader.cmake # version.h の 4 つのマクロの値の書き換えと、読み直しによる確認
 │   ├── ArgXReadBytes.cmake     # ファイルをバイト単位で読む（CRLF を保つ）。prepare、publish、ArgXVersionHeader が共有する（実装時に追加）
-│   ├── prepare.cmake             # 入口: リリース PR の前の検証と、ヘッダ・CHANGELOG の書き換え
-│   └── publish.cmake             # 入口: マージ後の照合、ノートの作成、Pre-release の判定
+│   ├── prepare.cmake           # 入口: リリース PR の前の検証と、ヘッダ・CHANGELOG の書き換え
+│   └── publish.cmake           # 入口: マージ後の照合、ノートの作成、Pre-release の判定
 └── ci/
     └── changes.cmake             # 入口: 変更されたファイルの一覧から、文書だけの変更かを判定する
 tests/release/

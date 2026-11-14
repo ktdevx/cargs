@@ -5,12 +5,12 @@
 #         -P tools/ci/changes.cmake
 #
 #   ARGX_CHANGED_FILES   A file with one changed path per line, relative to
-#                          the root of the repository, as "git diff --name-only"
-#                          prints them. Blank lines are ignored, and LF and CRLF
-#                          line endings are both accepted. Optional: leave it
-#                          out when there is no list.
+#                        the root of the repository, as "git diff --name-only"
+#                        prints them. Blank lines are ignored, and LF and CRLF
+#                        line endings are both accepted. Optional: leave it
+#                        out when there is no list.
 #   ARGX_CHANGES_OUTPUT  A file to append "docs_only=<true|false>" and a
-#                          newline to, such as $GITHUB_OUTPUT. Optional.
+#                        newline to, such as $GITHUB_OUTPUT. Optional.
 #
 # A path is documentation when it is one of these:
 #

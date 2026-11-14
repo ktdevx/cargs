@@ -6,7 +6,7 @@
 #   cmake [-D ARGX_SOURCE_DIR=<directory>] -P cmake/ArgXCheckAllocations.cmake
 #
 #   ARGX_SOURCE_DIR  The directory of the library sources. Default: src of
-#                      this source tree.
+#                    this source tree.
 #
 # The rules:
 #

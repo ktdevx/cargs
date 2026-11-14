@@ -79,7 +79,7 @@ static argx_positional_t *add(argx_command_t *command, const char *name, argx_ar
     argx_positional_t *positional = NULL;
 
     NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, argx_type_string(), arity,
-                                                    &positional) == ARGX_ERROR_NONE);
+                                                  &positional) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     return positional;
 }
@@ -111,13 +111,13 @@ static void check_rejected(argx_command_t *command, const char *name, argx_error
         argx_positional_t *positional = sentinel;
 
         NAOS_CHECK_INT_EQ(argx_command_add_positional(command, name, argx_type_string(),
-                                                        all_arities[index], &positional),
+                                                      all_arities[index], &positional),
                           expected);
         NAOS_CHECK_TRUE(positional == NULL);
 
         /* The failure needs no output either. */
         NAOS_CHECK_INT_EQ(argx_command_add_positional(command, name, argx_type_string(),
-                                                        all_arities[index], NULL),
+                                                      all_arities[index], NULL),
                           expected);
     }
 
@@ -250,7 +250,7 @@ NAOS_TEST(the_four_arities_are_added_and_read)
         argx_positional_t *positional = NULL;
 
         NAOS_CHECK_INT_EQ(argx_command_add_positional(root, names[index], types[index],
-                                                        all_arities[index], &positional),
+                                                      all_arities[index], &positional),
                           ARGX_ERROR_NONE);
         check_positional(positional, root, names[index], all_arities[index], types[index]);
 
@@ -299,7 +299,7 @@ NAOS_TEST(any_string_that_is_not_empty_is_a_name)
         argx_positional_t *positional = NULL;
 
         NAOS_CHECK_INT_EQ(argx_command_add_positional(root, names[index], argx_type_string(),
-                                                        ARGX_ARITY_REQUIRED, &positional),
+                                                      ARGX_ARITY_REQUIRED, &positional),
                           ARGX_ERROR_NONE);
         check_positional(positional, root, names[index], ARGX_ARITY_REQUIRED, argx_type_string());
     }
@@ -323,7 +323,7 @@ NAOS_TEST(the_name_of_a_positional_is_copied)
 
     /* The changed buffer is another name now. */
     NAOS_CHECK_INT_EQ(argx_command_add_positional(root, name, argx_type_string(), ARGX_ARITY_REQUIRED,
-                                                    NULL),
+                                                  NULL),
                       ARGX_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(argx_command_positional_count(root), 2);
 
@@ -344,7 +344,7 @@ NAOS_TEST(a_positional_can_be_added_without_an_output)
         static const char *const names[ARITY_COUNT] = { "a", "b", "c", "d" };
 
         NAOS_CHECK_INT_EQ(argx_command_add_positional(root, names[index], argx_type_int(),
-                                                        all_arities[index], NULL),
+                                                      all_arities[index], NULL),
                           ARGX_ERROR_NONE);
         NAOS_REQUIRE_TRUE(argx_command_positional_count(root) == (index + 1));
         check_positional(argx_command_positional_at(root, index), root, names[index], all_arities[index],
@@ -494,7 +494,7 @@ NAOS_TEST(a_name_is_used_once_in_a_command)
 
     /* Nor with another value type. */
     NAOS_CHECK_INT_EQ(argx_command_add_positional(root, "output", argx_type_int(),
-                                                    ARGX_ARITY_ZERO_OR_MORE, &again),
+                                                  ARGX_ARITY_ZERO_OR_MORE, &again),
                       ARGX_ERROR_NAME_CONFLICT);
     NAOS_CHECK_TRUE(again == NULL);
 
@@ -781,7 +781,7 @@ NAOS_TEST(a_default_value_is_set_on_an_optional_positional)
     argx_positional_t *empty = add(root, "empty", ARGX_ARITY_OPTIONAL);
 
     NAOS_REQUIRE_TRUE(argx_command_add_positional(root, "level", argx_type_int(), ARGX_ARITY_OPTIONAL,
-                                                    &level) == ARGX_ERROR_NONE);
+                                                  &level) == ARGX_ERROR_NONE);
 
     NAOS_CHECK_INT_EQ(argx_positional_set_default(output, "a.out"), ARGX_ERROR_NONE);
     NAOS_CHECK_INT_EQ(argx_positional_set_default(level, "not a number"), ARGX_ERROR_NONE);

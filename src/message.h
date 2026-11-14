@@ -41,7 +41,7 @@
 typedef struct argx_message_parts
 {
     argx_parse_error_kind_t kind;
-    argx_source_t source;  /* ARGX_SOURCE_DEFAULT: the wording of a default value */
+    argx_source_t source;    /* ARGX_SOURCE_DEFAULT: the wording of a default value */
     bool for_positional;     /* INVALID_VALUE: the wording of a positional argument */
     const char *name_prefix; /* "--", "-" or "". Never NULL */
     const char *name;        /* The name. NULL for a kind that has no <name> */
