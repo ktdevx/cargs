@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-14
+
 ### Added
 
 - A C99 library for parsing command-line arguments, with no compiler
@@ -55,4 +57,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ARGX_WARNINGS_AS_ERRORS`, with defaults that add nothing to a parent
   project that embeds the library.
 
-[Unreleased]: https://github.com/ktdevx/cargs/commits/main
+[Unreleased]: https://github.com/ktdevx/cargs/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ktdevx/cargs/releases/tag/v0.1.0
