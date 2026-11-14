@@ -659,10 +659,13 @@ static argx_positional_slot_t *find_positional_slot(const argx_result_t *result,
  * This is the only place that converts a value.
  *
  * Returns ARGX_ERROR_NONE on success; the caller then owns the area and
- * the value in it (destroy_value()). Returns ARGX_ERROR_OUT_OF_MEMORY
- * when allocating the area fails, and what argx_type_convert() returned
- * when the conversion fails; the area is then freed without cleaning up
- * the value, and *out is NULL.
+ * the value in it (destroy_value()). On failure, *out is NULL and
+ * nothing stays allocated:
+ *
+ * - ARGX_ERROR_OUT_OF_MEMORY when allocating the area fails. No area
+ *   exists, and the value type is not called.
+ * - What argx_type_convert() returned when the conversion fails. The area
+ *   is freed without cleaning up the value.
  */
 static argx_error_t convert_value(const argx_type_t *type, const char *text, void **out)
 {
