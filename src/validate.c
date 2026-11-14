@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - validation: the checks of a schema that need the whole tree, and
  * whether the tree has been validated.
  *

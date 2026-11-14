@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - positionals: the addition of a positional to a command, the
  * attributes of a positional, and the reading of a positional.
  */

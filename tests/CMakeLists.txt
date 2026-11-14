@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # The tests. Each call registers one test executable with CTest; see
 # cmake/ArgXTesting.cmake.
 #

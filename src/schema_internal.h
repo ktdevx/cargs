@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - internal declarations for the schema.
  *
  * The contents of a command, an option and a positional, and the helper

@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - the schema: the commands, options and positionals that a program
  * takes on its command line.
  *

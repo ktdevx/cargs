@@ -189,7 +189,7 @@
 
 ## Implementation Notes
 
-- 1.1: `LICENSE` の著作権表示（`Copyright (c) 2026 Kaito Takemura`）はスペックに定めがなく、git の履歴（唯一の人間の作者と最初のコミットの年）から決めた。変更する場合は `LICENSE` の 1 行だけを直す。
+- 1.1: `LICENSE` の著作権表示（`Copyright (c) 2026 Kaito Takemura`）はスペックに定めがなく、git の履歴（唯一の人間の作者と最初のコミットの年）から決めた。変更する場合は `LICENSE` の 1 行だけを直す。その後、著作権者は `The ArgX Authors` に変更し、各ソースファイルの先頭にも著作権表示（`Copyright (c) 2026 The ArgX Authors`）と `SPDX-License-Identifier: MIT` を入れた。書き方は `docs/conventions.md` の Procedures にある。
 - 1.2: `include/argx/export.h` には `#define ARGX_API __declspec(dllexport)` のような行がある。公開ヘッダから印の付いた宣言を抜き出す処理（5.1）は、プリプロセッサ行を除いてから名前を拾う。
 - 1.2: `ARGX_VERSION_NUMBER` は `(unsigned long)` のキャストを含むので `#if` では使えない。`#if` では `ARGX_VERSION_MAJOR` などを個別に使う（6.1 の文書に書く）。
 - 1.3: `argx_read_version(<header-path> <out-var>)` は設計より厳しく失敗する。コメントを除いてから読み、同じマクロの二重定義と先頭ゼロ（`010` など）も失敗にする。`version.h` の 3 つのマクロは 1 行ずつ、10 進の 0〜255 で書く。

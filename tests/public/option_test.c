@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the public option API: the option part of <argx/schema.h>.
  *
  * Options of the four kinds are added to commands, given attributes, read

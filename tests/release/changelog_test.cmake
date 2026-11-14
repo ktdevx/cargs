@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # Tests of tools/release/ArgXChangelog.cmake: parsing a changelog and
 # rejecting every form it does not accept, moving the body of [Unreleased] to
 # the section of a new version with the link definitions updated, and taking

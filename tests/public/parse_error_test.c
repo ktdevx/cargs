@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the public parsing API for the parse errors: what a result of
  * argx_parse() of <argx/parse.h> tells about a command line that does
  * not match the schema, read back with the argx_result_error_*()

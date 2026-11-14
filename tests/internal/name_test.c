@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the internal functions for the rules of names: "name.h".
  *
  * The functions keep no state and allocate nothing, so the tests need no

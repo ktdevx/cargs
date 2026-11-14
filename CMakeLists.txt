@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+
 cmake_minimum_required(VERSION 3.21)
 
 # The public header include/argx/version.h is the single source of the

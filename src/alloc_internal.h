@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - internal declarations for the memory functions.
  *
  * All the memory of the library goes through these four functions. Their

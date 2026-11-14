@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the public parsing API for wide arguments: argx_parse_wide()
  * of <argx/parse.h>.
  *

@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - help: the text that describes a command.
  *
  * This header holds the type of the write function, which is how the text

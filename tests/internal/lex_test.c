@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the internal functions for the shape of an argument: "lex.h".
  *
  * The functions keep no state and allocate nothing, so the tests need no

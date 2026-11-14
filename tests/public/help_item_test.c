@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the headings of the options and of the annotations of the
  * options and positionals in the help: the "Options:" and "Arguments:"
  * lists of argx_help_write() of <argx/help.h>.

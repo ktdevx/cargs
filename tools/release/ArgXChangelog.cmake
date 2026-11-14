@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXChangelog.cmake - reads and updates CHANGELOG.md, which follows Keep a
 # Changelog 1.1.0 (https://keepachangelog.com/en/1.1.0/).
 #

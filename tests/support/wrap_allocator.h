@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX test support - the wrap allocator: an allocator that only forwards
  * to the standard malloc, realloc, calloc and free, and counts the calls of
  * each of its four functions and the size of the last malloc_fn and

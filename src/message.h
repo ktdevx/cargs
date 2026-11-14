@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - internal declarations for the message of a parse error.
  *
  * A message is one line of English that can be shown to the user of the

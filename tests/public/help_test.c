@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the help: argx_help_write() of <argx/help.h>.
  *
  * Each test builds a schema, validates it, has the help of one of its

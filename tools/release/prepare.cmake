@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # prepare.cmake - checks a release before its pull request is opened, and
 # rewrites the version header and the changelog for it.
 #

@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the internal memory functions: "alloc_internal.h".
  *
  * The tests use the test allocator ("../support/test_allocator.h") to see

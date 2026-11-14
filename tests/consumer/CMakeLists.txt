@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # The consumer check: a small project that uses ArgX the way a user does.
 #
 # It is not part of the ArgX build. Copy this directory out of the

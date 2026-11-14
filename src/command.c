@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - commands: the tree of the schema, and the helper functions that
  * the sources of the schema share.
  */

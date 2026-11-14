@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # Tests of tools/release/ArgXVersionHeader.cmake: rewriting the four version
 # macros of a version header to a release or a pre-release keeps every other
 # byte, and a header whose macro line is not found exactly once, or a version

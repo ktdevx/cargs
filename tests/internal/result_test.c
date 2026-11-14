@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the internal functions that build a result, "parse_internal.h",
  * and of the public functions that read and destroy one, <argx/parse.h>.
  *

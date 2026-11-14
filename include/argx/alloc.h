@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - the allocator: the functions the library gets its memory from.
  *
  * The library takes all of its memory from one allocator, a set of four

@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX - export marker for public functions.
  *
  * ARGX_API is the only marker for public functions. Put it at the very

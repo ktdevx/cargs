@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * ArgX test support - the wrap allocator. See wrap_allocator.h.
  */
 #include "wrap_allocator.h"

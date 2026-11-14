@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # publish.cmake - checks the commit of a merged release pull request against
 # the version of the release, and makes the notes of its GitHub Release.
 #

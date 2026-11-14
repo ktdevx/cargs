@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXTargetDefaults.cmake - the compile settings shared by the ArgX targets.
 #
 #   argx_target_defaults(<target> [STRICT])

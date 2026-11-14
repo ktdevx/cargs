@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2026 The ArgX Authors
+ * SPDX-License-Identifier: MIT
+ *
  * Tests of the public parsing API for positionals: argx_parse() of
  * <argx/parse.h>, read back with the argx_result_*() functions.
  *

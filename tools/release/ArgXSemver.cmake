@@ -1,3 +1,6 @@
+# Copyright (c) 2026 The ArgX Authors
+# SPDX-License-Identifier: MIT
+#
 # ArgXSemver.cmake - checks a ArgX version and compares two versions by
 # SemVer 2.0.0 precedence (https://semver.org/spec/v2.0.0.html).
 #
