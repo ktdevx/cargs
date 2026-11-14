@@ -1,21 +1,21 @@
 /*
- * Tests of the public parsing API for wide arguments: cline_parse_wide()
- * of <cline/parse.h>.
+ * Tests of the public parsing API for wide arguments: argx_parse_wide()
+ * of <argx/parse.h>.
  *
  * A wide command line gives what the same command line in UTF-8 gives with
- * cline_parse(): the selected commands, the values, and every field of a
+ * argx_parse(): the selected commands, the values, and every field of a
  * parse error. The tests parse both and compare the two results, and they
  * also compare the result of the wide command line with the bytes that are
  * expected, so that the two entries cannot be wrong in the same way
  * unnoticed.
  *
  * A wide argument with a sequence that cannot be converted to UTF-8 is the
- * parse error CLINE_PARSE_ERROR_INVALID_ENCODING. A wide string is UTF-16
+ * parse error ARGX_PARSE_ERROR_INVALID_ENCODING. A wide string is UTF-16
  * where WCHAR_MAX <= 0xFFFF and UTF-32 elsewhere, so the units that cannot
  * be converted differ between the two: they are chosen with the same
  * condition as in the library, and every test runs checks in both.
  *
- * cline_parse() does not look at the bytes of its arguments: bytes that
+ * argx_parse() does not look at the bytes of its arguments: bytes that
  * are not UTF-8 are a value like any other.
  *
  * Every test uses the test allocator ("../support/test_allocator.h"). Its
@@ -23,7 +23,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -89,8 +89,8 @@ static const wchar_t bad_units[] = {
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* ---- The schema of the tests --------------------------------------------- */
@@ -104,52 +104,52 @@ static void check_clean(void)
  */
 typedef struct fixture
 {
-    cline_command_t *root;
-    cline_option_t *verbose;
-    cline_option_t *debug;
-    cline_option_t *color;
-    cline_option_t *num;
-    cline_option_t *name;
-    cline_command_t *run;
-    cline_option_t *tag;
-    cline_positional_t *file;
+    argx_command_t *root;
+    argx_option_t *verbose;
+    argx_option_t *debug;
+    argx_option_t *color;
+    argx_option_t *num;
+    argx_option_t *name;
+    argx_command_t *run;
+    argx_option_t *tag;
+    argx_positional_t *file;
 } fixture_t;
 
 /* Installs the test allocator and creates the schema. */
 static void set_up(fixture_t *fixture)
 {
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_REQUIRE_TRUE(cline_command_create("tool", &fixture->root) == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_flag(fixture->root, 'v', "verbose", &fixture->verbose) ==
-                      CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_count(fixture->root, 'd', "debug", &fixture->debug) ==
-                      CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_negatable(fixture->root, 'c', "color", &fixture->color) ==
-                      CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_option_set_initial(fixture->color, true) == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_value(fixture->root, 'n', "num", cline_type_int(), &fixture->num) ==
-                      CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_value(fixture->root, 'o', "name", cline_type_string(),
-                                               &fixture->name) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &fixture->root) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(fixture->root, 'v', "verbose", &fixture->verbose) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_count(fixture->root, 'd', "debug", &fixture->debug) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_negatable(fixture->root, 'c', "color", &fixture->color) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_initial(fixture->color, true) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(fixture->root, 'n', "num", argx_type_int(), &fixture->num) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(fixture->root, 'o', "name", argx_type_string(),
+                                               &fixture->name) == ARGX_ERROR_NONE);
 
-    NAOS_REQUIRE_TRUE(cline_command_add_subcommand(fixture->root, "run", &fixture->run) ==
-                      CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_value(fixture->run, 't', "tag", cline_type_string(),
-                                               &fixture->tag) == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_option_set_default(fixture->tag, "none") == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_positional(fixture->run, "FILE", cline_type_string(),
-                                                    CLINE_ARITY_ZERO_OR_MORE,
-                                                    &fixture->file) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(fixture->root, "run", &fixture->run) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(fixture->run, 't', "tag", argx_type_string(),
+                                               &fixture->tag) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_default(fixture->tag, "none") == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(fixture->run, "FILE", argx_type_string(),
+                                                    ARGX_ARITY_ZERO_OR_MORE,
+                                                    &fixture->file) == ARGX_ERROR_NONE);
 
-    NAOS_REQUIRE_TRUE(cline_command_validate(fixture->root, NULL, NULL, NULL) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_validate(fixture->root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
 }
 
 /* Destroys the schema and ends the test: nothing stays allocated. */
 static void tear_down(fixture_t *fixture)
 {
-    cline_command_destroy(fixture->root);
-    cline_test_allocator_uninstall();
+    argx_command_destroy(fixture->root);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -159,13 +159,13 @@ static void tear_down(fixture_t *fixture)
  * Parses the wide argv, which must match the schema. Returns the result,
  * which the caller destroys.
  */
-static cline_result_t *parse_wide_ok(const fixture_t *fixture, int argc, wchar_t *const *argv)
+static argx_result_t *parse_wide_ok(const fixture_t *fixture, int argc, wchar_t *const *argv)
 {
-    cline_result_t *result = NULL;
+    argx_result_t *result = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_parse_wide(fixture->root, argc, argv, &result) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_parse_wide(fixture->root, argc, argv, &result) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(result != NULL);
-    NAOS_CHECK_INT_EQ(cline_result_error(result), CLINE_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_error(result), ARGX_ERROR_NONE);
     return result;
 }
 
@@ -187,23 +187,23 @@ static void check_text(const char *text, const char *expected)
 }
 
 /* Checks that option has the string expected as its value. */
-static void check_option_string(const cline_result_t *result, const cline_option_t *option,
+static void check_option_string(const argx_result_t *result, const argx_option_t *option,
                                 const char *expected)
 {
     const char *text = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_result_option_string(result, option, &text));
+    NAOS_REQUIRE_TRUE(argx_result_option_string(result, option, &text));
     NAOS_REQUIRE_TRUE(text != NULL);
     NAOS_CHECK_STR_EQ(text, expected);
 }
 
 /* Checks that the value of positional at index is the string expected. */
-static void check_positional_string(const cline_result_t *result, const cline_positional_t *positional,
+static void check_positional_string(const argx_result_t *result, const argx_positional_t *positional,
                                     size_t index, const char *expected)
 {
     const char *text = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_result_positional_string(result, positional, index, &text));
+    NAOS_REQUIRE_TRUE(argx_result_positional_string(result, positional, index, &text));
     NAOS_REQUIRE_TRUE(text != NULL);
     NAOS_CHECK_STR_EQ(text, expected);
 }
@@ -211,26 +211,26 @@ static void check_positional_string(const cline_result_t *result, const cline_po
 /* ---- Comparing two results ----------------------------------------------- */
 
 /* The option with a string as its value reads the same from both. */
-static void check_same_string(const cline_result_t *wide, const cline_result_t *narrow,
-                              const cline_option_t *option)
+static void check_same_string(const argx_result_t *wide, const argx_result_t *narrow,
+                              const argx_option_t *option)
 {
     const char *wide_text = NULL;
     const char *narrow_text = NULL;
-    const bool wide_has = cline_result_option_string(wide, option, &wide_text);
-    const bool narrow_has = cline_result_option_string(narrow, option, &narrow_text);
+    const bool wide_has = argx_result_option_string(wide, option, &wide_text);
+    const bool narrow_has = argx_result_option_string(narrow, option, &narrow_text);
 
     NAOS_CHECK_TRUE(wide_has == narrow_has);
     check_text(wide_text, narrow_text);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(wide, option), cline_result_option_source(narrow, option));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(wide, option), argx_result_option_source(narrow, option));
 }
 
 /*
- * wide, a result of cline_parse_wide(), reads the same as narrow, a result
- * of cline_parse(): the selected commands, every option and positional of
+ * wide, a result of argx_parse_wide(), reads the same as narrow, a result
+ * of argx_parse(): the selected commands, every option and positional of
  * the schema, and every field of the parse error.
  */
-static void check_same_results(const fixture_t *fixture, const cline_result_t *wide,
-                               const cline_result_t *narrow)
+static void check_same_results(const fixture_t *fixture, const argx_result_t *wide,
+                               const argx_result_t *narrow)
 {
     int64_t wide_number = 0;
     int64_t narrow_number = 0;
@@ -240,60 +240,60 @@ static void check_same_results(const fixture_t *fixture, const cline_result_t *w
     size_t i;
 
     /* The selected commands. */
-    count = cline_result_command_count(narrow);
-    NAOS_REQUIRE_TRUE(cline_result_command_count(wide) == count);
+    count = argx_result_command_count(narrow);
+    NAOS_REQUIRE_TRUE(argx_result_command_count(wide) == count);
     for (i = 0; i < count; ++i)
     {
-        NAOS_CHECK_TRUE(cline_result_command_at(wide, i) == cline_result_command_at(narrow, i));
+        NAOS_CHECK_TRUE(argx_result_command_at(wide, i) == argx_result_command_at(narrow, i));
     }
-    NAOS_CHECK_TRUE(cline_result_command(wide) == cline_result_command(narrow));
+    NAOS_CHECK_TRUE(argx_result_command(wide) == argx_result_command(narrow));
 
     /* The options. */
-    NAOS_CHECK_TRUE(cline_result_flag(wide, fixture->verbose) == cline_result_flag(narrow, fixture->verbose));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(wide, fixture->verbose),
-                      cline_result_option_source(narrow, fixture->verbose));
-    NAOS_CHECK_UINT_EQ(cline_result_count(wide, fixture->debug), cline_result_count(narrow, fixture->debug));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(wide, fixture->debug),
-                      cline_result_option_source(narrow, fixture->debug));
-    NAOS_CHECK_TRUE(cline_result_flag(wide, fixture->color) == cline_result_flag(narrow, fixture->color));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(wide, fixture->color),
-                      cline_result_option_source(narrow, fixture->color));
+    NAOS_CHECK_TRUE(argx_result_flag(wide, fixture->verbose) == argx_result_flag(narrow, fixture->verbose));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(wide, fixture->verbose),
+                      argx_result_option_source(narrow, fixture->verbose));
+    NAOS_CHECK_UINT_EQ(argx_result_count(wide, fixture->debug), argx_result_count(narrow, fixture->debug));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(wide, fixture->debug),
+                      argx_result_option_source(narrow, fixture->debug));
+    NAOS_CHECK_TRUE(argx_result_flag(wide, fixture->color) == argx_result_flag(narrow, fixture->color));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(wide, fixture->color),
+                      argx_result_option_source(narrow, fixture->color));
 
-    wide_has = cline_result_option_int(wide, fixture->num, &wide_number);
-    narrow_has = cline_result_option_int(narrow, fixture->num, &narrow_number);
+    wide_has = argx_result_option_int(wide, fixture->num, &wide_number);
+    narrow_has = argx_result_option_int(narrow, fixture->num, &narrow_number);
     NAOS_CHECK_TRUE(wide_has == narrow_has);
     NAOS_CHECK_TRUE(wide_number == narrow_number);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(wide, fixture->num),
-                      cline_result_option_source(narrow, fixture->num));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(wide, fixture->num),
+                      argx_result_option_source(narrow, fixture->num));
 
     check_same_string(wide, narrow, fixture->name);
     check_same_string(wide, narrow, fixture->tag);
 
     /* The positional. */
-    count = cline_result_positional_count(narrow, fixture->file);
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(wide, fixture->file) == count);
-    NAOS_CHECK_INT_EQ(cline_result_positional_source(wide, fixture->file),
-                      cline_result_positional_source(narrow, fixture->file));
+    count = argx_result_positional_count(narrow, fixture->file);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(wide, fixture->file) == count);
+    NAOS_CHECK_INT_EQ(argx_result_positional_source(wide, fixture->file),
+                      argx_result_positional_source(narrow, fixture->file));
     for (i = 0; i < count; ++i)
     {
         const char *narrow_text = NULL;
 
-        NAOS_REQUIRE_TRUE(cline_result_positional_string(narrow, fixture->file, i, &narrow_text));
+        NAOS_REQUIRE_TRUE(argx_result_positional_string(narrow, fixture->file, i, &narrow_text));
         check_positional_string(wide, fixture->file, i, narrow_text);
     }
 
     /* The parse error. */
-    NAOS_CHECK_INT_EQ(cline_result_error(wide), cline_result_error(narrow));
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(wide), cline_result_error_kind(narrow));
-    check_text(cline_result_error_argument(wide), cline_result_error_argument(narrow));
-    check_text(cline_result_error_value(wide), cline_result_error_value(narrow));
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(wide), cline_result_error_index(narrow));
-    NAOS_CHECK_INT_EQ(cline_result_error_source(wide), cline_result_error_source(narrow));
-    NAOS_CHECK_TRUE(cline_result_error_command(wide) == cline_result_error_command(narrow));
-    NAOS_CHECK_TRUE(cline_result_error_option(wide) == cline_result_error_option(narrow));
-    NAOS_CHECK_TRUE(cline_result_error_positional(wide) == cline_result_error_positional(narrow));
-    NAOS_CHECK_INT_EQ(cline_result_error_short_name(wide), cline_result_error_short_name(narrow));
-    check_text(cline_result_error_message(wide), cline_result_error_message(narrow));
+    NAOS_CHECK_INT_EQ(argx_result_error(wide), argx_result_error(narrow));
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(wide), argx_result_error_kind(narrow));
+    check_text(argx_result_error_argument(wide), argx_result_error_argument(narrow));
+    check_text(argx_result_error_value(wide), argx_result_error_value(narrow));
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(wide), argx_result_error_index(narrow));
+    NAOS_CHECK_INT_EQ(argx_result_error_source(wide), argx_result_error_source(narrow));
+    NAOS_CHECK_TRUE(argx_result_error_command(wide) == argx_result_error_command(narrow));
+    NAOS_CHECK_TRUE(argx_result_error_option(wide) == argx_result_error_option(narrow));
+    NAOS_CHECK_TRUE(argx_result_error_positional(wide) == argx_result_error_positional(narrow));
+    NAOS_CHECK_INT_EQ(argx_result_error_short_name(wide), argx_result_error_short_name(narrow));
+    check_text(argx_result_error_message(wide), argx_result_error_message(narrow));
 }
 
 /*
@@ -302,19 +302,19 @@ static void check_same_results(const fixture_t *fixture, const cline_result_t *w
  * read the same. Returns the result of the wide argv, which the caller
  * destroys.
  */
-static cline_result_t *parse_both(const fixture_t *fixture, int argc, wchar_t *const *wide_argv,
-                                   char *const *argv, cline_error_t expected)
+static argx_result_t *parse_both(const fixture_t *fixture, int argc, wchar_t *const *wide_argv,
+                                   char *const *argv, argx_error_t expected)
 {
-    cline_result_t *wide = NULL;
-    cline_result_t *narrow = NULL;
+    argx_result_t *wide = NULL;
+    argx_result_t *narrow = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_parse_wide(fixture->root, argc, wide_argv, &wide) == expected);
+    NAOS_REQUIRE_TRUE(argx_parse_wide(fixture->root, argc, wide_argv, &wide) == expected);
     NAOS_REQUIRE_TRUE(wide != NULL);
-    NAOS_REQUIRE_TRUE(cline_parse(fixture->root, argc, argv, &narrow) == expected);
+    NAOS_REQUIRE_TRUE(argx_parse(fixture->root, argc, argv, &narrow) == expected);
     NAOS_REQUIRE_TRUE(narrow != NULL);
 
     check_same_results(fixture, wide, narrow);
-    cline_result_destroy(narrow);
+    argx_result_destroy(narrow);
     return wide;
 }
 
@@ -325,32 +325,32 @@ static cline_result_t *parse_both(const fixture_t *fixture, int argc, wchar_t *c
  * argument at index, argument in UTF-8 with U+FFFD for each unit that
  * could not be converted, found while command was the current command.
  */
-static void check_invalid_encoding(const cline_result_t *result, const char *argument, size_t index,
-                                   const cline_command_t *command, const char *message)
+static void check_invalid_encoding(const argx_result_t *result, const char *argument, size_t index,
+                                   const argx_command_t *command, const char *message)
 {
-    NAOS_CHECK_INT_EQ(cline_result_error(result), CLINE_ERROR_INVALID_COMMAND_LINE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_INVALID_ENCODING);
-    check_text(cline_result_error_argument(result), argument);
-    check_text(cline_result_error_value(result), argument);
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), index);
-    NAOS_CHECK_INT_EQ(cline_result_error_source(result), CLINE_SOURCE_COMMAND_LINE);
-    NAOS_CHECK_TRUE(cline_result_error_command(result) == command);
-    NAOS_CHECK_TRUE(cline_result_error_option(result) == NULL);
-    NAOS_CHECK_TRUE(cline_result_error_positional(result) == NULL);
-    NAOS_CHECK_INT_EQ(cline_result_error_short_name(result), '\0');
-    check_text(cline_result_error_message(result), message);
+    NAOS_CHECK_INT_EQ(argx_result_error(result), ARGX_ERROR_INVALID_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_INVALID_ENCODING);
+    check_text(argx_result_error_argument(result), argument);
+    check_text(argx_result_error_value(result), argument);
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), index);
+    NAOS_CHECK_INT_EQ(argx_result_error_source(result), ARGX_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_TRUE(argx_result_error_command(result) == command);
+    NAOS_CHECK_TRUE(argx_result_error_option(result) == NULL);
+    NAOS_CHECK_TRUE(argx_result_error_positional(result) == NULL);
+    NAOS_CHECK_INT_EQ(argx_result_error_short_name(result), '\0');
+    check_text(argx_result_error_message(result), message);
 }
 
 /*
  * Parses the wide argv, which must have a parse error. Returns the result,
  * which the caller destroys.
  */
-static cline_result_t *parse_wide_error(const fixture_t *fixture, int argc, wchar_t *const *argv)
+static argx_result_t *parse_wide_error(const fixture_t *fixture, int argc, wchar_t *const *argv)
 {
-    cline_result_t *result = NULL;
+    argx_result_t *result = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_parse_wide(fixture->root, argc, argv, &result) ==
-                      CLINE_ERROR_INVALID_COMMAND_LINE);
+    NAOS_REQUIRE_TRUE(argx_parse_wide(fixture->root, argc, argv, &result) ==
+                      ARGX_ERROR_INVALID_COMMAND_LINE);
     NAOS_REQUIRE_TRUE(result != NULL);
     return result;
 }
@@ -360,13 +360,13 @@ static cline_result_t *parse_wide_error(const fixture_t *fixture, int argc, wcha
  * cannot be converted, and checks every field of the error.
  */
 static void expect_invalid_encoding(const fixture_t *fixture, int argc, wchar_t *const *argv,
-                                    const char *argument, size_t index, const cline_command_t *command,
+                                    const char *argument, size_t index, const argx_command_t *command,
                                     const char *message)
 {
-    cline_result_t *result = parse_wide_error(fixture, argc, argv);
+    argx_result_t *result = parse_wide_error(fixture, argc, argv);
 
     check_invalid_encoding(result, argument, index, command, message);
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 }
 
 /* ---- The same as the command line in UTF-8 ------------------------------- */
@@ -376,25 +376,25 @@ NAOS_TEST(a_command_line_without_arguments_gives_an_empty_result)
     fixture_t fixture;
     wchar_t *wide_argv[] = { L"tool" };
     char *argv[] = { "tool" };
-    cline_result_t *result = NULL;
+    argx_result_t *result = NULL;
 
     set_up(&fixture);
 
     /* argc is 0: argv is not read. */
-    NAOS_REQUIRE_TRUE(cline_parse_wide(fixture.root, 0, NULL, &result) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_parse_wide(fixture.root, 0, NULL, &result) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(result != NULL);
-    NAOS_CHECK_INT_EQ(cline_result_error(result), CLINE_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(cline_result_command_count(result), 1);
-    NAOS_CHECK_TRUE(cline_result_command(result) == fixture.root);
-    NAOS_CHECK_FALSE(cline_result_flag(result, fixture.verbose));
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_error(result), ARGX_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(argx_result_command_count(result), 1);
+    NAOS_CHECK_TRUE(argx_result_command(result) == fixture.root);
+    NAOS_CHECK_FALSE(argx_result_flag(result, fixture.verbose));
+    argx_result_destroy(result);
 
     /* The name of the program alone. */
-    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, CLINE_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(cline_result_command_count(result), 1);
-    NAOS_CHECK_FALSE(cline_result_flag(result, fixture.verbose));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.name), CLINE_SOURCE_NONE);
-    cline_result_destroy(result);
+    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, ARGX_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(argx_result_command_count(result), 1);
+    NAOS_CHECK_FALSE(argx_result_flag(result, fixture.verbose));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.name), ARGX_SOURCE_NONE);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -407,27 +407,27 @@ NAOS_TEST(ascii_arguments_give_the_same_result)
                              L"" };
     char *argv[] = { "tool", "-vdd", "--no-color", "--num=42", "-o", "-x", "run", "--tag", "--", "a.txt",
                      "--",   "-v",   "" };
-    cline_result_t *result;
+    argx_result_t *result;
     int64_t number = 0;
 
     set_up(&fixture);
-    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, CLINE_ERROR_NONE);
+    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, ARGX_ERROR_NONE);
 
-    NAOS_REQUIRE_TRUE(cline_result_command_count(result) == 2);
-    NAOS_CHECK_TRUE(cline_result_command_at(result, 0) == fixture.root);
-    NAOS_CHECK_TRUE(cline_result_command_at(result, 1) == fixture.run);
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture.verbose));
-    NAOS_CHECK_UINT_EQ(cline_result_count(result, fixture.debug), 2);
-    NAOS_CHECK_FALSE(cline_result_flag(result, fixture.color));
-    NAOS_REQUIRE_TRUE(cline_result_option_int(result, fixture.num, &number));
+    NAOS_REQUIRE_TRUE(argx_result_command_count(result) == 2);
+    NAOS_CHECK_TRUE(argx_result_command_at(result, 0) == fixture.root);
+    NAOS_CHECK_TRUE(argx_result_command_at(result, 1) == fixture.run);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture.verbose));
+    NAOS_CHECK_UINT_EQ(argx_result_count(result, fixture.debug), 2);
+    NAOS_CHECK_FALSE(argx_result_flag(result, fixture.color));
+    NAOS_REQUIRE_TRUE(argx_result_option_int(result, fixture.num, &number));
     NAOS_CHECK_TRUE(number == 42);
     check_option_string(result, fixture.name, "-x");
     check_option_string(result, fixture.tag, "--");
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 3);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 3);
     check_positional_string(result, fixture.file, 0, "a.txt");
     check_positional_string(result, fixture.file, 1, "-v");
     check_positional_string(result, fixture.file, 2, "");
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -451,20 +451,20 @@ NAOS_TEST(characters_of_two_three_and_four_bytes_are_read_as_utf8)
                      U_3 ".txt",
                      "x" U_4,
                      U_2 U_3 U_4 };
-    cline_result_t *result;
+    argx_result_t *result;
 
     set_up(&fixture);
-    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, CLINE_ERROR_NONE);
+    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, ARGX_ERROR_NONE);
 
     check_option_string(result, fixture.name, U_2 "t" U_3 "-" U_4);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.name), CLINE_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.name), ARGX_SOURCE_COMMAND_LINE);
     check_option_string(result, fixture.tag, U_4 U_4);
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 4);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 4);
     check_positional_string(result, fixture.file, 0, U_2);
     check_positional_string(result, fixture.file, 1, U_3 ".txt");
     check_positional_string(result, fixture.file, 2, "x" U_4);
     check_positional_string(result, fixture.file, 3, U_2 U_3 U_4);
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -474,17 +474,17 @@ NAOS_TEST(a_value_taken_from_the_next_argument_is_read_as_utf8)
     fixture_t fixture;
     wchar_t *wide_argv[] = { L"tool", L"--name", W_3 W_2, L"-o", W_4, L"run", L"--tag", W_2 };
     char *argv[] = { "tool", "--name", U_3 U_2, "-o", U_4, "run", "--tag", U_2 };
-    cline_result_t *result;
+    argx_result_t *result;
 
     set_up(&fixture);
-    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, CLINE_ERROR_NONE);
+    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, ARGX_ERROR_NONE);
 
     /* The second value of --name replaced the first. */
     check_option_string(result, fixture.name, U_4);
     check_option_string(result, fixture.tag, U_2);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.tag), CLINE_SOURCE_COMMAND_LINE);
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture.file), 0);
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.tag), ARGX_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture.file), 0);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -494,15 +494,15 @@ NAOS_TEST(a_value_that_was_not_given_has_its_default_value)
     fixture_t fixture;
     wchar_t *wide_argv[] = { L"tool", L"run", W_2 };
     char *argv[] = { "tool", "run", U_2 };
-    cline_result_t *result;
+    argx_result_t *result;
 
     set_up(&fixture);
-    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, CLINE_ERROR_NONE);
+    result = parse_both(&fixture, ARGC(wide_argv), wide_argv, argv, ARGX_ERROR_NONE);
 
     check_option_string(result, fixture.tag, "none");
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.tag), CLINE_SOURCE_DEFAULT);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.name), CLINE_SOURCE_NONE);
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.tag), ARGX_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.name), ARGX_SOURCE_NONE);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -520,52 +520,52 @@ NAOS_TEST(parse_errors_are_the_same_and_their_strings_are_utf8)
     char *unexpected_value[] = { "tool", "--verbose=" U_4 };
     wchar_t *missing_value_wide[] = { L"tool", L"run", W_2, L"--tag" };
     char *missing_value[] = { "tool", "run", U_2, "--tag" };
-    cline_result_t *result;
+    argx_result_t *result;
 
     set_up(&fixture);
 
     result = parse_both(&fixture, ARGC(unknown_option_wide), unknown_option_wide, unknown_option,
-                        CLINE_ERROR_INVALID_COMMAND_LINE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_UNKNOWN_OPTION);
-    check_text(cline_result_error_argument(result), "--" U_2 U_4 "=1");
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), 2);
-    check_text(cline_result_error_message(result), "unknown option '--" U_2 U_4 "'");
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture.verbose));
-    cline_result_destroy(result);
+                        ARGX_ERROR_INVALID_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_UNKNOWN_OPTION);
+    check_text(argx_result_error_argument(result), "--" U_2 U_4 "=1");
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), 2);
+    check_text(argx_result_error_message(result), "unknown option '--" U_2 U_4 "'");
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture.verbose));
+    argx_result_destroy(result);
 
     result = parse_both(&fixture, ARGC(unknown_subcommand_wide), unknown_subcommand_wide, unknown_subcommand,
-                        CLINE_ERROR_INVALID_COMMAND_LINE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
-    check_text(cline_result_error_argument(result), U_3 U_4);
-    check_text(cline_result_error_value(result), U_3 U_4);
-    check_text(cline_result_error_message(result), "unknown command '" U_3 U_4 "'");
-    cline_result_destroy(result);
+                        ARGX_ERROR_INVALID_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
+    check_text(argx_result_error_argument(result), U_3 U_4);
+    check_text(argx_result_error_value(result), U_3 U_4);
+    check_text(argx_result_error_message(result), "unknown command '" U_3 U_4 "'");
+    argx_result_destroy(result);
 
     result = parse_both(&fixture, ARGC(invalid_value_wide), invalid_value_wide, invalid_value,
-                        CLINE_ERROR_INVALID_COMMAND_LINE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_INVALID_VALUE);
-    check_text(cline_result_error_argument(result), U_2 U_3);
-    check_text(cline_result_error_value(result), U_2 U_3);
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), 2);
-    NAOS_CHECK_TRUE(cline_result_error_option(result) == fixture.num);
-    NAOS_CHECK_INT_EQ(cline_result_error_short_name(result), 'n');
-    check_text(cline_result_error_message(result),
+                        ARGX_ERROR_INVALID_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_INVALID_VALUE);
+    check_text(argx_result_error_argument(result), U_2 U_3);
+    check_text(argx_result_error_value(result), U_2 U_3);
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), 2);
+    NAOS_CHECK_TRUE(argx_result_error_option(result) == fixture.num);
+    NAOS_CHECK_INT_EQ(argx_result_error_short_name(result), 'n');
+    check_text(argx_result_error_message(result),
                "invalid value '" U_2 U_3 "' for option '-n' (expected integer)");
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     result = parse_both(&fixture, ARGC(unexpected_value_wide), unexpected_value_wide, unexpected_value,
-                        CLINE_ERROR_INVALID_COMMAND_LINE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_UNEXPECTED_VALUE);
-    check_text(cline_result_error_value(result), U_4);
-    cline_result_destroy(result);
+                        ARGX_ERROR_INVALID_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_UNEXPECTED_VALUE);
+    check_text(argx_result_error_value(result), U_4);
+    argx_result_destroy(result);
 
     result = parse_both(&fixture, ARGC(missing_value_wide), missing_value_wide, missing_value,
-                        CLINE_ERROR_INVALID_COMMAND_LINE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_MISSING_VALUE);
-    NAOS_CHECK_TRUE(cline_result_error_command(result) == fixture.run);
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 1);
+                        ARGX_ERROR_INVALID_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_MISSING_VALUE);
+    NAOS_CHECK_TRUE(argx_result_error_command(result) == fixture.run);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 1);
     check_positional_string(result, fixture.file, 0, U_2);
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -578,7 +578,7 @@ NAOS_TEST(the_strings_of_a_result_stay_valid_after_the_wide_argv_was_overwritten
     wchar_t run[] = L"run";
     wchar_t tool[] = L"tool";
     wchar_t *argv[4];
-    cline_result_t *result;
+    argx_result_t *result;
     size_t i;
 
     argv[0] = tool;
@@ -601,9 +601,9 @@ NAOS_TEST(the_strings_of_a_result_stay_valid_after_the_wide_argv_was_overwritten
     argv[3] = NULL;
 
     check_option_string(result, fixture.name, U_3);
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 1);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 1);
     check_positional_string(result, fixture.file, 0, U_2 "-" U_4);
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -612,18 +612,18 @@ NAOS_TEST(the_same_wide_command_line_gives_the_same_result_twice)
 {
     fixture_t fixture;
     wchar_t *argv[] = { L"tool", L"-d", L"--name", W_4, L"run", W_3 };
-    cline_result_t *first;
-    cline_result_t *second;
+    argx_result_t *first;
+    argx_result_t *second;
 
     set_up(&fixture);
     first = parse_wide_ok(&fixture, ARGC(argv), argv);
     second = parse_wide_ok(&fixture, ARGC(argv), argv);
 
     check_same_results(&fixture, first, second);
-    NAOS_CHECK_UINT_EQ(cline_result_count(second, fixture.debug), 1);
+    NAOS_CHECK_UINT_EQ(argx_result_count(second, fixture.debug), 1);
     check_option_string(second, fixture.name, U_4);
-    cline_result_destroy(first);
-    cline_result_destroy(second);
+    argx_result_destroy(first);
+    argx_result_destroy(second);
 
     tear_down(&fixture);
 }
@@ -645,7 +645,7 @@ NAOS_TEST(every_unit_that_cannot_be_converted_is_a_parse_error)
     set_up(&fixture);
     for (i = 0; i < BAD_UNIT_COUNT; ++i)
     {
-        cline_result_t *result;
+        argx_result_t *result;
 
         bad[1] = bad_units[i];
         result = parse_wide_error(&fixture, ARGC(argv), argv);
@@ -656,13 +656,13 @@ NAOS_TEST(every_unit_that_cannot_be_converted_is_a_parse_error)
          * What was read before the error is in the result; the argument
          * itself and what follows it are not, and no default value is.
          */
-        NAOS_REQUIRE_TRUE(cline_result_command_count(result) == 2);
-        NAOS_CHECK_TRUE(cline_result_command(result) == fixture.run);
-        NAOS_CHECK_TRUE(cline_result_flag(result, fixture.verbose));
-        NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 1);
+        NAOS_REQUIRE_TRUE(argx_result_command_count(result) == 2);
+        NAOS_CHECK_TRUE(argx_result_command(result) == fixture.run);
+        NAOS_CHECK_TRUE(argx_result_flag(result, fixture.verbose));
+        NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 1);
         check_positional_string(result, fixture.file, 0, "first");
-        NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.tag), CLINE_SOURCE_NONE);
-        cline_result_destroy(result);
+        NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.tag), ARGX_SOURCE_NONE);
+        argx_result_destroy(result);
     }
 
     tear_down(&fixture);
@@ -682,13 +682,13 @@ static void check_units_of_this_width(const fixture_t *fixture_in)
     wchar_t two_high[] = { (wchar_t)0xD83D, (wchar_t)0xD83D, (wchar_t)0xDE00, L'\0' };
     wchar_t high_at_the_end[] = { L'x', (wchar_t)0xD83D, L'\0' };
     wchar_t *argv[] = { L"tool", L"run", NULL };
-    cline_result_t *result;
+    argx_result_t *result;
 
     argv[2] = pair;
     result = parse_wide_ok(&fixture, ARGC(argv), argv);
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 1);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 1);
     check_positional_string(result, fixture.file, 0, "x" U_4);
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     argv[2] = reversed;
     expect_invalid_encoding(&fixture, ARGC(argv), argv, "x" REPLACEMENT REPLACEMENT, 2, fixture.run,
@@ -716,14 +716,14 @@ static void check_units_of_this_width(const fixture_t *fixture_in)
     wchar_t surrogates[] = { (wchar_t)0xD83D, (wchar_t)0xDE00, L'\0' };
     wchar_t above[] = { (wchar_t)0x10FFFF, (wchar_t)0x110000, L'\0' };
     wchar_t *argv[] = { L"tool", L"run", NULL };
-    cline_result_t *result;
+    argx_result_t *result;
 
     /* The last before and the first after the surrogates, and U+10FFFF. */
     argv[2] = valid;
     result = parse_wide_ok(&fixture, ARGC(argv), argv);
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 1);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 1);
     check_positional_string(result, fixture.file, 0, "\xED\x9F\xBF" "\xEE\x80\x80" "\xF4\x8F\xBF\xBF");
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     /*
      * A pair of surrogates is not a character in UTF-32: each of the two
@@ -755,7 +755,7 @@ NAOS_TEST(an_option_with_a_unit_that_cannot_be_converted_is_not_looked_up)
     wchar_t long_option[] = { L'-', L'-', L'n', L'a', L'm', L'e', L'=', L'x', L'\0', L'\0' };
     wchar_t bundle[] = { L'-', L'v', L'o', L'\0', L'\0' };
     wchar_t *argv[] = { L"tool", L"-d", NULL };
-    cline_result_t *result;
+    argx_result_t *result;
 
     long_option[8] = BAD_UNIT;
     bundle[3] = BAD_UNIT;
@@ -770,9 +770,9 @@ NAOS_TEST(an_option_with_a_unit_that_cannot_be_converted_is_not_looked_up)
     result = parse_wide_error(&fixture, ARGC(argv), argv);
     check_invalid_encoding(result, "--name=x" REPLACEMENT, 2, fixture.root,
                            "invalid character encoding in argument '--name=x" REPLACEMENT "'");
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.name), CLINE_SOURCE_NONE);
-    NAOS_CHECK_UINT_EQ(cline_result_count(result, fixture.debug), 1);
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.name), ARGX_SOURCE_NONE);
+    NAOS_CHECK_UINT_EQ(argx_result_count(result, fixture.debug), 1);
+    argx_result_destroy(result);
 
     /*
      * -vo<bad>: no letter of the bundle is read, and the error has no
@@ -782,9 +782,9 @@ NAOS_TEST(an_option_with_a_unit_that_cannot_be_converted_is_not_looked_up)
     result = parse_wide_error(&fixture, ARGC(argv), argv);
     check_invalid_encoding(result, "-vo" REPLACEMENT, 2, fixture.root,
                            "invalid character encoding in argument '-vo" REPLACEMENT "'");
-    NAOS_CHECK_FALSE(cline_result_flag(result, fixture.verbose));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.name), CLINE_SOURCE_NONE);
-    cline_result_destroy(result);
+    NAOS_CHECK_FALSE(argx_result_flag(result, fixture.verbose));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.name), ARGX_SOURCE_NONE);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -796,7 +796,7 @@ NAOS_TEST(an_argument_that_would_be_taken_as_a_value_is_checked_before_it_is_tak
     wchar_t *long_argv[] = { L"tool", L"--name", NULL, L"run" };
     wchar_t *short_argv[] = { L"tool", L"-vo", NULL, L"run" };
     wchar_t *number_argv[] = { L"tool", L"-n", NULL };
-    cline_result_t *result;
+    argx_result_t *result;
 
     bad[1] = BAD_UNIT;
     long_argv[2] = bad;
@@ -812,16 +812,16 @@ NAOS_TEST(an_argument_that_would_be_taken_as_a_value_is_checked_before_it_is_tak
     result = parse_wide_error(&fixture, ARGC(long_argv), long_argv);
     check_invalid_encoding(result, "x" REPLACEMENT, 2, fixture.root,
                            "invalid character encoding in argument 'x" REPLACEMENT "'");
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.name), CLINE_SOURCE_NONE);
-    NAOS_CHECK_UINT_EQ(cline_result_command_count(result), 1);
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.name), ARGX_SOURCE_NONE);
+    NAOS_CHECK_UINT_EQ(argx_result_command_count(result), 1);
+    argx_result_destroy(result);
 
     result = parse_wide_error(&fixture, ARGC(short_argv), short_argv);
     check_invalid_encoding(result, "x" REPLACEMENT, 2, fixture.root,
                            "invalid character encoding in argument 'x" REPLACEMENT "'");
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture.verbose));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture.name), CLINE_SOURCE_NONE);
-    cline_result_destroy(result);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture.verbose));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture.name), ARGX_SOURCE_NONE);
+    argx_result_destroy(result);
 
     /*
      * The value type does not see the argument: the error is not that of
@@ -838,7 +838,7 @@ NAOS_TEST(an_argument_after_the_terminator_is_checked_too)
     fixture_t fixture;
     wchar_t bad[] = { L'\0', L'\0' };
     wchar_t *argv[] = { L"tool", L"run", L"--", L"-v", NULL };
-    cline_result_t *result;
+    argx_result_t *result;
 
     bad[0] = BAD_UNIT;
     argv[4] = bad;
@@ -847,9 +847,9 @@ NAOS_TEST(an_argument_after_the_terminator_is_checked_too)
     result = parse_wide_error(&fixture, ARGC(argv), argv);
     check_invalid_encoding(result, REPLACEMENT, 4, fixture.run,
                            "invalid character encoding in argument '" REPLACEMENT "'");
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 1);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 1);
     check_positional_string(result, fixture.file, 0, "-v");
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -894,7 +894,7 @@ NAOS_TEST(an_error_of_an_earlier_argument_is_reported_instead)
     wchar_t *unknown_option[] = { L"tool", L"--bogus", NULL };
     wchar_t *unknown_subcommand[] = { L"tool", L"-v", L"walk", NULL };
     wchar_t *invalid_value[] = { L"tool", L"--num", L"five", L"run", NULL };
-    cline_result_t *result;
+    argx_result_t *result;
 
     bad[1] = BAD_UNIT;
     unknown_option[2] = bad;
@@ -904,25 +904,25 @@ NAOS_TEST(an_error_of_an_earlier_argument_is_reported_instead)
     set_up(&fixture);
 
     result = parse_wide_error(&fixture, ARGC(unknown_option), unknown_option);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_UNKNOWN_OPTION);
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), 1);
-    check_text(cline_result_error_argument(result), "--bogus");
-    check_text(cline_result_error_message(result), "unknown option '--bogus'");
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_UNKNOWN_OPTION);
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), 1);
+    check_text(argx_result_error_argument(result), "--bogus");
+    check_text(argx_result_error_message(result), "unknown option '--bogus'");
+    argx_result_destroy(result);
 
     result = parse_wide_error(&fixture, ARGC(unknown_subcommand), unknown_subcommand);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), 2);
-    check_text(cline_result_error_message(result), "unknown command 'walk'");
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), 2);
+    check_text(argx_result_error_message(result), "unknown command 'walk'");
+    argx_result_destroy(result);
 
     result = parse_wide_error(&fixture, ARGC(invalid_value), invalid_value);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_INVALID_VALUE);
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), 2);
-    NAOS_CHECK_TRUE(cline_result_error_option(result) == fixture.num);
-    check_text(cline_result_error_message(result),
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_INVALID_VALUE);
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), 2);
+    NAOS_CHECK_TRUE(argx_result_error_option(result) == fixture.num);
+    check_text(argx_result_error_message(result),
                "invalid value 'five' for option '--num' (expected integer)");
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -930,33 +930,33 @@ NAOS_TEST(an_error_of_an_earlier_argument_is_reported_instead)
 NAOS_TEST(an_error_is_reported_before_something_required_that_is_missing_is_looked_for)
 {
     fixture_t fixture;
-    cline_command_t *root = NULL;
-    cline_option_t *key = NULL;
+    argx_command_t *root = NULL;
+    argx_option_t *key = NULL;
     wchar_t bad[] = { L'x', L'\0', L'\0' };
     wchar_t *argv[] = { L"tool", NULL };
-    cline_result_t *result = NULL;
+    argx_result_t *result = NULL;
 
     bad[1] = BAD_UNIT;
     argv[1] = bad;
 
     /* tool --key STRING [FILE]..., where --key must be given. */
-    cline_test_allocator_install();
-    NAOS_REQUIRE_TRUE(cline_command_create("tool", &root) == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_value(root, '\0', "key", cline_type_string(), &key) ==
-                      CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_option_set_required(key, true) == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_add_positional(root, "FILE", cline_type_string(),
-                                                    CLINE_ARITY_ZERO_OR_MORE, &fixture.file) ==
-                      CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_validate(root, NULL, NULL, NULL) == CLINE_ERROR_NONE);
+    argx_test_allocator_install();
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &root) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(root, '\0', "key", argx_type_string(), &key) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_required(key, true) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(root, "FILE", argx_type_string(),
+                                                    ARGX_ARITY_ZERO_OR_MORE, &fixture.file) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_validate(root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
     fixture.root = root;
 
-    NAOS_REQUIRE_TRUE(cline_parse_wide(root, ARGC(argv), argv, &result) == CLINE_ERROR_INVALID_COMMAND_LINE);
+    NAOS_REQUIRE_TRUE(argx_parse_wide(root, ARGC(argv), argv, &result) == ARGX_ERROR_INVALID_COMMAND_LINE);
     NAOS_REQUIRE_TRUE(result != NULL);
     check_invalid_encoding(result, "x" REPLACEMENT, 1, root,
                            "invalid character encoding in argument 'x" REPLACEMENT "'");
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture.file), 0);
-    cline_result_destroy(result);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture.file), 0);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -969,7 +969,7 @@ NAOS_TEST(a_name_of_the_program_that_cannot_be_converted_is_ignored)
     wchar_t *alone[] = { NULL };
     wchar_t *valid_argv[] = { NULL, L"-v", L"run", W_2 };
     wchar_t *invalid_argv[] = { NULL, L"-v", L"run", NULL };
-    cline_result_t *result;
+    argx_result_t *result;
 
     program[1] = BAD_UNIT;
     bad[1] = BAD_UNIT;
@@ -981,16 +981,16 @@ NAOS_TEST(a_name_of_the_program_that_cannot_be_converted_is_ignored)
     set_up(&fixture);
 
     result = parse_wide_ok(&fixture, ARGC(alone), alone);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_NONE);
-    NAOS_CHECK_TRUE(cline_result_error_argument(result) == NULL);
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_result_error_argument(result) == NULL);
+    argx_result_destroy(result);
 
     result = parse_wide_ok(&fixture, ARGC(valid_argv), valid_argv);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_NONE);
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture.verbose));
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 1);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture.verbose));
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 1);
     check_positional_string(result, fixture.file, 0, U_2);
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     /*
      * The first argument after the name of the program that cannot be
@@ -1014,20 +1014,20 @@ NAOS_TEST(bytes_that_are_not_utf8_are_a_value_as_they_are)
      */
     char *argv[] = { "tool",         "--name=\xFF\xFE", "-o", "\xC3", "run", "--tag", "\x80\xBF",
                      "\xED\xA0\x80", "\xC0\xAF.txt" };
-    cline_result_t *result = NULL;
+    argx_result_t *result = NULL;
 
     set_up(&fixture);
-    NAOS_REQUIRE_TRUE(cline_parse(fixture.root, ARGC(argv), argv, &result) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_parse(fixture.root, ARGC(argv), argv, &result) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(result != NULL);
-    NAOS_CHECK_INT_EQ(cline_result_error(result), CLINE_ERROR_NONE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_error(result), ARGX_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_NONE);
 
     check_option_string(result, fixture.name, "\xC3");
     check_option_string(result, fixture.tag, "\x80\xBF");
-    NAOS_REQUIRE_TRUE(cline_result_positional_count(result, fixture.file) == 2);
+    NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 2);
     check_positional_string(result, fixture.file, 0, "\xED\xA0\x80");
     check_positional_string(result, fixture.file, 1, "\xC0\xAF.txt");
-    cline_result_destroy(result);
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }
@@ -1036,16 +1036,16 @@ NAOS_TEST(bytes_that_are_not_utf8_are_in_a_parse_error_as_they_are)
 {
     fixture_t fixture;
     char *argv[] = { "tool", "--\xFF=1" };
-    cline_result_t *result = NULL;
+    argx_result_t *result = NULL;
 
     set_up(&fixture);
-    NAOS_REQUIRE_TRUE(cline_parse(fixture.root, ARGC(argv), argv, &result) ==
-                      CLINE_ERROR_INVALID_COMMAND_LINE);
+    NAOS_REQUIRE_TRUE(argx_parse(fixture.root, ARGC(argv), argv, &result) ==
+                      ARGX_ERROR_INVALID_COMMAND_LINE);
     NAOS_REQUIRE_TRUE(result != NULL);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_UNKNOWN_OPTION);
-    check_text(cline_result_error_argument(result), "--\xFF=1");
-    check_text(cline_result_error_message(result), "unknown option '--\xFF'");
-    cline_result_destroy(result);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_UNKNOWN_OPTION);
+    check_text(argx_result_error_argument(result), "--\xFF=1");
+    check_text(argx_result_error_message(result), "unknown option '--\xFF'");
+    argx_result_destroy(result);
 
     tear_down(&fixture);
 }

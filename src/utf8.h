@@ -1,5 +1,5 @@
 /*
- * CLine - internal declarations for the conversion of a wide string to
+ * ArgX - internal declarations for the conversion of a wide string to
  * UTF-8.
  *
  * How a wide string is read depends on the width of wchar_t, which is
@@ -21,8 +21,8 @@
  * neither the API of the operating system nor the conversion functions of
  * the C standard library, so the result does not depend on the locale.
  */
-#ifndef CLINE_UTF8_H
-#define CLINE_UTF8_H
+#ifndef ARGX_UTF8_H
+#define ARGX_UTF8_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -40,19 +40,19 @@
  *
  * Preconditions: text and valid are not NULL. They are checked with assert.
  */
-size_t cline_utf8_length(const wchar_t *text, bool *valid);
+size_t argx_utf8_length(const wchar_t *text, bool *valid);
 
 /*
  * Writes text in UTF-8 to out and terminates it with '\0'. Returns the
  * number of bytes written, without the terminator: the same number that
- * cline_utf8_length() returns for the same text. Each unit that cannot be
+ * argx_utf8_length() returns for the same text. Each unit that cannot be
  * converted is written as U+FFFD; whether there was one is reported by
- * cline_utf8_length() only.
+ * argx_utf8_length() only.
  *
  * Preconditions: text and out are not NULL. They are checked with assert.
- * out has cline_utf8_length(text, ...) + 1 bytes or more, and does not
+ * out has argx_utf8_length(text, ...) + 1 bytes or more, and does not
  * overlap text; these are not checked.
  */
-size_t cline_utf8_write(const wchar_t *text, char *out);
+size_t argx_utf8_write(const wchar_t *text, char *out);
 
-#endif /* CLINE_UTF8_H */
+#endif /* ARGX_UTF8_H */

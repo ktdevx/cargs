@@ -1,41 +1,41 @@
-# ClineCheckExports.cmake - checks what the shared library exports.
+# ArgXCheckExports.cmake - checks what the shared library exports.
 #
 # A script, run with "cmake -P". When the library is a shared library and the
 # tests are built, tests/CMakeLists.txt registers it with CTest under the name
-# cline.exports. It also runs by hand:
+# argx.exports. It also runs by hand:
 #
-#   cmake -D CLINE_LIBRARY=<shared library> [-D <variable>=<value>]...
-#         -P cmake/ClineCheckExports.cmake
+#   cmake -D ARGX_LIBRARY=<shared library> [-D <variable>=<value>]...
+#         -P cmake/ArgXCheckExports.cmake
 #
-#   CLINE_LIBRARY      The shared library to check: the .so, the .dylib or
+#   ARGX_LIBRARY      The shared library to check: the .so, the .dylib or
 #                       the .dll (not the import library). Required.
-#   CLINE_INCLUDE_DIR  The directory of the public headers. Default:
-#                       include/cline of this source tree.
-#   CLINE_FORMAT       ELF, MACHO or PE. Default: the format of the machine
+#   ARGX_INCLUDE_DIR  The directory of the public headers. Default:
+#                       include/argx of this source tree.
+#   ARGX_FORMAT       ELF, MACHO or PE. Default: the format of the machine
 #                       the script runs on (Windows: PE, macOS: MACHO,
 #                       otherwise ELF).
-#   CLINE_TOOL         The program that lists the exported symbols: nm for
+#   ARGX_TOOL         The program that lists the exported symbols: nm for
 #                       ELF and MACHO, dumpbin for PE. Default: looked up on
 #                       the PATH.
 #
 # The rules:
 #
 #   - The expected names come from the public headers, all the *.h files of
-#     CLINE_INCLUDE_DIR: every function declared with CLINE_API. Nothing
+#     ARGX_INCLUDE_DIR: every function declared with ARGX_API. Nothing
 #     here lists the public functions by hand, so a new public function needs
 #     no change to this script.
 #   - The library exports exactly the expected names. A symbol that is
-#     exported but not declared with CLINE_API in a public header fails the
-#     check, and so does a function that is declared with CLINE_API but not
+#     exported but not declared with ARGX_API in a public header fails the
+#     check, and so does a function that is declared with ARGX_API but not
 #     exported.
-#   - Every expected name starts with "cline_".
-#   - The public headers declare at least one function with CLINE_API.
+#   - Every expected name starts with "argx_".
+#   - The public headers declare at least one function with ARGX_API.
 #     Finding none means that the headers or this script are broken.
 #
 # How a declaration is read: comments and preprocessor lines are dropped, and
-# the name is the last identifier between CLINE_API and the first "(" after
-# it. So a public declaration is written in this order: CLINE_API, the return
-# type, the function name, "(". CLINE_API on anything else (a variable, a
+# the name is the last identifier between ARGX_API and the first "(" after
+# it. So a public declaration is written in this order: ARGX_API, the return
+# type, the function name, "(". ARGX_API on anything else (a variable, a
 # function that returns a function pointer without a typedef) fails the check.
 #
 # Ends with a FATAL_ERROR that names every symbol at fault, so the test fails.
@@ -44,14 +44,14 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Symbols that the linker or the C runtime puts into every ELF shared library
-# with some toolchains. They are not symbols of CLine.
-set(cline_check_toolchain_symbols _init _fini __bss_start _edata _end)
+# with some toolchains. They are not symbols of ArgX.
+set(argx_check_toolchain_symbols _init _fini __bss_start _edata _end)
 
-# cline_check_strip_comments(<text> <out-var>)
+# argx_check_strip_comments(<text> <out-var>)
 #
 # Drops the C comments of <text>. A block comment becomes one blank, a line
 # comment ends before the end of its line.
-function(cline_check_strip_comments rest out_var)
+function(argx_check_strip_comments rest out_var)
     set(text "")
     while(TRUE)
         string(FIND "${rest}" "/*" block_pos)
@@ -86,12 +86,12 @@ function(cline_check_strip_comments rest out_var)
     set(${out_var} "${text}${rest}" PARENT_SCOPE)
 endfunction()
 
-# cline_check_read_header(<header> <names-var> <problems-var>)
+# argx_check_read_header(<header> <names-var> <problems-var>)
 #
-# Appends the names of the functions that <header> declares with CLINE_API
-# to <names-var>, and a line for each use of CLINE_API that is not such a
+# Appends the names of the functions that <header> declares with ARGX_API
+# to <names-var>, and a line for each use of ARGX_API that is not such a
 # declaration to <problems-var>.
-function(cline_check_read_header header names_var problems_var)
+function(argx_check_read_header header names_var problems_var)
     set(names "${${names_var}}")
     set(problems "${${problems_var}}")
 
@@ -101,19 +101,19 @@ function(cline_check_read_header header names_var problems_var)
 
     # As the compiler does: join the continued lines, then drop the comments.
     string(REPLACE "\\\n" "" text "${text}")
-    cline_check_strip_comments("${text}" text)
+    argx_check_strip_comments("${text}" text)
 
-    # Drop the preprocessor lines. The definitions of CLINE_API itself are
+    # Drop the preprocessor lines. The definitions of ARGX_API itself are
     # among them.
     string(REGEX REPLACE "(^|\n)[ \t]*#[^\n]*" "\\1" text "${text}")
 
     while(TRUE)
-        string(FIND "${text}" "CLINE_API" pos)
+        string(FIND "${text}" "ARGX_API" pos)
         if(pos EQUAL -1)
             break()
         endif()
 
-        # The character before and the text after this use of CLINE_API.
+        # The character before and the text after this use of ARGX_API.
         set(before " ")
         if(pos GREATER 0)
             math(EXPR before_pos "${pos} - 1")
@@ -134,7 +134,7 @@ function(cline_check_read_header header names_var problems_var)
             string(REGEX REPLACE "[ \t\n]+" " " what "${what}")
             string(STRIP "${what}" what)
             string(APPEND problems
-                "  ${header}: CLINE_API marks \"${what}\", which is not the "
+                "  ${header}: ARGX_API marks \"${what}\", which is not the "
                 "declaration of a function.\n")
             continue()
         endif()
@@ -145,7 +145,7 @@ function(cline_check_read_header header names_var problems_var)
             string(STRIP "${what}" what)
             string(APPEND problems
                 "  ${header}: cannot read the function name in "
-                "\"CLINE_API ${what}(\". Write CLINE_API, the return type, "
+                "\"ARGX_API ${what}(\". Write ARGX_API, the return type, "
                 "the function name and \"(\" in this order.\n")
             continue()
         endif()
@@ -156,15 +156,15 @@ function(cline_check_read_header header names_var problems_var)
     set(${problems_var} "${problems}" PARENT_SCOPE)
 endfunction()
 
-# cline_check_list_exports(<out-var>)
+# argx_check_list_exports(<out-var>)
 #
-# Sets <out-var> to the names that CLINE_LIBRARY exports, as the C code
+# Sets <out-var> to the names that ARGX_LIBRARY exports, as the C code
 # spells them. Stops with a FATAL_ERROR if the tool fails or its output
 # cannot be read.
-function(cline_check_list_exports out_var)
-    if(CLINE_FORMAT STREQUAL "PE")
+function(argx_check_list_exports out_var)
+    if(ARGX_FORMAT STREQUAL "PE")
         set(arguments /NOLOGO /EXPORTS)
-    elseif(CLINE_FORMAT STREQUAL "MACHO")
+    elseif(ARGX_FORMAT STREQUAL "MACHO")
         # The external symbols that the library defines.
         set(arguments -gU)
     else()
@@ -176,7 +176,7 @@ function(cline_check_list_exports out_var)
     set(ENV{LC_ALL} C)
     set(ENV{VSLANG} 1033)
     execute_process(
-        COMMAND "${CLINE_TOOL}" ${arguments} "${CLINE_LIBRARY}"
+        COMMAND "${ARGX_TOOL}" ${arguments} "${ARGX_LIBRARY}"
         RESULT_VARIABLE result
         OUTPUT_VARIABLE output
         ERROR_VARIABLE errors
@@ -184,10 +184,10 @@ function(cline_check_list_exports out_var)
     list(JOIN arguments " " arguments_text)
     if(NOT result STREQUAL "0")
         message(FATAL_ERROR
-            "cline.exports: cannot list the exported symbols of\n"
-            "  ${CLINE_LIBRARY}\n"
+            "argx.exports: cannot list the exported symbols of\n"
+            "  ${ARGX_LIBRARY}\n"
             "The command\n"
-            "  ${CLINE_TOOL} ${arguments_text} <library>\n"
+            "  ${ARGX_TOOL} ${arguments_text} <library>\n"
             "failed (${result}):\n"
             "${output}${errors}")
     endif()
@@ -200,11 +200,11 @@ function(cline_check_list_exports out_var)
     string(REPLACE "\n" ";" lines "${output}")
 
     set(names "")
-    if(CLINE_FORMAT STREQUAL "PE")
+    if(ARGX_FORMAT STREQUAL "PE")
         # dumpbin prints one line for each export:
         #     ordinal hint RVA      name
-        #           1    0 00001000 cline_version
-        #           1    0 00001000 cline_version = @ILT+0(cline_version)
+        #           1    0 00001000 argx_version
+        #           1    0 00001000 argx_version = @ILT+0(argx_version)
         # and, before them, "<count> number of names".
         set(hex "[0-9A-Fa-f]")
         set(rva "${hex}${hex}${hex}${hex}${hex}${hex}${hex}${hex}+")
@@ -219,8 +219,8 @@ function(cline_check_list_exports out_var)
         list(LENGTH names found)
         if(NOT count STREQUAL "" AND NOT count EQUAL found)
             message(FATAL_ERROR
-                "cline.exports: cannot read the output of\n"
-                "  ${CLINE_TOOL} ${arguments_text} ${CLINE_LIBRARY}\n"
+                "argx.exports: cannot read the output of\n"
+                "  ${ARGX_TOOL} ${arguments_text} ${ARGX_LIBRARY}\n"
                 "It announces ${count} exported names, and ${found} were read:\n"
                 "${output}")
         endif()
@@ -231,13 +231,13 @@ function(cline_check_list_exports out_var)
                 continue()
             endif()
             set(name "${CMAKE_MATCH_1}")
-            if(CLINE_FORMAT STREQUAL "MACHO")
+            if(ARGX_FORMAT STREQUAL "MACHO")
                 # The C name follows one underscore.
                 string(REGEX REPLACE "^_" "" name "${name}")
             else()
                 # A versioned symbol is "<name>@@<version>".
                 string(REGEX REPLACE "@.*$" "" name "${name}")
-                if(name IN_LIST cline_check_toolchain_symbols)
+                if(name IN_LIST argx_check_toolchain_symbols)
                     continue()
                 endif()
             endif()
@@ -254,63 +254,63 @@ endfunction()
 # The arguments.
 # ---------------------------------------------------------------------------
 
-if(NOT DEFINED CLINE_LIBRARY OR CLINE_LIBRARY STREQUAL "")
+if(NOT DEFINED ARGX_LIBRARY OR ARGX_LIBRARY STREQUAL "")
     message(FATAL_ERROR
-        "cline.exports: CLINE_LIBRARY is not set. Usage:\n"
-        "  cmake -D CLINE_LIBRARY=<shared library> -P ${CMAKE_CURRENT_LIST_FILE}")
+        "argx.exports: ARGX_LIBRARY is not set. Usage:\n"
+        "  cmake -D ARGX_LIBRARY=<shared library> -P ${CMAKE_CURRENT_LIST_FILE}")
 endif()
-get_filename_component(CLINE_LIBRARY "${CLINE_LIBRARY}" ABSOLUTE)
-if(NOT EXISTS "${CLINE_LIBRARY}" OR IS_DIRECTORY "${CLINE_LIBRARY}")
+get_filename_component(ARGX_LIBRARY "${ARGX_LIBRARY}" ABSOLUTE)
+if(NOT EXISTS "${ARGX_LIBRARY}" OR IS_DIRECTORY "${ARGX_LIBRARY}")
     message(FATAL_ERROR
-        "cline.exports: the library to check does not exist:\n"
-        "  ${CLINE_LIBRARY}\n"
+        "argx.exports: the library to check does not exist:\n"
+        "  ${ARGX_LIBRARY}\n"
         "Build the library first.")
 endif()
 
-if(NOT DEFINED CLINE_INCLUDE_DIR OR CLINE_INCLUDE_DIR STREQUAL "")
-    set(CLINE_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/../include/cline")
+if(NOT DEFINED ARGX_INCLUDE_DIR OR ARGX_INCLUDE_DIR STREQUAL "")
+    set(ARGX_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/../include/argx")
 endif()
-get_filename_component(CLINE_INCLUDE_DIR "${CLINE_INCLUDE_DIR}" ABSOLUTE)
-if(NOT IS_DIRECTORY "${CLINE_INCLUDE_DIR}")
+get_filename_component(ARGX_INCLUDE_DIR "${ARGX_INCLUDE_DIR}" ABSOLUTE)
+if(NOT IS_DIRECTORY "${ARGX_INCLUDE_DIR}")
     message(FATAL_ERROR
-        "cline.exports: the directory of the public headers does not exist:\n"
-        "  ${CLINE_INCLUDE_DIR}")
+        "argx.exports: the directory of the public headers does not exist:\n"
+        "  ${ARGX_INCLUDE_DIR}")
 endif()
 
-if(NOT DEFINED CLINE_FORMAT OR CLINE_FORMAT STREQUAL "")
+if(NOT DEFINED ARGX_FORMAT OR ARGX_FORMAT STREQUAL "")
     if(CMAKE_HOST_WIN32)
-        set(CLINE_FORMAT PE)
+        set(ARGX_FORMAT PE)
     elseif(CMAKE_HOST_APPLE)
-        set(CLINE_FORMAT MACHO)
+        set(ARGX_FORMAT MACHO)
     else()
-        set(CLINE_FORMAT ELF)
+        set(ARGX_FORMAT ELF)
     endif()
 endif()
-if(NOT CLINE_FORMAT MATCHES "^(ELF|MACHO|PE)$")
+if(NOT ARGX_FORMAT MATCHES "^(ELF|MACHO|PE)$")
     message(FATAL_ERROR
-        "cline.exports: CLINE_FORMAT is \"${CLINE_FORMAT}\". "
+        "argx.exports: ARGX_FORMAT is \"${ARGX_FORMAT}\". "
         "It must be ELF, MACHO or PE.")
 endif()
 
-if(CLINE_FORMAT STREQUAL "PE")
-    set(cline_check_tool_name dumpbin)
+if(ARGX_FORMAT STREQUAL "PE")
+    set(argx_check_tool_name dumpbin)
 else()
-    set(cline_check_tool_name nm)
+    set(argx_check_tool_name nm)
 endif()
-if(NOT DEFINED CLINE_TOOL OR CLINE_TOOL STREQUAL "")
-    find_program(cline_check_tool NAMES "${cline_check_tool_name}" NO_CACHE)
-    if(NOT cline_check_tool)
+if(NOT DEFINED ARGX_TOOL OR ARGX_TOOL STREQUAL "")
+    find_program(argx_check_tool NAMES "${argx_check_tool_name}" NO_CACHE)
+    if(NOT argx_check_tool)
         message(FATAL_ERROR
-            "cline.exports: ${cline_check_tool_name}, which lists the exported "
+            "argx.exports: ${argx_check_tool_name}, which lists the exported "
             "symbols, was not found on the PATH. Install it, or give its path "
-            "with -D CLINE_TOOL=<path>.")
+            "with -D ARGX_TOOL=<path>.")
     endif()
-    set(CLINE_TOOL "${cline_check_tool}")
-elseif(NOT EXISTS "${CLINE_TOOL}" OR IS_DIRECTORY "${CLINE_TOOL}")
+    set(ARGX_TOOL "${argx_check_tool}")
+elseif(NOT EXISTS "${ARGX_TOOL}" OR IS_DIRECTORY "${ARGX_TOOL}")
     message(FATAL_ERROR
-        "cline.exports: ${cline_check_tool_name}, which lists the exported "
-        "symbols, was not found: CLINE_TOOL is\n"
-        "  ${CLINE_TOOL}\n"
+        "argx.exports: ${argx_check_tool_name}, which lists the exported "
+        "symbols, was not found: ARGX_TOOL is\n"
+        "  ${ARGX_TOOL}\n"
         "which does not exist.")
 endif()
 
@@ -318,34 +318,34 @@ endif()
 # The expected names, from the public headers.
 # ---------------------------------------------------------------------------
 
-file(GLOB_RECURSE cline_check_headers LIST_DIRECTORIES false "${CLINE_INCLUDE_DIR}/*.h")
-list(SORT cline_check_headers)
-if(NOT cline_check_headers)
+file(GLOB_RECURSE argx_check_headers LIST_DIRECTORIES false "${ARGX_INCLUDE_DIR}/*.h")
+list(SORT argx_check_headers)
+if(NOT argx_check_headers)
     message(FATAL_ERROR
-        "cline.exports: no public header (*.h) was found in\n"
-        "  ${CLINE_INCLUDE_DIR}")
+        "argx.exports: no public header (*.h) was found in\n"
+        "  ${ARGX_INCLUDE_DIR}")
 endif()
 
-set(cline_check_expected "")
-set(cline_check_problems "")
-foreach(cline_check_header IN LISTS cline_check_headers)
-    cline_check_read_header("${cline_check_header}"
-        cline_check_expected cline_check_problems)
+set(argx_check_expected "")
+set(argx_check_problems "")
+foreach(argx_check_header IN LISTS argx_check_headers)
+    argx_check_read_header("${argx_check_header}"
+        argx_check_expected argx_check_problems)
 endforeach()
-list(REMOVE_DUPLICATES cline_check_expected)
-list(SORT cline_check_expected)
+list(REMOVE_DUPLICATES argx_check_expected)
+list(SORT argx_check_expected)
 
-if(NOT cline_check_expected AND cline_check_problems STREQUAL "")
-    string(APPEND cline_check_problems
-        "  The public headers declare no function with CLINE_API. A public "
-        "function is declared as \"CLINE_API <return type> cline_<name>(...);\".\n")
+if(NOT argx_check_expected AND argx_check_problems STREQUAL "")
+    string(APPEND argx_check_problems
+        "  The public headers declare no function with ARGX_API. A public "
+        "function is declared as \"ARGX_API <return type> argx_<name>(...);\".\n")
 endif()
 
-foreach(cline_check_name IN LISTS cline_check_expected)
-    if(NOT cline_check_name MATCHES "^cline_")
-        string(APPEND cline_check_problems
-            "  ${cline_check_name}: declared with CLINE_API, but the name does "
-            "not start with \"cline_\".\n")
+foreach(argx_check_name IN LISTS argx_check_expected)
+    if(NOT argx_check_name MATCHES "^argx_")
+        string(APPEND argx_check_problems
+            "  ${argx_check_name}: declared with ARGX_API, but the name does "
+            "not start with \"argx_\".\n")
     endif()
 endforeach()
 
@@ -353,35 +353,35 @@ endforeach()
 # The exported names, and the comparison.
 # ---------------------------------------------------------------------------
 
-cline_check_list_exports(cline_check_exported)
+argx_check_list_exports(argx_check_exported)
 
-foreach(cline_check_name IN LISTS cline_check_exported)
-    if(NOT cline_check_name IN_LIST cline_check_expected)
-        string(APPEND cline_check_problems
-            "  ${cline_check_name}: exported by the library, but not declared "
-            "with CLINE_API in a public header.\n")
+foreach(argx_check_name IN LISTS argx_check_exported)
+    if(NOT argx_check_name IN_LIST argx_check_expected)
+        string(APPEND argx_check_problems
+            "  ${argx_check_name}: exported by the library, but not declared "
+            "with ARGX_API in a public header.\n")
     endif()
 endforeach()
-foreach(cline_check_name IN LISTS cline_check_expected)
-    if(NOT cline_check_name IN_LIST cline_check_exported)
-        string(APPEND cline_check_problems
-            "  ${cline_check_name}: declared with CLINE_API in a public "
+foreach(argx_check_name IN LISTS argx_check_expected)
+    if(NOT argx_check_name IN_LIST argx_check_exported)
+        string(APPEND argx_check_problems
+            "  ${argx_check_name}: declared with ARGX_API in a public "
             "header, but not exported by the library.\n")
     endif()
 endforeach()
 
-list(JOIN cline_check_expected " " cline_check_expected_text)
-list(JOIN cline_check_exported " " cline_check_exported_text)
-if(NOT cline_check_problems STREQUAL "")
+list(JOIN argx_check_expected " " argx_check_expected_text)
+list(JOIN argx_check_exported " " argx_check_exported_text)
+if(NOT argx_check_problems STREQUAL "")
     message(FATAL_ERROR
-        "cline.exports: the exported symbols do not follow the rules.\n"
-        "${cline_check_problems}"
-        "Library:        ${CLINE_LIBRARY}\n"
-        "Public headers: ${CLINE_INCLUDE_DIR}\n"
-        "Declared with CLINE_API: ${cline_check_expected_text}\n"
-        "Exported:                 ${cline_check_exported_text}")
+        "argx.exports: the exported symbols do not follow the rules.\n"
+        "${argx_check_problems}"
+        "Library:        ${ARGX_LIBRARY}\n"
+        "Public headers: ${ARGX_INCLUDE_DIR}\n"
+        "Declared with ARGX_API: ${argx_check_expected_text}\n"
+        "Exported:                 ${argx_check_exported_text}")
 endif()
 
 message(STATUS
-    "cline.exports: ${CLINE_LIBRARY} exports exactly the functions declared "
-    "with CLINE_API: ${cline_check_exported_text}")
+    "argx.exports: ${ARGX_LIBRARY} exports exactly the functions declared "
+    "with ARGX_API: ${argx_check_exported_text}")

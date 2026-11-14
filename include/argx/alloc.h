@@ -1,5 +1,5 @@
 /*
- * CLine - the allocator: the functions the library gets its memory from.
+ * ArgX - the allocator: the functions the library gets its memory from.
  *
  * The library takes all of its memory from one allocator, a set of four
  * functions of the same form as the standard malloc, realloc, calloc and
@@ -31,10 +31,10 @@
  * The allocator carries no user data. An allocator that needs state keeps
  * it on its own side.
  */
-#ifndef CLINE_ALLOC_H
-#define CLINE_ALLOC_H
+#ifndef ARGX_ALLOC_H
+#define ARGX_ALLOC_H
 
-#include <cline/export.h>
+#include <argx/export.h>
 
 #include <stddef.h>
 
@@ -42,26 +42,26 @@
  * The types of the four functions: the same form as the standard malloc,
  * realloc, calloc and free.
  */
-typedef void *(*cline_malloc_fn_t)(size_t size);
-typedef void *(*cline_realloc_fn_t)(void *ptr, size_t size);
-typedef void *(*cline_calloc_fn_t)(size_t count, size_t size);
-typedef void (*cline_free_fn_t)(void *ptr);
+typedef void *(*argx_malloc_fn_t)(size_t size);
+typedef void *(*argx_realloc_fn_t)(void *ptr, size_t size);
+typedef void *(*argx_calloc_fn_t)(size_t count, size_t size);
+typedef void (*argx_free_fn_t)(void *ptr);
 
 /*
  * An allocator. The standard functions can be used as they are:
  *
- *     cline_allocator_t allocator = { malloc, realloc, calloc, free };
+ *     argx_allocator_t allocator = { malloc, realloc, calloc, free };
  *
  * The layout is fixed: later versions add no field and change neither the
  * order nor the types of the fields.
  */
-typedef struct cline_allocator
+typedef struct argx_allocator
 {
-    cline_malloc_fn_t malloc_fn;
-    cline_realloc_fn_t realloc_fn;
-    cline_calloc_fn_t calloc_fn;
-    cline_free_fn_t free_fn;
-} cline_allocator_t;
+    argx_malloc_fn_t malloc_fn;
+    argx_realloc_fn_t realloc_fn;
+    argx_calloc_fn_t calloc_fn;
+    argx_free_fn_t free_fn;
+} argx_allocator_t;
 
 #ifdef __cplusplus
 extern "C"
@@ -90,10 +90,10 @@ extern "C"
  *   setting is not synchronized. Usually the allocator is set once, when
  *   the program starts.
  */
-CLINE_API void cline_set_allocator(const cline_allocator_t *allocator);
+ARGX_API void argx_set_allocator(const argx_allocator_t *allocator);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CLINE_ALLOC_H */
+#endif /* ARGX_ALLOC_H */

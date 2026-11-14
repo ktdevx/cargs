@@ -1,6 +1,6 @@
 /*
  * Tests of the layout of the help: the description column of
- * cline_help_write() of <cline/help.h>, its limit, the items whose
+ * argx_help_write() of <argx/help.h>, its limit, the items whose
  * heading is too wide for it, the breaking of the descriptions into lines,
  * the settings of the help options, and the shape of the lines.
  *
@@ -43,7 +43,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -119,45 +119,45 @@ static bool sink_write(void *user_data, const char *text, size_t length)
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* Installs the test allocator and creates a root with the name "tool". */
-static cline_command_t *create_root(void)
+static argx_command_t *create_root(void)
 {
-    cline_command_t *root = NULL;
+    argx_command_t *root = NULL;
 
-    cline_test_allocator_install();
-    NAOS_REQUIRE_TRUE(cline_command_create("tool", &root) == CLINE_ERROR_NONE);
+    argx_test_allocator_install();
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &root) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(root != NULL);
     return root;
 }
 
 /* Destroys root and ends the test: nothing stays allocated. */
-static void destroy_root(cline_command_t *root)
+static void destroy_root(argx_command_t *root)
 {
-    cline_command_destroy(root);
-    cline_test_allocator_uninstall();
+    argx_command_destroy(root);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* Sets the description of command; it must succeed. */
-static void describe(cline_command_t *command, const char *description)
+static void describe(argx_command_t *command, const char *description)
 {
-    NAOS_REQUIRE_TRUE(cline_command_set_description(command, description) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_description(command, description) == ARGX_ERROR_NONE);
 }
 
 /*
  * Adds a subcommand that must succeed, and returns it. description is its
  * description, or NULL to set none.
  */
-static cline_command_t *add_sub(cline_command_t *command, const char *name,
+static argx_command_t *add_sub(argx_command_t *command, const char *name,
                                  const char *description)
 {
-    cline_command_t *sub = NULL;
+    argx_command_t *sub = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_subcommand(command, name, &sub) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(command, name, &sub) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sub != NULL);
     if (description != NULL)
     {
@@ -170,18 +170,18 @@ static cline_command_t *add_sub(cline_command_t *command, const char *name,
  * Adds a positional of strings that must succeed. description is its
  * description, or NULL to set none.
  */
-static void add_positional(cline_command_t *command, const char *name, cline_arity_t arity,
+static void add_positional(argx_command_t *command, const char *name, argx_arity_t arity,
                            const char *description)
 {
-    cline_positional_t *positional = NULL;
+    argx_positional_t *positional = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_positional(command, name, cline_type_string(), arity,
-                                                    &positional) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, argx_type_string(), arity,
+                                                    &positional) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(cline_positional_set_description(positional, description) ==
-                          CLINE_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_positional_set_description(positional, description) ==
+                          ARGX_ERROR_NONE);
     }
 }
 
@@ -190,21 +190,21 @@ static void add_positional(cline_command_t *command, const char *name, cline_ari
  * default value given; it must succeed. description is its description, or
  * NULL to set none.
  */
-static void add_positional_default(cline_command_t *command, const char *name,
+static void add_positional_default(argx_command_t *command, const char *name,
                                    const char *default_value, const char *description)
 {
-    cline_positional_t *positional = NULL;
+    argx_positional_t *positional = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_positional(command, name, cline_type_string(),
-                                                    CLINE_ARITY_OPTIONAL,
-                                                    &positional) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, argx_type_string(),
+                                                    ARGX_ARITY_OPTIONAL,
+                                                    &positional) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
-    NAOS_REQUIRE_TRUE(cline_positional_set_default(positional, default_value) ==
-                      CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_positional_set_default(positional, default_value) ==
+                      ARGX_ERROR_NONE);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(cline_positional_set_description(positional, description) ==
-                          CLINE_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_positional_set_description(positional, description) ==
+                          ARGX_ERROR_NONE);
     }
 }
 
@@ -213,17 +213,17 @@ static void add_positional_default(cline_command_t *command, const char *name,
  * for a name that the option does not have; description is its
  * description, or NULL to set none.
  */
-static void add_flag(cline_command_t *command, char short_name, const char *long_name,
+static void add_flag(argx_command_t *command, char short_name, const char *long_name,
                      const char *description)
 {
-    cline_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_flag(command, short_name, long_name, &option) ==
-                      CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(cline_option_set_description(option, description) == CLINE_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
     }
 }
 
@@ -232,31 +232,31 @@ static void add_flag(cline_command_t *command, char short_name, const char *long
  * display name value_name. The option is not required. default_value is
  * its default value, or NULL to set none.
  */
-static void add_value(cline_command_t *command, char short_name, const char *long_name,
+static void add_value(argx_command_t *command, char short_name, const char *long_name,
                       const char *value_name, const char *default_value,
                       const char *description)
 {
-    cline_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_value(command, short_name, long_name, cline_type_string(),
-                                               &option) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, argx_type_string(),
+                                               &option) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    NAOS_REQUIRE_TRUE(cline_option_set_value_name(option, value_name) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, value_name) == ARGX_ERROR_NONE);
     if (default_value != NULL)
     {
-        NAOS_REQUIRE_TRUE(cline_option_set_default(option, default_value) == CLINE_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_default(option, default_value) == ARGX_ERROR_NONE);
     }
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(cline_option_set_description(option, description) == CLINE_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
     }
 }
 
 /* Validates the tree of root; it must have no fault. */
-static void validate(cline_command_t *root)
+static void validate(argx_command_t *root)
 {
-    NAOS_REQUIRE_TRUE(cline_command_validate(root, NULL, NULL, NULL) == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_is_validated(root));
+    NAOS_REQUIRE_TRUE(argx_command_validate(root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_is_validated(root));
 }
 
 /*
@@ -301,18 +301,18 @@ static void check_shape(const char *text, size_t length)
  * still validated. The generation may allocate: for the cell text of an
  * option or of a positional.
  */
-static void generate(const cline_command_t *command, const cline_help_options_t *options,
+static void generate(const argx_command_t *command, const argx_help_options_t *options,
                      sink_t *sink)
 {
-    size_t live = cline_test_allocator_live();
+    size_t live = argx_test_allocator_live();
 
-    NAOS_CHECK_TRUE(cline_help_write(command, options, sink_write, sink) == CLINE_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_write(command, options, sink_write, sink) == ARGX_ERROR_NONE);
 
     check_shape(sink->text, sink->length);
     NAOS_CHECK_UINT_EQ(sink->empty_calls, 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), live);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
-    NAOS_CHECK_TRUE(cline_command_is_validated(command));
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
+    NAOS_CHECK_TRUE(argx_command_is_validated(command));
 }
 
 /*
@@ -320,7 +320,7 @@ static void generate(const cline_command_t *command, const cline_help_options_t 
  * generate() does, and checks that the text is exactly the string
  * expected: by its length and by its bytes.
  */
-static void check_help_with(const cline_command_t *command, const cline_help_options_t *options,
+static void check_help_with(const argx_command_t *command, const argx_help_options_t *options,
                             const char *expected)
 {
     char buffer[SINK_SIZE];
@@ -338,15 +338,15 @@ static void check_help_with(const cline_command_t *command, const cline_help_opt
  * Creates help options that must succeed, with the width, the indent and
  * the maximum column given.
  */
-static cline_help_options_t *create_options(size_t width, size_t indent, size_t max_column)
+static argx_help_options_t *create_options(size_t width, size_t indent, size_t max_column)
 {
-    cline_help_options_t *options = NULL;
+    argx_help_options_t *options = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_help_options_create(&options) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(options != NULL);
-    cline_help_options_set_width(options, width);
-    cline_help_options_set_indent(options, indent);
-    cline_help_options_set_max_column(options, max_column);
+    argx_help_options_set_width(options, width);
+    argx_help_options_set_indent(options, indent);
+    argx_help_options_set_max_column(options, max_column);
     return options;
 }
 
@@ -355,14 +355,14 @@ static cline_help_options_t *create_options(size_t width, size_t indent, size_t 
  * the indent and the maximum column given, and checks it as
  * check_help_with() does. The help options are destroyed again.
  */
-static void check_layout(const cline_command_t *command, size_t width, size_t indent,
+static void check_layout(const argx_command_t *command, size_t width, size_t indent,
                          size_t max_column, const char *expected)
 {
-    cline_help_options_t *options = create_options(width, indent, max_column);
+    argx_help_options_t *options = create_options(width, indent, max_column);
 
     check_help_with(command, options, expected);
 
-    cline_help_options_destroy(options);
+    argx_help_options_destroy(options);
 }
 
 /* ---- The limit of the column -------------------------------------------- */
@@ -375,7 +375,7 @@ static void check_layout(const cline_command_t *command, size_t width, size_t in
  */
 NAOS_TEST(heading_beyond_the_limit_goes_to_its_own_line)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "add", "Add a remote");
     add_sub(root, "synchronize", "Synchronize all");
@@ -402,7 +402,7 @@ NAOS_TEST(heading_beyond_the_limit_goes_to_its_own_line)
  */
 NAOS_TEST(default_limit_is_the_column_32)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_flag(root, 'v', "verbose", "Say more");
     add_value(root, '\0', "a-rather-long-name-of-option", "FILE", NULL, "Write to FILE");
@@ -429,7 +429,7 @@ NAOS_TEST(default_limit_is_the_column_32)
  */
 NAOS_TEST(two_blanks_keep_the_description_on_the_line)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "eightchr", "Two blanks");
     add_sub(root, "ninechars", "One blank");
@@ -458,7 +458,7 @@ NAOS_TEST(two_blanks_keep_the_description_on_the_line)
  */
 NAOS_TEST(half_of_the_width_is_the_limit)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "sixsix", "Six");
     add_sub(root, "sevens7", "Seven");
@@ -499,7 +499,7 @@ NAOS_TEST(half_of_the_width_is_the_limit)
  */
 NAOS_TEST(limit_is_the_smaller_of_maximum_and_half_width)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "add", "Add");
     add_sub(root, "abcdefghijklmnopqrstuvwxyz0123456789abcd", "Long");
@@ -531,7 +531,7 @@ NAOS_TEST(limit_is_the_smaller_of_maximum_and_half_width)
  */
 NAOS_TEST(width_zero_leaves_the_maximum_as_the_limit)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "abcdefghijklmnopqrstuvwxyz01", "Fits");
     add_sub(root, "abcdefghijklmnopqrstuvwxyz012", "Does not fit");
@@ -555,7 +555,7 @@ NAOS_TEST(width_zero_leaves_the_maximum_as_the_limit)
  */
 NAOS_TEST(width_zero_does_not_halve_a_great_maximum)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "add", "Add");
     add_sub(root, "abcdefghijklmnopqrstuvwxyz0123456789abcd", "Long");
@@ -580,7 +580,7 @@ NAOS_TEST(width_zero_does_not_halve_a_great_maximum)
  */
 NAOS_TEST(indent_plus_two_is_the_least_limit)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "a", "Add");
     add_sub(root, "bb", "Bee");
@@ -633,7 +633,7 @@ NAOS_TEST(indent_plus_two_is_the_least_limit)
  */
 NAOS_TEST(long_command_leaves_the_column_of_the_options)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "add", "Add");
     add_sub(root, "synchronize-everything", "Sync");
@@ -662,7 +662,7 @@ NAOS_TEST(long_command_leaves_the_column_of_the_options)
  */
 NAOS_TEST(long_option_leaves_the_column_of_the_commands)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "add", "Add");
     add_sub(root, "remove", "Remove");
@@ -691,10 +691,10 @@ NAOS_TEST(long_option_leaves_the_column_of_the_commands)
  */
 NAOS_TEST(long_argument_leaves_the_column_of_the_options)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "input", CLINE_ARITY_REQUIRED, "Read it");
-    add_positional(root, "a-long-positional-name", CLINE_ARITY_REQUIRED, "Long one");
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, "Read it");
+    add_positional(root, "a-long-positional-name", ARGX_ARITY_REQUIRED, "Long one");
     add_flag(root, 'v', "verbose", "Say more");
     validate(root);
 
@@ -718,9 +718,9 @@ NAOS_TEST(long_argument_leaves_the_column_of_the_options)
  */
 NAOS_TEST(long_option_leaves_the_column_of_the_arguments)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "input", CLINE_ARITY_REQUIRED, "Read it");
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, "Read it");
     add_flag(root, 'v', "verbose", "Say more");
     add_value(root, 'o', "output-directory", "DIR", NULL, "Write there");
     validate(root);
@@ -746,7 +746,7 @@ NAOS_TEST(long_option_leaves_the_column_of_the_arguments)
  */
 NAOS_TEST(annotations_alone_go_to_the_next_line)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_value(root, 'o', "output-directory", "DIR", "out", NULL);
     add_flag(root, '\0', "a-flag-with-a-long-name", NULL);
@@ -772,7 +772,7 @@ NAOS_TEST(annotations_alone_go_to_the_next_line)
  */
 NAOS_TEST(long_heading_without_description_is_heading_only)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "synchronize-everything", NULL);
     add_sub(root, "add", "Add");
@@ -793,10 +793,10 @@ NAOS_TEST(long_heading_without_description_is_heading_only)
 /* The same for a positional, whose line is written from the cell text. */
 NAOS_TEST(long_argument_without_description_is_heading_only)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "input", CLINE_ARITY_REQUIRED, "Read it");
-    add_positional(root, "a-long-positional-name", CLINE_ARITY_REQUIRED, NULL);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, "Read it");
+    add_positional(root, "a-long-positional-name", ARGX_ARITY_REQUIRED, NULL);
     validate(root);
 
     check_layout(root, 80, 2, 20,
@@ -818,10 +818,10 @@ NAOS_TEST(long_argument_without_description_is_heading_only)
  */
 NAOS_TEST(width_of_a_heading_with_newline_decides)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "ab\ncd", CLINE_ARITY_REQUIRED, "Short");
-    add_positional(root, "abcdefg\nh", CLINE_ARITY_REQUIRED, "Long");
+    add_positional(root, "ab\ncd", ARGX_ARITY_REQUIRED, "Short");
+    add_positional(root, "abcdefg\nh", ARGX_ARITY_REQUIRED, "Long");
     validate(root);
 
     check_layout(root, 80, 2, 12,
@@ -852,7 +852,7 @@ NAOS_TEST(width_of_a_heading_with_newline_decides)
  */
 NAOS_TEST(long_descriptions_break_between_words)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "A tool that keeps the remote copies of a project in step");
     add_sub(root, "add", "Add a remote copy to the list");
@@ -887,9 +887,9 @@ NAOS_TEST(long_descriptions_break_between_words)
  */
 NAOS_TEST(long_description_of_an_argument_breaks_between_words)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "input", CLINE_ARITY_REQUIRED, "The file that is read and then checked");
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, "The file that is read and then checked");
     validate(root);
 
     check_layout(root, 30, 2, 32,
@@ -910,7 +910,7 @@ NAOS_TEST(long_description_of_an_argument_breaks_between_words)
  */
 NAOS_TEST(long_description_below_a_long_heading_breaks_between_words)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_flag(root, 'v', "verbose", "Print more about every step that is taken");
     add_value(root, 'o', "output-directory", "DIR", NULL, "Write the files there and not here");
@@ -938,7 +938,7 @@ NAOS_TEST(long_description_below_a_long_heading_breaks_between_words)
  */
 NAOS_TEST(word_wider_than_the_room_is_not_divided)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "Supercalifragilisticexpialidocious word");
     add_flag(root, 'u', "url", "See https://example.invalid/a/very/long/path now");
@@ -966,10 +966,10 @@ NAOS_TEST(word_wider_than_the_room_is_not_divided)
  */
 NAOS_TEST(newlines_of_a_description_end_the_lines)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "The first paragraph.\n\nThe second one,\n  with a line of its own.");
-    add_positional(root, "input", CLINE_ARITY_REQUIRED, "Read it\n\nAfter an empty line");
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, "Read it\n\nAfter an empty line");
     add_flag(root, 'v', "verbose", "First line\nSecond line\n\n  After an empty line");
     validate(root);
 
@@ -1002,12 +1002,12 @@ NAOS_TEST(newlines_of_a_description_end_the_lines)
  */
 NAOS_TEST(width_zero_breaks_at_newlines_only)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "This sentence is longer than eighty columns and it stays on one line when "
                    "the width is zero.");
-    add_positional(root, "a-positional-with-a-long-name", CLINE_ARITY_REQUIRED, NULL);
-    add_positional(root, "another-positional-long-name", CLINE_ARITY_REQUIRED, NULL);
+    add_positional(root, "a-positional-with-a-long-name", ARGX_ARITY_REQUIRED, NULL);
+    add_positional(root, "another-positional-long-name", ARGX_ARITY_REQUIRED, NULL);
     add_flag(root, 'v', "verbose",
              "Print more about every step that is taken, also about the steps that change "
              "nothing\nA line of its own");
@@ -1059,7 +1059,7 @@ NAOS_TEST(width_zero_breaks_at_newlines_only)
  */
 NAOS_TEST(indent_and_maximum_column_shape_the_lists)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "add", "Add a remote");
     add_sub(root, "remove", "Remove a remote");
@@ -1139,8 +1139,8 @@ NAOS_TEST(null_and_new_options_give_the_same_text)
         "  -v, --verbose                 Say more\n"
         "      --a-rather-long-name-of-option <FILE>\n"
         "                                Write to FILE\n";
-    cline_command_t *root = create_root();
-    cline_help_options_t *options = NULL;
+    argx_command_t *root = create_root();
+    argx_help_options_t *options = NULL;
     char null_buffer[SINK_SIZE];
     char new_buffer[SINK_SIZE];
     sink_t null_sink;
@@ -1152,7 +1152,7 @@ NAOS_TEST(null_and_new_options_give_the_same_text)
     add_value(root, '\0', "a-rather-long-name-of-option", "FILE", NULL, "Write to FILE");
     validate(root);
 
-    NAOS_REQUIRE_TRUE(cline_help_options_create(&options) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(options != NULL);
 
     check_help_with(root, NULL, expected);
@@ -1167,7 +1167,7 @@ NAOS_TEST(null_and_new_options_give_the_same_text)
     NAOS_CHECK_UINT_EQ(null_sink.length, new_sink.length);
     NAOS_CHECK_MEM_EQ(null_sink.text, null_sink.length, new_sink.text, new_sink.length);
 
-    cline_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -1202,12 +1202,12 @@ NAOS_TEST(one_options_object_serves_many_generations)
         "Arguments:\n"
         "    <name>  The name of the\n"
         "            remote copy\n";
-    cline_command_t *root = create_root();
-    cline_command_t *remote = add_sub(root, "remote", "Manage the remote copies of the project");
-    cline_help_options_t *options;
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add_sub(root, "remote", "Manage the remote copies of the project");
+    argx_help_options_t *options;
 
     add_flag(root, 'v', "verbose", "Say more");
-    add_positional(remote, "name", CLINE_ARITY_REQUIRED, "The name of the remote copy");
+    add_positional(remote, "name", ARGX_ARITY_REQUIRED, "The name of the remote copy");
     validate(root);
 
     options = create_options(30, 4, 12);
@@ -1218,7 +1218,7 @@ NAOS_TEST(one_options_object_serves_many_generations)
     check_help_with(root, options, expected_root);
     check_help_with(remote, options, expected_sub);
 
-    cline_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -1279,17 +1279,17 @@ static void check_pieces(const char *text, size_t length, const piece_t *pieces,
  * buffer, and checks the generation as generate() does and the text with
  * check_pieces().
  */
-static void check_big_layout(const cline_command_t *command, size_t width, size_t indent,
+static void check_big_layout(const argx_command_t *command, size_t width, size_t indent,
                              size_t max_column, char *buffer, const piece_t *pieces, size_t count)
 {
-    cline_help_options_t *options = create_options(width, indent, max_column);
+    argx_help_options_t *options = create_options(width, indent, max_column);
     sink_t sink;
 
     sink_init(&sink, buffer, BIG_SINK_SIZE);
     generate(command, options, &sink);
     check_pieces(sink.text, sink.length, pieces, count);
 
-    cline_help_options_destroy(options);
+    argx_help_options_destroy(options);
 }
 
 /*
@@ -1319,7 +1319,7 @@ NAOS_TEST(width_above_the_limit_works_as_the_limit)
     };
     char *description = malloc((size_t)65533 + 4);
     char *buffer = malloc(BIG_SINK_SIZE);
-    cline_command_t *root;
+    argx_command_t *root;
     size_t index;
 
     NAOS_REQUIRE_TRUE(description != NULL);
@@ -1366,7 +1366,7 @@ NAOS_TEST(indent_above_the_limit_works_as_the_limit)
         { "Add\n", ' ', 0 },
     };
     char *buffer = malloc(BIG_SINK_SIZE);
-    cline_command_t *root;
+    argx_command_t *root;
     size_t index;
 
     NAOS_REQUIRE_TRUE(buffer != NULL);
@@ -1405,7 +1405,7 @@ NAOS_TEST(maximum_column_above_the_limit_works_as_the_limit)
         { "a  Add\n", ' ', 0 },
     };
     char *buffer = malloc(BIG_SINK_SIZE);
-    cline_command_t *root;
+    argx_command_t *root;
     size_t index;
 
     NAOS_REQUIRE_TRUE(buffer != NULL);
@@ -1434,7 +1434,7 @@ NAOS_TEST(maximum_column_above_the_limit_works_as_the_limit)
  */
 static void check_blank_command_description(const char *description)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, description);
     validate(root);
@@ -1477,7 +1477,7 @@ NAOS_TEST(blank_description_of_the_command_is_not_written)
  */
 NAOS_TEST(blank_description_of_an_option_is_heading_only)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_flag(root, 'v', "verbose", "   ");
     add_value(root, 'o', "output-directory", "DIR", NULL, " \n");
@@ -1500,11 +1500,11 @@ NAOS_TEST(blank_description_of_an_option_is_heading_only)
 /* The same for the positionals. */
 NAOS_TEST(blank_description_of_an_argument_is_heading_only)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "a-long-positional-name", CLINE_ARITY_REQUIRED, "   ");
-    add_positional(root, "input", CLINE_ARITY_REQUIRED, "  \n  ");
-    add_positional(root, "another-long-positional", CLINE_ARITY_REQUIRED, "\n \n");
+    add_positional(root, "a-long-positional-name", ARGX_ARITY_REQUIRED, "   ");
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, "  \n  ");
+    add_positional(root, "another-long-positional", ARGX_ARITY_REQUIRED, "\n \n");
     validate(root);
 
     check_layout(root, 80, 2, 20,
@@ -1525,7 +1525,7 @@ NAOS_TEST(blank_description_of_an_argument_is_heading_only)
  */
 NAOS_TEST(blank_first_line_of_a_subcommand_is_heading_only)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "synchronize-everything", "   ");
     add_sub(root, "add", " \nNot shown");
@@ -1556,7 +1556,7 @@ NAOS_TEST(blank_first_line_of_a_subcommand_is_heading_only)
  */
 NAOS_TEST(blank_description_leaves_the_annotations_alone)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_positional_default(root, "out", "o", " \n");
     add_positional_default(root, "a-long-optional-name", "x", "   ");
@@ -1589,68 +1589,68 @@ NAOS_TEST(blank_description_leaves_the_annotations_alone)
  * Builds the items of a test of the trailing run, each with the
  * description given, on root.
  */
-typedef void (*trailing_build_t)(cline_command_t *root, const char *description);
+typedef void (*trailing_build_t)(argx_command_t *root, const char *description);
 
 /* The command has the description, and nothing else. */
-static void build_command_alone(cline_command_t *root, const char *description)
+static void build_command_alone(argx_command_t *root, const char *description)
 {
     describe(root, description);
 }
 
 /* The command has the description, and a flag follows it. */
-static void build_command_and_option(cline_command_t *root, const char *description)
+static void build_command_and_option(argx_command_t *root, const char *description)
 {
     describe(root, description);
     add_flag(root, 'v', NULL, "Say more");
 }
 
 /* A flag with a heading that fits, then the last, one that is too wide. */
-static void build_flags_long_last(cline_command_t *root, const char *description)
+static void build_flags_long_last(argx_command_t *root, const char *description)
 {
     add_flag(root, 'q', "quiet", description);
     add_flag(root, '\0', "a-flag-with-a-long-name", description);
 }
 
 /* The same flags, the one with the heading that fits last. */
-static void build_flags_short_last(cline_command_t *root, const char *description)
+static void build_flags_short_last(argx_command_t *root, const char *description)
 {
     add_flag(root, '\0', "a-flag-with-a-long-name", description);
     add_flag(root, 'q', "quiet", description);
 }
 
 /* Options with a default value: a heading that fits, then one too wide. */
-static void build_defaults_long_last(cline_command_t *root, const char *description)
+static void build_defaults_long_last(argx_command_t *root, const char *description)
 {
     add_value(root, 'n', "num", "N", "1", description);
     add_value(root, '\0', "a-long-name-of-option", "FILE", "f", description);
 }
 
 /* The same options, the one with the heading that fits last. */
-static void build_defaults_short_last(cline_command_t *root, const char *description)
+static void build_defaults_short_last(argx_command_t *root, const char *description)
 {
     add_value(root, '\0', "a-long-name-of-option", "FILE", "f", description);
     add_value(root, 'n', "num", "N", "1", description);
 }
 
 /* Positionals: a heading that fits, then one too wide. */
-static void build_arguments_long_last(cline_command_t *root, const char *description)
+static void build_arguments_long_last(argx_command_t *root, const char *description)
 {
-    add_positional(root, "input", CLINE_ARITY_REQUIRED, description);
-    add_positional(root, "another-long-positional", CLINE_ARITY_REQUIRED, description);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, description);
+    add_positional(root, "another-long-positional", ARGX_ARITY_REQUIRED, description);
 }
 
 /* The same positionals, the one with the heading that fits last. */
-static void build_arguments_short_last(cline_command_t *root, const char *description)
+static void build_arguments_short_last(argx_command_t *root, const char *description)
 {
-    add_positional(root, "another-long-positional", CLINE_ARITY_REQUIRED, description);
-    add_positional(root, "input", CLINE_ARITY_REQUIRED, description);
+    add_positional(root, "another-long-positional", ARGX_ARITY_REQUIRED, description);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, description);
 }
 
 /*
  * Optional positionals with a default value: a heading that fits, then
  * one too wide.
  */
-static void build_argument_defaults(cline_command_t *root, const char *description)
+static void build_argument_defaults(argx_command_t *root, const char *description)
 {
     add_positional_default(root, "out", "o", description);
     add_positional_default(root, "a-long-optional-name", "x", description);
@@ -1663,14 +1663,14 @@ static void build_argument_defaults(cline_command_t *root, const char *descripti
  */
 static void generate_trailing(trailing_build_t build, const char *description, sink_t *sink)
 {
-    cline_command_t *root = create_root();
-    cline_help_options_t *options = create_options(80, 2, 20);
+    argx_command_t *root = create_root();
+    argx_help_options_t *options = create_options(80, 2, 20);
 
     build(root, description);
     validate(root);
     generate(root, options, sink);
 
-    cline_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -1697,7 +1697,7 @@ static void check_same_text(trailing_build_t build, const char *description, con
 /* Checks that the help built with build and description is expected. */
 static void check_trailing(trailing_build_t build, const char *description, const char *expected)
 {
-    cline_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     build(root, description);
     validate(root);

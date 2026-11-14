@@ -1,5 +1,5 @@
 /*
- * CLine - the rules of names.
+ * ArgX - the rules of names.
  */
 #include "name.h"
 
@@ -45,12 +45,12 @@ static bool is_name(const char *name)
     return true;
 }
 
-bool cline_name_is_short(char name)
+bool argx_name_is_short(char name)
 {
     return is_name_start(name);
 }
 
-bool cline_name_is_long(const char *name)
+bool argx_name_is_long(const char *name)
 {
     assert(name != NULL);
 
@@ -61,7 +61,7 @@ bool cline_name_is_long(const char *name)
     return is_name(name) && (name[1] != '\0');
 }
 
-bool cline_name_is_subcommand(const char *name)
+bool argx_name_is_subcommand(const char *name)
 {
     assert(name != NULL);
 

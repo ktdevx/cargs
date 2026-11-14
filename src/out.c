@@ -1,5 +1,5 @@
 /*
- * CLine - the output of the help: counts columns while it passes text to
+ * ArgX - the output of the help: counts columns while it passes text to
  * a write function.
  */
 #include "out.h"
@@ -13,15 +13,15 @@
  * The blanks that are passed to the write function in one call. More
  * blanks than these take several calls.
  */
-#define CLINE_OUT_BLANKS "                                "
-#define CLINE_OUT_BLANKS_LENGTH (sizeof CLINE_OUT_BLANKS - 1)
+#define ARGX_OUT_BLANKS "                                "
+#define ARGX_OUT_BLANKS_LENGTH (sizeof ARGX_OUT_BLANKS - 1)
 
 /*
  * Passes the length bytes of text to the write function, unless there is
  * none or it has failed before, and remembers a failure. This is the only
  * place that calls the write function. length is not 0.
  */
-static void out_write(cline_out_t *out, const char *text, size_t length)
+static void out_write(argx_out_t *out, const char *text, size_t length)
 {
     assert(length != 0);
 
@@ -39,21 +39,21 @@ static void out_write(cline_out_t *out, const char *text, size_t length)
  * Writes the blanks that are remembered and forgets them. The column
  * counts them already.
  */
-static void out_flush_blanks(cline_out_t *out)
+static void out_flush_blanks(argx_out_t *out)
 {
     size_t rest = out->pending;
 
     out->pending = 0;
     while (rest != 0)
     {
-        size_t part = (rest < CLINE_OUT_BLANKS_LENGTH) ? rest : CLINE_OUT_BLANKS_LENGTH;
+        size_t part = (rest < ARGX_OUT_BLANKS_LENGTH) ? rest : ARGX_OUT_BLANKS_LENGTH;
 
-        out_write(out, CLINE_OUT_BLANKS, part);
+        out_write(out, ARGX_OUT_BLANKS, part);
         rest -= part;
     }
 }
 
-void cline_out_init(cline_out_t *out, cline_help_write_fn_t write_fn, void *user_data)
+void argx_out_init(argx_out_t *out, argx_help_write_fn_t write_fn, void *user_data)
 {
     assert(out != NULL);
 
@@ -64,7 +64,7 @@ void cline_out_init(cline_out_t *out, cline_help_write_fn_t write_fn, void *user
     out->failed = false;
 }
 
-void cline_out_text(cline_out_t *out, const char *text, size_t length)
+void argx_out_text(argx_out_t *out, const char *text, size_t length)
 {
     assert(out != NULL);
 
@@ -81,14 +81,14 @@ void cline_out_text(cline_out_t *out, const char *text, size_t length)
     out->column += length;
 }
 
-void cline_out_string(cline_out_t *out, const char *text)
+void argx_out_string(argx_out_t *out, const char *text)
 {
     assert(text != NULL);
 
-    cline_out_text(out, text, strlen(text));
+    argx_out_text(out, text, strlen(text));
 }
 
-void cline_out_spaces(cline_out_t *out, size_t count)
+void argx_out_spaces(argx_out_t *out, size_t count)
 {
     assert(out != NULL);
 
@@ -96,17 +96,17 @@ void cline_out_spaces(cline_out_t *out, size_t count)
     out->column += count;
 }
 
-void cline_out_pad_to(cline_out_t *out, size_t column)
+void argx_out_pad_to(argx_out_t *out, size_t column)
 {
     assert(out != NULL);
 
     if (out->column < column)
     {
-        cline_out_spaces(out, column - out->column);
+        argx_out_spaces(out, column - out->column);
     }
 }
 
-void cline_out_newline(cline_out_t *out)
+void argx_out_newline(argx_out_t *out)
 {
     assert(out != NULL);
 
@@ -116,14 +116,14 @@ void cline_out_newline(cline_out_t *out)
     out->column = 0;
 }
 
-size_t cline_out_column(const cline_out_t *out)
+size_t argx_out_column(const argx_out_t *out)
 {
     assert(out != NULL);
 
     return out->column;
 }
 
-bool cline_out_failed(const cline_out_t *out)
+bool argx_out_failed(const argx_out_t *out)
 {
     assert(out != NULL);
 

@@ -1,16 +1,16 @@
 /*
- * CLine - parsing: what a command line is read into.
+ * ArgX - parsing: what a command line is read into.
  *
  * This header holds the functions that parse a command line,
- * cline_parse() and cline_parse_wide() for wide strings, the result of a
- * parse, cline_result_t, the functions that read and destroy it, and the
+ * argx_parse() and argx_parse_wide() for wide strings, the result of a
+ * parse, argx_result_t, the functions that read and destroy it, and the
  * enumerations that tell where a value came from and what kind of error a
  * command line has.
  *
  * Ownership:
  *
  * - A result owns a copy of the arguments it was made from and everything
- *   that was read from them. cline_result_destroy() frees all of it.
+ *   that was read from them. argx_result_destroy() frees all of it.
  * - A result borrows the schema and the value types that the schema uses:
  *   do not change or destroy them before the result is destroyed. The
  *   result never changes or destroys them.
@@ -19,14 +19,14 @@
  *
  * Errors:
  *
- * - The two functions that parse return a cline_error_t. A command line
- *   that does not match the schema is CLINE_ERROR_INVALID_COMMAND_LINE,
+ * - The two functions that parse return a argx_error_t. A command line
+ *   that does not match the schema is ARGX_ERROR_INVALID_COMMAND_LINE,
  *   and then, other than with every other failure, the output is a result
  *   and not NULL: it holds the parse error.
  * - A function that only reads takes a const result, changes nothing,
  *   allocates nothing and cannot fail. Such functions may be called on one
  *   result from several threads at the same time. What a result does not
- *   have reads as "none": false, 0, NULL or CLINE_SOURCE_NONE.
+ *   have reads as "none": false, 0, NULL or ARGX_SOURCE_NONE.
  * - A NULL pointer where none is allowed, a schema that is not validated,
  *   an option or a positional of another schema or of the wrong kind, and
  *   an index of a command that is out of range are errors of the program,
@@ -39,12 +39,12 @@
  * - The schema that the result was made from, and the value types it uses,
  *   have not been changed or destroyed. Not checked.
  */
-#ifndef CLINE_PARSE_H
-#define CLINE_PARSE_H
+#ifndef ARGX_PARSE_H
+#define ARGX_PARSE_H
 
-#include <cline/error.h>
-#include <cline/export.h>
-#include <cline/schema.h>
+#include <argx/error.h>
+#include <argx/export.h>
+#include <argx/schema.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -54,42 +54,42 @@
  * The result of a parse: what a command line was read into. The contents
  * are not public.
  */
-typedef struct cline_result cline_result_t;
+typedef struct argx_result argx_result_t;
 
 /*
  * Where a value came from, and where a parse error is.
  *
  * Later versions may add sources, such as an environment variable. Write
  * code that may receive a value it does not know: give a switch over
- * cline_source_t a default label.
+ * argx_source_t a default label.
  */
-typedef enum cline_source
+typedef enum argx_source
 {
-    CLINE_SOURCE_NONE,        /* There is no value; the error has no position. */
-    CLINE_SOURCE_DEFAULT,     /* The default value or the initial state of the schema. */
-    CLINE_SOURCE_COMMAND_LINE /* The command line (argv). */
-} cline_source_t;
+    ARGX_SOURCE_NONE,        /* There is no value; the error has no position. */
+    ARGX_SOURCE_DEFAULT,     /* The default value or the initial state of the schema. */
+    ARGX_SOURCE_COMMAND_LINE /* The command line (argv). */
+} argx_source_t;
 
 /*
  * The kind of a parse error: what is wrong with a command line that does
  * not match the schema.
  *
  * Later versions may add kinds. Write code that may receive a value it does
- * not know: give a switch over cline_parse_error_kind_t a default label.
+ * not know: give a switch over argx_parse_error_kind_t a default label.
  */
-typedef enum cline_parse_error_kind
+typedef enum argx_parse_error_kind
 {
-    CLINE_PARSE_ERROR_NONE,                  /* There is no parse error. */
-    CLINE_PARSE_ERROR_UNKNOWN_OPTION,        /* An option that the command does not have. */
-    CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND,    /* A subcommand that the command does not have. */
-    CLINE_PARSE_ERROR_MISSING_VALUE,         /* An option that takes a value has none. */
-    CLINE_PARSE_ERROR_UNEXPECTED_VALUE,      /* A value for an option that takes none. */
-    CLINE_PARSE_ERROR_INVALID_VALUE,         /* A value that its value type does not take. */
-    CLINE_PARSE_ERROR_MISSING_OPTION,        /* A required option was not given. */
-    CLINE_PARSE_ERROR_MISSING_POSITIONAL,    /* A required positional argument was not given. */
-    CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL, /* One positional argument too many. */
-    CLINE_PARSE_ERROR_INVALID_ENCODING       /* A wide argument that cannot be converted to UTF-8. */
-} cline_parse_error_kind_t;
+    ARGX_PARSE_ERROR_NONE,                  /* There is no parse error. */
+    ARGX_PARSE_ERROR_UNKNOWN_OPTION,        /* An option that the command does not have. */
+    ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND,    /* A subcommand that the command does not have. */
+    ARGX_PARSE_ERROR_MISSING_VALUE,         /* An option that takes a value has none. */
+    ARGX_PARSE_ERROR_UNEXPECTED_VALUE,      /* A value for an option that takes none. */
+    ARGX_PARSE_ERROR_INVALID_VALUE,         /* A value that its value type does not take. */
+    ARGX_PARSE_ERROR_MISSING_OPTION,        /* A required option was not given. */
+    ARGX_PARSE_ERROR_MISSING_POSITIONAL,    /* A required positional argument was not given. */
+    ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL, /* One positional argument too many. */
+    ARGX_PARSE_ERROR_INVALID_ENCODING       /* A wide argument that cannot be converted to UTF-8. */
+} argx_parse_error_kind_t;
 
 #ifdef __cplusplus
 extern "C"
@@ -174,17 +174,17 @@ extern "C"
  *
  * A command line that names no subcommand of a command that has subcommands
  * is not a parse error: the command line ends in that command, which
- * cline_result_command() returns. The options and the positionals of the
+ * argx_result_command() returns. The options and the positionals of the
  * commands that were not selected read as not given.
  *
  * For a command that has no subcommand, an argument that is not an option
  * is a value of a positional of the command. The arguments are assigned in
  * their order to the positionals in the order in which they were added:
  *
- *     CLINE_ARITY_REQUIRED, CLINE_ARITY_OPTIONAL
+ *     ARGX_ARITY_REQUIRED, ARGX_ARITY_OPTIONAL
  *                    the positional has the argument as its value, and the
  *                    next argument goes to the next positional
- *     CLINE_ARITY_ZERO_OR_MORE, CLINE_ARITY_ONE_OR_MORE
+ *     ARGX_ARITY_ZERO_OR_MORE, ARGX_ARITY_ONE_OR_MORE
  *                    the positional has the argument as one more value, and
  *                    so has every argument that follows
  *
@@ -217,9 +217,9 @@ extern "C"
  * given a default value.
  *
  * First, what is required must have been given: an option that takes a
- * value and is required (cline_option_set_required()) must have a value,
- * and a positional of the arity CLINE_ARITY_REQUIRED or
- * CLINE_ARITY_ONE_OR_MORE must have one value at least. One that is
+ * value and is required (argx_option_set_required()) must have a value,
+ * and a positional of the arity ARGX_ARITY_REQUIRED or
+ * ARGX_ARITY_ONE_OR_MORE must have one value at least. One that is
  * missing is a parse error. Of several, the first is reported: the
  * commands from the root on, the options of a command before its
  * positionals, each in the order in which they were added.
@@ -228,17 +228,17 @@ extern "C"
  * value:
  *
  *     an option that takes a value, a positional of the arity
- *     CLINE_ARITY_OPTIONAL
+ *     ARGX_ARITY_OPTIONAL
  *                    with a default value: the default value, converted
  *                    with its value type; its source is
- *                    CLINE_SOURCE_DEFAULT
+ *                    ARGX_SOURCE_DEFAULT
  *                    without one: no value; its source is
- *                    CLINE_SOURCE_NONE
- *     a positional of the arity CLINE_ARITY_ZERO_OR_MORE
+ *                    ARGX_SOURCE_NONE
+ *     a positional of the arity ARGX_ARITY_ZERO_OR_MORE
  *                    no value: its count is 0
  *     a flag, a count, a negatable flag
  *                    not given, 0, its initial state; the source is
- *                    CLINE_SOURCE_DEFAULT
+ *                    ARGX_SOURCE_DEFAULT
  *
  * A default value that its value type does not take is a parse error. The
  * validation of the schema checked the default values, so this happens
@@ -250,23 +250,23 @@ extern "C"
  *
  * What is returned, and what is written to *out:
  *
- *     CLINE_ERROR_NONE                  a result  The command line matches
+ *     ARGX_ERROR_NONE                  a result  The command line matches
  *                                                  the schema.
- *     CLINE_ERROR_INVALID_COMMAND_LINE  a result  It does not. The result
+ *     ARGX_ERROR_INVALID_COMMAND_LINE  a result  It does not. The result
  *                                                  holds the parse error and
  *                                                  what was read before it.
- *     CLINE_ERROR_OUT_OF_MEMORY         NULL      An allocation failed, or
+ *     ARGX_ERROR_OUT_OF_MEMORY         NULL      An allocation failed, or
  *                                                  a value type returned
  *                                                  this code. Nothing stays
  *                                                  allocated.
  *
- * A parse error is read with cline_result_error_kind() and the functions
+ * A parse error is read with argx_result_error_kind() and the functions
  * next to it.
  *
  * The result of a command line with a parse error, whichever it is, holds
  * what was read before the error: the selected commands, the options that
  * were given and the values that were converted, all with the source
- * CLINE_SOURCE_COMMAND_LINE. It holds no default value: an option that
+ * ARGX_SOURCE_COMMAND_LINE. It holds no default value: an option that
  * takes a value and a positional that were not given have no value, also
  * those with a default value. A flag, a count and a negatable flag that
  * were not given read as not given, 0 and the initial state.
@@ -274,8 +274,8 @@ extern "C"
  * Ownership:
  *
  * - The caller owns the result and destroys it with
- *   cline_result_destroy(), also the result of a parse that returned
- *   CLINE_ERROR_INVALID_COMMAND_LINE.
+ *   argx_result_destroy(), also the result of a parse that returned
+ *   ARGX_ERROR_INVALID_COMMAND_LINE.
  * - argv and its strings are only read, and the result keeps its own copy
  *   of them: after the call, argv may be changed or freed.
  * - The schema and its value types are only read, and the result borrows
@@ -289,8 +289,8 @@ extern "C"
  *
  * - root and out are not NULL. Checked with assert.
  * - root is a root, not a subcommand. Checked with assert.
- * - The schema is validated: cline_command_validate() succeeded on root
- *   and nothing was added or set since (cline_command_is_validated()).
+ * - The schema is validated: argx_command_validate() succeeded on root
+ *   and nothing was added or set since (argx_command_is_validated()).
  *   Checked with assert. A schema that is not validated is not reported
  *   with an error code.
  * - argc is not negative. Checked with assert.
@@ -299,12 +299,12 @@ extern "C"
  * - The schema and its value types are not changed or destroyed before the
  *   result is destroyed. Not checked.
  */
-CLINE_API cline_error_t cline_parse(const cline_command_t *root, int argc, char *const *argv,
-                                       cline_result_t **out);
+ARGX_API argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
+                                       argx_result_t **out);
 
 /*
  * Parses a command line of wide strings, such as the argv of wmain(), with
- * the schema of root: the same as cline_parse(), after each argument was
+ * the schema of root: the same as argx_parse(), after each argument was
  * converted to UTF-8. The function is there on every platform.
  *
  * How a wide string is read depends on the width of wchar_t:
@@ -314,14 +314,14 @@ CLINE_API cline_error_t cline_parse(const cline_command_t *root, int argc, char 
  * - wider (Linux, macOS): as UTF-32.
  *
  * The conversion does not depend on the locale. What it gives is what
- * cline_parse() gives for the same command line written in UTF-8: the same
+ * argx_parse() gives for the same command line written in UTF-8: the same
  * result, or the same parse error. Every string that is read from the
  * result is UTF-8: the values, and the argument, the value and the message
- * of a parse error. cline_parse() itself does not look at the bytes of its
+ * of a parse error. argx_parse() itself does not look at the bytes of its
  * arguments: bytes that are not UTF-8 are passed on as they are.
  *
  * An argument that cannot be converted is the parse error
- * CLINE_PARSE_ERROR_INVALID_ENCODING. That is an argument with a surrogate
+ * ARGX_PARSE_ERROR_INVALID_ENCODING. That is an argument with a surrogate
  * that is not part of a pair, in UTF-16, or with a value that is negative,
  * in the range of the surrogates (U+D800 to U+DFFF) or above U+10FFFF, in
  * UTF-32. It is found when the argument is about to be read, also when it
@@ -332,11 +332,11 @@ CLINE_API cline_error_t cline_parse(const cline_command_t *root, int argc, char 
  * letter. argv[0] is not parsed, and so it is never this error.
  *
  * What is returned, what is written to *out, the ownership and the
- * preconditions are those of cline_parse(), with argv and its wide
+ * preconditions are those of argx_parse(), with argv and its wide
  * strings in the place of argv and its strings.
  */
-CLINE_API cline_error_t cline_parse_wide(const cline_command_t *root, int argc, wchar_t *const *argv,
-                                            cline_result_t **out);
+ARGX_API argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *const *argv,
+                                            argx_result_t **out);
 
 /*
  * Destroys result: frees the copy of the arguments and everything else the
@@ -352,20 +352,20 @@ CLINE_API cline_error_t cline_parse_wide(const cline_command_t *root, int argc, 
  * - The schema that result was made from, and the value types it uses,
  *   still exist and have not been changed. Not checked.
  */
-CLINE_API void cline_result_destroy(cline_result_t *result);
+ARGX_API void argx_result_destroy(argx_result_t *result);
 
 /*
  * Returns whether the command line matched the schema:
  *
- * - CLINE_ERROR_NONE: it did.
- * - CLINE_ERROR_INVALID_COMMAND_LINE: it did not; result holds a parse
+ * - ARGX_ERROR_NONE: it did.
+ * - ARGX_ERROR_INVALID_COMMAND_LINE: it did not; result holds a parse
  *   error.
  *
  * Preconditions:
  *
  * - result is not NULL. Checked with assert.
  */
-CLINE_API cline_error_t cline_result_error(const cline_result_t *result);
+ARGX_API argx_error_t argx_result_error(const argx_result_t *result);
 
 /*
  * Read the commands that the command line selected, in their order: the
@@ -373,9 +373,9 @@ CLINE_API cline_error_t cline_result_error(const cline_result_t *result);
  * command line, then its subcommand, and so on. Each command but the first
  * is a subcommand of the one before it.
  *
- * cline_result_command_count() returns their number, which is at least 1.
- * cline_result_command_at() returns the command at index, counted from 0.
- * cline_result_command() returns the last of them: the command that the
+ * argx_result_command_count() returns their number, which is at least 1.
+ * argx_result_command_at() returns the command at index, counted from 0.
+ * argx_result_command() returns the last of them: the command that the
  * command line ends in.
  *
  * The commands belong to the schema. Never NULL.
@@ -383,19 +383,19 @@ CLINE_API cline_error_t cline_result_error(const cline_result_t *result);
  * Preconditions:
  *
  * - result is not NULL. Checked with assert.
- * - index < cline_result_command_count(result). Checked with assert.
+ * - index < argx_result_command_count(result). Checked with assert.
  */
-CLINE_API size_t cline_result_command_count(const cline_result_t *result);
-CLINE_API const cline_command_t *cline_result_command_at(const cline_result_t *result, size_t index);
-CLINE_API const cline_command_t *cline_result_command(const cline_result_t *result);
+ARGX_API size_t argx_result_command_count(const argx_result_t *result);
+ARGX_API const argx_command_t *argx_result_command_at(const argx_result_t *result, size_t index);
+ARGX_API const argx_command_t *argx_result_command(const argx_result_t *result);
 
 /*
  * Read an option that takes no value.
  *
- * cline_result_flag() returns whether a flag was given, and whether a
+ * argx_result_flag() returns whether a flag was given, and whether a
  * negatable flag is on: the state that was given last or, when it was not
  * given, its initial state.
- * cline_result_count() returns how many times a count was given, by its
+ * argx_result_count() returns how many times a count was given, by its
  * short name and its long name together.
  *
  * An option of a command that the command line did not select reads as not
@@ -406,24 +406,24 @@ CLINE_API const cline_command_t *cline_result_command(const cline_result_t *resu
  * - result and option are not NULL. Checked with assert.
  * - option belongs to the schema that result was made from. Checked with
  *   assert.
- * - The option of cline_result_flag() is a flag or a negatable flag,
- *   CLINE_OPTION_FLAG or CLINE_OPTION_NEGATABLE. Checked with assert.
- * - The option of cline_result_count() is a count, CLINE_OPTION_COUNT.
+ * - The option of argx_result_flag() is a flag or a negatable flag,
+ *   ARGX_OPTION_FLAG or ARGX_OPTION_NEGATABLE. Checked with assert.
+ * - The option of argx_result_count() is a count, ARGX_OPTION_COUNT.
  *   Checked with assert.
  */
-CLINE_API bool cline_result_flag(const cline_result_t *result, const cline_option_t *option);
-CLINE_API size_t cline_result_count(const cline_result_t *result, const cline_option_t *option);
+ARGX_API bool argx_result_flag(const argx_result_t *result, const argx_option_t *option);
+ARGX_API size_t argx_result_count(const argx_result_t *result, const argx_option_t *option);
 
 /*
  * Returns where what result holds for option came from. option may be of
  * any kind.
  *
- * - CLINE_SOURCE_COMMAND_LINE: option was given on the command line.
- * - CLINE_SOURCE_DEFAULT: option was not given, and what result holds
+ * - ARGX_SOURCE_COMMAND_LINE: option was given on the command line.
+ * - ARGX_SOURCE_DEFAULT: option was not given, and what result holds
  *   comes from the schema: the default value of an option that takes a
  *   value, the initial state of a negatable flag, "not given" for a flag
  *   and 0 for a count.
- * - CLINE_SOURCE_NONE: an option that takes a value has none, or option
+ * - ARGX_SOURCE_NONE: an option that takes a value has none, or option
  *   belongs to a command that the command line did not select.
  *
  * Preconditions:
@@ -432,23 +432,23 @@ CLINE_API size_t cline_result_count(const cline_result_t *result, const cline_op
  * - option belongs to the schema that result was made from. Checked with
  *   assert.
  */
-CLINE_API cline_source_t cline_result_option_source(const cline_result_t *result,
-                                                       const cline_option_t *option);
+ARGX_API argx_source_t argx_result_option_source(const argx_result_t *result,
+                                                       const argx_option_t *option);
 
 /*
  * Read the value of an option that takes a value.
  *
- * cline_result_option_string(), _int(), _float() and _choice() read the
- * value of a value type of the kind CLINE_TYPE_STRING, CLINE_TYPE_INT,
- * CLINE_TYPE_FLOAT and CLINE_TYPE_CHOICE. If option has a value, they
+ * argx_result_option_string(), _int(), _float() and _choice() read the
+ * value of a value type of the kind ARGX_TYPE_STRING, ARGX_TYPE_INT,
+ * ARGX_TYPE_FLOAT and ARGX_TYPE_CHOICE. If option has a value, they
  * write it to *out and return true. If it has none, they return false and
  * leave *out as it was.
  *
- * cline_result_option_value() works for a value type of every kind, the
+ * argx_result_option_value() works for a value type of every kind, the
  * user-defined ones included. It returns a pointer to the area that the
  * value type wrote the value to: an object of the type of its values (const
  * char *, int64_t, double, size_t, or what the conversion function of a
- * user-defined value type writes; see <cline/type.h>). It returns NULL if
+ * user-defined value type writes; see <argx/type.h>). It returns NULL if
  * option has no value.
  *
  * The value is the one that was given last on the command line or, when
@@ -465,44 +465,44 @@ CLINE_API cline_source_t cline_result_option_source(const cline_result_t *result
  * - result, option and out are not NULL. Checked with assert.
  * - option belongs to the schema that result was made from. Checked with
  *   assert.
- * - option takes a value, CLINE_OPTION_VALUE. Checked with assert.
- * - The value type of the option of cline_result_option_string() is of the
- *   kind CLINE_TYPE_STRING, that of _int() CLINE_TYPE_INT, that of
- *   _float() CLINE_TYPE_FLOAT and that of _choice() CLINE_TYPE_CHOICE.
+ * - option takes a value, ARGX_OPTION_VALUE. Checked with assert.
+ * - The value type of the option of argx_result_option_string() is of the
+ *   kind ARGX_TYPE_STRING, that of _int() ARGX_TYPE_INT, that of
+ *   _float() ARGX_TYPE_FLOAT and that of _choice() ARGX_TYPE_CHOICE.
  *   Checked with assert.
  */
-CLINE_API bool cline_result_option_string(const cline_result_t *result, const cline_option_t *option,
+ARGX_API bool argx_result_option_string(const argx_result_t *result, const argx_option_t *option,
                                             const char **out);
-CLINE_API bool cline_result_option_int(const cline_result_t *result, const cline_option_t *option,
+ARGX_API bool argx_result_option_int(const argx_result_t *result, const argx_option_t *option,
                                          int64_t *out);
-CLINE_API bool cline_result_option_float(const cline_result_t *result, const cline_option_t *option,
+ARGX_API bool argx_result_option_float(const argx_result_t *result, const argx_option_t *option,
                                            double *out);
-CLINE_API bool cline_result_option_choice(const cline_result_t *result, const cline_option_t *option,
+ARGX_API bool argx_result_option_choice(const argx_result_t *result, const argx_option_t *option,
                                             size_t *out);
-CLINE_API const void *cline_result_option_value(const cline_result_t *result,
-                                                  const cline_option_t *option);
+ARGX_API const void *argx_result_option_value(const argx_result_t *result,
+                                                  const argx_option_t *option);
 
 /*
  * Read the values of a positional.
  *
- * cline_result_positional_count() returns how many values positional has:
+ * argx_result_positional_count() returns how many values positional has:
  * 0 or 1 for a positional that takes one argument at most, and the number
  * of the arguments that were assigned to it for one that takes any number.
- * cline_result_positional_source() returns where the values came from:
- * CLINE_SOURCE_COMMAND_LINE, CLINE_SOURCE_DEFAULT for the default value,
- * or CLINE_SOURCE_NONE when positional has no value.
+ * argx_result_positional_source() returns where the values came from:
+ * ARGX_SOURCE_COMMAND_LINE, ARGX_SOURCE_DEFAULT for the default value,
+ * or ARGX_SOURCE_NONE when positional has no value.
  *
  * The other functions read the value at index, counted from 0 in the order
  * of the command line, as the functions of an option with a value do:
- * cline_result_positional_string(), _int(), _float() and _choice() write
- * the value to *out and return true, and cline_result_positional_value()
+ * argx_result_positional_string(), _int(), _float() and _choice() write
+ * the value to *out and return true, and argx_result_positional_value()
  * returns a pointer to the area that holds the value, for a value type of
  * every kind. If there is no value at index, that is, if index is not less
- * than cline_result_positional_count(), they return false and leave *out
+ * than argx_result_positional_count(), they return false and leave *out
  * as it was, or return NULL. That is not a violation of a precondition.
  *
  * A positional of a command that the command line did not select has no
- * value: its count is 0 and its source is CLINE_SOURCE_NONE.
+ * value: its count is 0 and its source is ARGX_SOURCE_NONE.
  *
  * A string and the area are valid until result is destroyed. Do not free
  * or modify them.
@@ -512,61 +512,61 @@ CLINE_API const void *cline_result_option_value(const cline_result_t *result,
  * - result, positional and out are not NULL. Checked with assert.
  * - positional belongs to the schema that result was made from. Checked
  *   with assert.
- * - The value type of the positional of cline_result_positional_string()
- *   is of the kind CLINE_TYPE_STRING, that of _int() CLINE_TYPE_INT, that
- *   of _float() CLINE_TYPE_FLOAT and that of _choice() CLINE_TYPE_CHOICE.
+ * - The value type of the positional of argx_result_positional_string()
+ *   is of the kind ARGX_TYPE_STRING, that of _int() ARGX_TYPE_INT, that
+ *   of _float() ARGX_TYPE_FLOAT and that of _choice() ARGX_TYPE_CHOICE.
  *   Checked with assert.
  */
-CLINE_API size_t cline_result_positional_count(const cline_result_t *result,
-                                                 const cline_positional_t *positional);
-CLINE_API cline_source_t cline_result_positional_source(const cline_result_t *result,
-                                                           const cline_positional_t *positional);
-CLINE_API bool cline_result_positional_string(const cline_result_t *result,
-                                                const cline_positional_t *positional, size_t index,
+ARGX_API size_t argx_result_positional_count(const argx_result_t *result,
+                                                 const argx_positional_t *positional);
+ARGX_API argx_source_t argx_result_positional_source(const argx_result_t *result,
+                                                           const argx_positional_t *positional);
+ARGX_API bool argx_result_positional_string(const argx_result_t *result,
+                                                const argx_positional_t *positional, size_t index,
                                                 const char **out);
-CLINE_API bool cline_result_positional_int(const cline_result_t *result,
-                                             const cline_positional_t *positional, size_t index,
+ARGX_API bool argx_result_positional_int(const argx_result_t *result,
+                                             const argx_positional_t *positional, size_t index,
                                              int64_t *out);
-CLINE_API bool cline_result_positional_float(const cline_result_t *result,
-                                               const cline_positional_t *positional, size_t index,
+ARGX_API bool argx_result_positional_float(const argx_result_t *result,
+                                               const argx_positional_t *positional, size_t index,
                                                double *out);
-CLINE_API bool cline_result_positional_choice(const cline_result_t *result,
-                                                const cline_positional_t *positional, size_t index,
+ARGX_API bool argx_result_positional_choice(const argx_result_t *result,
+                                                const argx_positional_t *positional, size_t index,
                                                 size_t *out);
-CLINE_API const void *cline_result_positional_value(const cline_result_t *result,
-                                                      const cline_positional_t *positional, size_t index);
+ARGX_API const void *argx_result_positional_value(const argx_result_t *result,
+                                                      const argx_positional_t *positional, size_t index);
 
 /*
  * Read the parse error of a result: what is wrong with a command line that
- * did not match the schema, that is, when cline_result_error() returns
- * CLINE_ERROR_INVALID_COMMAND_LINE. A result holds one parse error at
+ * did not match the schema, that is, when argx_result_error() returns
+ * ARGX_ERROR_INVALID_COMMAND_LINE. A result holds one parse error at
  * most, the first that was found.
  *
- * cline_result_error_kind() returns the kind of the error.
- * cline_result_error_message() returns one line of English that can be
+ * argx_result_error_kind() returns the kind of the error.
+ * argx_result_error_message() returns one line of English that can be
  * shown to the user of the program as it is: it has no line break, no
  * prefix such as the name of the program, and no full stop.
- * cline_result_error_argument() returns the argument that is wrong, as a
+ * argx_result_error_argument() returns the argument that is wrong, as a
  * whole, such as "--level=x" or the bundle "-vx".
- * cline_result_error_value() returns the value that is wrong: the part of
+ * argx_result_error_value() returns the value that is wrong: the part of
  * the argument that is the value, or the default value of the schema.
- * cline_result_error_source() and cline_result_error_index() return where
- * the error is: for CLINE_SOURCE_COMMAND_LINE, the index is that of the
+ * argx_result_error_source() and argx_result_error_index() return where
+ * the error is: for ARGX_SOURCE_COMMAND_LINE, the index is that of the
  * argument in the argv that was parsed (argv[0] has the index 0); for
- * CLINE_SOURCE_DEFAULT, the error is in a default value of the schema and
+ * ARGX_SOURCE_DEFAULT, the error is in a default value of the schema and
  * the index is 0.
- * cline_result_error_command() returns the command that was being read
+ * argx_result_error_command() returns the command that was being read
  * when the error was found or, for an error of a required or a default
  * value, the command of the option or the positional.
- * cline_result_error_option() and cline_result_error_positional() return
+ * argx_result_error_option() and argx_result_error_positional() return
  * the option or the positional that the error is about.
- * cline_result_error_short_name() returns the letter that the error is
+ * argx_result_error_short_name() returns the letter that the error is
  * about when it is one letter of a bundle of short options, such as 'x' of
  * "-vx".
  *
  * An error does not have all of these. What it does not have reads as
  * "none": NULL for a string, an option, a positional and a command,
- * CLINE_SOURCE_NONE with the index 0 for an error that has no position
+ * ARGX_SOURCE_NONE with the index 0 for an error that has no position
  * (something required that was not given), and '\0' for the letter. Which
  * ones an error has depends on its kind:
  *
@@ -584,7 +584,7 @@ CLINE_API const void *cline_result_positional_value(const cline_result_t *result
  *     (*) Not when the value is a default value of the schema.
  *
  * A result that has no parse error returns "none" from all of them:
- * CLINE_PARSE_ERROR_NONE, NULL, CLINE_SOURCE_NONE, 0 and '\0'.
+ * ARGX_PARSE_ERROR_NONE, NULL, ARGX_SOURCE_NONE, 0 and '\0'.
  *
  * The strings are valid until result is destroyed. Do not free or modify
  * them. The command, the option and the positional belong to the schema.
@@ -593,19 +593,19 @@ CLINE_API const void *cline_result_positional_value(const cline_result_t *result
  *
  * - result is not NULL. Checked with assert.
  */
-CLINE_API cline_parse_error_kind_t cline_result_error_kind(const cline_result_t *result);
-CLINE_API const char *cline_result_error_message(const cline_result_t *result);
-CLINE_API const char *cline_result_error_argument(const cline_result_t *result);
-CLINE_API const char *cline_result_error_value(const cline_result_t *result);
-CLINE_API cline_source_t cline_result_error_source(const cline_result_t *result);
-CLINE_API size_t cline_result_error_index(const cline_result_t *result);
-CLINE_API const cline_command_t *cline_result_error_command(const cline_result_t *result);
-CLINE_API const cline_option_t *cline_result_error_option(const cline_result_t *result);
-CLINE_API const cline_positional_t *cline_result_error_positional(const cline_result_t *result);
-CLINE_API char cline_result_error_short_name(const cline_result_t *result);
+ARGX_API argx_parse_error_kind_t argx_result_error_kind(const argx_result_t *result);
+ARGX_API const char *argx_result_error_message(const argx_result_t *result);
+ARGX_API const char *argx_result_error_argument(const argx_result_t *result);
+ARGX_API const char *argx_result_error_value(const argx_result_t *result);
+ARGX_API argx_source_t argx_result_error_source(const argx_result_t *result);
+ARGX_API size_t argx_result_error_index(const argx_result_t *result);
+ARGX_API const argx_command_t *argx_result_error_command(const argx_result_t *result);
+ARGX_API const argx_option_t *argx_result_error_option(const argx_result_t *result);
+ARGX_API const argx_positional_t *argx_result_error_positional(const argx_result_t *result);
+ARGX_API char argx_result_error_short_name(const argx_result_t *result);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CLINE_PARSE_H */
+#endif /* ARGX_PARSE_H */

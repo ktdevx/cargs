@@ -3,9 +3,9 @@
  * "message.h".
  *
  * The tests use the test allocator ("../support/test_allocator.h") to see
- * the requests that cline_message_build makes: its count of requests
+ * the requests that argx_message_build makes: its count of requests
  * shows that a message takes one allocation, its count of live blocks
- * shows that a message is freed with cline_free and that a failed build
+ * shows that a message is freed with argx_free and that a failed build
  * leaves nothing behind, and its count of violations shows a call that the
  * library must never make.
  *
@@ -14,7 +14,7 @@
  * it allocated, sets the default allocator back before it ends, and ends
  * with check_clean().
  */
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 #include "alloc_internal.h"
 #include "message.h"
@@ -34,8 +34,8 @@
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /*
@@ -43,12 +43,12 @@ static void check_clean(void)
  * with no strings: a test sets the strings that the wording of the kind
  * uses.
  */
-static cline_message_parts_t parts_of(cline_parse_error_kind_t kind)
+static argx_message_parts_t parts_of(argx_parse_error_kind_t kind)
 {
-    cline_message_parts_t parts;
+    argx_message_parts_t parts;
 
     parts.kind = kind;
-    parts.source = CLINE_SOURCE_COMMAND_LINE;
+    parts.source = ARGX_SOURCE_COMMAND_LINE;
     parts.for_positional = false;
     parts.name_prefix = "";
     parts.name = NULL;
@@ -59,7 +59,7 @@ static cline_message_parts_t parts_of(cline_parse_error_kind_t kind)
 }
 
 /* Sets the name of the parts: the prefix and the whole string name. */
-static void set_name(cline_message_parts_t *parts, const char *prefix, const char *name)
+static void set_name(argx_message_parts_t *parts, const char *prefix, const char *name)
 {
     parts->name_prefix = prefix;
     parts->name = name;
@@ -69,25 +69,25 @@ static void set_name(cline_message_parts_t *parts, const char *prefix, const cha
 /*
  * Builds the message of the parts and checks that it is exactly expected:
  * the same bytes with the terminator, made with one request, and freed
- * with cline_free. The test allocator is installed.
+ * with argx_free. The test allocator is installed.
  */
-static void check_message(const cline_message_parts_t *parts, const char *expected)
+static void check_message(const argx_message_parts_t *parts, const char *expected)
 {
     char *message = NULL;
-    size_t requests = cline_test_allocator_requests();
-    size_t live = cline_test_allocator_live();
+    size_t requests = argx_test_allocator_requests();
+    size_t live = argx_test_allocator_live();
 
-    NAOS_CHECK_INT_EQ(cline_message_build(parts, &message), CLINE_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), requests + 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), live + 1);
+    NAOS_CHECK_INT_EQ(argx_message_build(parts, &message), ARGX_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests + 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live + 1);
     NAOS_CHECK_TRUE(message != NULL);
     if (message != NULL)
     {
         NAOS_CHECK_STR_EQ(message, expected);
         NAOS_CHECK_UINT_EQ(strlen(message), strlen(expected));
-        cline_free(message);
+        argx_free(message);
     }
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
 }
 
 /* ---- The public enumerations ------------------------------------------ */
@@ -98,29 +98,29 @@ static void check_message(const cline_message_parts_t *parts, const char *expect
  */
 NAOS_TEST(enumerations_keep_their_order)
 {
-    NAOS_CHECK_INT_EQ(CLINE_SOURCE_NONE, 0);
-    NAOS_CHECK_INT_EQ(CLINE_SOURCE_DEFAULT, 1);
-    NAOS_CHECK_INT_EQ(CLINE_SOURCE_COMMAND_LINE, 2);
+    NAOS_CHECK_INT_EQ(ARGX_SOURCE_NONE, 0);
+    NAOS_CHECK_INT_EQ(ARGX_SOURCE_DEFAULT, 1);
+    NAOS_CHECK_INT_EQ(ARGX_SOURCE_COMMAND_LINE, 2);
 
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_NONE, 0);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_UNKNOWN_OPTION, 1);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND, 2);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_MISSING_VALUE, 3);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_UNEXPECTED_VALUE, 4);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_INVALID_VALUE, 5);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_MISSING_OPTION, 6);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_MISSING_POSITIONAL, 7);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL, 8);
-    NAOS_CHECK_INT_EQ(CLINE_PARSE_ERROR_INVALID_ENCODING, 9);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_NONE, 0);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_UNKNOWN_OPTION, 1);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND, 2);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_MISSING_VALUE, 3);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_UNEXPECTED_VALUE, 4);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_INVALID_VALUE, 5);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_MISSING_OPTION, 6);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_MISSING_POSITIONAL, 7);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL, 8);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_INVALID_ENCODING, 9);
 }
 
 /* ---- The wording of each kind ----------------------------------------- */
 
 NAOS_TEST(unknown_option)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNKNOWN_OPTION);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNKNOWN_OPTION);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     set_name(&parts, "--", "colour");
     check_message(&parts, "unknown option '--colour'");
@@ -128,28 +128,28 @@ NAOS_TEST(unknown_option)
     set_name(&parts, "-", "x");
     check_message(&parts, "unknown option '-x'");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(unknown_subcommand)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     parts.value = "comit";
     check_message(&parts, "unknown command 'comit'");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(missing_value)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_MISSING_VALUE);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_MISSING_VALUE);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     set_name(&parts, "--", "output");
     check_message(&parts, "option '--output' requires a value");
@@ -157,29 +157,29 @@ NAOS_TEST(missing_value)
     set_name(&parts, "-", "o");
     check_message(&parts, "option '-o' requires a value");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(unexpected_value)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNEXPECTED_VALUE);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNEXPECTED_VALUE);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     /* The name as it was written: a negated name keeps its "no-". */
     set_name(&parts, "--", "no-color");
     check_message(&parts, "option '--no-color' does not take a value");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(invalid_value_for_an_option)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_INVALID_VALUE);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_INVALID_VALUE);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     set_name(&parts, "--", "jobs");
     parts.value = "abc";
@@ -189,15 +189,15 @@ NAOS_TEST(invalid_value_for_an_option)
     set_name(&parts, "-", "j");
     check_message(&parts, "invalid value 'abc' for option '-j' (expected integer)");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(invalid_value_for_a_positional)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_INVALID_VALUE);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_INVALID_VALUE);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     parts.for_positional = true;
     set_name(&parts, "", "COUNT");
@@ -205,49 +205,49 @@ NAOS_TEST(invalid_value_for_a_positional)
     parts.type_name = "integer";
     check_message(&parts, "invalid value 'x' for argument 'COUNT' (expected integer)");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* A default value that cannot be converted: "invalid default value". */
 NAOS_TEST(invalid_default_value_for_an_option)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_INVALID_VALUE);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_INVALID_VALUE);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    parts.source = CLINE_SOURCE_DEFAULT;
+    parts.source = ARGX_SOURCE_DEFAULT;
     set_name(&parts, "--", "jobs");
     parts.value = "many";
     parts.type_name = "integer";
     check_message(&parts, "invalid default value 'many' for option '--jobs' (expected integer)");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(invalid_default_value_for_a_positional)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_INVALID_VALUE);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_INVALID_VALUE);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    parts.source = CLINE_SOURCE_DEFAULT;
+    parts.source = ARGX_SOURCE_DEFAULT;
     parts.for_positional = true;
     set_name(&parts, "", "LEVEL");
     parts.value = "loud";
     parts.type_name = "choice";
     check_message(&parts, "invalid default value 'loud' for argument 'LEVEL' (expected choice)");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(missing_option)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_MISSING_OPTION);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_MISSING_OPTION);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     set_name(&parts, "--", "output");
     check_message(&parts, "missing required option '--output'");
@@ -255,79 +255,79 @@ NAOS_TEST(missing_option)
     set_name(&parts, "-", "o");
     check_message(&parts, "missing required option '-o'");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(missing_positional)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_MISSING_POSITIONAL);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_MISSING_POSITIONAL);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     set_name(&parts, "", "FILE");
     check_message(&parts, "missing required argument 'FILE'");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(unexpected_positional)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     parts.value = "extra";
     check_message(&parts, "unexpected argument 'extra'");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(invalid_encoding)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_INVALID_ENCODING);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_INVALID_ENCODING);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     /* The element with U+FFFD in place of what could not be converted. */
     parts.value = "caf\xEF\xBF\xBD";
     check_message(&parts, "invalid character encoding in argument 'caf\xEF\xBF\xBD'");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* ---- What the wording does not depend on ------------------------------ */
 
 /*
- * The source chooses the wording of CLINE_PARSE_ERROR_INVALID_VALUE only,
+ * The source chooses the wording of ARGX_PARSE_ERROR_INVALID_VALUE only,
  * and for_positional too: the other kinds read neither.
  */
 NAOS_TEST(source_and_for_positional_change_only_an_invalid_value)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_MISSING_OPTION);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_MISSING_OPTION);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    parts.source = CLINE_SOURCE_DEFAULT;
+    parts.source = ARGX_SOURCE_DEFAULT;
     parts.for_positional = true;
     set_name(&parts, "--", "output");
     check_message(&parts, "missing required option '--output'");
 
-    parts.source = CLINE_SOURCE_NONE;
+    parts.source = ARGX_SOURCE_NONE;
     check_message(&parts, "missing required option '--output'");
 
-    /* Only CLINE_SOURCE_DEFAULT is a default value. */
-    parts = parts_of(CLINE_PARSE_ERROR_INVALID_VALUE);
-    parts.source = CLINE_SOURCE_NONE;
+    /* Only ARGX_SOURCE_DEFAULT is a default value. */
+    parts = parts_of(ARGX_PARSE_ERROR_INVALID_VALUE);
+    parts.source = ARGX_SOURCE_NONE;
     set_name(&parts, "--", "jobs");
     parts.value = "abc";
     parts.type_name = "integer";
     check_message(&parts, "invalid value 'abc' for option '--jobs' (expected integer)");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -337,22 +337,22 @@ NAOS_TEST(source_and_for_positional_change_only_an_invalid_value)
  */
 NAOS_TEST(unused_strings_are_ignored)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNKNOWN_OPTION);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNKNOWN_OPTION);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     set_name(&parts, "--", "colour");
     parts.value = "red";
     parts.type_name = "string";
     check_message(&parts, "unknown option '--colour'");
 
-    parts = parts_of(CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL);
+    parts = parts_of(ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL);
     set_name(&parts, "--", "colour");
     parts.value = "extra";
     parts.type_name = "string";
     check_message(&parts, "unexpected argument 'extra'");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -366,9 +366,9 @@ NAOS_TEST(name_ends_at_its_length)
 {
     const char element[] = "--output=file";
     const char bundle[] = "-abc";
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNEXPECTED_VALUE);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNEXPECTED_VALUE);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     parts.name_prefix = "--";
     parts.name = element + 2;
@@ -376,14 +376,14 @@ NAOS_TEST(name_ends_at_its_length)
     check_message(&parts, "option '--output' does not take a value");
 
     /* One character of a bundle: "-abc" names 'b'. */
-    parts = parts_of(CLINE_PARSE_ERROR_UNKNOWN_OPTION);
+    parts = parts_of(ARGX_PARSE_ERROR_UNKNOWN_OPTION);
     parts.name_prefix = "-";
     parts.name = bundle + 2;
     parts.name_length = 1;
     check_message(&parts, "unknown option '-b'");
 
     /* The length is used in every wording that has a name. */
-    parts = parts_of(CLINE_PARSE_ERROR_INVALID_VALUE);
+    parts = parts_of(ARGX_PARSE_ERROR_INVALID_VALUE);
     parts.name_prefix = "--";
     parts.name = "jobs=abc";
     parts.name_length = 4;
@@ -391,23 +391,23 @@ NAOS_TEST(name_ends_at_its_length)
     parts.type_name = "integer";
     check_message(&parts, "invalid value 'abc' for option '--jobs' (expected integer)");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* A name of the length 0 is an empty name, and the name is not read. */
 NAOS_TEST(name_of_the_length_zero)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNKNOWN_OPTION);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNKNOWN_OPTION);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     parts.name_prefix = "--";
     parts.name = "=value";
     parts.name_length = 0;
     check_message(&parts, "unknown option '--'");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -420,9 +420,9 @@ NAOS_TEST(name_of_the_length_zero)
  */
 NAOS_TEST(strings_are_embedded_as_they_are)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL);
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     parts.value = "it's \"100%s\" \\n";
     check_message(&parts, "unexpected argument 'it's \"100%s\" \\n'");
@@ -433,13 +433,13 @@ NAOS_TEST(strings_are_embedded_as_they_are)
     parts.value = "";
     check_message(&parts, "unexpected argument ''");
 
-    parts = parts_of(CLINE_PARSE_ERROR_INVALID_VALUE);
+    parts = parts_of(ARGX_PARSE_ERROR_INVALID_VALUE);
     set_name(&parts, "--", "na'me%d");
     parts.value = "";
     parts.type_name = "my type (v2)";
     check_message(&parts, "invalid value '' for option '--na'me%d' (expected my type (v2))");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -449,7 +449,7 @@ NAOS_TEST(long_strings_are_copied_whole)
     static const char head[] = "unknown command '";
     char value[4096];
     char expected[sizeof head + sizeof value];
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND);
     size_t i;
 
     for (i = 0; i < (sizeof value - 1); ++i)
@@ -463,12 +463,12 @@ NAOS_TEST(long_strings_are_copied_whole)
     expected[sizeof head - 1 + sizeof value - 1] = '\'';
     expected[sizeof head - 1 + sizeof value] = '\0';
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     parts.value = value;
     check_message(&parts, expected);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -481,20 +481,20 @@ NAOS_TEST(long_strings_are_copied_whole)
  */
 NAOS_TEST(message_is_one_line_without_a_full_stop)
 {
-    static const cline_parse_error_kind_t kinds[] = {
-        CLINE_PARSE_ERROR_UNKNOWN_OPTION,     CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND,
-        CLINE_PARSE_ERROR_MISSING_VALUE,      CLINE_PARSE_ERROR_UNEXPECTED_VALUE,
-        CLINE_PARSE_ERROR_INVALID_VALUE,      CLINE_PARSE_ERROR_MISSING_OPTION,
-        CLINE_PARSE_ERROR_MISSING_POSITIONAL, CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL,
-        CLINE_PARSE_ERROR_INVALID_ENCODING
+    static const argx_parse_error_kind_t kinds[] = {
+        ARGX_PARSE_ERROR_UNKNOWN_OPTION,     ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND,
+        ARGX_PARSE_ERROR_MISSING_VALUE,      ARGX_PARSE_ERROR_UNEXPECTED_VALUE,
+        ARGX_PARSE_ERROR_INVALID_VALUE,      ARGX_PARSE_ERROR_MISSING_OPTION,
+        ARGX_PARSE_ERROR_MISSING_POSITIONAL, ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL,
+        ARGX_PARSE_ERROR_INVALID_ENCODING
     };
     size_t i;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     for (i = 0; i < (sizeof kinds / sizeof kinds[0]); ++i)
     {
-        cline_message_parts_t parts = parts_of(kinds[i]);
+        argx_message_parts_t parts = parts_of(kinds[i]);
         char *message = NULL;
         size_t length;
 
@@ -502,7 +502,7 @@ NAOS_TEST(message_is_one_line_without_a_full_stop)
         parts.value = "value";
         parts.type_name = "type";
 
-        NAOS_CHECK_INT_EQ(cline_message_build(&parts, &message), CLINE_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(argx_message_build(&parts, &message), ARGX_ERROR_NONE);
         NAOS_REQUIRE_TRUE(message != NULL);
 
         length = strlen(message);
@@ -514,22 +514,22 @@ NAOS_TEST(message_is_one_line_without_a_full_stop)
         NAOS_CHECK_TRUE(message[length - 1] != '.');
         NAOS_CHECK_TRUE(message[length - 1] != ' ');
 
-        cline_free(message);
+        argx_free(message);
     }
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* ---- Failures --------------------------------------------------------- */
 
 /*
- * When the allocation fails, the result is CLINE_ERROR_OUT_OF_MEMORY, *out
+ * When the allocation fails, the result is ARGX_ERROR_OUT_OF_MEMORY, *out
  * is NULL and nothing stays allocated. The next build works again.
  */
 NAOS_TEST(allocation_failure_is_reported)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_INVALID_VALUE);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_INVALID_VALUE);
     char unrelated = 'x';
     char *message = &unrelated;
 
@@ -537,19 +537,19 @@ NAOS_TEST(allocation_failure_is_reported)
     parts.value = "abc";
     parts.type_name = "integer";
 
-    cline_test_allocator_install();
-    cline_test_allocator_fail_at(1);
+    argx_test_allocator_install();
+    argx_test_allocator_fail_at(1);
 
-    NAOS_CHECK_INT_EQ(cline_message_build(&parts, &message), CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_INT_EQ(argx_message_build(&parts, &message), ARGX_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_TRUE(message == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
     NAOS_CHECK_INT_EQ(unrelated, 'x');
 
     /* Only the first request fails. */
     check_message(&parts, "invalid value 'abc' for option '--jobs' (expected integer)");
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -561,7 +561,7 @@ NAOS_TEST(allocation_failure_is_reported)
  */
 NAOS_TEST(length_overflow_is_an_allocation_failure)
 {
-    cline_message_parts_t parts = parts_of(CLINE_PARSE_ERROR_UNKNOWN_OPTION);
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_UNKNOWN_OPTION);
     char unrelated = 'x';
     char *message = &unrelated;
 
@@ -569,20 +569,20 @@ NAOS_TEST(length_overflow_is_an_allocation_failure)
     parts.name = "colour";
     parts.name_length = SIZE_MAX;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_CHECK_INT_EQ(cline_message_build(&parts, &message), CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_INT_EQ(argx_message_build(&parts, &message), ARGX_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_TRUE(message == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
     /* The sum without the terminator fits, the terminator does not. */
     message = &unrelated;
     parts.name_length = SIZE_MAX - strlen("unknown option '--'");
-    NAOS_CHECK_INT_EQ(cline_message_build(&parts, &message), CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_INT_EQ(argx_message_build(&parts, &message), ARGX_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_TRUE(message == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 

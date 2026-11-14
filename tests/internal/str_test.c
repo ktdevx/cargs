@@ -2,9 +2,9 @@
  * Tests of the internal string functions: "str.h".
  *
  * The tests use the test allocator ("../support/test_allocator.h") to see
- * the requests that cline_strdup makes: its count of requests shows how
+ * the requests that argx_strdup makes: its count of requests shows how
  * many allocations a copy takes, its count of live blocks shows that a copy
- * is freed with cline_free and that a failed copy leaves nothing behind,
+ * is freed with argx_free and that a failed copy leaves nothing behind,
  * and its count of violations shows a call that the library must never
  * make.
  *
@@ -13,7 +13,7 @@
  * an install, which resets), frees what it allocated, sets the default
  * allocator back before it ends, and ends with check_clean().
  */
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 #include "alloc_internal.h"
 #include "str.h"
@@ -63,9 +63,9 @@ static void wrap_free(void *ptr)
     free(ptr);
 }
 
-static cline_allocator_t wrap_allocator(void)
+static argx_allocator_t wrap_allocator(void)
 {
-    cline_allocator_t allocator;
+    argx_allocator_t allocator;
 
     allocator.malloc_fn = wrap_malloc;
     allocator.realloc_fn = wrap_realloc;
@@ -88,26 +88,26 @@ static void wrap_reset(void)
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* ---- The copy --------------------------------------------------------- */
 
 /*
  * The copy has the contents of the string and its terminator. It takes one
- * request, and cline_free releases it.
+ * request, and argx_free releases it.
  */
 NAOS_TEST(copies_the_contents_and_the_terminator)
 {
     const char original[] = "--output=file.txt";
     char *copy;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    copy = cline_strdup(original);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    copy = argx_strdup(original);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
     NAOS_REQUIRE_TRUE(copy != NULL);
 
     NAOS_CHECK_STR_EQ(copy, original);
@@ -116,12 +116,12 @@ NAOS_TEST(copies_the_contents_and_the_terminator)
     NAOS_CHECK_MEM_EQ(copy, sizeof original, original, sizeof original);
     NAOS_CHECK_INT_EQ(copy[sizeof original - 1], '\0');
 
-    cline_free(copy);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    argx_free(copy);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
     /* free_fn is not a request. */
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -133,20 +133,20 @@ NAOS_TEST(copies_an_empty_string)
 {
     char *copy;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    copy = cline_strdup("");
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    copy = argx_strdup("");
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
     NAOS_REQUIRE_TRUE(copy != NULL);
 
     NAOS_CHECK_INT_EQ(copy[0], '\0');
     NAOS_CHECK_UINT_EQ(strlen(copy), 0);
 
-    cline_free(copy);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    argx_free(copy);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -163,16 +163,16 @@ NAOS_TEST(copies_a_long_string)
     }
     original[sizeof original - 1] = '\0';
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    copy = cline_strdup(original);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
+    copy = argx_strdup(original);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
     NAOS_REQUIRE_TRUE(copy != NULL);
     NAOS_CHECK_MEM_EQ(copy, sizeof original, original, sizeof original);
 
-    cline_free(copy);
+    argx_free(copy);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -185,9 +185,9 @@ NAOS_TEST(copy_is_a_separate_region)
     char original[] = "verbose";
     char *copy;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    copy = cline_strdup(original);
+    copy = argx_strdup(original);
     NAOS_REQUIRE_TRUE(copy != NULL);
     NAOS_CHECK_TRUE(copy != original);
 
@@ -201,9 +201,9 @@ NAOS_TEST(copy_is_a_separate_region)
     NAOS_CHECK_STR_EQ(original, "xxxxxxx");
     NAOS_CHECK_STR_EQ(copy, "Verbose");
 
-    cline_free(copy);
+    argx_free(copy);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -214,16 +214,16 @@ NAOS_TEST(copies_are_separate_from_each_other)
     char *first;
     char *second;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    first = cline_strdup(original);
+    first = argx_strdup(original);
     NAOS_REQUIRE_TRUE(first != NULL);
-    second = cline_strdup(original);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 2);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 2);
+    second = argx_strdup(original);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 2);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 2);
     if (second == NULL)
     {
-        cline_free(first);
+        argx_free(first);
     }
     NAOS_REQUIRE_TRUE(second != NULL);
     NAOS_CHECK_TRUE(first != second);
@@ -232,13 +232,13 @@ NAOS_TEST(copies_are_separate_from_each_other)
     NAOS_CHECK_STR_EQ(first, "Name");
     NAOS_CHECK_STR_EQ(second, "name");
 
-    cline_free(first);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    argx_free(first);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
     /* The second copy is still whole after the first one is freed. */
     NAOS_CHECK_STR_EQ(second, "name");
-    cline_free(second);
+    argx_free(second);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -251,33 +251,33 @@ NAOS_TEST(copies_are_separate_from_each_other)
  */
 NAOS_TEST(requests_the_bytes_of_the_string)
 {
-    cline_allocator_t allocator = wrap_allocator();
+    argx_allocator_t allocator = wrap_allocator();
     const char with_terminator_inside[] = "ab\0cd";
     char *copy;
 
-    cline_test_allocator_reset();
-    cline_set_allocator(&allocator);
+    argx_test_allocator_reset();
+    argx_set_allocator(&allocator);
 
     wrap_reset();
-    copy = cline_strdup("");
+    copy = argx_strdup("");
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_malloc_size, 1);
     NAOS_CHECK_UINT_EQ(wrap_other_calls, 0);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 0);
-    cline_free(copy);
+    argx_free(copy);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
 
     wrap_reset();
-    copy = cline_strdup("count");
+    copy = argx_strdup("count");
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_malloc_size, 6);
     NAOS_CHECK_UINT_EQ(wrap_other_calls, 0);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 0);
-    cline_free(copy);
+    argx_free(copy);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
 
     wrap_reset();
-    copy = cline_strdup(with_terminator_inside);
+    copy = argx_strdup(with_terminator_inside);
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_malloc_size, 3);
     NAOS_CHECK_UINT_EQ(wrap_other_calls, 0);
@@ -285,12 +285,12 @@ NAOS_TEST(requests_the_bytes_of_the_string)
     {
         NAOS_CHECK_STR_EQ(copy, "ab");
     }
-    cline_free(copy);
+    argx_free(copy);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
 
-    cline_set_allocator(NULL);
+    argx_set_allocator(NULL);
     /* Nothing went to the test allocator: it was not set. */
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
     check_clean();
 }
 
@@ -299,22 +299,22 @@ NAOS_TEST(works_with_the_default_allocator)
 {
     char *copy;
 
-    cline_test_allocator_reset();
-    cline_set_allocator(NULL);
+    argx_test_allocator_reset();
+    argx_set_allocator(NULL);
 
-    copy = cline_strdup("default");
+    copy = argx_strdup("default");
     NAOS_REQUIRE_TRUE(copy != NULL);
     NAOS_CHECK_STR_EQ(copy, "default");
-    cline_free(copy);
+    argx_free(copy);
 
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
     check_clean();
 }
 
 /* ---- The failure of the allocation ------------------------------------ */
 
 /*
- * When the first request fails, cline_strdup returns NULL and nothing is
+ * When the first request fails, argx_strdup returns NULL and nothing is
  * left allocated.
  */
 NAOS_TEST(failed_allocation_returns_null)
@@ -322,36 +322,36 @@ NAOS_TEST(failed_allocation_returns_null)
     char original[] = "--output=file.txt";
     char *copy;
 
-    cline_test_allocator_install();
-    cline_test_allocator_fail_at(1);
+    argx_test_allocator_install();
+    argx_test_allocator_fail_at(1);
 
-    copy = cline_strdup(original);
+    copy = argx_strdup(original);
     NAOS_CHECK_TRUE(copy == NULL);
     /* The request that failed is the only one. */
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
     /* The string is as it was. */
     NAOS_CHECK_STR_EQ(original, "--output=file.txt");
 
     /* Only if the copy was made after all: it must not stay allocated. */
-    cline_free(copy);
+    argx_free(copy);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* The failed copy of an empty string returns NULL too. */
 NAOS_TEST(failed_allocation_of_an_empty_string_returns_null)
 {
-    cline_test_allocator_install();
-    cline_test_allocator_fail_at(1);
+    argx_test_allocator_install();
+    argx_test_allocator_fail_at(1);
 
-    NAOS_CHECK_TRUE(cline_strdup("") == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_TRUE(argx_strdup("") == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -360,21 +360,21 @@ NAOS_TEST(copies_again_after_a_failure)
 {
     char *copy;
 
-    cline_test_allocator_install();
-    cline_test_allocator_fail_at(1);
+    argx_test_allocator_install();
+    argx_test_allocator_fail_at(1);
 
-    NAOS_CHECK_TRUE(cline_strdup("again") == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_TRUE(argx_strdup("again") == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
-    copy = cline_strdup("again");
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 2);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    copy = argx_strdup("again");
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 2);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
     NAOS_REQUIRE_TRUE(copy != NULL);
     NAOS_CHECK_STR_EQ(copy, "again");
 
-    cline_free(copy);
+    argx_free(copy);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 

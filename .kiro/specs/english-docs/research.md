@@ -34,7 +34,7 @@
 ### 用語
 
 - **Context**: 要件 5.3。文書の用語が公開ヘッダのコメントと食い違うと、利用者が混乱する。
-- **Sources Consulted**: `include/cline/*.h` のコメントの英語の用語を集計した。
+- **Sources Consulted**: `include/argx/*.h` のコメントの英語の用語を集計した。
 - **Findings**: ヘッダは `positional`（150 回）、`value type`（71）、`preconditions`（69）、`arity`、`parse error`、`help options`、`usage line`、`write function`、`heading`、`annotation`、`description column`、`indent`、`width`、`negatable`、`choice` を使っている。
 - **Implications**: 文書の英語の用語は、公開ヘッダのコメントの用語に合わせる（design.md の「用語の対応」）。
 

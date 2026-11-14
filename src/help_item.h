@@ -1,11 +1,11 @@
 /*
- * CLine - internal declarations for the items of the help: how one
+ * ArgX - internal declarations for the items of the help: how one
  * option or positional of a schema is written.
  *
  * The headings and the items of a usage line are written to a
- * cline_out_t. The width of an item is the number of all its bytes, and
+ * argx_out_t. The width of an item is the number of all its bytes, and
  * the caller gets it with the same code that writes the item: it writes
- * the item once to a cline_out_t whose write function only adds up the
+ * the item once to a argx_out_t whose write function only adds up the
  * lengths it is given. The column of an output
  * would not do: a name may hold a newline, behind which the column starts
  * again at 0. No function leaves a blank that is not yet written, so every
@@ -13,7 +13,7 @@
  *
  * The annotations of an item are not written but appended to the cell
  * text: the description of one item and its annotations, as one string
- * that the caller then breaks into lines. The cell text is a cline_vec_t
+ * that the caller then breaks into lines. The cell text is a argx_vec_t
  * of bytes. Only the functions that append to it allocate.
  *
  * The strings of the schema are written as they are, byte by byte. The
@@ -24,23 +24,23 @@
  * Preconditions of every function: no argument is NULL. Checked with
  * assert.
  */
-#ifndef CLINE_HELP_ITEM_H
-#define CLINE_HELP_ITEM_H
+#ifndef ARGX_HELP_ITEM_H
+#define ARGX_HELP_ITEM_H
 
 #include "out.h"
 #include "vec.h"
 
-#include <cline/schema.h>
+#include <argx/schema.h>
 
 #include <stddef.h>
 
 /*
  * Writes text, a string of the schema, as it is. Such a string may hold a
- * '\n', which cline_out_text() does not take: the parts between the
- * newlines are written with cline_out_text() and each newline with
- * cline_out_newline(), so the column starts again at 0 after it.
+ * '\n', which argx_out_text() does not take: the parts between the
+ * newlines are written with argx_out_text() and each newline with
+ * argx_out_newline(), so the column starts again at 0 after it.
  */
-void cline_help_item_string(cline_out_t *out, const char *text);
+void argx_help_item_string(argx_out_t *out, const char *text);
 
 /*
  * Writes the heading of option, the way it stands in the list of the
@@ -58,7 +58,7 @@ void cline_help_item_string(cline_out_t *out, const char *text);
  *
  * A kind that is not known is written as a flag.
  */
-void cline_help_item_option_heading(cline_out_t *out, const cline_option_t *option);
+void argx_help_item_option_heading(argx_out_t *out, const argx_option_t *option);
 
 /*
  * Writes the heading of positional, by its arity: "<name>" for exactly one
@@ -66,7 +66,7 @@ void cline_help_item_option_heading(cline_out_t *out, const cline_option_t *opti
  * "<name>..." for one or more. An arity that is not known is written as
  * exactly one.
  */
-void cline_help_item_positional_heading(cline_out_t *out, const cline_positional_t *positional);
+void argx_help_item_positional_heading(argx_out_t *out, const argx_positional_t *positional);
 
 /*
  * Writes option the way a required option stands in a usage line: "--" and
@@ -74,31 +74,31 @@ void cline_help_item_positional_heading(cline_out_t *out, const cline_positional
  * a blank and the display name of the value between "<" and ">". When no
  * display name is set, the name of the value type stands in its place.
  *
- * Preconditions: option takes a value, CLINE_OPTION_VALUE. Checked with
+ * Preconditions: option takes a value, ARGX_OPTION_VALUE. Checked with
  * assert.
  */
-void cline_help_item_usage_option(cline_out_t *out, const cline_option_t *option);
+void argx_help_item_usage_option(argx_out_t *out, const argx_option_t *option);
 
 /*
  * Appends the length bytes of part to the end of text, a cell text.
  * Nothing happens when length is 0.
  *
- * Returns CLINE_ERROR_NONE, or CLINE_ERROR_OUT_OF_MEMORY when an
+ * Returns ARGX_ERROR_NONE, or ARGX_ERROR_OUT_OF_MEMORY when an
  * allocation fails. text may then hold a part of what was to be appended;
  * the caller stops the generation and destroys text.
  *
- * Preconditions: text was initialized with cline_vec_init() for items of
+ * Preconditions: text was initialized with argx_vec_init() for items of
  * 1 byte; part is not NULL unless length is 0, and does not point into
  * text. Checked with assert, but for the last.
  */
-cline_error_t cline_help_item_text_append(cline_vec_t *text, const char *part, size_t length);
+argx_error_t argx_help_item_text_append(argx_vec_t *text, const char *part, size_t length);
 
 /*
  * Appends the annotations of option to the end of text, a cell text, in
  * this order:
  *
  *  1. "[choices: a, b, c]": option takes a value and its value type is of
- *     the kind CLINE_TYPE_CHOICE. The choices stand in the order in which
+ *     the kind ARGX_TYPE_CHOICE. The choices stand in the order in which
  *     they were defined, separated by ", ".
  *  2. "[default: VALUE]": option takes a value and has a default value;
  *     VALUE is the string that was set, as it is. "[default: on]": option
@@ -114,20 +114,20 @@ cline_error_t cline_help_item_text_append(cline_vec_t *text, const char *part, s
  * A kind of a value type that is not known is taken as one without
  * choices, and an option of a kind that is not known has no annotation.
  *
- * Returns and preconditions: as cline_help_item_text_append().
+ * Returns and preconditions: as argx_help_item_text_append().
  */
-cline_error_t cline_help_item_option_notes(cline_vec_t *text, const cline_option_t *option);
+argx_error_t argx_help_item_option_notes(argx_vec_t *text, const argx_option_t *option);
 
 /*
  * Appends the annotations of positional to the end of text, a cell text:
  * "[choices: a, b, c]" and "[default: VALUE]", under the conditions, in
- * the order and with the blanks of cline_help_item_option_notes(). A
+ * the order and with the blanks of argx_help_item_option_notes(). A
  * positional has no "[required]": its heading shows whether it is
  * required.
  *
- * Returns and preconditions: as cline_help_item_text_append().
+ * Returns and preconditions: as argx_help_item_text_append().
  */
-cline_error_t cline_help_item_positional_notes(cline_vec_t *text,
-                                                 const cline_positional_t *positional);
+argx_error_t argx_help_item_positional_notes(argx_vec_t *text,
+                                                 const argx_positional_t *positional);
 
-#endif /* CLINE_HELP_ITEM_H */
+#endif /* ARGX_HELP_ITEM_H */

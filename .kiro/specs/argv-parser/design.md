@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Purpose**: このスペックは、CLine の利用者が、検証済みのスキーマと `main` の argv を渡して解析し、型の付いた値を結果から取り出せるようにする。引数がスキーマに合わないときは、種類、問題の要素、関係する定義要素、そのまま見せられる英語のメッセージを返す。
+**Purpose**: このスペックは、ArgX の利用者が、検証済みのスキーマと `main` の argv を渡して解析し、型の付いた値を結果から取り出せるようにする。引数がスキーマに合わないときは、種類、問題の要素、関係する定義要素、そのまま見せられる英語のメッセージを返す。
 
 **Users**: ライブラリ利用者（C のアプリケーション開発者）は、解析を呼び、結果を読み、破棄する。プログラムの利用者は、このスペックが定める書き方で引数を書き、メッセージを読む。
 
@@ -10,9 +10,9 @@
 
 ### Goals
 
-- `cline_parse()` 1 回の呼び出しで、要件 2〜9 の書き方を解釈し、値を変換し、既定値の適用と必須の検査まで行う。
+- `argx_parse()` 1 回の呼び出しで、要件 2〜9 の書き方を解釈し、値を変換し、既定値の適用と必須の検査まで行う。
 - 結果は不透明なオブジェクト 1 つで、成功のときも解析エラーのときも同じ関数で読める。破棄は 1 回で済む。
-- 解析エラーは、エラーコード 1 つ（`CLINE_ERROR_INVALID_COMMAND_LINE`）と、結果から読む種類、位置、定義要素、メッセージで表す。
+- 解析エラーは、エラーコード 1 つ（`ARGX_ERROR_INVALID_COMMAND_LINE`）と、結果から読む種類、位置、定義要素、メッセージで表す。
 - ワイド文字の argv は、入口で UTF-8 に変換し、`char` の argv と同じ経路で解析する。
 - 環境変数の対応を後から足せるように、値の解決を独立した段にし、値の出どころとエラーの位置を列挙型で表す。
 
@@ -29,29 +29,29 @@
 
 ### This Spec Owns
 
-- 解析の入口 `cline_parse()` と `cline_parse_wide()`
+- 解析の入口 `argx_parse()` と `argx_parse_wide()`
 - 引数の書き方の規則（要件 2〜7）: 要素の分類、長いオプション、短いオプションの束、`--`、単独の `-`、負の数、位置引数の割り当て、サブコマンドの切り替え
 - 値型の変換をいつ呼ぶか、変換した値と入力の文字列をどこに、いつまで保持するか
 - 既定値の適用と必須の検査（値の解決）
-- 結果の型 `cline_result_t` と、その読み取りと破棄
-- 値の出どころの列挙 `cline_source_t` と、解析エラーの種類の列挙 `cline_parse_error_kind_t`
+- 結果の型 `argx_result_t` と、その読み取りと破棄
+- 値の出どころの列挙 `argx_source_t` と、解析エラーの種類の列挙 `argx_parse_error_kind_t`
 - 解析エラーのメッセージの文面
-- エラーコード `CLINE_ERROR_INVALID_COMMAND_LINE`
+- エラーコード `ARGX_ERROR_INVALID_COMMAND_LINE`
 - 利用者向けの文書 `docs/parse.md`
 
 ### Out of Boundary
 
 - スキーマの内部構造。`src/schema_internal.h` と `src/type_internal.h` を取り込まない
 - 名前の規則、否定名の作り方、検証の規則（command-schema が決め、このスペックは検証済みのスキーマで成り立つこととして頼る）
-- 値型の変換の実装。`cline_type_convert()` が返した成功と失敗を使うだけである
+- 値型の変換の実装。`argx_type_convert()` が返した成功と失敗を使うだけである
 - usage やヘルプを添えたエラーの表示。メッセージ 1 行を返すところまでが、このスペックである
 - 標準出力、標準エラーへの書き込み、プロセスの終了、`getenv` の呼び出し
 - アロケータ、エラーコードの仕組み、内部ユーティリティ（core-runtime）
 
 ### Allowed Dependencies
 
-- command-schema の公開関数: `<cline/schema.h>` の読み取りと検索、`<cline/type.h>` の `cline_type_kind()`、`cline_type_name()`、`cline_type_value_size()`、`cline_type_convert()`、`cline_type_release()`
-- core-runtime: 内部のメモリ関数（`src/alloc_internal.h`）、`cline_vec_t`（`src/vec.h`）、`cline_error_t` と `CLINE_ERROR_LIST`、`CLINE_API`
+- command-schema の公開関数: `<argx/schema.h>` の読み取りと検索、`<argx/type.h>` の `argx_type_kind()`、`argx_type_name()`、`argx_type_value_size()`、`argx_type_convert()`、`argx_type_release()`
+- core-runtime: 内部のメモリ関数（`src/alloc_internal.h`）、`argx_vec_t`（`src/vec.h`）、`argx_error_t` と `ARGX_ERROR_LIST`、`ARGX_API`
 - C 標準ライブラリ: `<assert.h>`、`<limits.h>`、`<stdbool.h>`、`<stddef.h>`（`wchar_t`）、`<stdint.h>`（`int64_t`、`WCHAR_MAX`）、`<string.h>`
 - テストでは、Naos とテスト用アロケータ（`tests/support/test_allocator.h`）
 - 依存してはならないもの: help-formatter のコード。command-schema の内部ヘッダ。OS の API（`WideCharToMultiByte` など）。ロケールに左右される関数（`<ctype.h>`、`wcstombs`）。標準の確保関数。変更可能な `static` 変数。`getenv`、`<stdio.h>` の出力
@@ -61,9 +61,9 @@
 次の変更があったら、ライブラリ利用者のコードと help-formatter（エラーの表示の例を文書に持つ場合）は、統合を確かめ直す。
 
 - 引数の書き方の規則の変更（要件 2〜7 の表）。プログラムの利用者に見える挙動が変わる
-- `cline_parse()` の戻り値と `*out` の関係の変更
-- 読み取りの関数が「値がない」ことを表す方法（`false`、`NULL`、`CLINE_SOURCE_NONE`）の変更
-- `cline_source_t` または `cline_parse_error_kind_t` への値の追加（利用者の `switch` は `default` を持つ前提だが、文書と例を確かめる）
+- `argx_parse()` の戻り値と `*out` の関係の変更
+- 読み取りの関数が「値がない」ことを表す方法（`false`、`NULL`、`ARGX_SOURCE_NONE`）の変更
+- `argx_source_t` または `argx_parse_error_kind_t` への値の追加（利用者の `switch` は `default` を持つ前提だが、文書と例を確かめる）
 - メッセージの文面の変更（文面を比較しているテストが利用者の側にありうる）
 - 結果が argv を複製する、という決定の変更
 
@@ -79,9 +79,9 @@
 ### Existing Architecture Analysis
 
 - 層は「build-foundation → core-runtime → command-schema → argv-parser / help-formatter」の一方向である。このスペックは command-schema の公開関数だけを使う。
-- 既存の型: 不透明ハンドル、`cline_error_t` を返す関数と `**out`、`destroy` の `NULL` は何もしない、前提条件は `assert`、エラーコードは一覧の末尾に足す、変更可能な `static` 変数を持たない。
+- 既存の型: 不透明ハンドル、`argx_error_t` を返す関数と `**out`、`destroy` の `NULL` は何もしない、前提条件は `assert`、エラーコードは一覧の末尾に足す、変更可能な `static` 変数を持たない。
 - 文字列の値型の値は、入力の文字列へのポインタである（`type.h`）。変換に渡した文字列は、値を後始末するまで有効でなければならない。
-- export の検査（`cline.exports`）は、公開ヘッダの前処理の行を取り除いてから `CLINE_API` の宣言を集める。`#ifdef` で囲んだ宣言も、すべての環境で export されている必要がある。
+- export の検査（`argx.exports`）は、公開ヘッダの前処理の行を取り除いてから `ARGX_API` の宣言を集める。`#ifdef` で囲んだ宣言も、すべての環境で export されている必要がある。
 - 公開の読み取りには、定義要素がコマンドの中で何番目かを返す関数がない。
 
 ### Architecture Pattern & Boundary Map
@@ -136,7 +136,7 @@ graph TB
 |---|---|---|
 | argv の文字列 | 結果が複製して持つ（13.7） | `docs/ownership.md` の既定である。ワイド文字の入口では変換した UTF-8 を結果が持つしかないので、`char` の入口も同じにすると、経路と寿命の規則が 1 つになる。利用者は、解析の後に argv を自由にしてよい |
 | 複製の単位 | すべての要素を 1 回の確保にまとめる | 確保の回数が argc によらず 1 回になり、失敗の経路が減る |
-| エラーコード | 解析エラーは `CLINE_ERROR_INVALID_COMMAND_LINE` の 1 つ。種類は結果から読む列挙 | 規約は、エラーコードに位置や対象を持たせない。戻り値は、成功、解析エラー、メモリ確保の失敗の 3 つを分ければ足りる（11.11）。種類を足しても、エラーコードの一覧が増えない |
+| エラーコード | 解析エラーは `ARGX_ERROR_INVALID_COMMAND_LINE` の 1 つ。種類は結果から読む列挙 | 規約は、エラーコードに位置や対象を持たせない。戻り値は、成功、解析エラー、メモリ確保の失敗の 3 つを分ければ足りる（11.11）。種類を足しても、エラーコードの一覧が増えない |
 | 解析エラーのときの `*out` | 結果を渡す（10.10）。メモリ確保の失敗では `NULL` | 既存の「失敗したら `*out` は `NULL`」の例外になる。`docs/ownership.md` と関数のコメントに書く（13.3） |
 | 定義要素から結果の中の場所 | 公開の列挙で、ポインタを比べて探す | command-schema を変更しない。1 つのコマンドのオプションは数十個までの想定で、線形の探索で足りる |
 | ワイド文字の入口 | すべての環境で提供する（12.6） | export の検査が条件付きの宣言を扱えない。`wchar_t` は C99 の型なので宣言はどこでも書ける。Linux と macOS の CI でも変換を確かめられる |
@@ -154,16 +154,16 @@ graph TB
 | 言語 | C99、拡張なし | 全体 | 公開ヘッダで `<stdint.h>`（`int64_t`）を取り込む。`wchar_t` は `<stddef.h>` から得る |
 | 実行時 | C 標準ライブラリ | 文字列関数 | `<stdio.h>`、`<ctype.h>`、`<wchar.h>` の関数は使わない |
 | 上流 | command-schema の公開関数 | スキーマの読み取り、値の変換 | 内部ヘッダは取り込まない |
-| メモリ | core-runtime の内部のメモリ関数、`cline_vec_t` | すべての確保 | 標準の確保関数を直接呼ばない |
-| テスト | Naos v0.4.0、テスト用アロケータ | 公開 API と内部関数のテスト、失敗注入 | 既存の `cline_add_test()` で登録する |
+| メモリ | core-runtime の内部のメモリ関数、`argx_vec_t` | すべての確保 | 標準の確保関数を直接呼ばない |
+| テスト | Naos v0.4.0、テスト用アロケータ | 公開 API と内部関数のテスト、失敗注入 | 既存の `argx_add_test()` で登録する |
 
 ## File Structure Plan
 
 ### Directory Structure
 
 ```
-include/cline/
-└── parse.h                解析の入口、cline_result_t、読み取り、解析エラー、破棄
+include/argx/
+└── parse.h                解析の入口、argx_result_t、読み取り、解析エラー、破棄
 src/
 ├── lex.h                  内部: 要素の分類（宣言）
 ├── lex.c                  要素の分類、負の数の形の判定、長いオプションの名前と値の分割
@@ -171,7 +171,7 @@ src/
 ├── utf8.c                 UTF-16 または UTF-32 から UTF-8 への変換と、長さの計算
 ├── message.h              内部: 解析エラーのメッセージの組み立て（宣言）
 ├── message.c              種類ごとの文面と、名前、値、型名の埋め込み
-├── parse_internal.h       内部: struct cline_result と、その部品の定義、Result と Resolve の内部関数の宣言
+├── parse_internal.h       内部: struct argx_result と、その部品の定義、Result と Resolve の内部関数の宣言
 ├── result.c               結果の生成と破棄、引数の複製、コマンドの並び、値の変換と保持、エラーの記録、公開の読み取り
 ├── resolve.c              必須の検査と既定値の適用
 └── parse.c                公開の入口 2 つ、要素の走査、オプションと位置引数とサブコマンドの照合
@@ -198,10 +198,10 @@ docs/
 
 ### Modified Files
 
-- `include/cline/error.h` — `CLINE_ERROR_LIST` の末尾に `X(CLINE_ERROR_INVALID_COMMAND_LINE, "invalid command line")` を足す。
-- `include/cline/cline.h` — `#include <cline/parse.h>` を足す。
-- `src/CMakeLists.txt` — `CLINE_SOURCES` に `lex.c`、`message.c`、`parse.c`、`resolve.c`、`result.c`、`utf8.c` を足す。
-- `tests/CMakeLists.txt` — 上の 10 のテストを `cline_add_test()` で登録する。確保を伴うテストには `support/test_allocator.c` を足す。
+- `include/argx/error.h` — `ARGX_ERROR_LIST` の末尾に `X(ARGX_ERROR_INVALID_COMMAND_LINE, "invalid command line")` を足す。
+- `include/argx/argx.h` — `#include <argx/parse.h>` を足す。
+- `src/CMakeLists.txt` — `ARGX_SOURCES` に `lex.c`、`message.c`、`parse.c`、`resolve.c`、`result.c`、`utf8.c` を足す。
+- `tests/CMakeLists.txt` — 上の 10 のテストを `argx_add_test()` で登録する。確保を伴うテストには `support/test_allocator.c` を足す。
 - `docs/ownership.md` — 「スキーマ、argv、結果への適用」の表の「結果は argv の文字列を複製するか」を「複製する」に確定する。結果が存在する間はスキーマを変更しないこと、解析エラーのときは `*out` に結果が渡ることを足す。
 - `docs/conventions.md` — ディレクトリ構成の一覧に、`parse.h` と `docs/parse.md` を足す。
 - `docs/schema.md` — 検証を済ませていないスキーマを解析に渡すのは前提条件の違反であることと、`docs/parse.md` への案内を足す。
@@ -209,24 +209,24 @@ docs/
 
 ### Implementation Order
 
-公開ヘッダに `CLINE_API` で宣言した関数は、すべて export されていなければならない（`cline.exports`）。公開ヘッダの宣言は、その関数を実装する作業の中で足す。
+公開ヘッダに `ARGX_API` で宣言した関数は、すべて export されていなければならない（`argx.exports`）。公開ヘッダの宣言は、その関数を実装する作業の中で足す。
 
 | 順 | 作業 | 触るファイル |
 |---|---|---|
-| 1 | エラーコード | `include/cline/error.h` |
+| 1 | エラーコード | `include/argx/error.h` |
 | 2 | Lex | `src/lex.h`、`src/lex.c`、`tests/internal/lex_test.c` |
 | 3 | Utf8 | `src/utf8.h`、`src/utf8.c`、`tests/internal/utf8_test.c` |
-| 4 | Message | `include/cline/parse.h`（新規。2 つの列挙だけ）、`src/message.h`、`src/message.c`、`tests/internal/message_test.c`、`cline.h` |
-| 5 | Result | `parse.h`（`cline_result_t`、読み取り、破棄を追記）、`src/parse_internal.h`、`src/result.c`、`tests/internal/result_test.c` |
-| 6 | Parse: オプション | `parse.h`（`cline_parse()` を追記）、`src/parse.c`、`tests/public/parse_option_test.c` |
+| 4 | Message | `include/argx/parse.h`（新規。2 つの列挙だけ）、`src/message.h`、`src/message.c`、`tests/internal/message_test.c`、`argx.h` |
+| 5 | Result | `parse.h`（`argx_result_t`、読み取り、破棄を追記）、`src/parse_internal.h`、`src/result.c`、`tests/internal/result_test.c` |
+| 6 | Parse: オプション | `parse.h`（`argx_parse()` を追記）、`src/parse.c`、`tests/public/parse_option_test.c` |
 | 7 | Parse: 位置引数とサブコマンド | `src/parse.c`、`tests/public/parse_positional_test.c` |
 | 8 | Resolve | `src/resolve.c`、`src/parse.c`（呼び出しを足す）、`tests/public/parse_value_test.c`、`tests/public/parse_error_test.c` |
-| 9 | ワイド文字の入口 | `parse.h`（`cline_parse_wide()` を追記）、`src/parse.c`、`src/result.c`（引数の複製のワイド版）、`tests/public/parse_wide_test.c` |
+| 9 | ワイド文字の入口 | `parse.h`（`argx_parse_wide()` を追記）、`src/parse.c`、`src/result.c`（引数の複製のワイド版）、`tests/public/parse_wide_test.c` |
 | 10 | 失敗注入のテスト、文書 | `tests/public/parse_failure_test.c`、`docs/`、`README.md` |
 
 - どの作業も `src/CMakeLists.txt` と `tests/CMakeLists.txt` に追記する。同じファイルを触るので、並行させず、表の順に行う。
-- 5 の時点では `cline_parse()` がまだない。`result_test.c` は、内部関数（`parse_internal.h`）で結果を組み立てて、公開の読み取りと破棄を確かめる。
-- 6 と 7 の時点では、値の解決がまだない。`cline_parse()` は、6 で「走査だけを行って結果を返す」形で入り、8 で `Resolve` の呼び出しが入る。6 と 7 のテストは、既定値と必須に頼らない内容にする。
+- 5 の時点では `argx_parse()` がまだない。`result_test.c` は、内部関数（`parse_internal.h`）で結果を組み立てて、公開の読み取りと破棄を確かめる。
+- 6 と 7 の時点では、値の解決がまだない。`argx_parse()` は、6 で「走査だけを行って結果を返す」形で入り、8 で `Resolve` の呼び出しが入る。6 と 7 のテストは、既定値と必須に頼らない内容にする。
 - `src/parse_internal.h` の構造体は、5 で、Logical Data Model のとおりに全部を定義する。
 
 ## System Flows
@@ -235,7 +235,7 @@ docs/
 
 ```mermaid
 flowchart TD
-    Start[cline_parse] --> Create[Create result and copy arguments]
+    Start[argx_parse] --> Create[Create result and copy arguments]
     Create --> Next{More elements}
     Next -- yes --> Bad{Element has invalid encoding}
     Bad -- yes --> Fail[Record parse error]
@@ -263,7 +263,7 @@ flowchart TD
     Fail --> Bad2[Return INVALID_COMMAND_LINE with result]
 ```
 
-- どの段でも、確保の失敗（値型が返したものを含む）は、結果を破棄して `*out` を `NULL` にし、`CLINE_ERROR_OUT_OF_MEMORY` を返す。図では省いた。
+- どの段でも、確保の失敗（値型が返したものを含む）は、結果を破棄して `*out` を `NULL` にし、`ARGX_ERROR_OUT_OF_MEMORY` を返す。図では省いた。
 - 値付きオプションが次の要素を値として取り込むときは、走査の位置を 1 つ進める。取り込まれた要素は分類されない（2.9）。ただし、不正な文字の並びの検査（12.4）は、取り込みの前にも行う。
 - 解析エラーを記録したら、走査をやめ、`Resolve` を呼ばない（10.11、11.1）。
 
@@ -285,7 +285,7 @@ flowchart TD
 
 | Requirement | Summary | Components | Interfaces / Flows |
 |---|---|---|---|
-| 1.1 | 解析して、成功、解析エラー、確保の失敗を返す | Parse | `cline_parse()` |
+| 1.1 | 解析して、成功、解析エラー、確保の失敗を返す | Parse | `argx_parse()` |
 | 1.2 | `main` の argc と argv をそのまま渡せる。先頭は対象外 | Parse | 引数の型 `char *const *`、走査は添字 1 から |
 | 1.3 | 要素がないとき | Parse | `argc` が 0 または 1 なら走査しない |
 | 1.4 | スキーマ、値型、argv を変更しない | Parse、Result | `const` の引数、引数の複製 |
@@ -293,74 +293,74 @@ flowchart TD
 | 1.6 | 同時の解析 | Parse、Result | 変更可能な `static` 変数なし |
 | 1.7 | 未検証のスキーマ、ルートでないコマンドは前提条件 | Parse | `assert` |
 | 1.8 | 終了しない、出力しない、環境を読まない | 全体 | Allowed Dependencies |
-| 2.1, 2.2, 2.3, 2.4, 2.6 | 要素の形の分類 | Lex | `cline_lex_classify()` |
-| 2.5 | 負の数 | Lex、Parse | `cline_lex_is_negative_number()` と、数字の短い名前の有無 |
+| 2.1, 2.2, 2.3, 2.4, 2.6 | 要素の形の分類 | Lex | `argx_lex_classify()` |
+| 2.5 | 負の数 | Lex、Parse | `argx_lex_is_negative_number()` と、数字の短い名前の有無 |
 | 2.7 | 終端より後ろ | Parse | 走査の状態 `options_ended` |
 | 2.8 | 先頭から順に 1 回ずつ | Parse | 解析の全体の図 |
 | 2.9 | 取り込まれた要素は解釈しない | Parse | 値の取り込みで位置を進める |
-| 3.1 | 名前と値の分割 | Lex | `cline_lex_split_long()` |
-| 3.2, 3.3, 3.4, 3.5 | 長い名前と否定名の照合 | Parse | `cline_command_find_long()` |
-| 3.6 | 未知の長いオプション | Parse、Result | `CLINE_PARSE_ERROR_UNKNOWN_OPTION` |
+| 3.1 | 名前と値の分割 | Lex | `argx_lex_split_long()` |
+| 3.2, 3.3, 3.4, 3.5 | 長い名前と否定名の照合 | Parse | `argx_command_find_long()` |
+| 3.6 | 未知の長いオプション | Parse、Result | `ARGX_PARSE_ERROR_UNKNOWN_OPTION` |
 | 3.7, 3.8 | 値の取り方 | Parse | Parse の「値の取り方」 |
-| 3.9 | 値の不足 | Parse、Result | `CLINE_PARSE_ERROR_MISSING_VALUE` |
-| 3.10 | 値を取らないオプションに値 | Parse、Result | `CLINE_PARSE_ERROR_UNEXPECTED_VALUE` |
-| 4.1, 4.2, 4.3, 4.8 | 束の走査と照合 | Parse | `cline_command_find_short()` |
+| 3.9 | 値の不足 | Parse、Result | `ARGX_PARSE_ERROR_MISSING_VALUE` |
+| 3.10 | 値を取らないオプションに値 | Parse、Result | `ARGX_PARSE_ERROR_UNEXPECTED_VALUE` |
+| 4.1, 4.2, 4.3, 4.8 | 束の走査と照合 | Parse | `argx_command_find_short()` |
 | 4.4, 4.5 | 束の中の値付きオプション | Parse | Parse の「値の取り方」 |
-| 4.6 | 値の不足 | Parse、Result | `CLINE_PARSE_ERROR_MISSING_VALUE` |
-| 4.7 | 未知の短いオプション | Parse、Result | `CLINE_PARSE_ERROR_UNKNOWN_OPTION`、`cline_result_error_short_name()` |
-| 5.1, 5.2, 5.3 | フラグ、カウント、否定の複数回 | Result | `cline_result_record_flag()`、`_record_count()`、`_record_state()` |
-| 5.4, 5.5 | 値付きの複数回 | Result | `cline_result_record_option_value()` の置き換え |
-| 6.1, 6.2 | 位置引数の割り当て | Parse、Result | 位置引数のカーソル、`cline_result_record_positional_value()` |
+| 4.6 | 値の不足 | Parse、Result | `ARGX_PARSE_ERROR_MISSING_VALUE` |
+| 4.7 | 未知の短いオプション | Parse、Result | `ARGX_PARSE_ERROR_UNKNOWN_OPTION`、`argx_result_error_short_name()` |
+| 5.1, 5.2, 5.3 | フラグ、カウント、否定の複数回 | Result | `argx_result_record_flag()`、`_record_count()`、`_record_state()` |
+| 5.4, 5.5 | 値付きの複数回 | Result | `argx_result_record_option_value()` の置き換え |
+| 6.1, 6.2 | 位置引数の割り当て | Parse、Result | 位置引数のカーソル、`argx_result_record_positional_value()` |
 | 6.3 | オプションの位置によらない | Parse | 走査が 1 要素ずつ独立 |
 | 6.4, 6.5 | 終端 | Parse | `options_ended` |
-| 6.6 | 余分な位置引数 | Parse、Result | `CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL` |
-| 7.1, 7.2, 7.4 | サブコマンドの切り替え | Parse、Result | `cline_command_find_subcommand()`、`cline_result_push_command()` |
-| 7.3 | 未知のサブコマンド | Parse、Result | `CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND` |
+| 6.6 | 余分な位置引数 | Parse、Result | `ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL` |
+| 7.1, 7.2, 7.4 | サブコマンドの切り替え | Parse、Result | `argx_command_find_subcommand()`、`argx_result_push_command()` |
+| 7.3 | 未知のサブコマンド | Parse、Result | `ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND` |
 | 7.5, 7.6 | 現在のコマンドの定義だけ | Parse | 検索に渡すのは現在のコマンドだけ |
 | 7.7 | サブコマンドなしで終わる | Parse | エラーにしない |
-| 7.8 | 終端より後ろの要素 | Parse、Result | `CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL` |
-| 8.1, 8.2, 8.3 | 値型で変換する | Result | `cline_type_convert()` を 1 か所から呼ぶ |
+| 7.8 | 終端より後ろの要素 | Parse、Result | `ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL` |
+| 8.1, 8.2, 8.3 | 値型で変換する | Result | `argx_type_convert()` を 1 か所から呼ぶ |
 | 8.4, 8.5, 8.6 | 変換の結果の対応づけ | Result | Result の「変換の結果」の表 |
 | 8.7 | 後始末がちょうど 1 回 | Result | 置き換えと破棄 |
-| 9.1 | 読み終えたら検査と適用 | Resolve | `cline_resolve()` |
+| 9.1 | 読み終えたら検査と適用 | Resolve | `argx_resolve()` |
 | 9.2, 9.3, 9.4 | 必須の不足と報告の順 | Resolve | 第 1 巡 |
-| 9.5, 9.6 | 既定値、値なし | Resolve、Result | 第 2 巡、`CLINE_SOURCE_DEFAULT`、`CLINE_SOURCE_NONE` |
-| 9.7 | フラグ、カウント、否定の初期の値 | Result | `cline_result_push_command()` での初期化 |
+| 9.5, 9.6 | 既定値、値なし | Resolve、Result | 第 2 巡、`ARGX_SOURCE_DEFAULT`、`ARGX_SOURCE_NONE` |
+| 9.7 | フラグ、カウント、否定の初期の値 | Result | `argx_result_push_command()` での初期化 |
 | 9.8 | 並びに属さないコマンドは対象外 | Resolve | 並びだけをたどる |
-| 9.9 | 値の出どころの列挙 | Result | `cline_source_t` |
+| 9.9 | 値の出どころの列挙 | Result | `argx_source_t` |
 | 9.10 | 差し込み口を公開しない | Parse、Resolve | 公開の関数に供給元の引数がない |
 | 10.1 | 成功で結果を渡す | Parse | `*out` |
-| 10.2 | 選ばれたコマンドの並び | Result | `cline_result_command_count()`、`_command_at()`、`_command()` |
+| 10.2 | 選ばれたコマンドの並び | Result | `argx_result_command_count()`、`_command_at()`、`_command()` |
 | 10.3 | 定義要素そのもので指定 | Result | 読み取りの引数 |
-| 10.4 | フラグ、カウント、否定 | Result | `cline_result_flag()`、`cline_result_count()` |
-| 10.5 | 値の有無と型の付いた値 | Result | `cline_result_option_*()`、`cline_result_positional_*()` |
-| 10.6 | 可変個の値 | Result | `cline_result_positional_count()`、添字 |
-| 10.7 | 値の出どころ | Result | `cline_result_option_source()`、`cline_result_positional_source()` |
+| 10.4 | フラグ、カウント、否定 | Result | `argx_result_flag()`、`argx_result_count()` |
+| 10.5 | 値の有無と型の付いた値 | Result | `argx_result_option_*()`、`argx_result_positional_*()` |
+| 10.6 | 可変個の値 | Result | `argx_result_positional_count()`、添字 |
+| 10.7 | 値の出どころ | Result | `argx_result_option_source()`、`argx_result_positional_source()` |
 | 10.8 | 値がないことの報告 | Result | `false`、`NULL` |
 | 10.9 | 並びに属さない定義要素 | Result | Result の「読み取りの規則」 |
-| 10.10, 10.11, 10.12 | 解析エラーのときの結果 | Parse、Result | `*out`、`cline_result_error()` |
+| 10.10, 10.11, 10.12 | 解析エラーのときの結果 | Parse、Result | `*out`、`argx_result_error()` |
 | 10.13, 10.14 | 読み取りは変更も確保もしない。寿命 | Result | `const` の引数 |
 | 10.15 | プログラムの誤りは前提条件 | Result | `assert` |
 | 11.1 | 最初の 1 つで止める | Parse | 解析の全体の図 |
-| 11.2, 11.3 | 種類 | Result | `cline_parse_error_kind_t` |
-| 11.4, 11.5, 11.6 | 種類、要素、位置、コマンド、定義要素 | Result | `cline_result_error_*()` |
-| 11.7 | 束の中の 1 文字 | Result | `cline_result_error_short_name()` |
-| 11.8, 11.9, 11.10 | メッセージ | Message、Result | `cline_message_build()`、`cline_result_error_message()` |
-| 11.11 | エラーコード | Error（追記） | `CLINE_ERROR_INVALID_COMMAND_LINE` |
+| 11.2, 11.3 | 種類 | Result | `argx_parse_error_kind_t` |
+| 11.4, 11.5, 11.6 | 種類、要素、位置、コマンド、定義要素 | Result | `argx_result_error_*()` |
+| 11.7 | 束の中の 1 文字 | Result | `argx_result_error_short_name()` |
+| 11.8, 11.9, 11.10 | メッセージ | Message、Result | `argx_message_build()`、`argx_result_error_message()` |
+| 11.11 | エラーコード | Error（追記） | `ARGX_ERROR_INVALID_COMMAND_LINE` |
 | 11.12 | 情報とメッセージの寿命 | Result | 結果が所有する |
 | 11.13 | 前提条件の文書 | 文書 | `parse.h` のコメント、`docs/parse.md` |
-| 12.1, 12.6 | ワイド文字の入口と、提供する環境 | Parse | `cline_parse_wide()`（全環境） |
+| 12.1, 12.6 | ワイド文字の入口と、提供する環境 | Parse | `argx_parse_wide()`（全環境） |
 | 12.2, 12.3 | UTF-8 の argv と同じ結果、UTF-8 で返す | Utf8、Result | 変換の後は同じ経路 |
-| 12.4 | 変換できない並び | Utf8、Result、Parse | `CLINE_PARSE_ERROR_INVALID_ENCODING` |
+| 12.4 | 変換できない並び | Utf8、Result、Parse | `ARGX_PARSE_ERROR_INVALID_ENCODING` |
 | 12.5 | `char` の argv はバイトの並び | Parse、Result | 検査も変換もしない複製 |
 | 13.1 | アロケータ | 全体 | `src/alloc_internal.h` |
 | 13.2, 13.3 | 確保の失敗と `*out` | Parse、Result | 失敗時は結果を破棄して `NULL` |
-| 13.4, 13.5 | 破棄 | Result | `cline_result_destroy()` |
+| 13.4, 13.5 | 破棄 | Result | `argx_result_destroy()` |
 | 13.6, 13.7 | 寿命の規則 | Result、文書 | 引数の複製、`docs/ownership.md` |
 | 13.8 | グローバル状態なし | 全体 | レビュー |
 | 13.9 | 失敗注入のテスト | テスト | `parse_failure_test.c` |
-| 14.1 | 不透明な型 | Result | `cline_result_t` |
-| 14.2, 14.3 | ヘッダと接頭辞 | 全体 | `cline.h`、命名規約 |
+| 14.1 | 不透明な型 | Result | `argx_result_t` |
+| 14.2, 14.3 | ヘッダと接頭辞 | 全体 | `argx.h`、命名規約 |
 | 14.4, 14.5 | 環境によらない結果、C99 と標準ライブラリ | 全体 | CI、Allowed Dependencies |
 | 14.6 | ヘルプから独立 | 全体 | 依存の向き |
 | 14.7 | 文書 | 文書 | `docs/parse.md` |
@@ -375,14 +375,14 @@ flowchart TD
 | Result | 公開と内部 | 結果の保持、値の変換、読み取り、エラーの記録、破棄 | 5.1–5.5, 8.1–8.7, 9.7, 9.9, 10.2–10.15, 11.2–11.7, 11.12, 12.5, 13.4–13.7, 14.1 | Schema read (P0)、Type (P0)、Vec (P0)、Message (P0)、Utf8 (P0) | Service、State |
 | Resolve | 内部 | 必須の検査と既定値の適用 | 9.1–9.6, 9.8, 9.10 | Result (P0)、Schema read (P0) | Service |
 | Parse | 公開 | 入口、走査、照合 | 1.1–1.8, 2.5, 2.7–2.9, 3.2–3.10, 4.1–4.8, 6.1–6.6, 7.1–7.8, 10.1, 10.10, 11.1, 12.1, 12.6, 13.2, 13.3 | Lex (P0)、Result (P0)、Resolve (P0)、Schema read (P0) | Service |
-| Error（追記） | 公開 | エラーコード 1 つ | 11.11 | 既存の `CLINE_ERROR_LIST` | — |
+| Error（追記） | 公開 | エラーコード 1 つ | 11.11 | 既存の `ARGX_ERROR_LIST` | — |
 | 文書 | 文書 | `docs/parse.md` と既存の文書への追記 | 11.13, 13.6, 13.7, 14.7 | — | — |
 
 すべての公開関数に共通すること:
 
-- `<cline/cline.h>` だけで使える。関数と型は `cline_`、列挙の定数は `CLINE_` で始まる（14.2、14.3）。
+- `<argx/argx.h>` だけで使える。関数と型は `argx_`、列挙の定数は `ARGX_` で始まる（14.2、14.3）。
 - 引数のポインタは、「`NULL` でもよい」と書いていない限り、`NULL` でないことが前提条件である。前提条件は `assert` で検査し、エラーコードにしない（10.15、11.13）。
-- 読み取りの関数は `const cline_result_t *` を取り、失敗せず、確保せず、結果もスキーマも変えない（10.13）。返す文字列と値へのポインタは、結果を破棄するまで有効で、呼び出し側は解放しない（10.14、11.12）。
+- 読み取りの関数は `const argx_result_t *` を取り、失敗せず、確保せず、結果もスキーマも変えない（10.13）。返す文字列と値へのポインタは、結果を破棄するまで有効で、呼び出し側は解放しない（10.14、11.12）。
 
 ### 内部
 
@@ -402,25 +402,25 @@ flowchart TD
 
 ```c
 /* src/lex.h */
-typedef enum cline_lex_kind {
-    CLINE_LEX_PLAIN,      /* オプションではない要素: "-"、""、"-" で始まらないもの */
-    CLINE_LEX_LONG,       /* "--" に 1 文字以上が続く */
-    CLINE_LEX_SHORT,      /* "-" に、"-" でない文字が 1 文字以上続く */
-    CLINE_LEX_TERMINATOR  /* "--" だけ */
-} cline_lex_kind_t;
+typedef enum argx_lex_kind {
+    ARGX_LEX_PLAIN,      /* オプションではない要素: "-"、""、"-" で始まらないもの */
+    ARGX_LEX_LONG,       /* "--" に 1 文字以上が続く */
+    ARGX_LEX_SHORT,      /* "-" に、"-" でない文字が 1 文字以上続く */
+    ARGX_LEX_TERMINATOR  /* "--" だけ */
+} argx_lex_kind_t;
 
-cline_lex_kind_t cline_lex_classify(const char *arg);
+argx_lex_kind_t argx_lex_classify(const char *arg);
 
 /* "-" の直後が数字、または "-" の直後が "." と数字。 */
-bool cline_lex_is_negative_number(const char *arg);
+bool argx_lex_is_negative_number(const char *arg);
 
-/* arg は CLINE_LEX_LONG の要素。*name は "--" の直後、*name_length は最初の "=" の手前まで
+/* arg は ARGX_LEX_LONG の要素。*name は "--" の直後、*name_length は最初の "=" の手前まで
  * （"=" がなければ終わりまで）の長さ。*value は最初の "=" の直後、"=" がなければ NULL。 */
-void cline_lex_split_long(const char *arg, const char **name, size_t *name_length, const char **value);
+void argx_lex_split_long(const char *arg, const char **name, size_t *name_length, const char **value);
 ```
 
-- Preconditions: 引数は `NULL` でない。`cline_lex_split_long()` の `arg` は、`cline_lex_classify()` が `CLINE_LEX_LONG` を返した要素である。
-- Postconditions: `cline_lex_is_negative_number()` が `true` を返す要素は、`cline_lex_classify()` では `CLINE_LEX_SHORT` である。`--=x` は、名前の長さが 0 の `CLINE_LEX_LONG` である（照合で未知のオプションになる）。
+- Preconditions: 引数は `NULL` でない。`argx_lex_split_long()` の `arg` は、`argx_lex_classify()` が `ARGX_LEX_LONG` を返した要素である。
+- Postconditions: `argx_lex_is_negative_number()` が `true` を返す要素は、`argx_lex_classify()` では `ARGX_LEX_SHORT` である。`--=x` は、名前の長さが 0 の `ARGX_LEX_LONG` である（照合で未知のオプションになる）。
 
 #### Utf8
 
@@ -441,13 +441,13 @@ void cline_lex_split_long(const char *arg, const char **name, size_t *name_lengt
 ```c
 /* src/utf8.h */
 /* 終端を含まない UTF-8 のバイト数を返す。変換できない単位があれば *valid を false にする。 */
-size_t cline_utf8_length(const wchar_t *text, bool *valid);
+size_t argx_utf8_length(const wchar_t *text, bool *valid);
 
 /* text を UTF-8 にして out に書き、終端を付ける。書いたバイト数（終端を含まない）を返す。 */
-size_t cline_utf8_write(const wchar_t *text, char *out);
+size_t argx_utf8_write(const wchar_t *text, char *out);
 ```
 
-- Preconditions: 引数は `NULL` でない。`out` は、`cline_utf8_length(text, …) + 1` バイト以上ある。
+- Preconditions: 引数は `NULL` でない。`out` は、`argx_utf8_length(text, …) + 1` バイト以上ある。
 - 長さの合計が `size_t` に収まらない場合の検査は、呼び出し側（Result の引数の複製）が行う。
 
 #### Message
@@ -478,64 +478,64 @@ size_t cline_utf8_write(const wchar_t *text, char *out);
 | `INVALID_ENCODING` | `invalid character encoding in argument '<value>'` | — |
 
 - オプションの `<name>` は、接頭辞（`--` または `-`）と名前をつなげたものである。プログラムの利用者が書いた形にする（否定名で書かれたら `--no-<name>`、束の中の 1 文字なら `-` とその文字）。書かれていないオプション（必須の不足、既定値）は、長い名前があれば `--<長い名前>`、なければ `-<短い名前>` とする。
-- 位置引数の `<name>` は、スキーマの位置引数の名前である。`<type>` は `cline_type_name()` である。
+- 位置引数の `<name>` は、スキーマの位置引数の名前である。`<type>` は `argx_type_name()` である。
 
 **Contracts**: Service [x]
 
 ```c
 /* src/message.h */
-typedef struct cline_message_parts {
-    cline_parse_error_kind_t kind;
-    cline_source_t source;     /* CLINE_SOURCE_DEFAULT なら「既定値」の文面 */
+typedef struct argx_message_parts {
+    argx_parse_error_kind_t kind;
+    argx_source_t source;     /* ARGX_SOURCE_DEFAULT なら「既定値」の文面 */
     bool for_positional;        /* INVALID_VALUE で、位置引数の文面を選ぶ */
     const char *name_prefix;    /* "--"、"-"、または ""。NULL にしない */
     const char *name;           /* 名前。使わない種類では NULL */
     size_t name_length;         /* name の長さ（name は終端で終わるとは限らない） */
     const char *value;          /* 値または要素。使わない種類では NULL */
     const char *type_name;      /* 値型の名前。INVALID_VALUE でだけ使う */
-} cline_message_parts_t;
+} argx_message_parts_t;
 
-cline_error_t cline_message_build(const cline_message_parts_t *parts, char **out);
+argx_error_t argx_message_build(const argx_message_parts_t *parts, char **out);
 ```
 
-- Preconditions: `parts` と `out` は `NULL` でない。`parts->kind` は `CLINE_PARSE_ERROR_NONE` でない。その種類の文面が使う文字列は `NULL` でない。
-- Postconditions: 成功したら `*out` に、呼び出し側が `cline_free()` で解放する文字列を書く。確保に失敗したら `CLINE_ERROR_OUT_OF_MEMORY` を返し、`*out` は `NULL` である。
+- Preconditions: `parts` と `out` は `NULL` でない。`parts->kind` は `ARGX_PARSE_ERROR_NONE` でない。その種類の文面が使う文字列は `NULL` でない。
+- Postconditions: 成功したら `*out` に、呼び出し側が `argx_free()` で解放する文字列を書く。確保に失敗したら `ARGX_ERROR_OUT_OF_MEMORY` を返し、`*out` は `NULL` である。
 
 ### 公開: 解析
 
 ```c
-/* include/cline/parse.h */
-#include <cline/error.h>
-#include <cline/export.h>
-#include <cline/schema.h>
+/* include/argx/parse.h */
+#include <argx/error.h>
+#include <argx/export.h>
+#include <argx/schema.h>
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
 /* 解析の結果。中身は公開しない。 */
-typedef struct cline_result cline_result_t;
+typedef struct argx_result argx_result_t;
 
 /* 値の出どころ、および解析エラーの位置の出どころ。後のバージョンで値を足す。 */
-typedef enum cline_source {
-    CLINE_SOURCE_NONE,         /* 値がない。位置がない */
-    CLINE_SOURCE_DEFAULT,      /* スキーマの既定値、または初期の状態 */
-    CLINE_SOURCE_COMMAND_LINE  /* argv */
-} cline_source_t;
+typedef enum argx_source {
+    ARGX_SOURCE_NONE,         /* 値がない。位置がない */
+    ARGX_SOURCE_DEFAULT,      /* スキーマの既定値、または初期の状態 */
+    ARGX_SOURCE_COMMAND_LINE  /* argv */
+} argx_source_t;
 
 /* 解析エラーの種類。後のバージョンで値を足す。 */
-typedef enum cline_parse_error_kind {
-    CLINE_PARSE_ERROR_NONE,
-    CLINE_PARSE_ERROR_UNKNOWN_OPTION,
-    CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND,
-    CLINE_PARSE_ERROR_MISSING_VALUE,
-    CLINE_PARSE_ERROR_UNEXPECTED_VALUE,
-    CLINE_PARSE_ERROR_INVALID_VALUE,
-    CLINE_PARSE_ERROR_MISSING_OPTION,
-    CLINE_PARSE_ERROR_MISSING_POSITIONAL,
-    CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL,
-    CLINE_PARSE_ERROR_INVALID_ENCODING
-} cline_parse_error_kind_t;
+typedef enum argx_parse_error_kind {
+    ARGX_PARSE_ERROR_NONE,
+    ARGX_PARSE_ERROR_UNKNOWN_OPTION,
+    ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND,
+    ARGX_PARSE_ERROR_MISSING_VALUE,
+    ARGX_PARSE_ERROR_UNEXPECTED_VALUE,
+    ARGX_PARSE_ERROR_INVALID_VALUE,
+    ARGX_PARSE_ERROR_MISSING_OPTION,
+    ARGX_PARSE_ERROR_MISSING_POSITIONAL,
+    ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL,
+    ARGX_PARSE_ERROR_INVALID_ENCODING
+} argx_parse_error_kind_t;
 ```
 
 #### Parse
@@ -550,7 +550,7 @@ typedef enum cline_parse_error_kind {
 - 走査の状態（現在のコマンド、要素の添字、終端を過ぎたか、位置引数のカーソル、現在のコマンドに数字の短い名前があるか）は、関数の中の自動変数の構造体に持つ。結果にも、`static` 変数にも置かない。
 - スキーマは、公開の読み取りと検索だけで読む。検索に渡すのは、現在のコマンドだけである（7.5）。
 - 記録は、すべて Result の内部関数を通す。値の変換を自分では呼ばない。
-- 「現在のコマンドに数字の短い名前があるか」は、コマンドが現在のコマンドになったときに、`'0'` から `'9'` までを `cline_command_find_short()` で調べて決める。
+- 「現在のコマンドに数字の短い名前があるか」は、コマンドが現在のコマンドになったときに、`'0'` から `'9'` までを `argx_command_find_short()` で調べて決める。
 
 **値の取り方**（3.7〜3.10、4.4〜4.6）
 
@@ -576,33 +576,33 @@ typedef enum cline_parse_error_kind {
 **Contracts**: Service [x]
 
 ```c
-CLINE_API cline_error_t cline_parse(const cline_command_t *root, int argc, char *const *argv,
-                                       cline_result_t **out);
-CLINE_API cline_error_t cline_parse_wide(const cline_command_t *root, int argc,
-                                            wchar_t *const *argv, cline_result_t **out);
+ARGX_API argx_error_t argx_parse(const argx_command_t *root, int argc, char *const *argv,
+                                       argx_result_t **out);
+ARGX_API argx_error_t argx_parse_wide(const argx_command_t *root, int argc,
+                                            wchar_t *const *argv, argx_result_t **out);
 ```
 
 | 戻り値 | `*out` | 意味 |
 |---|---|---|
-| `CLINE_ERROR_NONE` | 結果 | 成功。値の解決まで済んでいる |
-| `CLINE_ERROR_INVALID_COMMAND_LINE` | 結果 | 解析エラー。結果から、エラーの情報と、エラーまでに読んだ分を読める |
-| `CLINE_ERROR_OUT_OF_MEMORY` | `NULL` | 確保の失敗。何も残らない |
+| `ARGX_ERROR_NONE` | 結果 | 成功。値の解決まで済んでいる |
+| `ARGX_ERROR_INVALID_COMMAND_LINE` | 結果 | 解析エラー。結果から、エラーの情報と、エラーまでに読んだ分を読める |
+| `ARGX_ERROR_OUT_OF_MEMORY` | `NULL` | 確保の失敗。何も残らない |
 
 - Preconditions（`assert` で検査する）:
-  - `root` と `out` は `NULL` でない。`root` はルートコマンドである（`cline_command_parent(root) == NULL`）。
-  - `root` のスキーマは検証済みである（`cline_command_is_validated(root)`）。
+  - `root` と `out` は `NULL` でない。`root` はルートコマンドである（`argx_command_parent(root) == NULL`）。
+  - `root` のスキーマは検証済みである（`argx_command_is_validated(root)`）。
   - `argc` は 0 以上である。`argc` が 0 より大きければ、`argv` は `NULL` でなく、`argv[0]` から `argv[argc - 1]` は `NULL` でない。`argv[argc]` は読まない。
 - Preconditions（検査しない）: 結果を破棄するまで、スキーマと、それが使う値型を、変更も破棄もしない。
 - Postconditions:
   - `argv[0]` は解析しない。`argc` が 0 または 1 なら、何も指定されなかったものとして解析する。
-  - `*out` が `NULL` でなければ、利用者が `cline_result_destroy()` で破棄する。
+  - `*out` が `NULL` でなければ、利用者が `argx_result_destroy()` で破棄する。
   - argv の配列と文字列は、読むだけである。呼び出しが戻った後、利用者は argv を変更または解放してよい。
-  - `cline_parse_wide()` は、各要素を UTF-8 に変換してから、`cline_parse()` と同じ処理を行う。`cline_parse()` は、要素のバイトをそのまま扱う（12.5）。
+  - `argx_parse_wide()` は、各要素を UTF-8 に変換してから、`argx_parse()` と同じ処理を行う。`argx_parse()` は、要素のバイトをそのまま扱う（12.5）。
 
 **Implementation Notes**
 
 - Integration: 2 つの入口は、結果の生成と引数の複製だけが違う。その後は 1 つの内部関数（走査と値の解決）に合流させる。
-- Validation: 走査の途中で内部関数が `CLINE_ERROR_OUT_OF_MEMORY` を返したら、結果を破棄し、`*out` を `NULL` にして返す。`CLINE_ERROR_INVALID_COMMAND_LINE` を返したら、走査をやめ、結果を渡して返す。
+- Validation: 走査の途中で内部関数が `ARGX_ERROR_OUT_OF_MEMORY` を返したら、結果を破棄し、`*out` を `NULL` にして返す。`ARGX_ERROR_INVALID_COMMAND_LINE` を返したら、走査をやめ、結果を渡して返す。
 - Risks: 値を次の要素から取り込むときに、添字を進め忘れる、または終端の後ろで分類してしまう誤り。テストは、取り込まれた `--` と `-x` を必ず含める。
 
 #### Result
@@ -614,22 +614,22 @@ CLINE_API cline_error_t cline_parse_wide(const cline_command_t *root, int argc,
 
 **Responsibilities & Constraints**
 
-- 結果は、作りかけのどの時点でも `cline_result_destroy()` で破棄できる。確保の失敗の後始末は、この 1 通りだけにする。
+- 結果は、作りかけのどの時点でも `argx_result_destroy()` で破棄できる。確保の失敗の後始末は、この 1 通りだけにする。
 - 引数は、すべての要素を 1 回の確保で複製する。値型に渡す文字列は、この複製の中か、スキーマの既定値を指す。どちらも、結果が破棄されるまで有効である。
-- 値の変換は `cline_type_convert()` を、後始末は `cline_type_release()` を、このコンポーネントの 1 か所ずつから呼ぶ。
-- コマンドが並びに加わるとき、そのコマンドのオプションと位置引数の「枠」を作る。フラグとカウントは、指定されていない、0 回で、否定できるフラグはスキーマの初期の状態で、出どころは `CLINE_SOURCE_DEFAULT` で始める（9.7）。値付きオプションと位置引数は、値なし、`CLINE_SOURCE_NONE` で始める。
+- 値の変換は `argx_type_convert()` を、後始末は `argx_type_release()` を、このコンポーネントの 1 か所ずつから呼ぶ。
+- コマンドが並びに加わるとき、そのコマンドのオプションと位置引数の「枠」を作る。フラグとカウントは、指定されていない、0 回で、否定できるフラグはスキーマの初期の状態で、出どころは `ARGX_SOURCE_DEFAULT` で始める（9.7）。値付きオプションと位置引数は、値なし、`ARGX_SOURCE_NONE` で始める。
 
 **変換の結果**（8.4〜8.6）
 
-| `cline_type_convert()` の戻り値 | 内部関数の動作 |
+| `argx_type_convert()` の戻り値 | 内部関数の動作 |
 |---|---|
-| `CLINE_ERROR_NONE` | 値を保持する |
-| `CLINE_ERROR_OUT_OF_MEMORY` | `CLINE_ERROR_OUT_OF_MEMORY` を返す |
-| それ以外 | `CLINE_PARSE_ERROR_INVALID_VALUE` を記録し、`CLINE_ERROR_INVALID_COMMAND_LINE` を返す |
+| `ARGX_ERROR_NONE` | 値を保持する |
+| `ARGX_ERROR_OUT_OF_MEMORY` | `ARGX_ERROR_OUT_OF_MEMORY` を返す |
+| それ以外 | `ARGX_PARSE_ERROR_INVALID_VALUE` を記録し、`ARGX_ERROR_INVALID_COMMAND_LINE` を返す |
 
 **値の置き換え**（5.4、5.5、8.7）
 
-- 値 1 つごとに、`cline_type_value_size()` バイトの領域を確保する（どんな型にも合う境界になる）。
+- 値 1 つごとに、`argx_type_value_size()` バイトの領域を確保する（どんな型にも合う境界になる）。
 - 値付きオプションに 2 回目の値が来たら、新しい領域に変換する。成功したら、古い値を後始末して領域を解放し、新しい値に替える。失敗したら、古い値は残り、結果の破棄で後始末される。
 - 破棄は、保持しているすべての値を 1 回ずつ後始末する。
 
@@ -643,12 +643,12 @@ CLINE_API cline_error_t cline_parse_wide(const cline_command_t *root, int argc,
 | 並びに属さないコマンドのもの | `false` | 0 | 初期の状態 | 値なし | `NONE` |
 
 - 解析エラーの結果では、既定値を適用していないので、2 行目は現れない（10.11）。
-- 定義要素から枠を引くには、`cline_option_command()`（または `cline_positional_command()`）を並びの中で探し、次に、そのコマンドの列挙の中で、ポインタが一致する添字を探す。
+- 定義要素から枠を引くには、`argx_option_command()`（または `argx_positional_command()`）を並びの中で探し、次に、そのコマンドの列挙の中で、ポインタが一致する添字を探す。
 
 **Dependencies**
 
 - Outbound: Message — メッセージの組み立て (P0)。Utf8 — ワイド文字の引数の複製 (P0)。Vec — 並びと、位置引数の値 (P0)
-- External: command-schema の読み取り、`cline_type_convert()`、`cline_type_release()` (P0)
+- External: command-schema の読み取り、`argx_type_convert()`、`argx_type_release()` (P0)
 
 **Contracts**: Service [x] / State [x]
 
@@ -656,77 +656,77 @@ CLINE_API cline_error_t cline_parse_wide(const cline_command_t *root, int argc,
 
 ```c
 /* 破棄。NULL は何もしない。 */
-CLINE_API void cline_result_destroy(cline_result_t *result);
+ARGX_API void argx_result_destroy(argx_result_t *result);
 
-/* 解析の成否: CLINE_ERROR_NONE または CLINE_ERROR_INVALID_COMMAND_LINE。 */
-CLINE_API cline_error_t cline_result_error(const cline_result_t *result);
+/* 解析の成否: ARGX_ERROR_NONE または ARGX_ERROR_INVALID_COMMAND_LINE。 */
+ARGX_API argx_error_t argx_result_error(const argx_result_t *result);
 
 /* 選ばれたコマンドの並び。添字 0 はルート。_command() は最後のコマンド。 */
-CLINE_API size_t cline_result_command_count(const cline_result_t *result);
-CLINE_API const cline_command_t *cline_result_command_at(const cline_result_t *result, size_t index);
-CLINE_API const cline_command_t *cline_result_command(const cline_result_t *result);
+ARGX_API size_t argx_result_command_count(const argx_result_t *result);
+ARGX_API const argx_command_t *argx_result_command_at(const argx_result_t *result, size_t index);
+ARGX_API const argx_command_t *argx_result_command(const argx_result_t *result);
 
 /* フラグ（指定されたか）と、否定できるフラグ（オンか）。 */
-CLINE_API bool cline_result_flag(const cline_result_t *result, const cline_option_t *option);
+ARGX_API bool argx_result_flag(const argx_result_t *result, const argx_option_t *option);
 /* カウント。 */
-CLINE_API size_t cline_result_count(const cline_result_t *result, const cline_option_t *option);
+ARGX_API size_t argx_result_count(const argx_result_t *result, const argx_option_t *option);
 
 /* どの種類のオプションにも使える。 */
-CLINE_API cline_source_t cline_result_option_source(const cline_result_t *result,
-                                                       const cline_option_t *option);
+ARGX_API argx_source_t argx_result_option_source(const argx_result_t *result,
+                                                       const argx_option_t *option);
 
 /* 値付きオプション。値があれば *out に書いて true、なければ *out を変えずに false。 */
-CLINE_API bool cline_result_option_string(const cline_result_t *result, const cline_option_t *option,
+ARGX_API bool argx_result_option_string(const argx_result_t *result, const argx_option_t *option,
                                             const char **out);
-CLINE_API bool cline_result_option_int(const cline_result_t *result, const cline_option_t *option,
+ARGX_API bool argx_result_option_int(const argx_result_t *result, const argx_option_t *option,
                                          int64_t *out);
-CLINE_API bool cline_result_option_float(const cline_result_t *result, const cline_option_t *option,
+ARGX_API bool argx_result_option_float(const argx_result_t *result, const argx_option_t *option,
                                            double *out);
-CLINE_API bool cline_result_option_choice(const cline_result_t *result, const cline_option_t *option,
+ARGX_API bool argx_result_option_choice(const argx_result_t *result, const argx_option_t *option,
                                             size_t *out);
 /* 値型が書き込んだ値の領域。値がなければ NULL。どの種類の値型にも使える。 */
-CLINE_API const void *cline_result_option_value(const cline_result_t *result,
-                                                  const cline_option_t *option);
+ARGX_API const void *argx_result_option_value(const argx_result_t *result,
+                                                  const argx_option_t *option);
 
 /* 位置引数。個数は、必須と任意では 0 または 1、可変個では割り当てられた個数。 */
-CLINE_API size_t cline_result_positional_count(const cline_result_t *result,
-                                                 const cline_positional_t *positional);
-CLINE_API cline_source_t cline_result_positional_source(const cline_result_t *result,
-                                                           const cline_positional_t *positional);
-CLINE_API bool cline_result_positional_string(const cline_result_t *result,
-                                                const cline_positional_t *positional, size_t index,
+ARGX_API size_t argx_result_positional_count(const argx_result_t *result,
+                                                 const argx_positional_t *positional);
+ARGX_API argx_source_t argx_result_positional_source(const argx_result_t *result,
+                                                           const argx_positional_t *positional);
+ARGX_API bool argx_result_positional_string(const argx_result_t *result,
+                                                const argx_positional_t *positional, size_t index,
                                                 const char **out);
-CLINE_API bool cline_result_positional_int(const cline_result_t *result,
-                                             const cline_positional_t *positional, size_t index,
+ARGX_API bool argx_result_positional_int(const argx_result_t *result,
+                                             const argx_positional_t *positional, size_t index,
                                              int64_t *out);
-CLINE_API bool cline_result_positional_float(const cline_result_t *result,
-                                               const cline_positional_t *positional, size_t index,
+ARGX_API bool argx_result_positional_float(const argx_result_t *result,
+                                               const argx_positional_t *positional, size_t index,
                                                double *out);
-CLINE_API bool cline_result_positional_choice(const cline_result_t *result,
-                                                const cline_positional_t *positional, size_t index,
+ARGX_API bool argx_result_positional_choice(const argx_result_t *result,
+                                                const argx_positional_t *positional, size_t index,
                                                 size_t *out);
-CLINE_API const void *cline_result_positional_value(const cline_result_t *result,
-                                                      const cline_positional_t *positional, size_t index);
+ARGX_API const void *argx_result_positional_value(const argx_result_t *result,
+                                                      const argx_positional_t *positional, size_t index);
 
 /* 解析エラーの情報。解析が成功した結果では、NONE、NULL、0、'\0' を返す。 */
-CLINE_API cline_parse_error_kind_t cline_result_error_kind(const cline_result_t *result);
-CLINE_API const char *cline_result_error_message(const cline_result_t *result);
-CLINE_API const char *cline_result_error_argument(const cline_result_t *result);
-CLINE_API const char *cline_result_error_value(const cline_result_t *result);
-CLINE_API cline_source_t cline_result_error_source(const cline_result_t *result);
-CLINE_API size_t cline_result_error_index(const cline_result_t *result);
-CLINE_API const cline_command_t *cline_result_error_command(const cline_result_t *result);
-CLINE_API const cline_option_t *cline_result_error_option(const cline_result_t *result);
-CLINE_API const cline_positional_t *cline_result_error_positional(const cline_result_t *result);
-CLINE_API char cline_result_error_short_name(const cline_result_t *result);
+ARGX_API argx_parse_error_kind_t argx_result_error_kind(const argx_result_t *result);
+ARGX_API const char *argx_result_error_message(const argx_result_t *result);
+ARGX_API const char *argx_result_error_argument(const argx_result_t *result);
+ARGX_API const char *argx_result_error_value(const argx_result_t *result);
+ARGX_API argx_source_t argx_result_error_source(const argx_result_t *result);
+ARGX_API size_t argx_result_error_index(const argx_result_t *result);
+ARGX_API const argx_command_t *argx_result_error_command(const argx_result_t *result);
+ARGX_API const argx_option_t *argx_result_error_option(const argx_result_t *result);
+ARGX_API const argx_positional_t *argx_result_error_positional(const argx_result_t *result);
+ARGX_API char argx_result_error_short_name(const argx_result_t *result);
 ```
 
 - Preconditions（`assert` で検査する）:
   - `result`、`option`、`positional`、`out` は `NULL` でない。
   - `option` と `positional` は、この結果のスキーマに属する（親をたどったルートが、解析に渡したルートである）。
-  - `cline_result_flag()` の `option` は、フラグまたは否定できるフラグである。`cline_result_count()` の `option` は、カウントである。`cline_result_option_*()`（`_source` を除く）の `option` は、値付きオプションである。
-  - `_string`、`_int`、`_float`、`_choice` は、定義要素の値型の種類が、それぞれ `CLINE_TYPE_STRING`、`CLINE_TYPE_INT`、`CLINE_TYPE_FLOAT`、`CLINE_TYPE_CHOICE` である。
-  - `cline_result_command_at()` の `index` は、`cline_result_command_count()` より小さい。
+  - `argx_result_flag()` の `option` は、フラグまたは否定できるフラグである。`argx_result_count()` の `option` は、カウントである。`argx_result_option_*()`（`_source` を除く）の `option` は、値付きオプションである。
+  - `_string`、`_int`、`_float`、`_choice` は、定義要素の値型の種類が、それぞれ `ARGX_TYPE_STRING`、`ARGX_TYPE_INT`、`ARGX_TYPE_FLOAT`、`ARGX_TYPE_CHOICE` である。
+  - `argx_result_command_at()` の `index` は、`argx_result_command_count()` より小さい。
 - Postconditions:
   - 位置引数の `index` が個数以上なら、値がないものとして `false` または `NULL` を返す（10.8）。前提条件の違反にはしない。
   - `_value` が返すポインタは、値型の値の型のオブジェクトを指す（`const char *`、`int64_t`、`double`、`size_t`、または利用者定義の値型が書いたもの）。
@@ -754,63 +754,63 @@ CLINE_API char cline_result_error_short_name(const cline_result_t *result);
 
 ```c
 /* 結果を作り、root を並びに加える。argc と argv を複製する。 */
-cline_error_t cline_result_create(const cline_command_t *root, int argc, char *const *argv,
-                                    cline_result_t **out);
-cline_error_t cline_result_create_wide(const cline_command_t *root, int argc, wchar_t *const *argv,
-                                         cline_result_t **out);
+argx_error_t argx_result_create(const argx_command_t *root, int argc, char *const *argv,
+                                    argx_result_t **out);
+argx_error_t argx_result_create_wide(const argx_command_t *root, int argc, wchar_t *const *argv,
+                                         argx_result_t **out);
 
 /* 複製した要素。index は argv の添字。 */
-const char *cline_result_arg(const cline_result_t *result, size_t index);
+const char *argx_result_arg(const argx_result_t *result, size_t index);
 /* 変換できない並びを含む最初の要素の添字（1 以上）。なければ 0。 */
-size_t cline_result_first_invalid_arg(const cline_result_t *result);
+size_t argx_result_first_invalid_arg(const argx_result_t *result);
 
-cline_error_t cline_result_push_command(cline_result_t *result, const cline_command_t *command);
+argx_error_t argx_result_push_command(argx_result_t *result, const argx_command_t *command);
 
-void cline_result_record_flag(cline_result_t *result, const cline_option_t *option);
-void cline_result_record_state(cline_result_t *result, const cline_option_t *option, bool on);
-void cline_result_record_count(cline_result_t *result, const cline_option_t *option);
+void argx_result_record_flag(argx_result_t *result, const argx_option_t *option);
+void argx_result_record_state(argx_result_t *result, const argx_option_t *option, bool on);
+void argx_result_record_count(argx_result_t *result, const argx_option_t *option);
 
 /* 値を変換して保持する。失敗は「変換の結果」の表のとおり。
  * where は、INVALID_VALUE を記録するときのエラーの位置。 */
-typedef struct cline_result_where {
-    cline_source_t source;   /* COMMAND_LINE または DEFAULT */
+typedef struct argx_result_where {
+    argx_source_t source;   /* COMMAND_LINE または DEFAULT */
     size_t index;             /* 値を含む要素の添字。DEFAULT では 0 */
     char short_name;          /* 束の中の値付きオプションなら、その文字。ほかは '\0' */
     const char *name_prefix;  /* メッセージ用: 書かれた形の接頭辞 */
     const char *name;         /* メッセージ用: 書かれた形の名前 */
     size_t name_length;
-} cline_result_where_t;
+} argx_result_where_t;
 
-cline_error_t cline_result_record_option_value(cline_result_t *result, const cline_option_t *option,
-                                                 const char *text, const cline_result_where_t *where);
-cline_error_t cline_result_record_positional_value(cline_result_t *result,
-                                                     const cline_positional_t *positional,
-                                                     const char *text, const cline_result_where_t *where);
+argx_error_t argx_result_record_option_value(argx_result_t *result, const argx_option_t *option,
+                                                 const char *text, const argx_result_where_t *where);
+argx_error_t argx_result_record_positional_value(argx_result_t *result,
+                                                     const argx_positional_t *positional,
+                                                     const char *text, const argx_result_where_t *where);
 
 /* 適用した既定値をすべて取り消す（後始末して、値なしに戻す）。 */
-void cline_result_discard_defaults(cline_result_t *result);
+void argx_result_discard_defaults(argx_result_t *result);
 
-/* 解析エラーを記録し、メッセージを組み立てる。CLINE_ERROR_INVALID_COMMAND_LINE を返す。
- * メッセージの確保に失敗したら CLINE_ERROR_OUT_OF_MEMORY を返す。 */
-typedef struct cline_result_failure {
-    cline_parse_error_kind_t kind;
-    cline_result_where_t where;
+/* 解析エラーを記録し、メッセージを組み立てる。ARGX_ERROR_INVALID_COMMAND_LINE を返す。
+ * メッセージの確保に失敗したら ARGX_ERROR_OUT_OF_MEMORY を返す。 */
+typedef struct argx_result_failure {
+    argx_parse_error_kind_t kind;
+    argx_result_where_t where;
     const char *value;                      /* NULL でもよい */
-    const cline_command_t *command;
-    const cline_option_t *option;          /* NULL でもよい */
-    const cline_positional_t *positional;  /* NULL でもよい */
-} cline_result_failure_t;
+    const argx_command_t *command;
+    const argx_option_t *option;          /* NULL でもよい */
+    const argx_positional_t *positional;  /* NULL でもよい */
+} argx_result_failure_t;
 
-cline_error_t cline_result_fail(cline_result_t *result, const cline_result_failure_t *failure);
+argx_error_t argx_result_fail(argx_result_t *result, const argx_result_failure_t *failure);
 ```
 
-- `cline_result_create()` は公開の規約の名前の形をしているが、内部関数である。`CLINE_API` を付けず、公開ヘッダに宣言しない。
+- `argx_result_create()` は公開の規約の名前の形をしているが、内部関数である。`ARGX_API` を付けず、公開ヘッダに宣言しない。
 - `record_*` の `option` と `positional` は、並びのコマンドに属するものである（前提条件。Parse と Resolve は、現在のコマンドと並びのコマンドのものしか渡さない）。
-- `cline_result_fail()` は、結果 1 つにつき 1 回だけ呼ぶ。
+- `argx_result_fail()` は、結果 1 つにつき 1 回だけ呼ぶ。
 
 ##### State Management
 
-- State model: 結果は「解析中」「成功」「解析エラー」のどれかである。`cline_result_fail()` が成功を返すと「解析エラー」になり、`Resolve` が成功すると「成功」になる。利用者に渡るのは「成功」と「解析エラー」だけである。
+- State model: 結果は「解析中」「成功」「解析エラー」のどれかである。`argx_result_fail()` が成功を返すと「解析エラー」になり、`Resolve` が成功すると「成功」になる。利用者に渡るのは「成功」と「解析エラー」だけである。
 - Persistence & consistency: 利用者に渡った後、結果は変わらない。読み取りは `const` で、何も書かない。
 - Concurrency strategy: 別々の結果は、同期なしに別々のスレッドから使える。同じ結果の読み取りも、同時に行える。
 
@@ -826,23 +826,23 @@ cline_error_t cline_result_fail(cline_result_t *result, const cline_result_failu
 - argv も、走査の状態も読まない。読むのは、結果の並びと、スキーマの属性と、公開の読み取り（出どころ、個数）だけである。
 - 2 巡する。第 1 巡で必須を検査し、不足が 1 つもないときだけ、第 2 巡で既定値を適用する。
 - 第 1 巡: 並びのコマンドを、ルートから順にたどる。コマンドごとに、オプションを定義した順に見て、必須で出どころが `NONE` の値付きオプションがあれば `MISSING_OPTION` を記録する。次に、位置引数を定義した順に見て、必須または必須の可変個で個数が 0 のものがあれば `MISSING_POSITIONAL` を記録する（9.4）。
-- 第 2 巡: 同じ順にたどり、出どころが `NONE` で既定値を持つ値付きオプションと位置引数に、`cline_result_record_option_value()` と `cline_result_record_positional_value()` で、出どころ `DEFAULT` の値を入れる。
-- 第 2 巡で、既定値の変換が入力の不正を返したら（検証済みのスキーマでは、利用者定義の値型が、同じ入力に違う答えを返したときにだけ起こる）、`INVALID_VALUE` が位置の出どころ `DEFAULT` で記録される。このとき、すでに適用した既定値を `cline_result_discard_defaults()` で取り消してから返す（10.11）。
+- 第 2 巡: 同じ順にたどり、出どころが `NONE` で既定値を持つ値付きオプションと位置引数に、`argx_result_record_option_value()` と `argx_result_record_positional_value()` で、出どころ `DEFAULT` の値を入れる。
+- 第 2 巡で、既定値の変換が入力の不正を返したら（検証済みのスキーマでは、利用者定義の値型が、同じ入力に違う答えを返したときにだけ起こる）、`INVALID_VALUE` が位置の出どころ `DEFAULT` で記録される。このとき、すでに適用した既定値を `argx_result_discard_defaults()` で取り消してから返す（10.11）。
 - 後から環境変数を足すときは、第 1 巡の前に「出どころが `NONE` のものへ、環境の値を入れる」巡を足す。初版では、その巡も、供給元を受け取る引数も作らない（9.10）。
 
 **Contracts**: Service [x]
 
 ```c
 /* src/parse_internal.h */
-cline_error_t cline_resolve(cline_result_t *result);
+argx_error_t argx_resolve(argx_result_t *result);
 ```
 
 - Preconditions: `result` は「解析中」で、解析エラーが記録されていない。
-- Postconditions: `CLINE_ERROR_NONE`（結果は「成功」）、`CLINE_ERROR_INVALID_COMMAND_LINE`（結果は「解析エラー」）、`CLINE_ERROR_OUT_OF_MEMORY` のどれかを返す。
+- Postconditions: `ARGX_ERROR_NONE`（結果は「成功」）、`ARGX_ERROR_INVALID_COMMAND_LINE`（結果は「解析エラー」）、`ARGX_ERROR_OUT_OF_MEMORY` のどれかを返す。
 
 ### 文書
 
-- `docs/parse.md`（新規）: 解析から破棄までの一連の例（スキーマの検証、`cline_parse()`、`--help` を先に見てからエラーを見る順序、値の読み取り、`cline_result_destroy()`）。引数の書き方の一覧（System Flows の表と、値の取り方の表）。解析エラーの種類とメッセージの一覧。サブコマンドごとの `--help`（オプションは定義したコマンドの区間でだけ認識されるので、`tool sub --help` を受け付けるには、サブコマンドにも `--help` を定義する）。寿命の規則（結果はスキーマより先に破棄する。結果がある間はスキーマを変更しない。argv は解析の後に解放してよい）。ワイド文字の入口（すべての環境で提供すること、`wchar_t` が 16 ビットの環境では UTF-16、それより広い環境では UTF-32 として読むこと）と、`wmain` での例（12.6）。前提条件の一覧。
+- `docs/parse.md`（新規）: 解析から破棄までの一連の例（スキーマの検証、`argx_parse()`、`--help` を先に見てからエラーを見る順序、値の読み取り、`argx_result_destroy()`）。引数の書き方の一覧（System Flows の表と、値の取り方の表）。解析エラーの種類とメッセージの一覧。サブコマンドごとの `--help`（オプションは定義したコマンドの区間でだけ認識されるので、`tool sub --help` を受け付けるには、サブコマンドにも `--help` を定義する）。寿命の規則（結果はスキーマより先に破棄する。結果がある間はスキーマを変更しない。argv は解析の後に解放してよい）。ワイド文字の入口（すべての環境で提供すること、`wchar_t` が 16 ビットの環境では UTF-16、それより広い環境では UTF-32 として読むこと）と、`wmain` での例（12.6）。前提条件の一覧。
 - `parse.h` の各関数のコメントに、既存のヘッダと同じ形で、戻り値、所有権、`Preconditions:` を英語で書く（11.13）。
 
 ## Data Models
@@ -852,7 +852,7 @@ cline_error_t cline_resolve(cline_result_t *result);
 - **結果**が集約の根である。引数の複製、選ばれたコマンドの並び、並びのコマンドごとの枠、解析エラーの情報を所有する。スキーマと値型は借りる。
 - 不変条件:
   - 並びは 1 つ以上で、先頭はルートである。隣り合う 2 つは、親と子である。
-  - 並びのコマンドごとに、オプションの枠の個数は `cline_command_option_count()` に、位置引数の枠の個数は `cline_command_positional_count()` に等しい。
+  - 並びのコマンドごとに、オプションの枠の個数は `argx_command_option_count()` に、位置引数の枠の個数は `argx_command_positional_count()` に等しい。
   - 値を持つ枠は、後始末がまだの値を、ちょうど 1 つ（可変個の位置引数では、個数ぶん）持つ。
   - 「成功」の結果には、解析エラーの情報がない。「解析エラー」の結果には、種類とメッセージが必ずあり、出どころが `DEFAULT` の値付きオプションと位置引数はない。
 
@@ -862,43 +862,43 @@ cline_error_t cline_resolve(cline_result_t *result);
 
 ```c
 /* オプション 1 つの枠。 */
-typedef struct cline_option_slot {
-    cline_source_t source;
+typedef struct argx_option_slot {
+    argx_source_t source;
     bool on;        /* フラグ: 指定されたか。否定できるフラグ: 状態 */
     size_t count;   /* カウント */
     void *value;    /* 値付き: 値の領域。値がなければ NULL */
-} cline_option_slot_t;
+} argx_option_slot_t;
 
 /* 位置引数 1 つの枠。 */
-typedef struct cline_positional_slot {
-    cline_source_t source;
-    cline_vec_t values;   /* void * の並び。値の領域へのポインタ */
-} cline_positional_slot_t;
+typedef struct argx_positional_slot {
+    argx_source_t source;
+    argx_vec_t values;   /* void * の並び。値の領域へのポインタ */
+} argx_positional_slot_t;
 
 /* 並びのコマンド 1 つ。 */
-typedef struct cline_result_frame {
-    const cline_command_t *command;
-    cline_option_slot_t *options;          /* 個数が 0 なら NULL */
+typedef struct argx_result_frame {
+    const argx_command_t *command;
+    argx_option_slot_t *options;          /* 個数が 0 なら NULL */
     size_t option_count;
-    cline_positional_slot_t *positionals;  /* 個数が 0 なら NULL */
+    argx_positional_slot_t *positionals;  /* 個数が 0 なら NULL */
     size_t positional_count;
-} cline_result_frame_t;
+} argx_result_frame_t;
 
-struct cline_result {
-    const cline_command_t *root;
+struct argx_result {
+    const argx_command_t *root;
     char **args;               /* 要素の複製。配列と文字列で 1 回の確保。argc が 0 なら NULL */
     size_t arg_count;
     size_t first_invalid_arg;  /* 変換できない並びを含む最初の要素の添字。なければ 0 */
-    cline_vec_t frames;       /* cline_result_frame_t の並び */
-    cline_error_t error;      /* CLINE_ERROR_NONE または CLINE_ERROR_INVALID_COMMAND_LINE */
-    cline_parse_error_kind_t error_kind;
-    cline_source_t error_source;
+    argx_vec_t frames;       /* argx_result_frame_t の並び */
+    argx_error_t error;      /* ARGX_ERROR_NONE または ARGX_ERROR_INVALID_COMMAND_LINE */
+    argx_parse_error_kind_t error_kind;
+    argx_source_t error_source;
     size_t error_index;
     const char *error_argument;   /* args の要素、または NULL */
     const char *error_value;      /* args の中、スキーマの既定値、または NULL */
-    const cline_command_t *error_command;
-    const cline_option_t *error_option;
-    const cline_positional_t *error_positional;
+    const argx_command_t *error_command;
+    const argx_option_t *error_option;
+    const argx_positional_t *error_positional;
     char error_short_name;
     char *error_message;          /* 所有する。なければ NULL */
 };
@@ -906,24 +906,24 @@ struct cline_result {
 
 - 確保の単位: 結果 1、引数の複製 1、並びの配列（伸長）、コマンドごとの枠の配列が最大 2、値 1 つごとに 1、可変個の位置引数の値の並び（伸長）、メッセージ 1。
 - 個数が 0 の配列は確保しない（内部のメモリ関数は、大きさ 0 の要求でアロケータを呼ばず `NULL` を返す。それを失敗と取り違えない）。
-- 引数の複製の大きさ（配列と、すべての文字列の合計）は、足し算のたびに `size_t` の桁あふれを検査し、あふれたら `CLINE_ERROR_OUT_OF_MEMORY` とする。
+- 引数の複製の大きさ（配列と、すべての文字列の合計）は、足し算のたびに `size_t` の桁あふれを検査し、あふれたら `ARGX_ERROR_OUT_OF_MEMORY` とする。
 
 ## Error Handling
 
 ### Error Strategy
 
-- 失敗は `cline_error_t` で返す。プロセスを中断せず、何も出力せず、`errno` を変えない（1.8）。
-- 解析エラーは、最初の 1 つを結果に記録して、走査をやめる（11.1）。記録するのは `cline_result_fail()` の 1 か所である。
+- 失敗は `argx_error_t` で返す。プロセスを中断せず、何も出力せず、`errno` を変えない（1.8）。
+- 解析エラーは、最初の 1 つを結果に記録して、走査をやめる（11.1）。記録するのは `argx_result_fail()` の 1 か所である。
 - 確保の失敗は、結果を破棄して `NULL` を返す。値型の変換関数が返した確保の失敗も同じに扱う（8.5）。
 - プログラムの誤りは前提条件であり、`assert` で検査する（1.7、10.15）。
 
 ### Error Categories and Responses
 
-`CLINE_ERROR_LIST` の末尾に、1 行足す。
+`ARGX_ERROR_LIST` の末尾に、1 行足す。
 
 | エラーコード | 説明文 | 返す場面 |
 |---|---|---|
-| `CLINE_ERROR_INVALID_COMMAND_LINE` | `"invalid command line"` | `cline_parse()`、`cline_parse_wide()`、`cline_result_error()`: 引数がスキーマに合わない |
+| `ARGX_ERROR_INVALID_COMMAND_LINE` | `"invalid command line"` | `argx_parse()`、`argx_parse_wide()`、`argx_result_error()`: 引数がスキーマに合わない |
 
 解析エラーの種類と、見つける場所:
 
@@ -938,11 +938,11 @@ struct cline_result {
 | `UNEXPECTED_POSITIONAL` | Parse: 位置引数の割り当て、終端の後ろ | 6.6, 7.8 |
 | `INVALID_ENCODING` | Parse: 要素を読む直前 | 12.4 |
 
-- 既存の `CLINE_ERROR_INVALID_VALUE` は、値型の変換関数が返すコードのままである。`cline_parse()` は、これを返さない。
+- 既存の `ARGX_ERROR_INVALID_VALUE` は、値型の変換関数が返すコードのままである。`argx_parse()` は、これを返さない。
 
 ## Testing Strategy
 
-テストは、既存の方法（`cline_add_test()`、静的と動的、3 つの OS の CI）で実行する。公開 API のテストは `<cline/cline.h>` だけを取り込む（14.2）。確保を伴うテストは、テスト用アロケータを設定し、終わりに `live` と `violations` が 0 であることを確かめる（13.4）。argv は、`char *argv[] = { "tool", "-v" };` の形の配列で渡す。
+テストは、既存の方法（`argx_add_test()`、静的と動的、3 つの OS の CI）で実行する。公開 API のテストは `<argx/argx.h>` だけを取り込む（14.2）。確保を伴うテストは、テスト用アロケータを設定し、終わりに `live` と `violations` が 0 であることを確かめる（13.4）。argv は、`char *argv[] = { "tool", "-v" };` の形の配列で渡す。
 
 ### 公開 API のテスト（`tests/public/`、静的・動的の両方）
 
@@ -961,24 +961,24 @@ struct cline_result {
 - `parse_value_test.c`:
   - 文字列、整数、浮動小数、選択肢、利用者定義の値型のオプションと位置引数で、型の付いた読み取りと `_value` が同じ値を返すこと（8.1〜8.3、10.5、10.6）。
   - 利用者定義の値型で、変換と後始末の回数を数える: 置き換えのある解析、解析エラーで終わる解析、既定値のある解析のどれでも、結果の破棄の後に、後始末の回数が成功した変換の回数に等しいこと（8.7）。
-  - 利用者定義の値型が、不正、確保の失敗、そのほかのコードを返したとき、それぞれ解析エラー、`CLINE_ERROR_OUT_OF_MEMORY`（`*out` は `NULL`）、解析エラーになること（8.4〜8.6、13.2、13.3）。
+  - 利用者定義の値型が、不正、確保の失敗、そのほかのコードを返したとき、それぞれ解析エラー、`ARGX_ERROR_OUT_OF_MEMORY`（`*out` は `NULL`）、解析エラーになること（8.4〜8.6、13.2、13.3）。
   - 既定値: 指定されないときの値と出どころ `DEFAULT`、指定されたときの `COMMAND_LINE`、既定値のない任意のものの `NONE` と `false`、可変個の 0 個（9.5、9.6、9.9、10.7、10.8）。
   - 指定されないフラグ、カウント、否定できるフラグ（初期の状態がオンとオフ）の値と出どころ（9.7）。
   - 選ばれなかったサブコマンドの定義要素: 必須でもエラーにならず、既定値も入らず、読み取りが表のとおりであること（9.8、10.9）。
 - `parse_error_test.c`:
-  - 解析エラーの情報の表の各行について、戻り値、`cline_result_error()`、種類、`argument`、`value`、`index`、`source`、`command`、`option`、`positional`、`short_name`、メッセージの文面（3.6、3.9、3.10、4.6、4.7、6.6、7.3、9.2、9.3、11.2〜11.11）。
+  - 解析エラーの情報の表の各行について、戻り値、`argx_result_error()`、種類、`argument`、`value`、`index`、`source`、`command`、`option`、`positional`、`short_name`、メッセージの文面（3.6、3.9、3.10、4.6、4.7、6.6、7.3、9.2、9.3、11.2〜11.11）。
   - エラーが 2 つあるとき、argv で先のものが返ること。必須の不足が 2 つ以上あるとき、9.4 の順で最初のものが返ること（9.4、11.1）。
   - エラーのときの結果: `tool --help`（必須の位置引数あり）で、`--help` が `true` と読めること。エラーまでに読んだ値と並びが読めること。既定値が入っていないこと（10.10〜10.12）。
-  - 成功した結果で、エラーの読み取りが `NONE`、`NULL`、0、`'\0'` を返すこと。`cline_result_destroy(NULL)`（13.5）。
+  - 成功した結果で、エラーの読み取りが `NONE`、`NULL`、0、`'\0'` を返すこと。`argx_result_destroy(NULL)`（13.5）。
 - `parse_wide_test.c`:
-  - ASCII と、ASCII 以外（2 バイト、3 バイト、4 バイトになる文字）の引数で、同じ内容の UTF-8 の `cline_parse()` と、値、並び、エラーの情報が一致すること（12.1〜12.3）。
+  - ASCII と、ASCII 以外（2 バイト、3 バイト、4 バイトになる文字）の引数で、同じ内容の UTF-8 の `argx_parse()` と、値、並び、エラーの情報が一致すること（12.1〜12.3）。
   - 変換できない並び: `WCHAR_MAX` で分けて、16 ビットの環境では対になっていないサロゲート、それ以外の環境ではサロゲートの範囲の値と U+10FFFF を超える値。`INVALID_ENCODING` と、その要素の添字。それより前の要素に別のエラーがあれば、そちらが返ること。`argv[0]` の不正は無視されること（12.4）。
-  - `cline_parse()` に、UTF-8 として不正なバイトを含む引数を渡しても、そのまま値になること（12.5）。
-- `parse_failure_test.c`: `docs/conventions.md` の「確保の各回を順に失敗させる」の形で書く（13.9）。どの回の失敗でも、`CLINE_ERROR_OUT_OF_MEMORY` が返り、`*out` が `NULL` で、`live` と `violations` が 0 で、利用者定義の値型の後始末の回数が変換の成功の回数に等しく、その後に同じスキーマで解析が成功することを確かめる。操作は次の 4 つである。
+  - `argx_parse()` に、UTF-8 として不正なバイトを含む引数を渡しても、そのまま値になること（12.5）。
+- `parse_failure_test.c`: `docs/conventions.md` の「確保の各回を順に失敗させる」の形で書く（13.9）。どの回の失敗でも、`ARGX_ERROR_OUT_OF_MEMORY` が返り、`*out` が `NULL` で、`live` と `violations` が 0 で、利用者定義の値型の後始末の回数が変換の成功の回数に等しく、その後に同じスキーマで解析が成功することを確かめる。操作は次の 4 つである。
   - サブコマンド 2 段、4 種類のオプション（置き換えを含む）、可変個の位置引数、既定値を持つ解析（成功する入力）。
   - 解析エラーで終わる解析（メッセージの確保を含む）。
   - 既定値の適用を含む解析。
-  - `cline_parse_wide()` での解析。
+  - `argx_parse_wide()` での解析。
 
 ### 内部関数のテスト（`tests/internal/`）
 
@@ -989,8 +989,8 @@ struct cline_result {
 
 ### 検査（既存）
 
-- `cline.allocations`: 新しいソースに、標準の確保関数の直接呼び出しがないこと（13.1）。
-- `cline.exports`（動的の構成）: `parse.h` の `CLINE_API` の付いた関数だけが export され、`cline_lex_*`、`cline_utf8_*`、`cline_message_*`、`cline_resolve`、内部の `cline_result_*` が export されないこと。
+- `argx.allocations`: 新しいソースに、標準の確保関数の直接呼び出しがないこと（13.1）。
+- `argx.exports`（動的の構成）: `parse.h` の `ARGX_API` の付いた関数だけが export され、`argx_lex_*`、`argx_utf8_*`、`argx_message_*`、`argx_resolve`、内部の `argx_result_*` が export されないこと。
 - `error_test.c`（既存）: 足したエラーコードの説明文が、空でなく、固有であること（11.11）。
 
 ### 自動のテストで確かめないもの

@@ -1,18 +1,18 @@
-# ClineVersionHeader.cmake - rewrites the version in a version header in the
-# form of include/cline/version.h.
+# ArgXVersionHeader.cmake - rewrites the version in a version header in the
+# form of include/argx/version.h.
 #
 # The release scripts include this module and run with "cmake -P". It needs
 # nothing that project() sets, and touches no network, git or GitHub.
 #
-#   cline_version_header_render(<text> <major> <minor> <patch> <prerelease> <out-var>)
+#   argx_version_header_render(<text> <major> <minor> <patch> <prerelease> <out-var>)
 #
 # Sets <out-var> to <text>, the text of a version header, with the values of
 # its four version macros replaced:
 #
-#   #define CLINE_VERSION_MAJOR <major>
-#   #define CLINE_VERSION_MINOR <minor>
-#   #define CLINE_VERSION_PATCH <patch>
-#   #define CLINE_VERSION_PRERELEASE "<prerelease>"
+#   #define ARGX_VERSION_MAJOR <major>
+#   #define ARGX_VERSION_MINOR <minor>
+#   #define ARGX_VERSION_PATCH <patch>
+#   #define ARGX_VERSION_PRERELEASE "<prerelease>"
 #
 # <prerelease> is the pre-release identifiers without the leading hyphen
 # ("rc.1"), or "" for a release. Only the value on each of the four lines
@@ -20,7 +20,7 @@
 # around the value, a comment after it and the line endings (LF or CRLF).
 #
 # A value line is a line that starts, after optional blanks, with
-# "#define CLINE_VERSION_<PART>" (blanks are allowed around "#") followed by a
+# "#define ARGX_VERSION_<PART>" (blanks are allowed around "#") followed by a
 # blank or the end of the line, and that does not start inside a block
 # comment. Lines inside a comment, such as " * #define ..." or
 # "// #define ...", are not value lines. The value is the token after the
@@ -29,18 +29,18 @@
 #
 # Stops with a FATAL_ERROR that starts with "error: " and holds every reason
 # when the version <major>.<minor>.<patch>[-<prerelease>] is not valid for
-# ClineSemver.cmake, or when the value line of a macro is not found exactly
+# ArgXSemver.cmake, or when the value line of a macro is not found exactly
 # once or has no value of its form. The text is then not rewritten at all.
 #
-#   cline_version_header_write(<header-path> <major> <minor> <patch> <prerelease>)
+#   argx_version_header_write(<header-path> <major> <minor> <patch> <prerelease>)
 #
 # Reads the header at <header-path>, rewrites it with
-# cline_version_header_render() and writes it back. Then reads it again with
-# cline_read_version() (cmake/ClineVersion.cmake) and stops with a
+# argx_version_header_render() and writes it back. Then reads it again with
+# argx_read_version() (cmake/ArgXVersion.cmake) and stops with a
 # FATAL_ERROR unless it gives the version just written. The file is not
 # written when the rewrite fails. A relative <header-path> is taken from
 # CMAKE_CURRENT_SOURCE_DIR. The file is read and written byte for byte with
-# ClineReadBytes.cmake, since file(READ) drops the CR of a CRLF line ending
+# ArgXReadBytes.cmake, since file(READ) drops the CR of a CRLF line ending
 # and, on Windows, file(WRITE) turns LF into CRLF; so its line endings are
 # kept too. On Windows, a header that does not end with a line ending cannot
 # be written exactly, and stops the rewrite with a FATAL_ERROR before the file
@@ -48,9 +48,9 @@
 
 include_guard(GLOBAL)
 
-include("${CMAKE_CURRENT_LIST_DIR}/ClineSemver.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/ClineReadBytes.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/ClineVersion.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/ArgXSemver.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/ArgXReadBytes.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/ArgXVersion.cmake")
 
 # The functions keep the policies in effect here, whatever the caller has set
 # (a "cmake -P" script may have set none).
@@ -60,7 +60,7 @@ cmake_policy(VERSION 3.21)
 # Sets <out-var> to TRUE when the end of <line> is inside a block comment,
 # given whether its start is (<in-comment>). A "//" outside a block comment
 # ends the line for this purpose.
-function(_cline_version_header_comment_state line in_comment out_var)
+function(_argx_version_header_comment_state line in_comment out_var)
     set(rest "${line}")
     set(state ${in_comment})
     while(TRUE)
@@ -86,7 +86,7 @@ function(_cline_version_header_comment_state line in_comment out_var)
     set(${out_var} ${state} PARENT_SCOPE)
 endfunction()
 
-function(cline_version_header_render text major minor patch prerelease out_var)
+function(argx_version_header_render text major minor patch prerelease out_var)
     # The version must be valid before anything is rewritten. Each number is
     # checked on its own, so that a number such as "1.2" is not taken for two.
     set(problems "")
@@ -100,7 +100,7 @@ function(cline_version_header_render text major minor patch prerelease out_var)
         if(NOT prerelease STREQUAL "")
             string(APPEND version "-${prerelease}")
         endif()
-        cline_semver_parse("${version}" semver)
+        argx_semver_parse("${version}" semver)
         if(NOT semver_VALID)
             set(problems " ${semver_ERROR}")
         endif()
@@ -137,12 +137,12 @@ function(cline_version_header_render text major minor patch prerelease out_var)
         endif()
 
         if(NOT in_comment AND line MATCHES
-                "^[ \t]*#[ \t]*define[ \t]+CLINE_VERSION_(MAJOR|MINOR|PATCH|PRERELEASE)([ \t\r]|$)")
+                "^[ \t]*#[ \t]*define[ \t]+ARGX_VERSION_(MAJOR|MINOR|PATCH|PRERELEASE)([ \t\r]|$)")
             set(part "${CMAKE_MATCH_1}")
             math(EXPR ${part}_count "${${part}_count} + 1")
 
             # The head is the line up to the end of the macro name.
-            string(REGEX MATCH "^[ \t]*#[ \t]*define[ \t]+CLINE_VERSION_[A-Z]+" head "${line}")
+            string(REGEX MATCH "^[ \t]*#[ \t]*define[ \t]+ARGX_VERSION_[A-Z]+" head "${line}")
             string(LENGTH "${head}" head_length)
             string(SUBSTRING "${line}" ${head_length} -1 tail)
             if(part STREQUAL "PRERELEASE")
@@ -162,12 +162,12 @@ function(cline_version_header_render text major minor patch prerelease out_var)
             endif()
         endif()
 
-        _cline_version_header_comment_state("${line}" ${in_comment} in_comment)
+        _argx_version_header_comment_state("${line}" ${in_comment} in_comment)
         string(APPEND result "${line}${ending}")
     endwhile()
 
     foreach(part IN ITEMS MAJOR MINOR PATCH PRERELEASE)
-        set(macro "CLINE_VERSION_${part}")
+        set(macro "ARGX_VERSION_${part}")
         if(${part}_count EQUAL 0)
             string(APPEND problems "\n  ${macro} was not found.")
         elseif(${part}_count GREATER 1)
@@ -188,26 +188,26 @@ function(cline_version_header_render text major minor patch prerelease out_var)
             "error: cannot rewrite the version header:${problems}\n"
             "Each macro must be defined exactly once, on one line that is not in a comment, "
             "in one of the forms\n"
-            "  #define CLINE_VERSION_<PART> <integer>\n"
-            "  #define CLINE_VERSION_PRERELEASE \"<identifiers>\"")
+            "  #define ARGX_VERSION_<PART> <integer>\n"
+            "  #define ARGX_VERSION_PRERELEASE \"<identifiers>\"")
     endif()
 
     set(${out_var} "${result}" PARENT_SCOPE)
 endfunction()
 
-function(cline_version_header_write header major minor patch prerelease)
+function(argx_version_header_write header major minor patch prerelease)
     get_filename_component(path "${header}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
     if(NOT EXISTS "${path}" OR IS_DIRECTORY "${path}")
         message(FATAL_ERROR
             "error: cannot rewrite the version header ${path}: the file does not exist.")
     endif()
 
-    cline_read_bytes("${path}" "the version header" text)
-    cline_version_header_render("${text}" "${major}" "${minor}" "${patch}" "${prerelease}" result)
-    cline_write_bytes("${path}" "${result}" "the version header")
+    argx_read_bytes("${path}" "the version header" text)
+    argx_version_header_render("${text}" "${major}" "${minor}" "${patch}" "${prerelease}" result)
+    argx_write_bytes("${path}" "${result}" "the version header")
 
     # Read the header back as the build reads it.
-    cline_read_version("${path}" version read_prerelease)
+    argx_read_version("${path}" version read_prerelease)
     if(NOT version STREQUAL "${major}.${minor}.${patch}" OR NOT read_prerelease STREQUAL prerelease)
         message(FATAL_ERROR
             "error: the version header ${path} was rewritten, but it reads as "

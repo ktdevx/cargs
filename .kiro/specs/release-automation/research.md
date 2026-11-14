@@ -4,7 +4,7 @@
 - **Feature**: `release-automation`
 - **Discovery Scope**: Extension（build-foundation のバージョンの仕組みと CI を拡張し、リリースのワークフローを新設する。GitHub Actions の制約の確認を含むため、light discovery に外部の確認を足した）
 - **Key Findings**:
-  - バージョンの読み取り（`cmake/ClineVersion.cmake`）は既に `cmake -P` からも呼べる作りで、ヘッダの正規の書式の検査を持つ。リリースの処理を CMake のスクリプトで書けば、この読み取りをそのまま再利用でき、テストを CTest に登録するだけで今ある CI のジョブの中で走る（新しいジョブが要らない）。
+  - バージョンの読み取り（`cmake/ArgXVersion.cmake`）は既に `cmake -P` からも呼べる作りで、ヘッダの正規の書式の検査を持つ。リリースの処理を CMake のスクリプトで書けば、この読み取りをそのまま再利用でき、テストを CTest に登録するだけで今ある CI のジョブの中で走る（新しいジョブが要らない）。
   - consumer check（`tests/consumer/CMakeLists.txt`）は、パッケージが知らせるバージョンを `^[0-9]+\.[0-9]+\.[0-9]+$` で検査している。pkg-config の `Version` にプレリリースを含めると、プレリリースのリリース PR の CI でこの検査が落ちる。consumer check の版の比較を、プレリリースの識別子も比べる形に広げる必要がある。
   - `GITHUB_TOKEN` で作った PR では `pull_request` の CI が起動しないが、`workflow_dispatch` は `GITHUB_TOKEN` から起動できる。dispatch した実行のチェックは、ブランチの先頭のコミット（＝リリース PR の head）に付く。これが required check を満たすことは公式文書で明言されていないので、通し確認で確かめ、だめな場合の戻し方（PR を閉じて開き直す、CI を手で起動する）を手順書に書く。
 
@@ -12,11 +12,11 @@
 
 ### 既存のバージョンの仕組み
 - **Context**: プレリリースをどこに持つか。
-- **Sources Consulted**: `include/cline/version.h`、`cmake/ClineVersion.cmake`、`CMakeLists.txt`、`src/CMakeLists.txt`、`cmake/ClineInstall.cmake`、`cmake/cline.pc.in`、`cmake/CLineConfig.cmake.in`、`tests/consumer/*`、`tests/public/version_test.c`
+- **Sources Consulted**: `include/argx/version.h`、`cmake/ArgXVersion.cmake`、`CMakeLists.txt`、`src/CMakeLists.txt`、`cmake/ArgXInstall.cmake`、`cmake/argx.pc.in`、`cmake/ArgXConfig.cmake.in`、`tests/consumer/*`、`tests/public/version_test.c`
 - **Findings**:
-  - `cline_read_version(<header> <out-var>)` は 3 つのマクロを 1 行ずつ読み、コメントを除いてから正規表現で照合する。引数が 2 つでないと失敗する。
+  - `argx_read_version(<header> <out-var>)` は 3 つのマクロを 1 行ずつ読み、コメントを除いてから正規表現で照合する。引数が 2 つでないと失敗する。
   - `project(VERSION)`、SOVERSION（`src/CMakeLists.txt`）、`write_basic_package_version_file`（`SameMinorVersion`/`SameMajorVersion`）、pkg-config の `Version`（`@PROJECT_VERSION@`）は、すべて `PROJECT_VERSION` から来る。
-  - `CLineConfig.cmake.in` は `configure_package_config_file` で作られ、`@VAR@` の置換が使える。
+  - `ArgXConfig.cmake.in` は `configure_package_config_file` で作られ、`@VAR@` の置換が使える。
   - consumer check の `main.c` は、パッケージのバージョンを `CONSUMER_PACKAGE_VERSION_MAJOR/MINOR/PATCH` で受け取り、ヘッダのマクロと比べる。
 - **Implications**: 数字の部分（`PROJECT_VERSION`）はそのまま残し、完全な文字列を別の変数で pkg-config と CMake のパッケージに渡す。互換判定と SOVERSION は変えない。consumer check にプレリリースの比較を足す。
 
@@ -45,7 +45,7 @@
 
 | Option | Description | Strengths | Risks / Limitations | Notes |
 |--------|-------------|-----------|---------------------|-------|
-| CMake スクリプト（`cmake -P`）＋ `gh` CLI | 検証と書き換えを CMake スクリプトに、GitHub の操作をワークフローの `gh`/`git` に分ける | `ClineVersion.cmake` を再利用。テストが CTest で 3 OS の既存ジョブの中で走る。開発者は CMake だけで手元で試せる | CMake の文字列処理は冗長 | 採用 |
+| CMake スクリプト（`cmake -P`）＋ `gh` CLI | 検証と書き換えを CMake スクリプトに、GitHub の操作をワークフローの `gh`/`git` に分ける | `ArgXVersion.cmake` を再利用。テストが CTest で 3 OS の既存ジョブの中で走る。開発者は CMake だけで手元で試せる | CMake の文字列処理は冗長 | 採用 |
 | Python スクリプト | 同じ分け方を Python で書く | 文字列処理が楽 | テストを走らせるには CI のジョブの中身を変えるか新しいジョブが要る（どちらも範囲外）。バージョンの読み取りを二重に持つ | 不採用 |
 | release-please などの既製ツール | Conventional Commits から CHANGELOG を作る | 実装が少ない | roadmap で不採用と決定済み（Keep a Changelog の手書きと合わない） | 不採用 |
 | GitHub App のトークンで PR を作る | App のトークンなら `pull_request` の CI が起動する | CI が通常の PR と同じに走る | シークレットと App の登録が要る | 不採用（手順書に代替として触れない。追加のシークレットを要さない方針） |
@@ -72,16 +72,16 @@
 ### Decision: プレリリースは文字列のマクロ 1 つで持ち、公開関数は足さない
 - **Context**: 2.1〜2.6。brief は「完全な文字列を返す関数を足すか」を設計に委ねた。
 - **Alternatives Considered**:
-  1. `CLINE_VERSION_PRERELEASE "rc.1"`（ハイフンなし）だけを足す。
-  2. 1 に加えて `cline_version_string()` を足す。
+  1. `ARGX_VERSION_PRERELEASE "rc.1"`（ハイフンなし）だけを足す。
+  2. 1 に加えて `argx_version_string()` を足す。
 - **Selected Approach**: 1。
-- **Rationale**: どの要件も実行時の完全な文字列を求めていない。関数を足すと、公開 API と export の検査（`cline.exports`）の対象が増え、文字列を作るための可変の状態か CMake からの定義の注入が要る。プレリリースは支援しない試験用の版なので、実行時に見分ける必要は薄い。必要になれば後から非破壊で足せる。
+- **Rationale**: どの要件も実行時の完全な文字列を求めていない。関数を足すと、公開 API と export の検査（`argx.exports`）の対象が増え、文字列を作るための可変の状態か CMake からの定義の注入が要る。プレリリースは支援しない試験用の版なので、実行時に見分ける必要は薄い。必要になれば後から非破壊で足せる。
 - **Trade-offs**: 実行時にリンクしたライブラリがプレリリースかどうかは分からない。
 
 ### Decision: 完全なバージョンは CMake のパッケージでは別の変数で知らせる
 - **Context**: 2.3〜2.5。`write_basic_package_version_file` に `0.2.0-rc.1` を渡すと、互換判定の正規表現と比較の挙動が CMake の版に依存して不安定になる。
-- **Selected Approach**: `CLine_VERSION`（互換判定）は数字のまま。`CLineConfig.cmake` で `CLine_VERSION_PRERELEASE` と `CLine_VERSION_FULL` を設定する。pkg-config の `Version` は完全な文字列にする。
-- **Trade-offs**: `find_package(CLine 0.2)` は `0.2.0-rc.1` も見つける。バージョン方針の文書に注意として書く。
+- **Selected Approach**: `ArgX_VERSION`（互換判定）は数字のまま。`ArgXConfig.cmake` で `ArgX_VERSION_PRERELEASE` と `ArgX_VERSION_FULL` を設定する。pkg-config の `Version` は完全な文字列にする。
+- **Trade-offs**: `find_package(ArgX 0.2)` は `0.2.0-rc.1` も見つける。バージョン方針の文書に注意として書く。
 
 ### Decision: マージの検出はブランチ名・同じリポジトリ・マージ済みの 3 つで行い、ヘッダと CHANGELOG で裏付ける
 - **Context**: 6.1、6.7、6.8。
@@ -98,15 +98,15 @@
 - **Selected Approach**: CHANGELOG の作成時、0.1.0 に載せる内容（最初の公開で利用できる機能）を `Unreleased` に書く。比較リンクは、タグがまだないので `[Unreleased]: <repo>/commits/main` とする。最初のリリースで、ワークフローが `[0.1.0]: <repo>/releases/tag/v0.1.0` と `[Unreleased]: <repo>/compare/v0.1.0...HEAD` に書き換える。ヘッダは既に 0.1.0 なので、5.5 により同じバージョンを受け付ける。
 
 ### Generalization
-- 「バージョンを比べる」処理（5.3、5.4、6.5 の直前のプレリリースの判定）は、SemVer の優先順位の比較 1 つに一般化した（`cline_semver_compare`）。
-- 「CHANGELOG の節を読む」処理（5.7 の空の判定、4.3 の移動、6.3 のノート、6.8 の照合）は、節の一覧を作る 1 つの解析（`cline_changelog_parse`）に一般化した。
+- 「バージョンを比べる」処理（5.3、5.4、6.5 の直前のプレリリースの判定）は、SemVer の優先順位の比較 1 つに一般化した（`argx_semver_compare`）。
+- 「CHANGELOG の節を読む」処理（5.7 の空の判定、4.3 の移動、6.3 のノート、6.8 の照合）は、節の一覧を作る 1 つの解析（`argx_changelog_parse`）に一般化した。
 
 ### Build vs. Adopt
 - SemVer の比較と Keep a Changelog の解析は、CMake で使える既製のものがないので自作する。範囲は要件が求める部分（2.0.0 の書式と優先順位、1.1.0 の見出しとリンク）に限る。
 - GitHub の操作は、ランナーに入っている `gh` CLI と `git` を使う。サードパーティのアクションは `actions/checkout`（既存）だけにする。
 
 ### Simplification
-- 公開関数 `cline_version_string()` は足さない（上記）。
+- 公開関数 `argx_version_string()` は足さない（上記）。
 - リリース PR の本文の生成は、ワークフローの中のヒアドキュメントで足りる。専用のスクリプトにしない。
 - 集約ジョブの判定は数行の bash で足りる。スクリプトにしない（判定の入力はジョブの結果だけで、通し確認で確かめる）。
 

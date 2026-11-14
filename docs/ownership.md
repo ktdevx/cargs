@@ -1,8 +1,8 @@
 # Ownership and Lifetime
 
-This document defines who allocates memory and who frees it, and how long the things you pass and the things you get back stay valid. Every public function of CLine follows these rules. It is written for you as a user of the library: it tells you what you free yourself and what you must not free.
+This document defines who allocates memory and who frees it, and how long the things you pass and the things you get back stay valid. Every public function of ArgX follows these rules. It is written for you as a user of the library: it tells you what you free yourself and what you must not free.
 
-This document covers the rules themselves and how they apply to schemas, parsing, results and help. How to define a schema, parse argv and generate help is in [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md). The detailed description and the preconditions of each function are in the comments of the public headers under `include/cline/`. How the library code implements these rules is in [Development Conventions](conventions.md#applying-the-ownership-rules).
+This document covers the rules themselves and how they apply to schemas, parsing, results and help. How to define a schema, parse argv and generate help is in [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md). The detailed description and the preconditions of each function are in the comments of the public headers under `include/argx/`. How the library code implements these rules is in [Development Conventions](conventions.md#applying-the-ownership-rules).
 
 Contents:
 
@@ -20,7 +20,7 @@ Contents:
 - [Help](#help)
 - [Allocator and error functions](#allocator-and-error-functions)
 
-In the examples of this document, names that start with `cline_example_` are placeholders used for explanation; they do not exist in the library. The other names (`cline_set_allocator`, `cline_error_message`, `cline_strdup` and so on) are real.
+In the examples of this document, names that start with `argx_example_` are placeholders used for explanation; they do not exist in the library. The other names (`argx_set_allocator`, `argx_error_message`, `argx_strdup` and so on) are real.
 
 ## The rules at a glance
 
@@ -32,7 +32,7 @@ In the examples of this document, names that start with `cline_example_` are pla
 | 4 | `NULL` | `NULL` passed to `destroy` does nothing. Elsewhere you cannot pass it unless the comment allows it |
 | 5 | Allocator | There is one for the whole library. Set it while no object exists |
 | 6 | Whoever allocates frees | The library frees the library's memory, and you free your memory |
-| 7 | How failures are returned | Functions return `cline_error_t`. On failure, the outputs are left in a defined state, no memory leaks, and existing objects do not change |
+| 7 | How failures are returned | Functions return `argx_error_t`. On failure, the outputs are left in a defined state, no memory leaks, and existing objects do not change |
 | 8 | Threads | Different objects can be used at the same time. You synchronize the use of the same object |
 
 ## Runtime failures and programming errors
@@ -41,7 +41,7 @@ The rules divide failures into two kinds. Every rule assumes this division.
 
 | Kind | What it is | Examples | Handling |
 |---|---|---|---|
-| Runtime failure | Something that can happen even in a correct program | Memory allocation failure. Schema definition errors that come from the content of strings or from the relation between definitions (the table below). Errors in the input of the user of your program, and so on | Returned as `cline_error_t` ([rule 7](#7-how-failures-are-returned)) |
+| Runtime failure | Something that can happen even in a correct program | Memory allocation failure. Schema definition errors that come from the content of strings or from the relation between definitions (the table below). Errors in the input of the user of your program, and so on | Returned as `argx_error_t` ([rule 7](#7-how-failures-are-returned)) |
 | Programming error | Something that always happens until the calling code is fixed, and that cannot be handled at run time | `NULL` for a required argument, an allocator with a missing function, an index out of range, use of an object that was already destroyed | A precondition of the function. No error code is assigned |
 
 Programming errors get no error code because the caller cannot handle them at run time, and making the caller write code that checks for them would be pointless.
@@ -50,8 +50,8 @@ Schema definition errors are divided into these two kinds by where they come fro
 
 | Where the error comes from | Examples | Handling |
 |---|---|---|
-| The content of a string | A name that breaks the naming rules, an empty name, a default value or value that the value type cannot convert | Runtime failure. Returned as `cline_error_t` |
-| The relation between definitions | A name conflict within the same command, positionals used together with subcommands, required used together with a default value, a contradiction in the order of positionals, setting an attribute on a kind of definition element it does not apply to, a list of choices that is empty or has duplicates | Runtime failure. Returned as `cline_error_t` |
+| The content of a string | A name that breaks the naming rules, an empty name, a default value or value that the value type cannot convert | Runtime failure. Returned as `argx_error_t` |
+| The relation between definitions | A name conflict within the same command, positionals used together with subcommands, required used together with a default value, a contradiction in the order of positionals, setting an attribute on a kind of definition element it does not apply to, a list of choices that is empty or has duplicates | Runtime failure. Returned as `argx_error_t` |
 | The form of an argument | `NULL` for a required argument, an index out of range, a value that is not in the enumeration | Programming error. Stays a precondition |
 
 Most definition errors are also fixed by fixing the calling code. Even so, the errors that come from the content of strings and from the relation between definitions are error codes, for these reasons:
@@ -81,16 +81,16 @@ What the library guarantees:
 
 ## 1. Creation and destruction
 
-- A function that creates an object has this form. It can fail, so it returns `cline_error_t` and returns the object through an output argument.
+- A function that creates an object has this form. It can fail, so it returns `argx_error_t` and returns the object through an output argument.
 
   ```c
-  cline_error_t cline_<type>_create(…, cline_<type>_t **out);
+  argx_error_t argx_<type>_create(…, argx_<type>_t **out);
   ```
 
 - A function that destroys an object has this form. It does not fail.
 
   ```c
-  void cline_<type>_destroy(cline_<type>_t *object);
+  void argx_<type>_destroy(argx_<type>_t *object);
   ```
 
 - Destroy an object you got from `create` only with the matching `destroy`.
@@ -100,20 +100,20 @@ What the library guarantees:
 How you write it (an example with placeholder names):
 
 ```c
-cline_example_t *example;
-cline_error_t error;
+argx_example_t *example;
+argx_error_t error;
 
-error = cline_example_create("name", &example);
-if (error != CLINE_ERROR_NONE)
+error = argx_example_create("name", &example);
+if (error != ARGX_ERROR_NONE)
 {
     /* example is NULL. There is nothing to destroy. */
-    fprintf(stderr, "%s\n", cline_error_message(error));
+    fprintf(stderr, "%s\n", argx_error_message(error));
     return 1;
 }
 
 /* Use example. */
 
-cline_example_destroy(example);
+argx_example_destroy(example);
 ```
 
 ## 2. Strings you pass
@@ -127,43 +127,43 @@ Duplicating is the default so that you do not have to think about the lifetime o
 char name[32];
 
 snprintf(name, sizeof(name), "item-%d", 1);
-error = cline_example_create(name, &example);   /* Placeholder name. Duplicates name */
+error = argx_example_create(name, &example);   /* Placeholder name. Duplicates name */
 /* From here on, overwriting name does not affect example. */
 ```
 
-Inside the library, strings are duplicated with `cline_strdup`, an internal function.
+Inside the library, strings are duplicated with `argx_strdup`, an internal function.
 
 ## 3. Strings and objects the library returns
 
 - The strings and handles that a function returns are owned by the object that returned them. They stay valid until that object is destroyed. You do not free them.
 - If the comment of a function states a shorter period, follow it.
-- The string of `cline_error_message()` stays valid until the program ends.
+- The string of `argx_error_message()` stays valid until the program ends.
 - If one object refers to another (for example, a result refers to a schema), do not destroy the referred object first. The comment of the function states this order.
 
 ```c
-const char *name = cline_example_name(example);   /* Placeholder name. Owned by example */
+const char *name = argx_example_name(example);   /* Placeholder name. Owned by example */
 
-cline_example_destroy(example);
+argx_example_destroy(example);
 /* From here on, name cannot be used. Do not write free(name) either. */
 ```
 
 ## 4. NULL
 
 - Passing `NULL` to `destroy` does nothing. When cleaning up after a failure, you can call `destroy` without checking whether the object was created.
-- `NULL` for `cline_set_allocator()` means going back to the default allocator.
+- `NULL` for `argx_set_allocator()` means going back to the default allocator.
 - For any other argument, you cannot pass `NULL` unless the comment of the function says "may be `NULL`". Passing it breaks a precondition ([Runtime failures and programming errors](#runtime-failures-and-programming-errors)). No error code is returned.
 
 ## 5. Allocator
 
 - There is one allocator for the whole library. Public functions do not take an allocator as an argument. If you do not set one, the standard `malloc`, `realloc`, `calloc` and `free` are used.
-- Call `cline_set_allocator()` while no object of the library exists and no other thread is calling the library. Usually you call it once, at the start of the program.
-- The library keeps a copy of the `cline_allocator_t` you pass. Once the call returns, you may discard the structure.
+- Call `argx_set_allocator()` while no object of the library exists and no other thread is calling the library. Usually you call it once, at the start of the program.
+- The library keeps a copy of the `argx_allocator_t` you pass. Once the call returns, you may discard the structure.
 - Keep the four functions you set valid until you set a different allocator, and until every object allocated with that allocator has been destroyed.
 
 The time when you may set it is limited so that memory allocated with one allocator is never freed with another. If you change the setting while objects exist, memory from the old allocator is freed with the new one. The library does not detect this mistake. It does not synchronize changes to the setting either.
 
 ```c
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 /* Your functions. Give them the same form as the standard malloc, realloc, calloc and free. */
 void *my_malloc(size_t size);
@@ -174,22 +174,22 @@ void my_free(void *ptr);
 int main(void)
 {
     /* The order of the fields is malloc_fn, realloc_fn, calloc_fn, free_fn. */
-    cline_allocator_t allocator = { my_malloc, my_realloc, my_calloc, my_free };
+    argx_allocator_t allocator = { my_malloc, my_realloc, my_calloc, my_free };
 
     /* Set it once, before calling any other function of the library. */
-    cline_set_allocator(&allocator);
+    argx_set_allocator(&allocator);
 
     /* Use the library from here. Destroy every object you create. */
 
     /* To go back to the default, pass NULL after destroying every object. */
-    cline_set_allocator(NULL);
+    argx_set_allocator(NULL);
     return 0;
 }
 ```
 
-That none of the four functions is `NULL` is a precondition of `cline_set_allocator()`. You cannot pass a structure that was only initialized with zeros.
+That none of the four functions is `NULL` is a precondition of `argx_set_allocator()`. You cannot pass a structure that was only initialized with zeros.
 
-What your functions must do (the full text is in the comments of `include/cline/alloc.h`):
+What your functions must do (the full text is in the comments of `include/argx/alloc.h`):
 
 - `malloc_fn`, `calloc_fn` and `realloc_fn` return memory that is aligned for an object of any type. They return `NULL` when they fail.
 - `calloc_fn` returns memory with all of its `count * size` bytes set to 0.
@@ -211,11 +211,11 @@ The library's memory belongs to the allocator that is set. Your `free` does not 
 
 ## 7. How failures are returned
 
-- A public function that can fail at run time returns `cline_error_t`, and returns its result through an output argument. Only `CLINE_ERROR_NONE` means success.
-- A function that cannot fail at run time (`destroy`, simple getters, `cline_set_allocator()`) returns its value directly, or returns nothing. Breaking a precondition does not count as a failure.
+- A public function that can fail at run time returns `argx_error_t`, and returns its result through an output argument. Only `ARGX_ERROR_NONE` means success.
+- A function that cannot fail at run time (`destroy`, simple getters, `argx_set_allocator()`) returns its value directly, or returns nothing. Breaking a precondition does not count as a failure.
 - On failure, an output that receives a created object or string becomes `NULL`. Other outputs are not changed.
-  - The exception is when a parsing function (`cline_parse`, `cline_parse_wide`) returns a parse error. A result is written to the output, and you destroy it ([Schemas, argv and results](#schemas-argv-and-results)). A function that is an exception states in its comment what happens to the output for each return value.
-  - The other exception is when a function that generates help into a buffer (`cline_help_format`) fails to allocate. Your buffer becomes an empty string, and the length output becomes 0 ([Help](#help)).
+  - The exception is when a parsing function (`argx_parse`, `argx_parse_wide`) returns a parse error. A result is written to the output, and you destroy it ([Schemas, argv and results](#schemas-argv-and-results)). A function that is an exception states in its comment what happens to the output for each return value.
+  - The other exception is when a function that generates help into a buffer (`argx_help_format`) fails to allocate. Your buffer becomes an empty string, and the length output becomes 0 ([Help](#help)).
 - On failure, all memory allocated during that call is freed before the function returns.
 - When a function that changes an existing object fails, the object keeps the same content as before the call. A function that cannot do this at least keeps the object in a state where it can be used and destroyed, and states the remaining differences in its comment.
 
@@ -226,11 +226,11 @@ From your side, a failure never leaves more to clean up. After a failed `create`
 - The only mutable global state of the library is the allocator that is set.
 - While the setting does not change, calls on different objects can be made at the same time without synchronization, provided that your allocator can handle calls at the same time.
 - You synchronize calls on the same object made at the same time.
-- Call `cline_set_allocator()` while no other thread is calling the library ([rule 5](#5-allocator)).
+- Call `argx_set_allocator()` while no other thread is calling the library ([rule 5](#5-allocator)).
 
 ## Schemas, argv and results
 
-The following table applies the rules to common questions about schemas, argv, results, and the lifetime of value types, including the result that parsing (`cline_parse`, `cline_parse_wide`) gives you.
+The following table applies the rules to common questions about schemas, argv, results, and the lifetime of value types, including the result that parsing (`argx_parse`, `argx_parse_wide`) gives you.
 
 | Question | How the rules apply |
 |---|---|
@@ -238,23 +238,23 @@ The following table applies the rules to common questions about schemas, argv, r
 | Does the result duplicate the strings of argv? | Yes (the default of [rule 2](#2-strings-you-pass)). The result keeps a duplicate of every string of argv. For a wide-character argv, it keeps them converted to UTF-8. Once the parse call returns, you may change or free both the argv array and its strings. Strings you read from the result stay valid until the result is destroyed ([rule 3](#3-strings-and-objects-the-library-returns)) |
 | May a result outlive its schema? | No. A result refers to the schema and the value types, so destroy the result first ([rule 3](#3-strings-and-objects-the-library-returns)). The order of destruction is result, schema, value types |
 | May I change the schema while a result exists? | No. A result refers to the commands, options and positionals of the schema. While even one result of that schema is left, do not add definition elements to the schema, do not set attributes, and do not destroy the schema or the value types. To change it, destroy all results first. The library does not detect this mistake |
-| What happens to the output on a parse error? | A result is written. On a parse error (`CLINE_ERROR_INVALID_COMMAND_LINE`), a result is written to `*out`, and you destroy it with `cline_result_destroy`. You read the kind of error, the message, and what was read up to the error from that result. This is an exception to "on failure, the output becomes `NULL`" of [rule 7](#7-how-failures-are-returned), and the comment of the function says so. On a memory allocation failure (`CLINE_ERROR_OUT_OF_MEMORY`), as rule 7 says, `*out` is `NULL`, and no memory allocated for that parse and no converted value is left |
+| What happens to the output on a parse error? | A result is written. On a parse error (`ARGX_ERROR_INVALID_COMMAND_LINE`), a result is written to `*out`, and you destroy it with `argx_result_destroy`. You read the kind of error, the message, and what was read up to the error from that result. This is an exception to "on failure, the output becomes `NULL`" of [rule 7](#7-how-failures-are-returned), and the comment of the function says so. On a memory allocation failure (`ARGX_ERROR_OUT_OF_MEMORY`), as rule 7 says, `*out` is `NULL`, and no memory allocated for that parse and no converted value is left |
 | Does the schema duplicate value types? How long must a value type stay valid? | No. The schema borrows value types. Value types you create (choices, user-defined) are owned by you, and you keep them valid until every schema that uses them has been destroyed. Destroy the schema first and the value type after it ([rule 3](#3-strings-and-objects-the-library-returns)). Destroying a schema does not destroy the value types ([rule 6](#6-whoever-allocates-frees)). The user data that a user-defined value type borrows must stay valid until the value type is destroyed. The built-in value types (string, integer, floating-point) belong to the library, and you do not destroy them. The details are in [Schemas](schema.md#borrowed-value-types-and-the-order-of-destruction) |
 
 No function borrows (the exception of rule 2) in parsing. The details are in [Parsing](parse.md#lifetime-rules).
 
 ## Help
 
-The rules apply to generating the help and the usage line (`cline_help_write`, `cline_help_write_usage`, `cline_help_format`, `cline_help_format_usage`) and to the help options (`cline_help_options_t`).
+The rules apply to generating the help and the usage line (`argx_help_write`, `argx_help_write_usage`, `argx_help_format`, `argx_help_format_usage`) and to the help options (`argx_help_options_t`).
 
 | Question | How the rules apply |
 |---|---|
-| Who creates and who destroys the help options? | You create them with `cline_help_options_create` and destroy them with `cline_help_options_destroy` ([rule 1](#1-creation-and-destruction)). The help options do not belong to a schema. Destroying the schema does not destroy the help options. You may destroy either one first. `cline_help_options_destroy(NULL)` does nothing ([rule 4](#4-null)) |
+| Who creates and who destroys the help options? | You create them with `argx_help_options_create` and destroy them with `argx_help_options_destroy` ([rule 1](#1-creation-and-destruction)). The help options do not belong to a schema. Destroying the schema does not destroy the help options. You may destroy either one first. `argx_help_options_destroy(NULL)` does nothing ([rule 4](#4-null)) |
 | Do the generating functions return something you must free? | No. The text is passed to your write function or written to your buffer. No function returns a string allocated by the library ([rule 6](#6-whoever-allocates-frees)). Memory allocated for generation is all freed before the function returns, on success and on failure ([rule 7](#7-how-failures-are-returned)) |
 | How long are the strings passed to the write function valid? | Only during that call (the "shorter period" of [rule 3](#3-strings-and-objects-the-library-returns)). The strings are not terminated. To use one later, duplicate it inside the write function. Do not free or change them |
 | How long does generation use what you pass? | Only during the call. The schema and the help options are only borrowed and are not changed. The write function, the data passed to the write function, and the buffer are not used after the call returns either. Nothing is duplicated and kept |
 | May I change the schema during generation? | No. During a generating call, do not change or destroy the schema or the value types it uses. Do not change or destroy the schema passed to generation from inside the write function. The library does not detect this mistake |
-| What happens to the output on failure? | Text already passed to the write function cannot be taken back. What was passed before the failure stays at your destination. When `cline_help_format` fails to allocate, if the buffer size is not 0, the buffer becomes an empty string and the length output becomes 0. This is an exception to "other outputs are not changed" of [rule 7](#7-how-failures-are-returned), and the comment of the function says so. When `cline_help_options_create` fails, `*out` is `NULL`, as rule 7 says |
+| What happens to the output on failure? | Text already passed to the write function cannot be taken back. What was passed before the failure stays at your destination. When `argx_help_format` fails to allocate, if the buffer size is not 0, the buffer becomes an empty string and the length output becomes 0. This is an exception to "other outputs are not changed" of [rule 7](#7-how-failures-are-returned), and the comment of the function says so. When `argx_help_options_create` fails, `*out` is `NULL`, as rule 7 says |
 | May I generate from several threads at the same time? | Yes ([rule 8](#8-threads)). Generation keeps no state across calls. A schema and help options that are not being changed can be passed to generation from several threads at the same time. While a function that sets or destroys the help options is running, other threads must not use those help options |
 
 No function borrows (the exception of rule 2) in help. The details are in [Help and Usage](help.md#lifetime-rules).
@@ -265,5 +265,5 @@ The public functions for the allocator and for errors also follow these rules.
 
 | Function | How it follows the rules |
 |---|---|
-| `void cline_set_allocator(const cline_allocator_t *allocator)` | It cannot fail at run time, so it returns nothing (rule 7). It allocates no memory. `NULL` goes back to the default (rule 4). It copies the structure (rule 5). That none of the four functions is `NULL` is a precondition, checked with `assert`. The preconditions are in the comments of `include/cline/alloc.h` |
-| `const char *cline_error_message(cline_error_t error)` | It cannot fail at run time, so it returns the string directly (rule 7). The string stays valid until the program ends, and you do not free it (rule 3). It allocates no memory. It has no preconditions. For a value that is not in the list, it returns `"unknown error code"` |
+| `void argx_set_allocator(const argx_allocator_t *allocator)` | It cannot fail at run time, so it returns nothing (rule 7). It allocates no memory. `NULL` goes back to the default (rule 4). It copies the structure (rule 5). That none of the four functions is `NULL` is a precondition, checked with `assert`. The preconditions are in the comments of `include/argx/alloc.h` |
+| `const char *argx_error_message(argx_error_t error)` | It cannot fail at run time, so it returns the string directly (rule 7). The string stays valid until the program ends, and you do not free it (rule 3). It allocates no memory. It has no preconditions. For a value that is not in the list, it returns `"unknown error code"` |

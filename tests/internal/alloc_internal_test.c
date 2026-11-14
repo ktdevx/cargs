@@ -12,7 +12,7 @@
  * an install, which resets), frees what it allocated, sets the default
  * allocator back before it ends, and ends with check_clean().
  */
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 #include "alloc_internal.h"
 
@@ -66,9 +66,9 @@ static void wrap_free(void *ptr)
     free(ptr);
 }
 
-static cline_allocator_t wrap_allocator(void)
+static argx_allocator_t wrap_allocator(void)
 {
-    cline_allocator_t allocator;
+    argx_allocator_t allocator;
 
     allocator.malloc_fn = wrap_malloc;
     allocator.realloc_fn = wrap_realloc;
@@ -124,15 +124,15 @@ static void fill(unsigned char *bytes, size_t size, unsigned char seed)
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* ---- The default allocator ------------------------------------------- */
 
 /*
  * With nothing set, the four functions work. This test is the first one, and
- * it does not call cline_set_allocator().
+ * it does not call argx_set_allocator().
  */
 NAOS_TEST(works_when_nothing_is_set)
 {
@@ -142,10 +142,10 @@ NAOS_TEST(works_when_nothing_is_set)
     unsigned char *cleared;
     unsigned char *grown;
 
-    cline_test_allocator_reset();
+    argx_test_allocator_reset();
     fill(expected, sizeof expected, 3);
 
-    block = cline_malloc(sizeof expected);
+    block = argx_malloc(sizeof expected);
     NAOS_REQUIRE_TRUE(block != NULL);
     memcpy(block, expected, sizeof expected);
     NAOS_CHECK_MEM_EQ(block, sizeof expected, expected, sizeof expected);
@@ -154,25 +154,25 @@ NAOS_TEST(works_when_nothing_is_set)
      * Leave a freed block that is not 0 behind, for the allocation below
      * to reuse if it can.
      */
-    dirty = cline_malloc(32);
+    dirty = argx_malloc(32);
     NAOS_REQUIRE_TRUE(dirty != NULL);
     memset(dirty, 0xA5, 32);
-    cline_free(dirty);
+    argx_free(dirty);
 
-    cleared = cline_calloc(4, 8);
+    cleared = argx_calloc(4, 8);
     NAOS_REQUIRE_TRUE(cleared != NULL);
     NAOS_CHECK_MEM_EQ(cleared, 32, zeros, 32);
 
-    grown = cline_realloc(block, 4096);
+    grown = argx_realloc(block, 4096);
     NAOS_REQUIRE_TRUE(grown != NULL);
     NAOS_CHECK_MEM_EQ(grown, sizeof expected, expected, sizeof expected);
     memset(grown, 0x5A, 4096);
 
-    cline_free(cleared);
-    cline_free(grown);
+    argx_free(cleared);
+    argx_free(grown);
 
     /* Nothing went to the test allocator: it was never set. */
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
     check_clean();
 }
 
@@ -184,21 +184,21 @@ NAOS_TEST(default_handles_the_special_cases)
 {
     unsigned char *block;
 
-    cline_test_allocator_reset();
+    argx_test_allocator_reset();
 
-    NAOS_CHECK_TRUE(cline_malloc(0) == NULL);
-    NAOS_CHECK_TRUE(cline_calloc(0, 8) == NULL);
-    NAOS_CHECK_TRUE(cline_calloc(8, 0) == NULL);
-    NAOS_CHECK_TRUE(cline_calloc(SIZE_MAX, 2) == NULL);
-    NAOS_CHECK_TRUE(cline_realloc(NULL, 0) == NULL);
-    cline_free(NULL);
+    NAOS_CHECK_TRUE(argx_malloc(0) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(0, 8) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(8, 0) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(SIZE_MAX, 2) == NULL);
+    NAOS_CHECK_TRUE(argx_realloc(NULL, 0) == NULL);
+    argx_free(NULL);
 
-    block = cline_realloc(NULL, 8);
+    block = argx_realloc(NULL, 8);
     NAOS_REQUIRE_TRUE(block != NULL);
     memset(block, 1, 8);
-    NAOS_CHECK_TRUE(cline_realloc(block, 0) == NULL);
+    NAOS_CHECK_TRUE(argx_realloc(block, 0) == NULL);
 
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
     check_clean();
 }
 
@@ -211,73 +211,73 @@ NAOS_TEST(install_routes_the_requests)
     unsigned char *cleared;
     unsigned char *grown;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    block = cline_malloc(16);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    block = argx_malloc(16);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
     NAOS_REQUIRE_TRUE(block != NULL);
     memset(block, 1, 16);
 
-    cleared = cline_calloc(2, 8);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 2);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 2);
+    cleared = argx_calloc(2, 8);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 2);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 2);
     NAOS_REQUIRE_TRUE(cleared != NULL);
 
-    grown = cline_realloc(block, 64);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 3);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 2);
+    grown = argx_realloc(block, 64);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 3);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 2);
     NAOS_REQUIRE_TRUE(grown != NULL);
 
-    cline_free(cleared);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
-    cline_free(grown);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    argx_free(cleared);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
+    argx_free(grown);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
     /* free_fn is not a request. */
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 3);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 3);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* Each internal function calls the function of the same kind. */
 NAOS_TEST(calls_the_matching_function)
 {
-    cline_allocator_t allocator = wrap_allocator();
+    argx_allocator_t allocator = wrap_allocator();
     unsigned char *block;
     unsigned char *cleared;
     unsigned char *grown;
 
-    cline_test_allocator_reset();
+    argx_test_allocator_reset();
     wrap_reset();
-    cline_set_allocator(&allocator);
+    argx_set_allocator(&allocator);
 
-    block = cline_malloc(16);
+    block = argx_malloc(16);
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_calls(), 1);
     NAOS_REQUIRE_TRUE(block != NULL);
     memset(block, 1, 16);
 
-    cleared = cline_calloc(2, 8);
+    cleared = argx_calloc(2, 8);
     NAOS_CHECK_UINT_EQ(wrap_calloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_calls(), 2);
     NAOS_REQUIRE_TRUE(cleared != NULL);
 
-    grown = cline_realloc(block, 64);
+    grown = argx_realloc(block, 64);
     NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_calls(), 3);
     NAOS_REQUIRE_TRUE(grown != NULL);
 
-    cline_free(cleared);
+    argx_free(cleared);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_calls(), 4);
-    cline_free(grown);
+    argx_free(grown);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 2);
     NAOS_CHECK_UINT_EQ(wrap_calls(), 5);
 
-    cline_set_allocator(NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    argx_set_allocator(NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
     check_clean();
 }
 
@@ -288,64 +288,64 @@ NAOS_TEST(uninstall_stops_the_requests)
     unsigned char *cleared;
     unsigned char *grown;
 
-    cline_test_allocator_install();
-    block = cline_malloc(16);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    cline_free(block);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    argx_test_allocator_install();
+    block = argx_malloc(16);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    argx_free(block);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
 
-    block = cline_malloc(16);
+    block = argx_malloc(16);
     NAOS_REQUIRE_TRUE(block != NULL);
     memset(block, 1, 16);
-    cleared = cline_calloc(2, 8);
+    cleared = argx_calloc(2, 8);
     NAOS_REQUIRE_TRUE(cleared != NULL);
-    grown = cline_realloc(block, 64);
+    grown = argx_realloc(block, 64);
     NAOS_REQUIRE_TRUE(grown != NULL);
 
     /* The counts are those from before the uninstall. */
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
-    cline_free(cleared);
-    cline_free(grown);
+    argx_free(cleared);
+    argx_free(grown);
     check_clean();
 }
 
 /*
- * After cline_set_allocator(NULL), no request reaches the allocator that
+ * After argx_set_allocator(NULL), no request reaches the allocator that
  * was set before.
  */
 NAOS_TEST(null_stops_the_requests)
 {
-    cline_allocator_t allocator = cline_test_allocator_get();
+    argx_allocator_t allocator = argx_test_allocator_get();
     unsigned char *block;
     unsigned char *cleared;
     unsigned char *grown;
 
-    cline_test_allocator_reset();
-    cline_set_allocator(&allocator);
-    block = cline_malloc(16);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    cline_free(block);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    argx_test_allocator_reset();
+    argx_set_allocator(&allocator);
+    block = argx_malloc(16);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    argx_free(block);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
-    cline_set_allocator(NULL);
+    argx_set_allocator(NULL);
 
-    block = cline_malloc(16);
+    block = argx_malloc(16);
     NAOS_REQUIRE_TRUE(block != NULL);
     memset(block, 1, 16);
-    cleared = cline_calloc(2, 8);
+    cleared = argx_calloc(2, 8);
     NAOS_REQUIRE_TRUE(cleared != NULL);
-    grown = cline_realloc(block, 64);
+    grown = argx_realloc(block, 64);
     NAOS_REQUIRE_TRUE(grown != NULL);
 
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
-    cline_free(cleared);
-    cline_free(grown);
+    argx_free(cleared);
+    argx_free(grown);
     check_clean();
 }
 
@@ -354,16 +354,16 @@ NAOS_TEST(routes_again_after_a_reset)
 {
     unsigned char *block;
 
-    cline_test_allocator_install();
-    cline_test_allocator_uninstall();
-    cline_test_allocator_install();
+    argx_test_allocator_install();
+    argx_test_allocator_uninstall();
+    argx_test_allocator_install();
 
-    block = cline_malloc(16);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
-    cline_free(block);
+    block = argx_malloc(16);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
+    argx_free(block);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -373,121 +373,121 @@ NAOS_TEST(routes_again_after_a_reset)
  */
 NAOS_TEST(keeps_a_copy_of_the_structure)
 {
-    cline_allocator_t allocator = cline_test_allocator_get();
+    argx_allocator_t allocator = argx_test_allocator_get();
     unsigned char *block;
     unsigned char *cleared;
     unsigned char *grown;
 
-    cline_test_allocator_reset();
+    argx_test_allocator_reset();
     wrap_reset();
-    cline_set_allocator(&allocator);
+    argx_set_allocator(&allocator);
 
     /* The structure now names other functions. They must not be called. */
     allocator = wrap_allocator();
 
-    block = cline_malloc(16);
+    block = argx_malloc(16);
     NAOS_REQUIRE_TRUE(block != NULL);
     memset(block, 1, 16);
-    cleared = cline_calloc(2, 8);
+    cleared = argx_calloc(2, 8);
     NAOS_REQUIRE_TRUE(cleared != NULL);
-    grown = cline_realloc(block, 64);
+    grown = argx_realloc(block, 64);
     NAOS_REQUIRE_TRUE(grown != NULL);
 
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 3);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 2);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 3);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 2);
 
-    cline_free(cleared);
-    cline_free(grown);
+    argx_free(cleared);
+    argx_free(grown);
 
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
     NAOS_CHECK_UINT_EQ(wrap_calls(), 0);
     NAOS_CHECK_TRUE(allocator.malloc_fn == wrap_malloc);
 
-    cline_set_allocator(NULL);
+    argx_set_allocator(NULL);
     check_clean();
 }
 
 /* ---- The contract of the calls --------------------------------------- */
 
-/* The memory of cline_calloc is all 0. */
+/* The memory of argx_calloc is all 0. */
 NAOS_TEST(calloc_returns_zeroed_memory)
 {
     unsigned char *dirty;
     unsigned char *cleared;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     /*
      * Leave a freed block that is not 0 behind, for the allocation below
      * to reuse if it can.
      */
-    dirty = cline_malloc(ZERO_COUNT);
+    dirty = argx_malloc(ZERO_COUNT);
     NAOS_REQUIRE_TRUE(dirty != NULL);
     memset(dirty, 0xA5, ZERO_COUNT);
-    cline_free(dirty);
+    argx_free(dirty);
 
-    cleared = cline_calloc(ZERO_COUNT / 4, 4);
+    cleared = argx_calloc(ZERO_COUNT / 4, 4);
     NAOS_REQUIRE_TRUE(cleared != NULL);
     NAOS_CHECK_MEM_EQ(cleared, ZERO_COUNT, zeros, ZERO_COUNT);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 2);
-    cline_free(cleared);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 2);
+    argx_free(cleared);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
-/* cline_malloc(0) returns NULL and does not call the allocator. */
+/* argx_malloc(0) returns NULL and does not call the allocator. */
 NAOS_TEST(malloc_of_size_0_is_not_forwarded)
 {
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_CHECK_TRUE(cline_malloc(0) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_TRUE(argx_malloc(0) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /*
- * cline_calloc with a count or a size of 0 returns NULL and does not call
+ * argx_calloc with a count or a size of 0 returns NULL and does not call
  * the allocator.
  */
 NAOS_TEST(calloc_of_count_or_size_0_is_not_forwarded)
 {
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_CHECK_TRUE(cline_calloc(0, 8) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
-    NAOS_CHECK_TRUE(cline_calloc(8, 0) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
-    NAOS_CHECK_TRUE(cline_calloc(0, 0) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
-    NAOS_CHECK_TRUE(cline_calloc(0, SIZE_MAX) == NULL);
-    NAOS_CHECK_TRUE(cline_calloc(SIZE_MAX, 0) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_TRUE(argx_calloc(0, 8) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
+    NAOS_CHECK_TRUE(argx_calloc(8, 0) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
+    NAOS_CHECK_TRUE(argx_calloc(0, 0) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
+    NAOS_CHECK_TRUE(argx_calloc(0, SIZE_MAX) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(SIZE_MAX, 0) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /*
- * When count * size does not fit in a size_t, cline_calloc returns NULL
+ * When count * size does not fit in a size_t, argx_calloc returns NULL
  * and does not call the allocator.
  */
 NAOS_TEST(calloc_overflow_is_not_forwarded)
 {
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_CHECK_TRUE(cline_calloc(SIZE_MAX, 2) == NULL);
-    NAOS_CHECK_TRUE(cline_calloc(2, SIZE_MAX) == NULL);
-    NAOS_CHECK_TRUE(cline_calloc(SIZE_MAX, SIZE_MAX) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(SIZE_MAX, 2) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(2, SIZE_MAX) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(SIZE_MAX, SIZE_MAX) == NULL);
     /* The smallest products that do not fit. */
-    NAOS_CHECK_TRUE(cline_calloc((SIZE_MAX / 2) + 1, 2) == NULL);
-    NAOS_CHECK_TRUE(cline_calloc(2, (SIZE_MAX / 2) + 1) == NULL);
-    NAOS_CHECK_TRUE(cline_calloc((SIZE_MAX / 16) + 1, 16) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_TRUE(argx_calloc((SIZE_MAX / 2) + 1, 2) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(2, (SIZE_MAX / 2) + 1) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc((SIZE_MAX / 16) + 1, 16) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -499,22 +499,22 @@ NAOS_TEST(calloc_overflow_is_not_forwarded)
  */
 NAOS_TEST(calloc_forwards_the_largest_product)
 {
-    cline_allocator_t allocator = wrap_allocator();
+    argx_allocator_t allocator = wrap_allocator();
 
-    cline_test_allocator_reset();
+    argx_test_allocator_reset();
     wrap_reset();
     probe_calloc_calls = 0;
     probe_calloc_count = 0;
     probe_calloc_size = 0;
     allocator.calloc_fn = probe_calloc;
-    cline_set_allocator(&allocator);
+    argx_set_allocator(&allocator);
 
-    NAOS_CHECK_TRUE(cline_calloc(SIZE_MAX, 1) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(SIZE_MAX, 1) == NULL);
     NAOS_CHECK_UINT_EQ(probe_calloc_calls, 1);
     NAOS_CHECK_UINT_EQ(probe_calloc_count, SIZE_MAX);
     NAOS_CHECK_UINT_EQ(probe_calloc_size, 1);
 
-    NAOS_CHECK_TRUE(cline_calloc(SIZE_MAX / 2, 2) == NULL);
+    NAOS_CHECK_TRUE(argx_calloc(SIZE_MAX / 2, 2) == NULL);
     NAOS_CHECK_UINT_EQ(probe_calloc_calls, 2);
     NAOS_CHECK_UINT_EQ(probe_calloc_count, SIZE_MAX / 2);
     NAOS_CHECK_UINT_EQ(probe_calloc_size, 2);
@@ -522,13 +522,13 @@ NAOS_TEST(calloc_forwards_the_largest_product)
     /* Nothing else was called: no other request, and no free of NULL. */
     NAOS_CHECK_UINT_EQ(wrap_calls(), 0);
 
-    cline_set_allocator(NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    argx_set_allocator(NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
     check_clean();
 }
 
 /*
- * cline_realloc(NULL, size) allocates, through malloc_fn: realloc_fn is
+ * argx_realloc(NULL, size) allocates, through malloc_fn: realloc_fn is
  * never called with NULL.
  */
 NAOS_TEST(realloc_of_null_allocates)
@@ -536,89 +536,89 @@ NAOS_TEST(realloc_of_null_allocates)
     unsigned char expected[32];
     unsigned char *block;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
     fill(expected, sizeof expected, 9);
 
-    block = cline_realloc(NULL, sizeof expected);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    block = argx_realloc(NULL, sizeof expected);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
     NAOS_REQUIRE_TRUE(block != NULL);
     memcpy(block, expected, sizeof expected);
     NAOS_CHECK_MEM_EQ(block, sizeof expected, expected, sizeof expected);
 
-    cline_free(block);
-    cline_test_allocator_uninstall();
+    argx_free(block);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
-/* cline_realloc(NULL, 0) is cline_malloc(0): NULL, and no call. */
+/* argx_realloc(NULL, 0) is argx_malloc(0): NULL, and no call. */
 NAOS_TEST(realloc_of_null_and_size_0_is_not_forwarded)
 {
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_CHECK_TRUE(cline_realloc(NULL, 0) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_TRUE(argx_realloc(NULL, 0) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /*
- * cline_realloc(ptr, 0) frees the block and returns NULL: realloc_fn is
+ * argx_realloc(ptr, 0) frees the block and returns NULL: realloc_fn is
  * never called with a size of 0.
  */
 NAOS_TEST(realloc_to_size_0_frees)
 {
     unsigned char *block;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    block = cline_malloc(16);
+    block = argx_malloc(16);
     NAOS_REQUIRE_TRUE(block != NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
 
-    NAOS_CHECK_TRUE(cline_realloc(block, 0) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_TRUE(argx_realloc(block, 0) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
     /* The block was freed with free_fn, not with a request. */
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
-/* cline_realloc keeps the contents up to the smaller of the two sizes. */
+/* argx_realloc keeps the contents up to the smaller of the two sizes. */
 NAOS_TEST(realloc_keeps_the_contents)
 {
     unsigned char expected[48];
     unsigned char *block;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
     fill(expected, sizeof expected, 17);
 
-    block = cline_malloc(sizeof expected);
+    block = argx_malloc(sizeof expected);
     NAOS_REQUIRE_TRUE(block != NULL);
     memcpy(block, expected, sizeof expected);
 
-    block = cline_realloc(block, 8192);
+    block = argx_realloc(block, 8192);
     NAOS_REQUIRE_TRUE(block != NULL);
     NAOS_CHECK_MEM_EQ(block, sizeof expected, expected, sizeof expected);
 
-    block = cline_realloc(block, 12);
+    block = argx_realloc(block, 12);
     NAOS_REQUIRE_TRUE(block != NULL);
     NAOS_CHECK_MEM_EQ(block, 12, expected, 12);
 
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 3);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 3);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
 
-    cline_free(block);
-    cline_test_allocator_uninstall();
+    argx_free(block);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /*
- * When the reallocation fails, cline_realloc returns NULL and the old
+ * When the reallocation fails, argx_realloc returns NULL and the old
  * block is still valid and unchanged.
  */
 NAOS_TEST(failed_realloc_keeps_the_old_block)
@@ -627,73 +627,73 @@ NAOS_TEST(failed_realloc_keeps_the_old_block)
     unsigned char *block;
     unsigned char *grown;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
     fill(expected, sizeof expected, 29);
 
-    block = cline_malloc(sizeof expected);
+    block = argx_malloc(sizeof expected);
     NAOS_REQUIRE_TRUE(block != NULL);
     memcpy(block, expected, sizeof expected);
 
-    cline_test_allocator_fail_at(2);
-    grown = cline_realloc(block, 4096);
+    argx_test_allocator_fail_at(2);
+    grown = argx_realloc(block, 4096);
     NAOS_CHECK_TRUE(grown == NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 2);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 2);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
     NAOS_CHECK_MEM_EQ(block, sizeof expected, expected, sizeof expected);
 
     /* The old block can still be reallocated, with its contents. */
-    grown = cline_realloc(block, 4096);
+    grown = argx_realloc(block, 4096);
     NAOS_REQUIRE_TRUE(grown != NULL);
     NAOS_CHECK_MEM_EQ(grown, sizeof expected, expected, sizeof expected);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
 
-    cline_free(grown);
-    cline_test_allocator_uninstall();
+    argx_free(grown);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /*
- * When the allocation fails, cline_malloc, cline_calloc and
- * cline_realloc(NULL, size) return NULL, and nothing is left allocated.
+ * When the allocation fails, argx_malloc, argx_calloc and
+ * argx_realloc(NULL, size) return NULL, and nothing is left allocated.
  */
 NAOS_TEST(failed_allocations_return_null)
 {
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    cline_test_allocator_fail_at(1);
-    NAOS_CHECK_TRUE(cline_malloc(16) == NULL);
-    cline_test_allocator_fail_at(2);
-    NAOS_CHECK_TRUE(cline_calloc(2, 8) == NULL);
-    cline_test_allocator_fail_at(3);
-    NAOS_CHECK_TRUE(cline_realloc(NULL, 16) == NULL);
+    argx_test_allocator_fail_at(1);
+    NAOS_CHECK_TRUE(argx_malloc(16) == NULL);
+    argx_test_allocator_fail_at(2);
+    NAOS_CHECK_TRUE(argx_calloc(2, 8) == NULL);
+    argx_test_allocator_fail_at(3);
+    NAOS_CHECK_TRUE(argx_realloc(NULL, 16) == NULL);
 
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 3);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 3);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
-/* cline_free(NULL) does nothing: free_fn is never called with NULL. */
+/* argx_free(NULL) does nothing: free_fn is never called with NULL. */
 NAOS_TEST(free_of_null_does_nothing)
 {
     unsigned char *block;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
-    cline_free(NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    argx_free(NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
     /* Also when a block is live: it stays. */
-    block = cline_malloc(16);
+    block = argx_malloc(16);
     NAOS_REQUIRE_TRUE(block != NULL);
-    cline_free(NULL);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
-    cline_free(block);
+    argx_free(NULL);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 1);
+    argx_free(block);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -741,43 +741,43 @@ static void run_sequence(record_t *record)
 
     memset(record, 0, sizeof *record);
 
-    block = cline_malloc(24);
+    block = argx_malloc(24);
     record_flag(record, block != NULL);
     NAOS_REQUIRE_TRUE(block != NULL);
     fill(block, 24, 41);
 
-    cleared = cline_calloc(6, 4);
+    cleared = argx_calloc(6, 4);
     record_flag(record, cleared != NULL);
     NAOS_REQUIRE_TRUE(cleared != NULL);
     record_bytes(record, cleared, 24);
 
-    block = cline_realloc(block, 200);
+    block = argx_realloc(block, 200);
     record_flag(record, block != NULL);
     NAOS_REQUIRE_TRUE(block != NULL);
     record_bytes(record, block, 24);
     fill(block + 24, 200 - 24, 53);
 
-    block = cline_realloc(block, 40);
+    block = argx_realloc(block, 40);
     record_flag(record, block != NULL);
     NAOS_REQUIRE_TRUE(block != NULL);
     record_bytes(record, block, 40);
 
-    record_flag(record, cline_malloc(0) != NULL);
-    record_flag(record, cline_calloc(0, 4) != NULL);
-    record_flag(record, cline_calloc(4, 0) != NULL);
-    record_flag(record, cline_calloc(SIZE_MAX, 2) != NULL);
-    record_flag(record, cline_realloc(NULL, 0) != NULL);
+    record_flag(record, argx_malloc(0) != NULL);
+    record_flag(record, argx_calloc(0, 4) != NULL);
+    record_flag(record, argx_calloc(4, 0) != NULL);
+    record_flag(record, argx_calloc(SIZE_MAX, 2) != NULL);
+    record_flag(record, argx_realloc(NULL, 0) != NULL);
 
-    other = cline_realloc(NULL, 12);
+    other = argx_realloc(NULL, 12);
     record_flag(record, other != NULL);
     NAOS_REQUIRE_TRUE(other != NULL);
     fill(other, 12, 67);
     record_bytes(record, other, 12);
-    record_flag(record, cline_realloc(other, 0) != NULL);
+    record_flag(record, argx_realloc(other, 0) != NULL);
 
-    cline_free(NULL);
-    cline_free(cleared);
-    cline_free(block);
+    argx_free(NULL);
+    argx_free(cleared);
+    argx_free(block);
 }
 
 /*
@@ -788,19 +788,19 @@ NAOS_TEST(default_and_wrapper_give_the_same_results)
 {
     static record_t with_default;
     static record_t with_wrapper;
-    cline_allocator_t allocator = wrap_allocator();
+    argx_allocator_t allocator = wrap_allocator();
 
-    cline_test_allocator_reset();
+    argx_test_allocator_reset();
     wrap_reset();
 
-    cline_set_allocator(NULL);
+    argx_set_allocator(NULL);
     run_sequence(&with_default);
     /* The default allocator is not the wrapper. */
     NAOS_CHECK_UINT_EQ(wrap_calls(), 0);
 
-    cline_set_allocator(&allocator);
+    argx_set_allocator(&allocator);
     run_sequence(&with_wrapper);
-    cline_set_allocator(NULL);
+    argx_set_allocator(NULL);
 
     /*
      * The wrapper was called, and only in the way the contract allows:
@@ -817,7 +817,7 @@ NAOS_TEST(default_and_wrapper_give_the_same_results)
     NAOS_CHECK_UINT_GT(with_default.size, 0);
     NAOS_CHECK_MEM_EQ(with_default.bytes, with_default.size, with_wrapper.bytes, with_wrapper.size);
 
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
     check_clean();
 }
 
@@ -831,9 +831,9 @@ NAOS_TEST(sequence_gives_the_promised_results)
     static record_t expected;
     unsigned char pattern[200];
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
     run_sequence(&seen);
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
 
     memset(&expected, 0, sizeof expected);
     fill(pattern, 24, 41);
@@ -860,7 +860,7 @@ NAOS_TEST(sequence_gives_the_promised_results)
     NAOS_CHECK_MEM_EQ(seen.bytes, seen.size, expected.bytes, expected.size);
 
     /* malloc, calloc, 2 x realloc, and the malloc of realloc(NULL, 12). */
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 5);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 5);
     check_clean();
 }
 

@@ -1,10 +1,10 @@
 /*
- * CLine - internal declarations for the memory functions.
+ * ArgX - internal declarations for the memory functions.
  *
  * All the memory of the library goes through these four functions. Their
  * names and parameters match the standard functions. Each of them calls the
- * matching function of the allocator that is set (cline_set_allocator(),
- * <cline/alloc.h>), and only in the way that header promises: never with a
+ * matching function of the allocator that is set (argx_set_allocator(),
+ * <argx/alloc.h>), and only in the way that header promises: never with a
  * size or a count of 0 and never with a NULL pointer.
  *
  * None of them writes errno, prints anything or ends the process when an
@@ -13,11 +13,11 @@
  * these functions, with the same allocator set, and has not been freed.
  *
  * For a request whose size is not 0, NULL means that the allocation failed;
- * the caller reports it as CLINE_ERROR_OUT_OF_MEMORY. A caller whose size
+ * the caller reports it as ARGX_ERROR_OUT_OF_MEMORY. A caller whose size
  * can be 0 checks the size first and does not take that NULL for a failure.
  */
-#ifndef CLINE_ALLOC_INTERNAL_H
-#define CLINE_ALLOC_INTERNAL_H
+#ifndef ARGX_ALLOC_INTERNAL_H
+#define ARGX_ALLOC_INTERNAL_H
 
 #include <stddef.h>
 
@@ -26,22 +26,22 @@
  * the allocation fails. If size is 0, returns NULL without calling the
  * allocator.
  */
-void *cline_malloc(size_t size);
+void *argx_malloc(size_t size);
 
 /*
  * Allocates count * size bytes that are all 0. Returns NULL when the
  * allocation fails. If count or size is 0, or if count * size does not fit
  * in a size_t, returns NULL without calling the allocator.
  */
-void *cline_calloc(size_t count, size_t size);
+void *argx_calloc(size_t count, size_t size);
 
 /*
  * Changes the size of the memory at ptr to size bytes and returns the new
  * pointer. The contents are kept up to the smaller of the old and the new
  * size.
  *
- * - If ptr is NULL, this is cline_malloc(size).
- * - If ptr is not NULL and size is 0, this is cline_free(ptr), and the
+ * - If ptr is NULL, this is argx_malloc(size).
+ * - If ptr is not NULL and size is 0, this is argx_free(ptr), and the
  *   result is NULL. Do not use ptr afterwards.
  * - Otherwise, NULL means that the allocation failed. The memory at ptr is
  *   then still valid and unchanged, so check the result before replacing
@@ -49,9 +49,9 @@ void *cline_calloc(size_t count, size_t size);
  *
  * A caller that computes size as a product checks for overflow itself.
  */
-void *cline_realloc(void *ptr, size_t size);
+void *argx_realloc(void *ptr, size_t size);
 
 /* Frees the memory at ptr. If ptr is NULL, does nothing. */
-void cline_free(void *ptr);
+void argx_free(void *ptr);
 
-#endif /* CLINE_ALLOC_INTERNAL_H */
+#endif /* ARGX_ALLOC_INTERNAL_H */

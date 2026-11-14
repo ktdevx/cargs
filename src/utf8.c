@@ -1,5 +1,5 @@
 /*
- * CLine - the conversion of a wide string to UTF-8.
+ * ArgX - the conversion of a wide string to UTF-8.
  */
 #include "utf8.h"
 
@@ -117,7 +117,7 @@ static size_t encode(unsigned long code_point, unsigned char bytes[UTF8_MAX_BYTE
  * with the same encode(), so they count the same number of bytes.
  */
 
-size_t cline_utf8_length(const wchar_t *text, bool *valid)
+size_t argx_utf8_length(const wchar_t *text, bool *valid)
 {
     unsigned char bytes[UTF8_MAX_BYTES];
     unsigned long code_point;
@@ -135,13 +135,13 @@ size_t cline_utf8_length(const wchar_t *text, bool *valid)
     return length;
 }
 
-size_t cline_utf8_write(const wchar_t *text, char *out)
+size_t argx_utf8_write(const wchar_t *text, char *out)
 {
     unsigned char bytes[UTF8_MAX_BYTES];
     unsigned long code_point;
     size_t length = 0;
     size_t count;
-    bool valid = true; /* reported by cline_utf8_length() only */
+    bool valid = true; /* reported by argx_utf8_length() only */
 
     assert(text != NULL);
     assert(out != NULL);

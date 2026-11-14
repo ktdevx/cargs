@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Purpose**: このスペックは、CLine の利用者が、検証済みのスキーマのコマンドを 1 つ渡して、そのコマンドのヘルプまたは usage 行を、自分で決めた出力先に出せるようにする。文面は、スキーマの定義からその場で作るので、定義とずれない。
+**Purpose**: このスペックは、ArgX の利用者が、検証済みのスキーマのコマンドを 1 つ渡して、そのコマンドのヘルプまたは usage 行を、自分で決めた出力先に出せるようにする。文面は、スキーマの定義からその場で作るので、定義とずれない。
 
 **Users**: ライブラリ利用者（C のアプリケーション開発者）は、生成の関数を呼び、必要なら整形の設定を作る。プログラムの利用者は、出力されたヘルプを読む。
 
@@ -10,7 +10,7 @@
 
 ### Goals
 
-- `cline_help_write()` 1 回の呼び出しで、usage 行、説明、サブコマンド、位置引数、オプションの一覧を、要件 1〜7 の表記と整形で出力する。
+- `argx_help_write()` 1 回の呼び出しで、usage 行、説明、サブコマンド、位置引数、オプションの一覧を、要件 1〜7 の表記と整形で出力する。
 - 出力先は、利用者の書き込み関数 1 つで表す。固定長のバッファは、その上の補助にする。`FILE *` 向けの補助は持たない。
 - 整形の設定は不透明なオブジェクトで、設定関数を足していける。設定なし（`NULL`）でも生成できる。
 - 文面は、ロケール、環境、OS によらず、バイト単位で同じにする。
@@ -30,12 +30,12 @@
 
 ### This Spec Owns
 
-- 生成の入口 `cline_help_write()` と `cline_help_write_usage()`、補助 `cline_help_format()`、`cline_help_format_usage()`
-- 書き込み関数の型 `cline_help_write_fn_t` と、その呼び出しの契約
-- 整形の設定の型 `cline_help_options_t` と、生成、破棄、設定関数
+- 生成の入口 `argx_help_write()` と `argx_help_write_usage()`、補助 `argx_help_format()`、`argx_help_format_usage()`
+- 書き込み関数の型 `argx_help_write_fn_t` と、その呼び出しの契約
+- 整形の設定の型 `argx_help_options_t` と、生成、破棄、設定関数
 - ヘルプの文面の規則: セクションの順序と名前、usage 行、見出し、注記、列の揃え、折り返し、行の形（要件 1〜7）
 - 要件が定めていなかった 3 点の扱い（「主な決定」の表の末尾 3 行）
-- エラーコード `CLINE_ERROR_WRITE_FAILED`
+- エラーコード `ARGX_ERROR_WRITE_FAILED`
 - 利用者向けの文書 `docs/help.md`
 
 ### Out of Boundary
@@ -49,11 +49,11 @@
 
 ### Allowed Dependencies
 
-- command-schema の公開関数: `<cline/schema.h>` の読み取り（`cline_command_*`、`cline_option_*`、`cline_positional_*` の読み取りと列挙、`cline_command_is_validated()`）、`<cline/type.h>` の `cline_type_name()`、`cline_type_kind()`、`cline_type_choice_count()`、`cline_type_choice_at()`
-- core-runtime: 内部のメモリ関数（`src/alloc_internal.h`）、`cline_vec_t`（`src/vec.h`）、`cline_error_t` と `CLINE_ERROR_LIST`、`CLINE_API`
+- command-schema の公開関数: `<argx/schema.h>` の読み取り（`argx_command_*`、`argx_option_*`、`argx_positional_*` の読み取りと列挙、`argx_command_is_validated()`）、`<argx/type.h>` の `argx_type_name()`、`argx_type_kind()`、`argx_type_choice_count()`、`argx_type_choice_at()`
+- core-runtime: 内部のメモリ関数（`src/alloc_internal.h`）、`argx_vec_t`（`src/vec.h`）、`argx_error_t` と `ARGX_ERROR_LIST`、`ARGX_API`
 - C 標準ライブラリ: `<assert.h>`、`<stdbool.h>`、`<stddef.h>`、`<string.h>`
 - テストでは、Naos とテスト用アロケータ（`tests/support/test_allocator.h`）
-- 依存してはならないもの: argv-parser のコード。command-schema の内部ヘッダ。スキーマを変更する関数と `cline_type_convert()`。ロケールに左右される関数（`<ctype.h>`、`<locale.h>`、`printf` 系の書式化）。`getenv`。OS の API。標準の確保関数。変更可能な `static` 変数。`<stdio.h>`（公開ヘッダでも、このスペックのソースでも取り込まない）
+- 依存してはならないもの: argv-parser のコード。command-schema の内部ヘッダ。スキーマを変更する関数と `argx_type_convert()`。ロケールに左右される関数（`<ctype.h>`、`<locale.h>`、`printf` 系の書式化）。`getenv`。OS の API。標準の確保関数。変更可能な `static` 変数。`<stdio.h>`（公開ヘッダでも、このスペックのソースでも取り込まない）
 
 ### Revalidation Triggers
 
@@ -62,7 +62,7 @@
 - 文面の規則の変更（セクションの名前と順序、見出し、注記、列の計算、折り返し）。1 バイトでも文面が変わる変更は、すべて当たる
 - 既定の設定の値（表示幅 80、字下げ 2、説明の列の上限 32）の変更
 - 書き込み関数の契約（戻り値の意味、長さ 0 で呼ばないこと、失敗の後は呼ばないこと）の変更
-- `cline_help_format()` が切り詰めを成功として返す、という決定の変更
+- `argx_help_format()` が切り詰めを成功として返す、という決定の変更
 
 次の command-schema の変更があったら、このスペックを確かめ直す。
 
@@ -79,7 +79,7 @@
 ### Existing Architecture Analysis
 
 - 層は「build-foundation → core-runtime → command-schema → argv-parser / help-formatter」の一方向である。このスペックは command-schema の公開関数だけを使い、argv-parser を知らない。
-- 既存の型: 不透明ハンドル、`cline_error_t` を返す関数と `**out`、`destroy` の `NULL` は何もしない、前提条件は `assert`、エラーコードは一覧の末尾に足す、変更可能な `static` 変数を持たない。
+- 既存の型: 不透明ハンドル、`argx_error_t` を返す関数と `**out`、`destroy` の `NULL` は何もしない、前提条件は `assert`、エラーコードは一覧の末尾に足す、変更可能な `static` 変数を持たない。
 - 設定されていない属性は `NULL` で読める。空の文字列を設定した説明文は `""` で読める。
 - 名前（位置引数、値の表示名）、既定値、選択肢、利用者定義の値型の名前は、改行や空白を含みうる。
 - 既存の公開ヘッダは `<stdio.h>` を取り込んでいない。このスペックも取り込まない。
@@ -137,12 +137,12 @@ graph TB
 |---|---|---|
 | 文面の作り方 | 先頭から順に書き込み関数へ渡す。全体を組み立てない | 確保が、セルの文字列の領域だけになる。失敗の経路が少ない。9.4 は呼び出しの回数を定めず、12.4 は途中まで出た文面が残ることを認めている |
 | 書き込み関数の戻り値 | `bool`。`true` が成功 | 失敗の理由は利用者の側にある。ライブラリが区別する必要があるのは、成功か失敗かだけである |
-| エラーコード | `CLINE_ERROR_WRITE_FAILED`（"write failed"）を 1 つ足す | 12.7、12.8。メモリ確保の失敗と区別できれば足りる |
+| エラーコード | `ARGX_ERROR_WRITE_FAILED`（"write failed"）を 1 つ足す | 12.7、12.8。メモリ確保の失敗と区別できれば足りる |
 | 設定関数の戻り値 | `void`。値は拒まず、65535 を超える値は 65535 として扱う | 3 つの設定は数だけで、確保しない。上限を置くと、桁の計算が桁あふれしない。表示幅を環境から得た値で設定する利用者に、失敗の検査を求めない |
 | `FILE *` の補助 | 持たない（利用者の判断で、要件から外した） | 利用者は、`fwrite()` を呼ぶ数行の書き込み関数で同じことができる。公開ヘッダが `<stdio.h>` を取り込まずに済み、Windows で `FILE *` を動的ライブラリの境界を越えて渡す問題も起きない。例を `docs/help.md` に載せる |
 | バッファの補助 | 切り詰めは成功として返し、全体の長さを `*length` に入れる | 10.2〜10.4。`snprintf` と同じ使い方（長さ 0 で呼んで長さを得る）ができる |
 | 幅を数える方法 | 桁だけを数える `Out` に、見出しを 1 回書く | 見出しの組み立てを 1 か所にする |
-| 検証を済ませていないスキーマ | `assert(cline_command_is_validated(command))` | 1.10。argv-parser と同じ |
+| 検証を済ませていないスキーマ | `assert(argx_command_is_validated(command))` | 1.10。argv-parser と同じ |
 | 見出しに入る改行や空白 | 変換せずにそのまま出す。幅は、見出しの全体のバイト数で数える | 4.5 のとおり。位置引数の名前や値の表示名に改行を入れると列が崩れることを、`docs/help.md` に書く。usage 行の項目は、中に空白があっても分けない（2.9） |
 | 空の説明文 | 空白（0x20）と改行（0x0A）以外のバイトを持たない説明文は、設定されていないものとして扱う（サブコマンドの説明は、最初の行で判断する）。説明文の末尾の、空白と改行の並びでは、空白を無視し、改行だけを残す | 空の段落や、説明のない行の後ろの空白や空の行を出さない（1.5、6.7 と同じ結果になる）。末尾の改行は、次の行の決定のとおりに働く。末尾の空白だけの行で、空の行が増えたり、注記が説明の列から外れたりしない（1.7） |
 | 改行で終わる説明文と注記 | 説明文が改行で終わるときは、注記を、区切りの空白を置かずに次の行から始める。セルの文字列の末尾の改行は出さない | 5.7 の空白が行頭に来て、7.7 と合わなくなるのを避ける。利用者は、説明文の末尾に改行を置けば、注記を独立した行にできる |
@@ -156,16 +156,16 @@ graph TB
 | 言語 | C99、拡張なし | 全体 | 既存のスペックと同じ |
 | 実行時 | C 標準ライブラリ | `<string.h>` の `strlen()`、`memcpy()`、`memchr()` | `<stdio.h>` は、公開ヘッダでも、このスペックのソースでも取り込まない |
 | 上流 | command-schema の公開関数 | スキーマの読み取り | 内部ヘッダは取り込まない |
-| メモリ | core-runtime の内部のメモリ関数、`cline_vec_t` | 設定と、セルの文字列の領域 | 標準の確保関数を直接呼ばない |
-| テスト | Naos v0.4.0、テスト用アロケータ | 公開 API と内部関数のテスト、失敗注入 | 既存の `cline_add_test()` で登録する |
+| メモリ | core-runtime の内部のメモリ関数、`argx_vec_t` | 設定と、セルの文字列の領域 | 標準の確保関数を直接呼ばない |
+| テスト | Naos v0.4.0、テスト用アロケータ | 公開 API と内部関数のテスト、失敗注入 | 既存の `argx_add_test()` で登録する |
 
 ## File Structure Plan
 
 ### Directory Structure
 
 ```
-include/cline/
-└── help.h                 cline_help_write_fn_t、cline_help_options_t、生成の入口、補助
+include/argx/
+└── help.h                 argx_help_write_fn_t、argx_help_options_t、生成の入口、補助
 src/
 ├── out.h                  内部: 桁を数えながら書き込み関数へ出す部品（宣言）
 ├── out.c                  文字列と空白と改行の書き出し、行末の空白の抑止、失敗の記憶、桁だけを数える動作
@@ -173,7 +173,7 @@ src/
 ├── wrap.c                 1 つの文字列を、開始の桁と表示幅に合わせて折り返して Out に書く
 ├── help_item.h            内部: 項目の表記（宣言）
 ├── help_item.c            オプション、位置引数の見出し、usage 行の項目、注記
-├── help_internal.h        内部: struct cline_help_options、既定の値と上限の定数
+├── help_internal.h        内部: struct argx_help_options、既定の値と上限の定数
 ├── help_options.c         設定の生成、破棄、設定関数
 └── help.c                 公開の入口、usage 行、セクションの並べ方、説明の列の計算、バッファの補助
 tests/
@@ -193,14 +193,14 @@ docs/
 
 - 公開ヘッダ `help.h` に対する内部ヘッダは `help_internal.h` とする（命名規約）。`out`、`wrap`、`help_item` は公開ヘッダがないので、内部ヘッダは `out.h`、`wrap.h`、`help_item.h` である。
 - `help_internal.h` を取り込んでよいのは、`help_options.c` と `help.c` だけである。設定の構造体のフィールドを書くのは `help_options.c` だけで、`help.c` は読むだけである。
-- `out.c`、`wrap.c` は、スキーマのヘッダ（`<cline/schema.h>`、`<cline/type.h>`）を取り込まない。
+- `out.c`、`wrap.c` は、スキーマのヘッダ（`<argx/schema.h>`、`<argx/type.h>`）を取り込まない。
 
 ### Modified Files
 
-- `include/cline/error.h` — `CLINE_ERROR_LIST` の末尾に `X(CLINE_ERROR_WRITE_FAILED, "write failed")` を足す。
-- `include/cline/cline.h` — `#include <cline/help.h>` を足す。
-- `src/CMakeLists.txt` — `CLINE_SOURCES` に `help.c`、`help_item.c`、`help_options.c`、`out.c`、`wrap.c` を足す。
-- `tests/CMakeLists.txt` — 上の 8 つのテストを `cline_add_test()` で登録する。確保を伴うテストには `support/test_allocator.c` を足す。
+- `include/argx/error.h` — `ARGX_ERROR_LIST` の末尾に `X(ARGX_ERROR_WRITE_FAILED, "write failed")` を足す。
+- `include/argx/argx.h` — `#include <argx/help.h>` を足す。
+- `src/CMakeLists.txt` — `ARGX_SOURCES` に `help.c`、`help_item.c`、`help_options.c`、`out.c`、`wrap.c` を足す。
+- `tests/CMakeLists.txt` — 上の 8 つのテストを `argx_add_test()` で登録する。確保を伴うテストには `support/test_allocator.c` を足す。
 - `tests/public/error_test.c` — エラーコードの一覧を確かめている箇所に、新しいコードを足す。
 - `docs/ownership.md` — ヘルプへの適用を足す。設定は利用者が生成して破棄する。生成の関数は、利用者が解放するものを返さない。書き込み関数に渡す文字列は、その呼び出しの間だけ有効である。
 - `docs/conventions.md` — ディレクトリ構成の一覧に `help.h` と `docs/help.md` を足す。
@@ -210,16 +210,16 @@ docs/
 
 ### Implementation Order
 
-公開ヘッダに `CLINE_API` で宣言した関数は、すべて export されていなければならない（`cline.exports`）。公開ヘッダの宣言は、その関数を実装する作業の中で足す。
+公開ヘッダに `ARGX_API` で宣言した関数は、すべて export されていなければならない（`argx.exports`）。公開ヘッダの宣言は、その関数を実装する作業の中で足す。
 
 | 順 | 作業 | 触るファイル |
 |---|---|---|
-| 1 | エラーコード | `include/cline/error.h`、`tests/public/error_test.c` |
-| 2 | Out | `include/cline/help.h`（新規。`cline_help_write_fn_t` だけ）、`cline.h`、`src/out.h`、`src/out.c`、`tests/internal/out_test.c` |
+| 1 | エラーコード | `include/argx/error.h`、`tests/public/error_test.c` |
+| 2 | Out | `include/argx/help.h`（新規。`argx_help_write_fn_t` だけ）、`argx.h`、`src/out.h`、`src/out.c`、`tests/internal/out_test.c` |
 | 3 | Wrap | `src/wrap.h`、`src/wrap.c`、`tests/internal/wrap_test.c` |
 | 4 | HelpOptions | `help.h`（設定の型と関数を追記）、`src/help_internal.h`、`src/help_options.c`、`tests/public/help_failure_test.c`（新規。設定の生成と破棄） |
-| 5 | usage 行 | `help.h`（`cline_help_write_usage()` を追記）、`src/help_item.h`、`src/help_item.c`（位置引数の見出し、usage 行の項目）、`src/help.c`、`tests/public/help_usage_test.c` |
-| 6 | ヘルプ: 構成と見出し | `help.h`（`cline_help_write()` を追記）、`src/help_item.c`（オプションの見出し）、`src/help.c`、`tests/public/help_test.c`、`tests/public/help_item_test.c` |
+| 5 | usage 行 | `help.h`（`argx_help_write_usage()` を追記）、`src/help_item.h`、`src/help_item.c`（位置引数の見出し、usage 行の項目）、`src/help.c`、`tests/public/help_usage_test.c` |
+| 6 | ヘルプ: 構成と見出し | `help.h`（`argx_help_write()` を追記）、`src/help_item.c`（オプションの見出し）、`src/help.c`、`tests/public/help_test.c`、`tests/public/help_item_test.c` |
 | 7 | 注記 | `src/help_item.c`、`src/help.c`、`tests/public/help_item_test.c` |
 | 8 | 列の揃え、折り返し、設定 | `src/help.c`、`tests/public/help_layout_test.c` |
 | 9 | 補助 | `help.h`（`format` 2 つを追記）、`src/help.c`、`tests/public/help_output_test.c` |
@@ -236,7 +236,7 @@ docs/
 
 ```mermaid
 flowchart TD
-    Start[cline_help_write] --> Init[Resolve settings and init Out]
+    Start[argx_help_write] --> Init[Resolve settings and init Out]
     Init --> Usage[Write usage line]
     Usage --> Desc{Description present}
     Desc -- yes --> WriteDesc[Blank line then wrap description at column 0]
@@ -276,48 +276,48 @@ flowchart TD
 
 | Requirement | Summary | Components | Interfaces |
 |-------------|---------|------------|------------|
-| 1.1 | ヘルプを出力して成功を返す | Help | `cline_help_write()` |
-| 1.2 | どのコマンドも対象にできる | Help | `cline_help_write()` の `command` |
+| 1.1 | ヘルプを出力して成功を返す | Help | `argx_help_write()` |
+| 1.2 | どのコマンドも対象にできる | Help | `argx_help_write()` の `command` |
 | 1.3 | セクションの順序 | Help | ヘルプの生成の流れ |
 | 1.4 | セクションの名前の行 | Help | `Commands:`、`Arguments:`、`Options:` |
 | 1.5 | 説明文がなければ出さない | Help | 「空の説明文」の決定 |
 | 1.6 | 項目のない一覧を出さない | Help | ヘルプの生成の流れ |
 | 1.7 | 空の行で区切る | Help | ヘルプの生成の流れ |
 | 1.8 | 定義した順、1 項目ずつ | Help | 列挙の関数を番号の順に呼ぶ |
-| 1.9 | 説明文を行頭から折り返す | Help、Wrap | `cline_wrap_write()`（開始の桁 0） |
-| 1.10 | 未検証のスキーマは前提条件の違反 | Help | `assert(cline_command_is_validated())` |
+| 1.9 | 説明文を行頭から折り返す | Help、Wrap | `argx_wrap_write()`（開始の桁 0） |
+| 1.10 | 未検証のスキーマは前提条件の違反 | Help | `assert(argx_command_is_validated())` |
 | 2.1 | usage 行の並び | Help | usage 行の規則 |
 | 2.2 | `[OPTIONS]` | Help | usage 行の規則 |
-| 2.3 | 必須のオプション | Help、HelpItem | `cline_help_item_usage_option()` |
-| 2.4 | 位置引数 | Help、HelpItem | `cline_help_item_positional_heading()` |
+| 2.3 | 必須のオプション | Help、HelpItem | `argx_help_item_usage_option()` |
+| 2.4 | 位置引数 | Help、HelpItem | `argx_help_item_positional_heading()` |
 | 2.5 | `[COMMAND]` | Help | usage 行の規則 |
 | 2.6 | 何も持たないコマンド | Help | usage 行の規則 |
-| 2.7 | usage 行だけの生成 | Help | `cline_help_write_usage()`。ヘルプと同じ内部関数 |
+| 2.7 | usage 行だけの生成 | Help | `argx_help_write_usage()`。ヘルプと同じ内部関数 |
 | 2.8 | 折り返しと 7 桁の字下げ | Help、Out | usage 行の規則 |
 | 2.9 | 項目を途中で分けない | Help、Out | 項目の幅を数えてから出す |
-| 3.1 | `-s, --long` | HelpItem | `cline_help_item_option_heading()` |
+| 3.1 | `-s, --long` | HelpItem | `argx_help_item_option_heading()` |
 | 3.2 | `-s` | HelpItem | 同上 |
 | 3.3 | 空白 4 桁と `--long` | HelpItem | 同上 |
 | 3.4 | `--[no-]long` | HelpItem | 同上 |
 | 3.5 | カウントの `...` | HelpItem | 同上 |
 | 3.6 | `<値の表示名>` | HelpItem | 同上 |
-| 3.7 | 値型の名前で代える | HelpItem | `cline_type_name()` |
-| 3.8 | 対象のコマンドのオプションだけ | Help | `cline_command_option_at()` だけを使い、親をたどらない |
+| 3.7 | 値型の名前で代える | HelpItem | `argx_type_name()` |
+| 3.8 | 対象のコマンドのオプションだけ | Help | `argx_command_option_at()` だけを使い、親をたどらない |
 | 3.9 | `--help` を特別に扱わず、足さない | Help | スキーマにある項目だけを出す |
-| 4.1 | 位置引数の見出し | HelpItem | `cline_help_item_positional_heading()` |
-| 4.2 | サブコマンドの見出しは名前 | Help | `cline_command_name()` |
-| 4.3 | 直接の子だけ | Help | `cline_command_subcommand_at()` だけを使う |
+| 4.1 | 位置引数の見出し | HelpItem | `argx_help_item_positional_heading()` |
+| 4.2 | サブコマンドの見出しは名前 | Help | `argx_command_name()` |
+| 4.3 | 直接の子だけ | Help | `argx_command_subcommand_at()` だけを使う |
 | 4.4 | 説明の最初の行 | Help | 最初の改行の手前までをセルに入れる |
 | 4.5 | 文字を変換しない | HelpItem、Out | バイトをそのまま渡す |
-| 5.1 | `[choices: …]` | HelpItem | `cline_help_item_option_notes()`、`cline_help_item_positional_notes()` |
+| 5.1 | `[choices: …]` | HelpItem | `argx_help_item_option_notes()`、`argx_help_item_positional_notes()` |
 | 5.2 | `[default: …]` | HelpItem | 同上 |
-| 5.3 | `[default: on]` | HelpItem | `cline_help_item_option_notes()` |
+| 5.3 | `[default: on]` | HelpItem | `argx_help_item_option_notes()` |
 | 5.4 | オフでは添えない | HelpItem | 同上 |
 | 5.5 | `[required]` | HelpItem | 同上 |
-| 5.6 | 位置引数に `[required]` を添えない | HelpItem | `cline_help_item_positional_notes()` |
+| 5.6 | 位置引数に `[required]` を添えない | HelpItem | `argx_help_item_positional_notes()` |
 | 5.7 | 注記の順序と区切り | HelpItem | 注記の規則 |
 | 5.8 | 説明文がなければ注記だけ | HelpItem | 注記の規則 |
-| 5.9 | 注記も折り返す | Help、Wrap | セルの文字列を `cline_wrap_write()` に渡す |
+| 5.9 | 注記も折り返す | Help、Wrap | セルの文字列を `argx_wrap_write()` に渡す |
 | 6.1 | 字下げ | Help、Out | 項目 1 つの書き出し |
 | 6.2 | すべての一覧で同じ列 | Help | 説明の列を 1 回だけ計算する |
 | 6.3 | 説明の列の計算 | Help | 説明の列の手順 3 |
@@ -325,8 +325,8 @@ flowchart TD
 | 6.5 | 同じ行に説明 | Help、Out | 項目 1 つの書き出し |
 | 6.6 | 次の行に説明 | Help、Out | 項目 1 つの書き出し |
 | 6.7 | 見出しだけの行 | Help | 項目 1 つの書き出し |
-| 6.8 | 2 行目以降も説明の列 | Wrap | `cline_wrap_write()` の `column` |
-| 7.1 | 1 バイト 1 桁 | Out | `cline_out_column()` |
+| 6.8 | 2 行目以降も説明の列 | Wrap | `argx_wrap_write()` の `column` |
+| 7.1 | 1 バイト 1 桁 | Out | `argx_out_column()` |
 | 7.2 | 空白の位置で折り返す | Wrap | 折り返しの規則 |
 | 7.3 | 語を分けない | Wrap | 折り返しの規則 |
 | 7.4 | 収まらない語は幅を超えて出す | Wrap | 折り返しの規則 |
@@ -334,51 +334,51 @@ flowchart TD
 | 7.6 | 折り返した位置の空白を出さない | Wrap | 折り返しの規則 |
 | 7.7 | 行末の空白を出さない | Out | 空白を、次の文字まで出さない |
 | 7.8 | 制限なしでは折り返さない | Wrap | `width` が 0 |
-| 7.9 | `\n` だけ、`\n` で終える | Out、Help | `cline_out_newline()` |
+| 7.9 | `\n` だけ、`\n` で終える | Out、Help | `argx_out_newline()` |
 | 7.10 | 固定の語句は英語 | Help、HelpItem | 文字列の定数 |
-| 8.1 | 既定の値の設定を生成 | HelpOptions | `cline_help_options_create()` |
+| 8.1 | 既定の値の設定を生成 | HelpOptions | `argx_help_options_create()` |
 | 8.2 | 3 つの項目 | HelpOptions | 設定関数 3 つ |
 | 8.3 | 既定の値 | HelpOptions | `help_internal.h` の定数 |
 | 8.4 | 設定した値を使う | HelpOptions、Help | 設定関数、設定の解決 |
-| 8.5 | 0 は制限なし | HelpOptions、Wrap | `cline_help_options_set_width()` |
+| 8.5 | 0 は制限なし | HelpOptions、Wrap | `argx_help_options_set_width()` |
 | 8.6 | 設定なしは既定の値 | Help | `options` が `NULL` |
 | 8.7 | ヘルプと usage で同じ設定 | Help | 同じ型の引数 |
-| 8.8 | 生成で設定を変えない | Help | `const cline_help_options_t *` |
-| 8.9 | 破棄で解放 | HelpOptions | `cline_help_options_destroy()` |
+| 8.8 | 生成で設定を変えない | Help | `const argx_help_options_t *` |
+| 8.9 | 破棄で解放 | HelpOptions | `argx_help_options_destroy()` |
 | 8.10 | 後から項目を足せる | HelpOptions | 不透明ハンドルと設定関数 |
 | 8.11 | 端末や環境を調べない | Help | Allowed Dependencies（`getenv`、OS の API を使わない） |
-| 9.1 | 書き込み関数と利用者のデータ | Out | `cline_help_write_fn_t` |
+| 9.1 | 書き込み関数と利用者のデータ | Out | `argx_help_write_fn_t` |
 | 9.2 | 先頭から順に呼ぶ | Out | 書き込み関数の契約 |
 | 9.3 | つなげると全体と一致 | Out | 書き込み関数の契約 |
 | 9.4 | 分け方を定めない | Out | 書き込み関数の契約 |
-| 9.5 | 失敗の後は呼ばない | Out、Help | `cline_out_failed()`、`CLINE_ERROR_WRITE_FAILED` |
+| 9.5 | 失敗の後は呼ばない | Out、Help | `argx_out_failed()`、`ARGX_ERROR_WRITE_FAILED` |
 | 9.6 | ほかへ書き込まない | 全体 | `<stdio.h>` を取り込まない |
 | 9.7 | 中断も終了もしない | 全体 | `exit`、`abort` を呼ばない（`assert` を除く） |
-| 10.1 | バッファに書いて終端する | Help | `cline_help_format()` |
+| 10.1 | バッファに書いて終端する | Help | `argx_help_format()` |
 | 10.2 | 全体の長さを知らせる | Help | `*length` |
-| 10.3 | 切り詰めて成功 | Help | `cline_help_format()` |
-| 10.4 | 大きさ 0 | Help | `cline_help_format()` |
-| 10.5 | 補助でも同じ文面 | Help | 補助は `cline_help_write()` を呼ぶだけ |
+| 10.3 | 切り詰めて成功 | Help | `argx_help_format()` |
+| 10.4 | 大きさ 0 | Help | `argx_help_format()` |
+| 10.5 | 補助でも同じ文面 | Help | 補助は `argx_help_write()` を呼ぶだけ |
 | 11.1 | 繰り返しても同じ | 全体 | 状態を持たない |
 | 11.2 | どの環境でも同じ | 全体 | 桁はバイト、改行は `\n`、OS の API を使わない |
 | 11.3 | ロケール、環境、端末によらない | 全体 | Allowed Dependencies |
 | 11.4 | スキーマを変更しない | Help、HelpItem | `const` の引数、読み取りだけ |
 | 11.5 | 同時の生成 | 全体 | グローバル状態なし。生成の状態は呼び出しごとのスタックと領域 |
 | 11.6 | 文面を比べるテスト | テスト | `tests/public/help_*_test.c` |
-| 12.1 | アロケータ経由 | Help、HelpItem、HelpOptions | `cline_malloc()`、`cline_vec_t` |
-| 12.2 | 確保の失敗 | Help、HelpOptions | `CLINE_ERROR_OUT_OF_MEMORY`、領域の解放 |
+| 12.1 | アロケータ経由 | Help、HelpItem、HelpOptions | `argx_malloc()`、`argx_vec_t` |
+| 12.2 | 確保の失敗 | Help、HelpOptions | `ARGX_ERROR_OUT_OF_MEMORY`、領域の解放 |
 | 12.3 | 失敗してもスキーマと設定は同じ | Help | `const` の引数 |
 | 12.4 | 途中までの文面が残ることを文書に書く | 文書 | `docs/help.md`、`help.h` のコメント |
 | 12.5 | 戻ったときに何も残さない | Help | セルの領域を戻る前に解放 |
-| 12.6 | `NULL` の破棄 | HelpOptions | `cline_help_options_destroy(NULL)` |
-| 12.7 | エラーコードの追加 | エラーコード | `CLINE_ERROR_WRITE_FAILED` |
+| 12.6 | `NULL` の破棄 | HelpOptions | `argx_help_options_destroy(NULL)` |
+| 12.7 | エラーコードの追加 | エラーコード | `ARGX_ERROR_WRITE_FAILED` |
 | 12.8 | 書き込みの失敗を区別 | Help | 戻り値 |
 | 12.9 | 前提条件 | 全体 | `assert`、`help.h` のコメント |
 | 12.10 | グローバル状態なし | 全体 | 変更可能な `static` 変数を持たない |
 | 12.11 | 失敗注入のテスト | テスト | `tests/public/help_failure_test.c` |
-| 13.1 | 不透明ハンドル | HelpOptions | `cline_help_options_t` |
-| 13.2 | `cline.h` だけで使える | 公開ヘッダ | `cline.h` に 1 行 |
-| 13.3 | 接頭辞 | 公開ヘッダ | `cline_help_`、`CLINE_ERROR_` |
+| 13.1 | 不透明ハンドル | HelpOptions | `argx_help_options_t` |
+| 13.2 | `argx.h` だけで使える | 公開ヘッダ | `argx.h` に 1 行 |
+| 13.3 | 接頭辞 | 公開ヘッダ | `argx_help_`、`ARGX_ERROR_` |
 | 13.4 | C99、C 標準ライブラリだけ | 全体 | Technology Stack |
 | 13.5 | 解析に依存しない | 全体 | Allowed Dependencies |
 | 13.6 | 文書 | 文書 | `docs/help.md` |
@@ -422,31 +422,31 @@ flowchart TD
 
 ```c
 /* src/out.h */
-typedef struct cline_out {
-    cline_help_write_fn_t write_fn; /* NULL: 桁だけを数える */
+typedef struct argx_out {
+    argx_help_write_fn_t write_fn; /* NULL: 桁だけを数える */
     void *user_data;
     size_t column;  /* 現在の桁。出していない空白を含む */
     size_t pending; /* まだ出していない空白の数 */
     bool failed;    /* 書き込み関数が失敗を報告した */
-} cline_out_t;
+} argx_out_t;
 
-void cline_out_init(cline_out_t *out, cline_help_write_fn_t write_fn, void *user_data);
-void cline_out_text(cline_out_t *out, const char *text, size_t length);
-void cline_out_string(cline_out_t *out, const char *text); /* strlen() の長さで cline_out_text() */
-void cline_out_spaces(cline_out_t *out, size_t count);
-void cline_out_pad_to(cline_out_t *out, size_t column);
-void cline_out_newline(cline_out_t *out);
-size_t cline_out_column(const cline_out_t *out);
-bool cline_out_failed(const cline_out_t *out);
+void argx_out_init(argx_out_t *out, argx_help_write_fn_t write_fn, void *user_data);
+void argx_out_text(argx_out_t *out, const char *text, size_t length);
+void argx_out_string(argx_out_t *out, const char *text); /* strlen() の長さで argx_out_text() */
+void argx_out_spaces(argx_out_t *out, size_t count);
+void argx_out_pad_to(argx_out_t *out, size_t column);
+void argx_out_newline(argx_out_t *out);
+size_t argx_out_column(const argx_out_t *out);
+bool argx_out_failed(const argx_out_t *out);
 ```
 
-- `cline_help_write_fn_t` は `<cline/help.h>` の型である。`out.h` は `help.h` を取り込む。
-- Preconditions: `out` は `NULL` でない。`text` は、`length` が 0 でなければ `NULL` でなく、改行を含まない（呼び出し側が、改行を `cline_out_newline()` に分ける）。
+- `argx_help_write_fn_t` は `<argx/help.h>` の型である。`out.h` は `help.h` を取り込む。
+- Preconditions: `out` は `NULL` でない。`text` は、`length` が 0 でなければ `NULL` でなく、改行を含まない（呼び出し側が、改行を `argx_out_newline()` に分ける）。
 - Postconditions:
-  - `cline_out_text()`: 長さが 0 なら何もしない。そうでなければ、覚えていた空白、続けて `text` を出力し、桁を `length` だけ進める。
-  - `cline_out_spaces()`: 桁を `count` だけ進め、空白を覚える。
-  - `cline_out_pad_to()`: 現在の桁が `column` より小さければ、差の分だけ `cline_out_spaces()` を行う。
-  - `cline_out_newline()`: 覚えていた空白を捨て、`"\n"` を出力し、桁を 0 にする。
+  - `argx_out_text()`: 長さが 0 なら何もしない。そうでなければ、覚えていた空白、続けて `text` を出力し、桁を `length` だけ進める。
+  - `argx_out_spaces()`: 桁を `count` だけ進め、空白を覚える。
+  - `argx_out_pad_to()`: 現在の桁が `column` より小さければ、差の分だけ `argx_out_spaces()` を行う。
+  - `argx_out_newline()`: 覚えていた空白を捨て、`"\n"` を出力し、桁を 0 にする。
 - Invariants: 失敗を覚えた後は、どの関数も書き込み関数を呼ばない。桁の計算は続ける。
 
 ##### State Management
@@ -469,7 +469,7 @@ bool cline_out_failed(const cline_out_t *out);
 **Responsibilities & Constraints**
 
 - 入力は、長さの付いた 1 つの文字列である。語は、ASCII の空白（0x20）と改行（0x0A）以外のバイトの並びである。タブなど、ほかのバイトは語の一部として扱う。
-- 最後の行の改行は書かない。呼び出し側が `cline_out_newline()` を呼ぶ。
+- 最後の行の改行は書かない。呼び出し側が `argx_out_newline()` を呼ぶ。
 - メモリを確保しない。スキーマを知らない。
 
 **Contracts**: Service [x]
@@ -478,16 +478,16 @@ bool cline_out_failed(const cline_out_t *out);
 
 ```c
 /* src/wrap.h */
-void cline_wrap_write(cline_out_t *out, const char *text, size_t length,
+void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
                        size_t column, size_t width);
 ```
 
 - Preconditions: `out` は `NULL` でない。`text` は、`length` が 0 でなければ `NULL` でない。`out` の現在の桁は `column` 以下である。`width` が 0 なら、制限なしである。
 - Postconditions（折り返しの規則）:
   1. `text` の末尾の改行を、すべて取り除く。残りが空なら、何も書かない。
-  2. 残りを、改行で論理行に分ける。論理行ごとに、`cline_out_pad_to(out, column)` を行ってから書き、論理行の間で `cline_out_newline()` を呼ぶ。空の論理行は、改行だけの行になる（空白は `Out` が捨てる）。
-  3. 論理行の中では、空白の並びと語を、先頭から順に処理する。空白の並びは `cline_out_spaces()` で覚える。
-  4. 語を書く前に、その出力行にすでに語があり、`width > 0` で、「現在の桁（直前の空白を含む）+ 語の長さ」が `width` を超えるなら、`cline_out_newline()`、`cline_out_pad_to(out, column)` を行ってから語を書く。直前の空白は、改行で捨てられる（7.6）。
+  2. 残りを、改行で論理行に分ける。論理行ごとに、`argx_out_pad_to(out, column)` を行ってから書き、論理行の間で `argx_out_newline()` を呼ぶ。空の論理行は、改行だけの行になる（空白は `Out` が捨てる）。
+  3. 論理行の中では、空白の並びと語を、先頭から順に処理する。空白の並びは `argx_out_spaces()` で覚える。
+  4. 語を書く前に、その出力行にすでに語があり、`width > 0` で、「現在の桁（直前の空白を含む）+ 語の長さ」が `width` を超えるなら、`argx_out_newline()`、`argx_out_pad_to(out, column)` を行ってから語を書く。直前の空白は、改行で捨てられる（7.6）。
   5. その出力行にまだ語がないときは、収まらなくても、そのまま語を書く（7.4）。論理行の先頭の空白は、そのまま出力される。
   6. 論理行の末尾の空白は、次の改行で捨てられる（7.7）。
 - Invariants: 語の途中で改行しない。入力のバイトを変換しない。
@@ -502,12 +502,12 @@ void cline_wrap_write(cline_out_t *out, const char *text, size_t length,
 **Responsibilities & Constraints**
 
 - 見出しと usage 行の項目は `Out` に書く。桁だけを数える `Out` に書けば、幅が分かる。
-- 注記は、セルの文字列の領域（`char` の `cline_vec_t`）の末尾に足す。確保に失敗しうるのは、この関数だけである。
+- 注記は、セルの文字列の領域（`char` の `argx_vec_t`）の末尾に足す。確保に失敗しうるのは、この関数だけである。
 - 設定（表示幅、字下げ）を知らない。改行と字下げは `Help` が行う。
 
 **Dependencies**
 
-- Outbound: スキーマの読み取り（`cline_option_*`、`cline_positional_*`、`cline_type_*`）（P0）、Out（P0）、`cline_vec_t`（P0）
+- Outbound: スキーマの読み取り（`argx_option_*`、`argx_positional_*`、`argx_type_*`）（P0）、Out（P0）、`argx_vec_t`（P0）
 
 **Contracts**: Service [x]
 
@@ -515,18 +515,18 @@ void cline_wrap_write(cline_out_t *out, const char *text, size_t length,
 
 ```c
 /* src/help_item.h */
-void cline_help_item_option_heading(cline_out_t *out, const cline_option_t *option);
-void cline_help_item_positional_heading(cline_out_t *out, const cline_positional_t *positional);
-void cline_help_item_usage_option(cline_out_t *out, const cline_option_t *option);
+void argx_help_item_option_heading(argx_out_t *out, const argx_option_t *option);
+void argx_help_item_positional_heading(argx_out_t *out, const argx_positional_t *positional);
+void argx_help_item_usage_option(argx_out_t *out, const argx_option_t *option);
 
-cline_error_t cline_help_item_text_append(cline_vec_t *text, const char *part, size_t length);
-cline_error_t cline_help_item_option_notes(cline_vec_t *text, const cline_option_t *option);
-cline_error_t cline_help_item_positional_notes(cline_vec_t *text,
-                                                 const cline_positional_t *positional);
+argx_error_t argx_help_item_text_append(argx_vec_t *text, const char *part, size_t length);
+argx_error_t argx_help_item_option_notes(argx_vec_t *text, const argx_option_t *option);
+argx_error_t argx_help_item_positional_notes(argx_vec_t *text,
+                                                 const argx_positional_t *positional);
 ```
 
-- Preconditions: どの引数も `NULL` でない。`text` は、項目の大きさが 1 で初期化された `cline_vec_t` である。`cline_help_item_usage_option()` の `option` は、値付きオプションである。
-- Postconditions（見出し）: 次の表のとおりに書く。値の表示名は、`cline_option_value_name()` が `NULL` でなければそれ、`NULL` なら `cline_type_name(cline_option_type(option))` である。
+- Preconditions: どの引数も `NULL` でない。`text` は、項目の大きさが 1 で初期化された `argx_vec_t` である。`argx_help_item_usage_option()` の `option` は、値付きオプションである。
+- Postconditions（見出し）: 次の表のとおりに書く。値の表示名は、`argx_option_value_name()` が `NULL` でなければそれ、`NULL` なら `argx_type_name(argx_option_type(option))` である。
 
 | 対象 | 表記 |
 |---|---|
@@ -537,7 +537,7 @@ cline_error_t cline_help_item_positional_notes(cline_vec_t *text,
 | 位置引数 | 必須: `<name>`。任意: `[name]`。可変個: `[name]...`。必須の可変個: `<name>...` |
 | usage 行の必須のオプション | 長い名前があれば `--long <値の表示名>`、なければ `-s <値の表示名>` |
 
-- Postconditions（注記）: `cline_help_item_*_notes()` は、次の注記を、この順に `text` に足す。`text` が空でなく、最後のバイトが改行でなければ、注記の前に空白を 1 つ足す。2 つ目以降の注記の前にも、空白を 1 つ足す。足す注記がなければ、`text` を変えない。
+- Postconditions（注記）: `argx_help_item_*_notes()` は、次の注記を、この順に `text` に足す。`text` が空でなく、最後のバイトが改行でなければ、注記の前に空白を 1 つ足す。2 つ目以降の注記の前にも、空白を 1 つ足す。足す注記がなければ、`text` を変えない。
 
 | 順 | 注記 | 条件 |
 |---|---|---|
@@ -546,21 +546,21 @@ cline_error_t cline_help_item_positional_notes(cline_vec_t *text,
 | 2 | `[default: on]` | 否定できるフラグで、初期の状態がオン |
 | 3 | `[required]` | 値付きオプションで、必須。位置引数には付けない |
 
-- Errors: `cline_help_item_text_append()` と注記の関数は、確保に失敗すると `CLINE_ERROR_OUT_OF_MEMORY` を返す。そのとき、`text` には途中まで足された内容が残ってよい（呼び出し側は、生成を止めて領域を解放する）。
+- Errors: `argx_help_item_text_append()` と注記の関数は、確保に失敗すると `ARGX_ERROR_OUT_OF_MEMORY` を返す。そのとき、`text` には途中まで足された内容が残ってよい（呼び出し側は、生成を止めて領域を解放する）。
 - Invariants: スキーマの文字列を変換しない。スキーマを変更しない。
 
 **Implementation Notes**
 
-- 種類の列挙（`cline_option_kind_t`、`cline_arity_t`、`cline_type_kind_t`）の `switch` は、知らない値を、いちばん単純な形（フラグ、必須の位置引数、選択肢でない型）として扱う。後のバージョンで種類が増えても、未定義の動作にならない。
+- 種類の列挙（`argx_option_kind_t`、`argx_arity_t`、`argx_type_kind_t`）の `switch` は、知らない値を、いちばん単純な形（フラグ、必須の位置引数、選択肢でない型）として扱う。後のバージョンで種類が増えても、未定義の動作にならない。
 
 ### 公開: ヘルプ
 
-公開ヘッダは `include/cline/help.h` の 1 つである。
+公開ヘッダは `include/argx/help.h` の 1 つである。
 
 ```c
-#include <cline/error.h>
-#include <cline/export.h>
-#include <cline/schema.h>
+#include <argx/error.h>
+#include <argx/export.h>
+#include <argx/schema.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -578,26 +578,26 @@ cline_error_t cline_help_item_positional_notes(cline_vec_t *text,
 ##### Service Interface
 
 ```c
-typedef struct cline_help_options cline_help_options_t;
+typedef struct argx_help_options argx_help_options_t;
 
-CLINE_API cline_error_t cline_help_options_create(cline_help_options_t **out);
-CLINE_API void cline_help_options_destroy(cline_help_options_t *options);
+ARGX_API argx_error_t argx_help_options_create(argx_help_options_t **out);
+ARGX_API void argx_help_options_destroy(argx_help_options_t *options);
 
-CLINE_API void cline_help_options_set_width(cline_help_options_t *options, size_t width);
-CLINE_API void cline_help_options_set_indent(cline_help_options_t *options, size_t indent);
-CLINE_API void cline_help_options_set_max_column(cline_help_options_t *options, size_t column);
+ARGX_API void argx_help_options_set_width(argx_help_options_t *options, size_t width);
+ARGX_API void argx_help_options_set_indent(argx_help_options_t *options, size_t indent);
+ARGX_API void argx_help_options_set_max_column(argx_help_options_t *options, size_t column);
 ```
 
 - Preconditions: `out` は `NULL` でない。設定関数の `options` は `NULL` でない。`assert` で検査する。
 - Postconditions:
-  - `create`: 成功すると、`*out` に、表示幅 80、字下げ 2、説明の列の上限 32 の設定を入れる。確保に失敗すると、`CLINE_ERROR_OUT_OF_MEMORY` を返し、`*out` を `NULL` にする。
+  - `create`: 成功すると、`*out` に、表示幅 80、字下げ 2、説明の列の上限 32 の設定を入れる。確保に失敗すると、`ARGX_ERROR_OUT_OF_MEMORY` を返し、`*out` を `NULL` にする。
   - `destroy`: `NULL` なら何もしない。そうでなければ、設定を解放する。
   - 設定関数: 値を保持する。65535 を超える値は 65535 として保持する。表示幅の 0 は「制限なし」を表す。
 - Invariants: 設定は、生成の関数によって変更されない。
 
 ##### State Management
 
-- State model: `struct cline_help_options { size_t width; size_t indent; size_t max_column; }`（`src/help_internal.h`）。既定の値と上限は、同じヘッダの定数 `CLINE_HELP_DEFAULT_WIDTH`（80）、`CLINE_HELP_DEFAULT_INDENT`（2）、`CLINE_HELP_DEFAULT_MAX_COLUMN`（32）、`CLINE_HELP_SETTING_MAX`（65535）とする。
+- State model: `struct argx_help_options { size_t width; size_t indent; size_t max_column; }`（`src/help_internal.h`）。既定の値と上限は、同じヘッダの定数 `ARGX_HELP_DEFAULT_WIDTH`（80）、`ARGX_HELP_DEFAULT_INDENT`（2）、`ARGX_HELP_DEFAULT_MAX_COLUMN`（32）、`ARGX_HELP_SETTING_MAX`（65535）とする。
 - Concurrency strategy: 設定関数を呼んでいる間は、ほかのスレッドがその設定を使ってはならない。変更していない設定は、複数のスレッドから同時に生成に渡せる（11.5）。
 
 #### Help
@@ -609,31 +609,31 @@ CLINE_API void cline_help_options_set_max_column(cline_help_options_t *options, 
 
 **Dependencies**
 
-- Outbound: Out、Wrap、HelpItem、HelpOptions（P0）、スキーマの読み取り（P0）、`cline_vec_t`（P0）
+- Outbound: Out、Wrap、HelpItem、HelpOptions（P0）、スキーマの読み取り（P0）、`argx_vec_t`（P0）
 
 **Contracts**: Service [x]
 
 ##### Service Interface
 
 ```c
-typedef bool (*cline_help_write_fn_t)(void *user_data, const char *text, size_t length);
+typedef bool (*argx_help_write_fn_t)(void *user_data, const char *text, size_t length);
 
-CLINE_API cline_error_t cline_help_write(const cline_command_t *command,
-                                            const cline_help_options_t *options,
-                                            cline_help_write_fn_t write_fn, void *user_data);
-CLINE_API cline_error_t cline_help_write_usage(const cline_command_t *command,
-                                                  const cline_help_options_t *options,
-                                                  cline_help_write_fn_t write_fn, void *user_data);
+ARGX_API argx_error_t argx_help_write(const argx_command_t *command,
+                                            const argx_help_options_t *options,
+                                            argx_help_write_fn_t write_fn, void *user_data);
+ARGX_API argx_error_t argx_help_write_usage(const argx_command_t *command,
+                                                  const argx_help_options_t *options,
+                                                  argx_help_write_fn_t write_fn, void *user_data);
 
-CLINE_API cline_error_t cline_help_format(const cline_command_t *command,
-                                             const cline_help_options_t *options,
+ARGX_API argx_error_t argx_help_format(const argx_command_t *command,
+                                             const argx_help_options_t *options,
                                              char *buffer, size_t size, size_t *length);
-CLINE_API cline_error_t cline_help_format_usage(const cline_command_t *command,
-                                                   const cline_help_options_t *options,
+ARGX_API argx_error_t argx_help_format_usage(const argx_command_t *command,
+                                                   const argx_help_options_t *options,
                                                    char *buffer, size_t size, size_t *length);
 ```
 
-**書き込み関数の契約**（`cline_help_write_fn_t`）
+**書き込み関数の契約**（`argx_help_write_fn_t`）
 
 - ライブラリは、文面の一部（`text` から `length` バイト。終端のナル文字は付かない）と、利用者が渡した `user_data` を、そのまま渡す。`length` は 1 以上である。
 - 呼び出しは文面の先頭から順で、渡した部分をつなげると文面の全体になる。いくつに分けるかは決まっていない。
@@ -643,25 +643,25 @@ CLINE_API cline_error_t cline_help_format_usage(const cline_command_t *command,
 
 **Preconditions**（`assert` で検査する）
 
-- `command` は `NULL` でなく、`cline_command_is_validated(command)` が真である。
+- `command` は `NULL` でなく、`argx_command_is_validated(command)` が真である。
 - `write_fn` は `NULL` でない。
 - `buffer` は、`size` が 0 でなければ `NULL` でない。
 - `options` と `length` は `NULL` でよい。
 
 **Postconditions**
 
-- `cline_help_write()`: `command` のヘルプの文面を書き込み関数に渡し、`CLINE_ERROR_NONE` を返す。書き込み関数が失敗を報告したら `CLINE_ERROR_WRITE_FAILED`、確保に失敗したら `CLINE_ERROR_OUT_OF_MEMORY` を返す。失敗のときは、それまでに渡した部分が出力先に残る。
-- `cline_help_write_usage()`: 同じ設定での `cline_help_write()` の usage 行（折り返した場合は複数の行。最後の `\n` まで）と、バイト単位で同じ文面を渡す。確保しないので、`CLINE_ERROR_OUT_OF_MEMORY` を返さない。
-- `cline_help_format()`、`cline_help_format_usage()`: `size` が 0 でなければ、文面の先頭から最大 `size - 1` バイトを `buffer` に書き、その直後に終端のナル文字を書く。`length` が `NULL` でなければ、文面の全体の長さ（終端を除く）を `*length` に入れる。切り詰めは失敗ではない。`cline_help_format()` は、確保に失敗すると `CLINE_ERROR_OUT_OF_MEMORY` を返し、そのとき `size` が 0 でなければ `buffer` は空の文字列になり、`*length` は 0 になる。
+- `argx_help_write()`: `command` のヘルプの文面を書き込み関数に渡し、`ARGX_ERROR_NONE` を返す。書き込み関数が失敗を報告したら `ARGX_ERROR_WRITE_FAILED`、確保に失敗したら `ARGX_ERROR_OUT_OF_MEMORY` を返す。失敗のときは、それまでに渡した部分が出力先に残る。
+- `argx_help_write_usage()`: 同じ設定での `argx_help_write()` の usage 行（折り返した場合は複数の行。最後の `\n` まで）と、バイト単位で同じ文面を渡す。確保しないので、`ARGX_ERROR_OUT_OF_MEMORY` を返さない。
+- `argx_help_format()`、`argx_help_format_usage()`: `size` が 0 でなければ、文面の先頭から最大 `size - 1` バイトを `buffer` に書き、その直後に終端のナル文字を書く。`length` が `NULL` でなければ、文面の全体の長さ（終端を除く）を `*length` に入れる。切り詰めは失敗ではない。`argx_help_format()` は、確保に失敗すると `ARGX_ERROR_OUT_OF_MEMORY` を返し、そのとき `size` が 0 でなければ `buffer` は空の文字列になり、`*length` は 0 になる。
 - どの関数も、スキーマと設定を変更せず、戻ったときに確保したメモリを残さない。
 
 **usage 行の規則**
 
 1. 項目を、次の順に並べる。
-   1. `Usage: ` に、コマンドの経路を続けたもの（1 つの項目として扱う）。経路は、`cline_command_parent()` でルートまでたどり、ルートから順に、名前を空白 1 つで区切って書く。
-   2. `[OPTIONS]`。対象のコマンドに、必須でないオプション（フラグ、否定できるフラグ、カウント、`cline_option_is_required()` が偽の値付きオプション）が 1 つ以上あるとき。
-   3. 必須の値付きオプションのそれぞれ。定義した順。表記は `cline_help_item_usage_option()`。
-   4. 位置引数のそれぞれ。定義した順。表記は `cline_help_item_positional_heading()`。
+   1. `Usage: ` に、コマンドの経路を続けたもの（1 つの項目として扱う）。経路は、`argx_command_parent()` でルートまでたどり、ルートから順に、名前を空白 1 つで区切って書く。
+   2. `[OPTIONS]`。対象のコマンドに、必須でないオプション（フラグ、否定できるフラグ、カウント、`argx_option_is_required()` が偽の値付きオプション）が 1 つ以上あるとき。
+   3. 必須の値付きオプションのそれぞれ。定義した順。表記は `argx_help_item_usage_option()`。
+   4. 位置引数のそれぞれ。定義した順。表記は `argx_help_item_positional_heading()`。
    5. `[COMMAND]`。対象のコマンドにサブコマンドが 1 つ以上あるとき。
 2. 2 つ目以降の項目は、前の項目との間に空白を 1 つ置く。ただし、表示幅が 0 でなく、「現在の桁 + 1 + 項目の幅」が表示幅を超えるなら、空白の代わりに、改行と空白 7 桁を置く。項目の幅は、桁だけを数える `Out` に、その項目を 1 回書いて得る。
 3. 最後に改行を書く。
@@ -670,19 +670,19 @@ CLINE_API cline_error_t cline_help_format_usage(const cline_command_t *command,
 
 **ヘルプの規則**（System Flows の図と表を補う）
 
-- 対象のコマンドの説明文は、末尾の改行を除いて空でなければ、空の行の後に、`cline_wrap_write(out, text, length, 0, width)` で書き、改行する。
+- 対象のコマンドの説明文は、末尾の改行を除いて空でなければ、空の行の後に、`argx_wrap_write(out, text, length, 0, width)` で書き、改行する。
 - セクションは、`Commands:`、`Arguments:`、`Options:` の順で、項目が 1 つ以上あるものだけを書く。それぞれ、空の行、名前の行、項目の順である。
 - 項目のセルの文字列は、領域を空にしてから、説明文、注記の順に足して作る。
   - サブコマンド: 説明文のうち、最初の改行の手前まで。注記はない。
-  - 位置引数: 説明文の全体と、`cline_help_item_positional_notes()`。
-  - オプション: 説明文の全体と、`cline_help_item_option_notes()`。
+  - 位置引数: 説明文の全体と、`argx_help_item_positional_notes()`。
+  - オプション: 説明文の全体と、`argx_help_item_option_notes()`。
   - 説明文が `NULL` のとき、または末尾の改行を除いて空のときは、説明文を足さない。
 - 説明の列は、すべてのセクションの項目の見出しの幅から、1 回だけ計算する。サブコマンドの見出しの幅は、名前の長さである。
 
 **Implementation Notes**
 
-- Integration: `cline_help_write()`、`cline_help_write_usage()` は、設定を解決し（`options` が `NULL` なら既定の値）、`Out` を初期化して、内部の関数を呼ぶ。usage 行を書く内部の関数は、両方から同じものを呼ぶ（2.7）。
-- Integration: `cline_help_format()` の書き込み関数は、`help.c` の `static` 関数である。`buffer`、`size`、これまでの長さを持つ構造体を `user_data` にし、収まる分だけ複写して、常に `true` を返す。
+- Integration: `argx_help_write()`、`argx_help_write_usage()` は、設定を解決し（`options` が `NULL` なら既定の値）、`Out` を初期化して、内部の関数を呼ぶ。usage 行を書く内部の関数は、両方から同じものを呼ぶ（2.7）。
+- Integration: `argx_help_format()` の書き込み関数は、`help.c` の `static` 関数である。`buffer`、`size`、これまでの長さを持つ構造体を `user_data` にし、収まる分だけ複写して、常に `true` を返す。
 
 ### 文書
 
@@ -701,7 +701,7 @@ CLINE_API cline_error_t cline_help_format_usage(const cline_command_t *command,
 
 ### Domain Model
 
-- **設定**（`cline_help_options_t`）: 表示幅、字下げ、説明の列の上限。利用者が生成し、破棄する。スキーマとは独立である。
+- **設定**（`argx_help_options_t`）: 表示幅、字下げ、説明の列の上限。利用者が生成し、破棄する。スキーマとは独立である。
 - **生成の状態**: 1 回の呼び出しの間だけ、スタックと 1 つの領域に置く。呼び出しをまたいで残るものはない。
 
 ### Logical Data Model
@@ -709,17 +709,17 @@ CLINE_API cline_error_t cline_help_format_usage(const cline_command_t *command,
 ```c
 /* src/help.c の中だけで使う */
 typedef struct help_context {
-    const cline_command_t *command;
+    const argx_command_t *command;
     size_t width;      /* 0: 制限なし */
     size_t indent;
     size_t max_column;
     size_t column;     /* 説明の列。一覧を書く前に計算する */
-    cline_out_t out;
-    cline_vec_t text; /* セルの文字列。項目ごとに count を 0 に戻して使い回す */
+    argx_out_t out;
+    argx_vec_t text; /* セルの文字列。項目ごとに count を 0 に戻して使い回す */
 } help_context_t;
 ```
 
-- `text` は、項目の大きさ 1 の `cline_vec_t` である。項目ごとに、`count` を 0 に戻してから内容を足す。領域は、生成の終わりに `cline_vec_destroy()` で解放する。
+- `text` は、項目の大きさ 1 の `argx_vec_t` である。項目ごとに、`count` を 0 に戻してから内容を足す。領域は、生成の終わりに `argx_vec_destroy()` で解放する。
 - 設定の値は 65535 以下で、見出しの幅はメモリ上の文字列の長さなので、桁の計算（`indent + w + 2` など）は `size_t` で桁あふれしない。
 
 ## Error Handling
@@ -734,10 +734,10 @@ typedef struct help_context {
 
 | 状況 | 検出する場所 | 戻り値 | 後の状態 |
 |---|---|---|---|
-| 書き込み関数が `false` を返した | Out | `CLINE_ERROR_WRITE_FAILED` | それまでの文面が出力先に残る。以後、書き込み関数は呼ばれない |
-| セルの文字列の確保に失敗した | HelpItem、Help | `CLINE_ERROR_OUT_OF_MEMORY` | それまでの文面が出力先に残る。領域は解放済み |
-| 設定の確保に失敗した | HelpOptions | `CLINE_ERROR_OUT_OF_MEMORY` | `*out` は `NULL` |
-| バッファに収まらない | — | `CLINE_ERROR_NONE` | 切り詰めて終端する。`*length` が `size` 以上なら、切り詰められている |
+| 書き込み関数が `false` を返した | Out | `ARGX_ERROR_WRITE_FAILED` | それまでの文面が出力先に残る。以後、書き込み関数は呼ばれない |
+| セルの文字列の確保に失敗した | HelpItem、Help | `ARGX_ERROR_OUT_OF_MEMORY` | それまでの文面が出力先に残る。領域は解放済み |
+| 設定の確保に失敗した | HelpOptions | `ARGX_ERROR_OUT_OF_MEMORY` | `*out` は `NULL` |
+| バッファに収まらない | — | `ARGX_ERROR_NONE` | 切り詰めて終端する。`*length` が `size` 以上なら、切り詰められている |
 | `command` が `NULL`、未検証、`write_fn` が `NULL` など | 入口の `assert` | — | Debug 構成では中断する |
 
 ## Testing Strategy
@@ -751,10 +751,10 @@ typedef struct help_context {
   - 位置引数とオプションを持つ、2 段目のサブコマンドのヘルプの全体が一致する（1.2）。
   - 説明のないコマンド、オプションだけのコマンド、何も持たないコマンドで、出ない部分と空の行の数が正しい（1.5、1.6、1.7）。
   - 定義した順に並ぶ（1.8）。親のオプションと孫のサブコマンドが出ない（3.8、4.3）。
-  - 同じ入力で 2 回生成した文面が一致する。生成の前後で、スキーマの読み取りの結果と `cline_command_is_validated()` が変わらない（11.1、11.4）。
+  - 同じ入力で 2 回生成した文面が一致する。生成の前後で、スキーマの読み取りの結果と `argx_command_is_validated()` が変わらない（11.1、11.4）。
 - **`help_usage_test.c`**（要件 2）
   - `[OPTIONS]` の有無、必須のオプション（長い名前あり、短い名前だけ）、4 種類の位置引数、`[COMMAND]`、何も持たないコマンド（2.1〜2.6）。
-  - `cline_help_write_usage()` の文面が、同じ設定のヘルプの先頭と一致する（2.7）。
+  - `argx_help_write_usage()` の文面が、同じ設定のヘルプの先頭と一致する（2.7）。
   - 表示幅を狭くして、項目の間で折り返され、続きが 7 桁の字下げになる。空白を含む値の表示名の項目が分かれない。1 つの項目が幅を超えるときは、そのまま出る（2.8、2.9）。
 - **`help_item_test.c`**（要件 3、4、5）
   - オプションの見出しの全部の組み合わせ（名前 3 通り × 種類 4 つのうち成り立つもの）（3.1〜3.6）。
@@ -769,24 +769,24 @@ typedef struct help_context {
   - 文面のどの行も空白で終わらず、`\r` を含まず、`\n` で終わる（7.7、7.9）。
 - **`help_output_test.c`**（要件 9、10）
   - 書き込み関数に渡された部分をつなげると、バッファの補助の文面と一致する。`user_data` がそのまま渡る。長さ 0 の呼び出しがない（9.1〜9.3、10.5）。
-  - `n` 回目に `false` を返す書き込み関数で、戻り値が `CLINE_ERROR_WRITE_FAILED` になり、呼び出しが `n` 回で止まる（9.5、12.8）。
+  - `n` 回目に `false` を返す書き込み関数で、戻り値が `ARGX_ERROR_WRITE_FAILED` になり、呼び出しが `n` 回で止まる（9.5、12.8）。
   - バッファ: ちょうど収まる大きさ、1 バイト足りない大きさ、大きさ 1、大きさ 0 と `NULL`。終端の位置、`*length`、領域の外（番兵のバイト）が変わらないこと（10.1〜10.4）。`length` が `NULL` でも動く。
 - **`help_failure_test.c`**（要件 12）
-  - `cline_help_options_create()` の確保を失敗させると、`CLINE_ERROR_OUT_OF_MEMORY` で、`*out` が `NULL` になる。`cline_help_options_destroy(NULL)` が何もしない（12.2、12.6）。
-  - 注記と長い説明を持つスキーマで、`cline_help_write()` と `cline_help_format()` の確保の各回を順に失敗させる。毎回 `CLINE_ERROR_OUT_OF_MEMORY` が返り、テスト用アロケータに生きている領域が増えず、その後の生成が成功して、文面が一致する（12.2、12.3、12.5、12.11）。
-  - `cline_help_write_usage()` が、1 回も確保しない。
+  - `argx_help_options_create()` の確保を失敗させると、`ARGX_ERROR_OUT_OF_MEMORY` で、`*out` が `NULL` になる。`argx_help_options_destroy(NULL)` が何もしない（12.2、12.6）。
+  - 注記と長い説明を持つスキーマで、`argx_help_write()` と `argx_help_format()` の確保の各回を順に失敗させる。毎回 `ARGX_ERROR_OUT_OF_MEMORY` が返り、テスト用アロケータに生きている領域が増えず、その後の生成が成功して、文面が一致する（12.2、12.3、12.5、12.11）。
+  - `argx_help_write_usage()` が、1 回も確保しない。
   - `tests/public/error_test.c`: 新しいエラーコードの値が一覧の末尾で、説明文が `"write failed"` である（12.7）。
 
 ### 内部関数のテスト（`tests/internal/`）
 
-- **`out_test.c`**: 桁の進み方。空白が次の文字まで出ないこと、改行で捨てられること。`cline_out_pad_to()` の境界。失敗の後は書き込み関数を呼ばないこと。書き込み関数 `NULL` で桁だけが進むこと（7.1、7.7、9.5）。
+- **`out_test.c`**: 桁の進み方。空白が次の文字まで出ないこと、改行で捨てられること。`argx_out_pad_to()` の境界。失敗の後は書き込み関数を呼ばないこと。書き込み関数 `NULL` で桁だけが進むこと（7.1、7.7、9.5）。
 - **`wrap_test.c`**: 幅にちょうど収まる語と 1 バイト超える語。先頭の語が幅を超える場合。連続する空白、論理行の先頭の空白、末尾の空白。改行、連続する改行、末尾の改行。空の文字列。幅 0。開始の桁が現在の桁より大きい場合（6.8、7.2〜7.8）。
 
 ### 検査（既存）
 
-- `cline.allocations`: 新しいソースが標準の確保関数を直接呼ばない（12.1）。
-- `cline.exports`: 動的ライブラリの export が、`help.h` の `CLINE_API` の宣言 9 つを含めて、公開ヘッダと一致する（13.3）。
-- `tests/consumer`: `<cline/cline.h>` だけを取り込む利用者のプログラムがビルドできる（13.2）。
+- `argx.allocations`: 新しいソースが標準の確保関数を直接呼ばない（12.1）。
+- `argx.exports`: 動的ライブラリの export が、`help.h` の `ARGX_API` の宣言 9 つを含めて、公開ヘッダと一致する（13.3）。
+- `tests/consumer`: `<argx/argx.h>` だけを取り込む利用者のプログラムがビルドできる（13.2）。
 
 ### 自動のテストで確かめないもの
 

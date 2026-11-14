@@ -1,45 +1,45 @@
 /*
- * Tests of the public version API: <cline/version.h>.
+ * Tests of the public version API: <argx/version.h>.
  */
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 #include <naos/naos.h>
 
 /* The headers and the linked library are the same version. */
 NAOS_TEST(number_matches_the_headers)
 {
-    NAOS_CHECK_UINT_EQ(cline_version(), CLINE_VERSION_NUMBER);
+    NAOS_CHECK_UINT_EQ(argx_version(), ARGX_VERSION_NUMBER);
 }
 
 /* Each part taken out of the returned number is the macro of that part. */
 NAOS_TEST(major_matches_the_headers)
 {
-    NAOS_CHECK_UINT_EQ((cline_version() >> 16) & 0xFFUL, CLINE_VERSION_MAJOR);
+    NAOS_CHECK_UINT_EQ((argx_version() >> 16) & 0xFFUL, ARGX_VERSION_MAJOR);
 }
 
 NAOS_TEST(minor_matches_the_headers)
 {
-    NAOS_CHECK_UINT_EQ((cline_version() >> 8) & 0xFFUL, CLINE_VERSION_MINOR);
+    NAOS_CHECK_UINT_EQ((argx_version() >> 8) & 0xFFUL, ARGX_VERSION_MINOR);
 }
 
 NAOS_TEST(patch_matches_the_headers)
 {
-    NAOS_CHECK_UINT_EQ(cline_version() & 0xFFUL, CLINE_VERSION_PATCH);
+    NAOS_CHECK_UINT_EQ(argx_version() & 0xFFUL, ARGX_VERSION_PATCH);
 }
 
 /* The number is 0x00MMmmpp: nothing is set above the major version. */
 NAOS_TEST(number_has_no_other_bits)
 {
-    NAOS_CHECK_UINT_EQ(cline_version() >> 24, 0);
+    NAOS_CHECK_UINT_EQ(argx_version() >> 24, 0);
 }
 
 /*
- * CLINE_VERSION_PRERELEASE is one string literal: it initializes a character
+ * ARGX_VERSION_PRERELEASE is one string literal: it initializes a character
  * array and joins other literals at compile time. The build checks its
- * contents when it reads the version (cmake/ClineVersion.cmake).
+ * contents when it reads the version (cmake/ArgXVersion.cmake).
  */
-static const char prerelease[] = CLINE_VERSION_PRERELEASE;
-static const char joined[] = "[" CLINE_VERSION_PRERELEASE "]";
+static const char prerelease[] = ARGX_VERSION_PRERELEASE;
+static const char joined[] = "[" ARGX_VERSION_PRERELEASE "]";
 
 NAOS_TEST(prerelease_is_a_string_literal)
 {

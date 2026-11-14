@@ -1,4 +1,4 @@
-# Tests of tools/release/ClineSemver.cmake: parsing a version of the form
+# Tests of tools/release/ArgXSemver.cmake: parsing a version of the form
 # <major>.<minor>.<patch>[-<pre-release>], rejecting every other form with a
 # reason, and comparing two versions by SemVer 2.0.0 precedence.
 #
@@ -7,7 +7,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 include("${CMAKE_CURRENT_LIST_DIR}/ReleaseTestHelpers.cmake")
-include("${CLINE_SOURCE_ROOT}/tools/release/ClineSemver.cmake")
+include("${ARGX_SOURCE_ROOT}/tools/release/ArgXSemver.cmake")
 
 # --- Valid versions ----------------------------------------------------------
 
@@ -17,15 +17,15 @@ function(expect_valid version major minor patch prerelease)
     foreach(field IN ITEMS VALID ERROR MAJOR MINOR PATCH PRERELEASE CORE)
         set(v_${field} "stale")
     endforeach()
-    cline_semver_parse("${version}" v)
+    argx_semver_parse("${version}" v)
     set(what "\"${version}\"")
-    cline_test_expect_equal("${v_VALID}" "TRUE" "${what}: valid")
-    cline_test_expect_equal("${v_ERROR}" "" "${what}: no error")
-    cline_test_expect_equal("${v_MAJOR}" "${major}" "${what}: the major version")
-    cline_test_expect_equal("${v_MINOR}" "${minor}" "${what}: the minor version")
-    cline_test_expect_equal("${v_PATCH}" "${patch}" "${what}: the patch version")
-    cline_test_expect_equal("${v_PRERELEASE}" "${prerelease}" "${what}: the pre-release identifiers")
-    cline_test_expect_equal("${v_CORE}" "${major}.${minor}.${patch}" "${what}: the core")
+    argx_test_expect_equal("${v_VALID}" "TRUE" "${what}: valid")
+    argx_test_expect_equal("${v_ERROR}" "" "${what}: no error")
+    argx_test_expect_equal("${v_MAJOR}" "${major}" "${what}: the major version")
+    argx_test_expect_equal("${v_MINOR}" "${minor}" "${what}: the minor version")
+    argx_test_expect_equal("${v_PATCH}" "${patch}" "${what}: the patch version")
+    argx_test_expect_equal("${v_PRERELEASE}" "${prerelease}" "${what}: the pre-release identifiers")
+    argx_test_expect_equal("${v_CORE}" "${major}.${minor}.${patch}" "${what}: the core")
 endfunction()
 
 expect_valid("0.0.0" 0 0 0 "")
@@ -50,13 +50,13 @@ function(expect_invalid version part)
     foreach(field IN ITEMS VALID ERROR MAJOR MINOR PATCH PRERELEASE CORE)
         set(v_${field} "stale")
     endforeach()
-    cline_semver_parse("${version}" v)
+    argx_semver_parse("${version}" v)
     set(what "\"${version}\"")
-    cline_test_expect_equal("${v_VALID}" "FALSE" "${what}: invalid")
-    cline_test_expect_contains("${v_ERROR}" "\"${version}\"" "${what}: the reason names the version")
-    cline_test_expect_contains("${v_ERROR}" "${part}" "${what}: the reason")
+    argx_test_expect_equal("${v_VALID}" "FALSE" "${what}: invalid")
+    argx_test_expect_contains("${v_ERROR}" "\"${version}\"" "${what}: the reason names the version")
+    argx_test_expect_contains("${v_ERROR}" "${part}" "${what}: the reason")
     foreach(field IN ITEMS MAJOR MINOR PATCH PRERELEASE CORE)
-        cline_test_expect_equal("${v_${field}}" "" "${what}: ${field} is empty")
+        argx_test_expect_equal("${v_${field}}" "" "${what}: ${field} is empty")
     endforeach()
 endfunction()
 
@@ -105,25 +105,25 @@ expect_invalid("1.2.3-01" "the numeric pre-release identifier \"01\" has a leadi
 expect_invalid("1.2.3-rc.007" "the numeric pre-release identifier \"007\" has a leading zero")
 
 # Every problem is in the reason, not only the first.
-cline_semver_parse("01.256.3" v)
-cline_test_expect_contains("${v_ERROR}" "the major version \"01\" ${leading}" "two problems: the first")
-cline_test_expect_contains("${v_ERROR}" "the minor version \"256\" ${range}" "two problems: the second")
+argx_semver_parse("01.256.3" v)
+argx_test_expect_contains("${v_ERROR}" "the major version \"01\" ${leading}" "two problems: the first")
+argx_test_expect_contains("${v_ERROR}" "the minor version \"256\" ${range}" "two problems: the second")
 
 # A semicolon does not split the version into a list.
-cline_semver_parse("1.2.3-a;b" v)
-cline_test_expect_equal("${v_VALID}" "FALSE" "\"1.2.3-a;b\": invalid")
-cline_semver_parse("1;2;3" v)
-cline_test_expect_equal("${v_VALID}" "FALSE" "\"1;2;3\": invalid")
+argx_semver_parse("1.2.3-a;b" v)
+argx_test_expect_equal("${v_VALID}" "FALSE" "\"1.2.3-a;b\": invalid")
+argx_semver_parse("1;2;3" v)
+argx_test_expect_equal("${v_VALID}" "FALSE" "\"1;2;3\": invalid")
 
 # --- Precedence --------------------------------------------------------------
 
 # Checks that <a> compares to <b> as <expected>, and <b> to <a> as the opposite.
 function(expect_compare a b expected)
-    cline_semver_compare("${a}" "${b}" result)
-    cline_test_expect_equal("${result}" "${expected}" "compare(${a}, ${b})")
+    argx_semver_compare("${a}" "${b}" result)
+    argx_test_expect_equal("${result}" "${expected}" "compare(${a}, ${b})")
     math(EXPR opposite "0 - (${expected})")
-    cline_semver_compare("${b}" "${a}" result)
-    cline_test_expect_equal("${result}" "${opposite}" "compare(${b}, ${a})")
+    argx_semver_compare("${b}" "${a}" result)
+    argx_test_expect_equal("${result}" "${opposite}" "compare(${b}, ${a})")
 endfunction()
 
 # The example of the SemVer 2.0.0 specification (item 11), in ascending order.
@@ -162,7 +162,7 @@ foreach(version IN LISTS unsorted)
     set(new_sorted "")
     foreach(existing IN LISTS sorted)
         if(NOT placed)
-            cline_semver_compare("${version}" "${existing}" result)
+            argx_semver_compare("${version}" "${existing}" result)
             if(result EQUAL -1)
                 list(APPEND new_sorted "${version}")
                 set(placed TRUE)
@@ -175,7 +175,7 @@ foreach(version IN LISTS unsorted)
     endif()
     set(sorted "${new_sorted}")
 endforeach()
-cline_test_expect_equal("${sorted}" "${spec_order}" "sorting the example of the specification")
+argx_test_expect_equal("${sorted}" "${spec_order}" "sorting the example of the specification")
 
 # Major, minor and patch compare as numbers, not as text.
 expect_compare("1.0.0" "2.0.0" -1)
@@ -225,30 +225,30 @@ expect_compare("255.255.255-rc.1" "255.255.255" -1)
 
 # --- Comparing an invalid version --------------------------------------------
 #
-# Each case runs cline_semver_compare in a child process, since a FATAL_ERROR
+# Each case runs argx_semver_compare in a child process, since a FATAL_ERROR
 # would stop this script.
 
-set(driver "${CLINE_TEST_WORK_DIR}/compare.cmake")
+set(driver "${ARGX_TEST_WORK_DIR}/compare.cmake")
 file(WRITE "${driver}" "
-include(\"${CLINE_SOURCE_ROOT}/tools/release/ClineSemver.cmake\")
-cline_semver_compare(\"\${A}\" \"\${B}\" result)
+include(\"${ARGX_SOURCE_ROOT}/tools/release/ArgXSemver.cmake\")
+argx_semver_compare(\"\${A}\" \"\${B}\" result)
 message(\"compared: [\${result}]\")
 ")
 
 function(expect_compare_rejected a b bad part)
-    cline_test_run_script(run "${driver}" -D "A=${a}" -D "B=${b}")
+    argx_test_run_script(run "${driver}" -D "A=${a}" -D "B=${b}")
     set(what "compare(${a}, ${b})")
     set(outcome "failed")
     if(run_RESULT EQUAL 0)
         set(outcome "succeeded")
     endif()
-    cline_test_expect_equal("${outcome}" "failed" "${what}: the outcome")
-    cline_test_expect_not_contains("${run_OUTPUT}" "compared: [" "${what}: no result")
-    cline_test_expect_contains("${run_OUTPUT}" "error: " "${what}: an error")
-    cline_test_expect_contains("${run_OUTPUT}" "\"${bad}\"" "${what}: the error names the version")
+    argx_test_expect_equal("${outcome}" "failed" "${what}: the outcome")
+    argx_test_expect_not_contains("${run_OUTPUT}" "compared: [" "${what}: no result")
+    argx_test_expect_contains("${run_OUTPUT}" "error: " "${what}: an error")
+    argx_test_expect_contains("${run_OUTPUT}" "\"${bad}\"" "${what}: the error names the version")
     # CMake wraps the text of an error into lines; join them again.
     string(REGEX REPLACE "[ \n]+" " " flat "${run_OUTPUT}")
-    cline_test_expect_contains("${flat}" "${part}" "${what}: the reason")
+    argx_test_expect_contains("${flat}" "${part}" "${what}: the reason")
 endfunction()
 
 expect_compare_rejected("1.2" "1.2.3" "1.2" "${form}")
@@ -256,8 +256,8 @@ expect_compare_rejected("1.2.3" "1.2.3+b" "1.2.3+b" "build metadata")
 expect_compare_rejected("256.0.0" "1.0.0" "256.0.0" "${range}")
 
 # The driver itself works, so the failures above come from the versions.
-cline_test_run_script(run "${driver}" -D "A=1.0.0" -D "B=1.0.0-rc.1")
-cline_test_expect_equal("${run_RESULT}" "0" "compare(1.0.0, 1.0.0-rc.1) in a child: the exit code")
-cline_test_expect_contains("${run_OUTPUT}" "compared: [1]" "compare(1.0.0, 1.0.0-rc.1) in a child: the result")
+argx_test_run_script(run "${driver}" -D "A=1.0.0" -D "B=1.0.0-rc.1")
+argx_test_expect_equal("${run_RESULT}" "0" "compare(1.0.0, 1.0.0-rc.1) in a child: the exit code")
+argx_test_expect_contains("${run_OUTPUT}" "compared: [1]" "compare(1.0.0, 1.0.0-rc.1) in a child: the result")
 
-cline_test_finish()
+argx_test_finish()

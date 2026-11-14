@@ -1,5 +1,5 @@
 /*
- * CLine test support - the test allocator. See test_allocator.h.
+ * ArgX test support - the test allocator. See test_allocator.h.
  */
 #include "test_allocator.h"
 
@@ -94,9 +94,9 @@ static void test_free(void *ptr)
     --live_count;
 }
 
-cline_allocator_t cline_test_allocator_get(void)
+argx_allocator_t argx_test_allocator_get(void)
 {
-    cline_allocator_t allocator;
+    argx_allocator_t allocator;
 
     allocator.malloc_fn = test_malloc;
     allocator.realloc_fn = test_realloc;
@@ -105,20 +105,20 @@ cline_allocator_t cline_test_allocator_get(void)
     return allocator;
 }
 
-void cline_test_allocator_install(void)
+void argx_test_allocator_install(void)
 {
-    cline_allocator_t allocator = cline_test_allocator_get();
+    argx_allocator_t allocator = argx_test_allocator_get();
 
-    cline_test_allocator_reset();
-    cline_set_allocator(&allocator);
+    argx_test_allocator_reset();
+    argx_set_allocator(&allocator);
 }
 
-void cline_test_allocator_uninstall(void)
+void argx_test_allocator_uninstall(void)
 {
-    cline_set_allocator(NULL);
+    argx_set_allocator(NULL);
 }
 
-void cline_test_allocator_reset(void)
+void argx_test_allocator_reset(void)
 {
     fail_request = 0;
     request_count = 0;
@@ -126,22 +126,22 @@ void cline_test_allocator_reset(void)
     violation_count = 0;
 }
 
-void cline_test_allocator_fail_at(size_t request)
+void argx_test_allocator_fail_at(size_t request)
 {
     fail_request = request;
 }
 
-size_t cline_test_allocator_requests(void)
+size_t argx_test_allocator_requests(void)
 {
     return request_count;
 }
 
-size_t cline_test_allocator_live(void)
+size_t argx_test_allocator_live(void)
 {
     return live_count;
 }
 
-size_t cline_test_allocator_violations(void)
+size_t argx_test_allocator_violations(void)
 {
     return violation_count;
 }

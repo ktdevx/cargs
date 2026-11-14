@@ -77,4 +77,4 @@ command-schema が、コマンド、オプション、位置引数の定義と�
 - 文面は英語のみ。見出しなどの固定の語句もここに含まれる。
 - 折り返しの幅は、まずバイト数または ASCII の文字数で数える。ASCII 以外の文字の表示幅の扱いは要件で確定する。
 - 改行は `\n` で出力する。Windows での変換は出力先に任せる。
-- 公開名は `roadmap.md` の Naming に従う（ライブラリ名 `cline`、ヘッダ `<cline/cline.h>`、接頭辞 `cline_` / `CLINE_`）。
+- 公開名は `roadmap.md` の Naming に従う（ライブラリ名 `argx`、ヘッダ `<argx/argx.h>`、接頭辞 `argx_` / `ARGX_`）。

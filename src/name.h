@@ -1,5 +1,5 @@
 /*
- * CLine - internal declarations for the rules of names.
+ * ArgX - internal declarations for the rules of names.
  *
  * The rules of the names of options and subcommands. A name starts with an
  * ASCII letter or digit, and continues with ASCII letters, digits, '-' and
@@ -10,8 +10,8 @@
  * does not depend on the locale: a byte outside ASCII is never part of a
  * name.
  */
-#ifndef CLINE_NAME_H
-#define CLINE_NAME_H
+#ifndef ARGX_NAME_H
+#define ARGX_NAME_H
 
 #include <stdbool.h>
 
@@ -20,7 +20,7 @@
  * digit. Returns false for every other character, '-', '_' and '\0'
  * included.
  */
-bool cline_name_is_short(char name);
+bool argx_name_is_short(char name);
 
 /*
  * Returns true when name is a long name of an option: two characters or
@@ -29,7 +29,7 @@ bool cline_name_is_short(char name);
  *
  * Precondition: name is not NULL. It is checked with assert.
  */
-bool cline_name_is_long(const char *name);
+bool argx_name_is_long(const char *name);
 
 /*
  * Returns true when name is a name of a subcommand: one character or more,
@@ -38,6 +38,6 @@ bool cline_name_is_long(const char *name);
  *
  * Precondition: name is not NULL. It is checked with assert.
  */
-bool cline_name_is_subcommand(const char *name);
+bool argx_name_is_subcommand(const char *name);
 
-#endif /* CLINE_NAME_H */
+#endif /* ARGX_NAME_H */

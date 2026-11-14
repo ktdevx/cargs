@@ -1,7 +1,7 @@
 /*
- * CLine - internal declarations for the growing array.
+ * ArgX - internal declarations for the growing array.
  *
- * A cline_vec_t is an array of items of one size, which is given at run
+ * A argx_vec_t is an array of items of one size, which is given at run
  * time. Items are added at the end and stay where they were added: there is
  * no removal, no insertion and no sorting.
  *
@@ -9,16 +9,16 @@
  * holds the pointers only; what they point to belongs to the caller.
  *
  * All its memory comes from the allocator that is set
- * (cline_set_allocator(), <cline/alloc.h>), through cline_realloc() and
- * cline_free() ("alloc_internal.h").
+ * (argx_set_allocator(), <argx/alloc.h>), through argx_realloc() and
+ * argx_free() ("alloc_internal.h").
  *
- * Nothing here is synchronized: do not change one cline_vec_t from several
+ * Nothing here is synchronized: do not change one argx_vec_t from several
  * threads at the same time.
  */
-#ifndef CLINE_VEC_H
-#define CLINE_VEC_H
+#ifndef ARGX_VEC_H
+#define ARGX_VEC_H
 
-#include <cline/error.h>
+#include <argx/error.h>
 
 #include <stddef.h>
 
@@ -27,16 +27,16 @@
  * as private.
  *
  * It is empty (items == NULL, count == 0, capacity == 0) after
- * cline_vec_init() and after cline_vec_destroy(); otherwise
+ * argx_vec_init() and after argx_vec_destroy(); otherwise
  * count <= capacity, and items has room for capacity items.
  */
-typedef struct cline_vec
+typedef struct argx_vec
 {
     void *items;      /* The items, one after the other; NULL when empty. */
     size_t count;     /* The number of items. */
     size_t capacity;  /* The number of items there is room for. */
     size_t item_size; /* The size of one item, in bytes. */
-} cline_vec_t;
+} argx_vec_t;
 
 /*
  * Makes vec an empty array of items of item_size bytes. Allocates nothing
@@ -45,14 +45,14 @@ typedef struct cline_vec
  * Preconditions: vec is not NULL; item_size is not 0. They are checked with
  * assert.
  */
-void cline_vec_init(cline_vec_t *vec, size_t item_size);
+void argx_vec_init(argx_vec_t *vec, size_t item_size);
 
 /*
  * Adds a copy of the item_size bytes at item to the end of the array. When
  * the array is full it grows first: to 4 items the first time, to twice
  * its capacity after that. Growing may move the items.
  *
- * Returns CLINE_ERROR_NONE, or CLINE_ERROR_OUT_OF_MEMORY when the
+ * Returns ARGX_ERROR_NONE, or ARGX_ERROR_OUT_OF_MEMORY when the
  * allocation fails or when the size of the grown array cannot be
  * represented in a size_t (the allocator is not called then). After a
  * failure the count, the capacity and the items are as they were before
@@ -60,30 +60,30 @@ void cline_vec_init(cline_vec_t *vec, size_t item_size);
  * write errno, print anything or end the process.
  *
  * Preconditions: vec is not NULL and was initialized with
- * cline_vec_init(); item is not NULL and does not point into the array.
+ * argx_vec_init(); item is not NULL and does not point into the array.
  * That neither is NULL is checked with assert.
  */
-cline_error_t cline_vec_push(cline_vec_t *vec, const void *item);
+argx_error_t argx_vec_push(argx_vec_t *vec, const void *item);
 
 /*
  * Returns a pointer to the item at index, counted from 0. The pointer is
- * valid until the next cline_vec_push() or cline_vec_destroy() of the
+ * valid until the next argx_vec_push() or argx_vec_destroy() of the
  * array.
  *
  * Preconditions: vec is not NULL; index < vec->count. They are checked with
  * assert.
  */
-void *cline_vec_at(const cline_vec_t *vec, size_t index);
+void *argx_vec_at(const argx_vec_t *vec, size_t index);
 
 /*
  * Frees the memory of the array and makes it empty again, as it was after
- * cline_vec_init(): the item size stays, and the array can be used again.
+ * argx_vec_init(): the item size stays, and the array can be used again.
  * It may be called twice, and on an array that never had an item. What the
  * items point to is not freed.
  *
  * Preconditions: vec is not NULL and was initialized with
- * cline_vec_init(). That it is not NULL is checked with assert.
+ * argx_vec_init(). That it is not NULL is checked with assert.
  */
-void cline_vec_destroy(cline_vec_t *vec);
+void argx_vec_destroy(argx_vec_t *vec);
 
-#endif /* CLINE_VEC_H */
+#endif /* ARGX_VEC_H */

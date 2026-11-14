@@ -1,13 +1,13 @@
-# ClineTargetDefaults.cmake - the compile settings shared by the CLine targets.
+# ArgXTargetDefaults.cmake - the compile settings shared by the ArgX targets.
 #
-#   cline_target_defaults(<target> [STRICT])
+#   argx_target_defaults(<target> [STRICT])
 #
 # Gives <target>:
 #
 #   - C99, required, without compiler extensions;
 #   - hidden symbol visibility by default, and no export of all symbols on
 #     Windows, so that a shared library exports only the functions marked with
-#     CLINE_API, whatever the parent project has set;
+#     ARGX_API, whatever the parent project has set;
 #   - warnings:
 #
 #       compiler     always                    with STRICT
@@ -16,7 +16,7 @@
 #                                              -Wmissing-prototypes
 #       MSVC         /W4                       (nothing more)
 #
-#   - warnings as errors (-Werror, /WX) if the option CLINE_WARNINGS_AS_ERRORS
+#   - warnings as errors (-Werror, /WX) if the option ARGX_WARNINGS_AS_ERRORS
 #     is ON when the function is called.
 #
 # The libraries take STRICT. The tests do not: their code expands the macros
@@ -33,16 +33,16 @@
 
 include_guard(GLOBAL)
 
-function(cline_target_defaults target)
+function(argx_target_defaults target)
     cmake_parse_arguments(PARSE_ARGV 1 arg "STRICT" "" "")
     if(DEFINED arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR
-            "cline_target_defaults: unknown arguments: ${arg_UNPARSED_ARGUMENTS}. "
-            "Usage: cline_target_defaults(<target> [STRICT]).")
+            "argx_target_defaults: unknown arguments: ${arg_UNPARSED_ARGUMENTS}. "
+            "Usage: argx_target_defaults(<target> [STRICT]).")
     endif()
     if(NOT TARGET "${target}")
         message(FATAL_ERROR
-            "cline_target_defaults: \"${target}\" is not a target.")
+            "argx_target_defaults: \"${target}\" is not a target.")
     endif()
 
     get_target_property(type "${target}" TYPE)
@@ -50,7 +50,7 @@ function(cline_target_defaults target)
     get_target_property(aliased "${target}" ALIASED_TARGET)
     if(type STREQUAL "INTERFACE_LIBRARY" OR imported OR aliased)
         message(FATAL_ERROR
-            "cline_target_defaults: \"${target}\" compiles no sources of its own "
+            "argx_target_defaults: \"${target}\" compiles no sources of its own "
             "(interface library, imported target or alias).")
     endif()
 
@@ -66,7 +66,7 @@ function(cline_target_defaults target)
     if(CMAKE_C_COMPILER_ID STREQUAL "MSVC"
             OR CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
         set(warnings /W4)
-        if(CLINE_WARNINGS_AS_ERRORS)
+        if(ARGX_WARNINGS_AS_ERRORS)
             list(APPEND warnings /WX)
         endif()
     elseif(CMAKE_C_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
@@ -75,7 +75,7 @@ function(cline_target_defaults target)
             list(APPEND warnings
                 -Wshadow -Wconversion -Wstrict-prototypes -Wmissing-prototypes)
         endif()
-        if(CLINE_WARNINGS_AS_ERRORS)
+        if(ARGX_WARNINGS_AS_ERRORS)
             list(APPEND warnings -Werror)
         endif()
     else()

@@ -3,7 +3,7 @@
 ## Project Description (Input)
 ### Problem
 
-CLine を OSS として公開したいが、人が読む文書がすべて日本語である（README.md 約 310 行、`docs/` 5 ファイル 約 3,300 行）。日本語を読まない第三者は、ライブラリを使うことも開発に参加することもできない。また、`docs/ownership.md` が `.kiro/steering/roadmap.md` を参照しているなど、人は見ない前提の `.kiro/` を当てにした記述が混ざっている。
+ArgX を OSS として公開したいが、人が読む文書がすべて日本語である（README.md 約 310 行、`docs/` 5 ファイル 約 3,300 行）。日本語を読まない第三者は、ライブラリを使うことも開発に参加することもできない。また、`docs/ownership.md` が `.kiro/steering/roadmap.md` を参照しているなど、人は見ない前提の `.kiro/` を当てにした記述が混ざっている。
 
 ### Current State
 
@@ -18,7 +18,7 @@ CLine を OSS として公開したいが、人が読む文書がすべて日本
 ### Desired Outcome
 
 - README、`docs/`、CONTRIBUTING.md が英語だけで書かれ、日本語も `.kiro/` も知らない人が、次のことをできる。
-  - CLine の目的と特徴を知り、最初のプログラムを動かす。
+  - ArgX の目的と特徴を知り、最初のプログラムを動かす。
   - 4 つの方法のどれかでプロジェクトに取り込む。
   - スキーマの定義、解析、ヘルプの生成、所有権と寿命の規約を、API の説明から理解する。
   - リポジトリをビルドしてテストし、規約に沿った変更を PR として出す。
@@ -85,12 +85,12 @@ CLine を OSS として公開したいが、人が読む文書がすべて日本
 
 ## Introduction
 
-このスペックは、CLine（ライブラリ名 `cline`）を OSS として公開するために、人が読む文書を英語だけにし、利用者向けと開発者向けに整理する作業を定める。対象は、README.md、`docs/` の文書、新しく作る CONTRIBUTING.md、それらの中のリンクとアンカー、ソースのコメントと文字列の言語の点検である。このスペックは、ライブラリの API と挙動を変えず、新しい API の説明を書き起こさない。今ある説明を英語に直し、置き場所と導線を整える。
+このスペックは、ArgX（ライブラリ名 `argx`）を OSS として公開するために、人が読む文書を英語だけにし、利用者向けと開発者向けに整理する作業を定める。対象は、README.md、`docs/` の文書、新しく作る CONTRIBUTING.md、それらの中のリンクとアンカー、ソースのコメントと文字列の言語の点検である。このスペックは、ライブラリの API と挙動を変えず、新しい API の説明を書き起こさない。今ある説明を英語に直し、置き場所と導線を整える。
 
 読む人は 3 種類いる。
 
-- **ライブラリ利用者**: CLine を自分の C のプログラムに取り込む開発者。日本語を読まず、`.kiro/` も知らない。
-- **コントリビューター**: CLine のリポジトリをビルドしてテストし、変更を PR として出す人。日本語を読まず、`.kiro/` も知らない。
+- **ライブラリ利用者**: ArgX を自分の C のプログラムに取り込む開発者。日本語を読まず、`.kiro/` も知らない。
+- **コントリビューター**: ArgX のリポジトリをビルドしてテストし、変更を PR として出す人。日本語を読まず、`.kiro/` も知らない。
 - **メンテナー**: PR をレビューし、リリースを出す人。リリースの手順そのものは release-automation の文書を読む。
 
 この文書では、次の用語を使う。
@@ -127,7 +127,7 @@ CLine を OSS として公開したいが、人が読む文書がすべて日本
   - `.kiro/`、`.claude/`、CLAUDE.md の中の文書。
 - **Adjacent expectations**:
   - release-automation は、このスペックより先に実装され、CHANGELOG.md をリポジトリのルートに、リリース手順書（`docs/releasing.md`）とバージョン方針の文書（`docs/versioning.md`、英語）を `docs/` の下に置いている。ファイル名は両スペックの設計で合わせたものである。README と CONTRIBUTING と `docs/` の索引は、それらへリンクするだけである。
-  - release-automation は、`docs/conventions.md` の「バージョンについての注意」の節だけを、日本語のまま更新している（`CLINE_VERSION_PRERELEASE` の書式、バージョンをリリースのワークフローで上げること、パッケージでの扱い、バージョン方針の文書とリリース手順書へのリンク）。ディレクトリ構成の節は更新していない。
+  - release-automation は、`docs/conventions.md` の「バージョンについての注意」の節だけを、日本語のまま更新している（`ARGX_VERSION_PRERELEASE` の書式、バージョンをリリースのワークフローで上げること、パッケージでの扱い、バージョン方針の文書とリリース手順書へのリンク）。ディレクトリ構成の節は更新していない。
   - リリースのタグは `v<SemVer>` の形式である（例 `v0.1.0`、`v0.2.0-rc.1`）。
   - PR テンプレートは、ルートの CONTRIBUTING.md と CHANGELOG.md を `https://github.com/ktdevx/cargs/blob/main/...` の URL で指している。
   - CI のワークフローのファイル（`.github/workflows/ci.yml`）は、README の 3 つのコマンド（`cmake -S . -B build`、`cmake --build build`、`ctest --test-dir build`）をそのまま実行している。
@@ -137,7 +137,7 @@ CLine を OSS として公開したいが、人が読む文書がすべて日本
 
 ### Requirement 1: 英語だけの人向けの文書
 
-**Objective:** As a 日本語を読まないライブラリ利用者またはコントリビューター, I want 人向けの文書がすべて英語で書かれていること, so that 翻訳の手段なしに CLine を使い、開発に参加できる
+**Objective:** As a 日本語を読まないライブラリ利用者またはコントリビューター, I want 人向けの文書がすべて英語で書かれていること, so that 翻訳の手段なしに ArgX を使い、開発に参加できる
 
 #### Acceptance Criteria
 
@@ -160,30 +160,30 @@ CLine を OSS として公開したいが、人が読む文書がすべて日本
 
 ### Requirement 3: OSS の入口としての README
 
-**Objective:** As a 初めて CLine を知ったライブラリ利用者, I want README だけで CLine の目的と特徴を知り、最初のプログラムを動かせること, so that 使うかどうかを短い時間で判断し、すぐに試せる
+**Objective:** As a 初めて ArgX を知ったライブラリ利用者, I want README だけで ArgX の目的と特徴を知り、最初のプログラムを動かせること, so that 使うかどうかを短い時間で判断し、すぐに試せる
 
 #### Acceptance Criteria
 
-1. The README shall 先頭に、プロジェクト名 CLine、1 段落の概要、特徴の一覧を載せる。特徴の一覧は、今の README が挙げている特徴（C99 と依存の少なさ、対応する OS とコンパイラ、静的と動的、4 つの取り込み方法、定義できる要素と値型、ヘルプの生成、出力も終了もしないこと）をすべて含む。
+1. The README shall 先頭に、プロジェクト名 ArgX、1 段落の概要、特徴の一覧を載せる。特徴の一覧は、今の README が挙げている特徴（C99 と依存の少なさ、対応する OS とコンパイラ、静的と動的、4 つの取り込み方法、定義できる要素と値型、ヘルプの生成、出力も終了もしないこと）をすべて含む。
 2. The README shall 先頭の近くに、CI の結果のバッジとライセンスのバッジを載せる。
 3. The README shall 完全なサンプルプログラム（スキーマの定義と検証、解析、`--help` の扱い、値の読み取り、破棄）と、その実行例を載せる。
-4. When README のサンプルプログラムを取り出し、今の CLine にリンクしてビルドしたとき, the サンプルプログラム shall 警告をエラーにした構成でもコンパイルでき、README に載せたコマンドラインを与えると、README に載せた出力と終了の仕方をする。
+4. When README のサンプルプログラムを取り出し、今の ArgX にリンクしてビルドしたとき, the サンプルプログラム shall 警告をエラーにした構成でもコンパイルでき、README に載せたコマンドラインを与えると、README に載せた出力と終了の仕方をする。
 5. The README shall リポジトリをビルドしてテストする手順として、`cmake -S . -B build`、`cmake --build build`、`ctest --test-dir build` の 3 つのコマンドを、この順に、引数を変えずに載せる。
 6. The README shall テストを有効にした構成が Naos を取得するためにネットワークを要すること、ネットワークなしで構成する方法、テストを無効にする方法、複数の構成を持つジェネレータでの構成の指定を説明する。
-7. The README shall CMake のオプション（`CLINE_BUILD_TESTS`、`CLINE_INSTALL`、`CLINE_WARNINGS_AS_ERRORS`）と、直接ビルドするときと組み込まれたときの既定値、`BUILD_SHARED_LIBS` による静的と動的の選択を説明する。
+7. The README shall CMake のオプション（`ARGX_BUILD_TESTS`、`ARGX_INSTALL`、`ARGX_WARNINGS_AS_ERRORS`）と、直接ビルドするときと組み込まれたときの既定値、`BUILD_SHARED_LIBS` による静的と動的の選択を説明する。
 8. The README shall 文書の一覧（利用者向けの API の説明、開発者向けの文書）へのリンク、コントリビューションへの案内（CONTRIBUTING.md へのリンク）、ライセンス（MIT と LICENSE へのリンク）を載せる。
 
 ### Requirement 4: 取り込み方法
 
-**Objective:** As a ライブラリ利用者, I want 4 つの方法のどれかで CLine を自分のプロジェクトに取り込む手順を英語で読めること, so that 自分のビルドに合う方法を選び、そのまま書き写して使える
+**Objective:** As a ライブラリ利用者, I want 4 つの方法のどれかで ArgX を自分のプロジェクトに取り込む手順を英語で読めること, so that 自分のビルドに合う方法を選び、そのまま書き写して使える
 
 #### Acceptance Criteria
 
 1. The README shall FetchContent、add_subdirectory、find_package、pkg-config の 4 つの取り込み方法を、それぞれ、利用側の `CMakeLists.txt` の全体またはコマンドの例とともに説明する。
 2. The README shall FetchContent の例の `GIT_TAG` に、ブランチ名ではなく、`v<SemVer>` の形式のリリースタグ（例 `v0.1.0`）を書く。
 3. The README shall FetchContent の例の近くで、最新のリリースのタグに置き換えること、再現できるビルドのためにタグまたはコミットのハッシュに固定することを案内し、リリースの一覧への導線を示す。
-4. The README shall 今の README が取り込み方法について説明している注意（手元のチェックアウトの使い方、プロジェクトの外のソースを指すときの 2 つ目の引数、インストールの手順、標準でない場所へのインストール、インストール先の移動、`find_package` のバージョン指定とメジャー 0 の間の互換判定、`PKG_CONFIG_PATH` と実行時のライブラリの探索、組み込んだ CLine のテストの実行と `enable_testing()`）を、意味を変えずに説明する。
-5. The README の取り込み方法の説明 shall 今のビルドの定義（CMake のパッケージ名 `CLine`、ターゲット `CLine::cline`、pkg-config のモジュール名 `cline`、動的ライブラリのときの `CLINE_SHARED`）と一致する。
+4. The README shall 今の README が取り込み方法について説明している注意（手元のチェックアウトの使い方、プロジェクトの外のソースを指すときの 2 つ目の引数、インストールの手順、標準でない場所へのインストール、インストール先の移動、`find_package` のバージョン指定とメジャー 0 の間の互換判定、`PKG_CONFIG_PATH` と実行時のライブラリの探索、組み込んだ ArgX のテストの実行と `enable_testing()`）を、意味を変えずに説明する。
+5. The README の取り込み方法の説明 shall 今のビルドの定義（CMake のパッケージ名 `ArgX`、ターゲット `ArgX::argx`、pkg-config のモジュール名 `argx`、動的ライブラリのときの `ARGX_SHARED`）と一致する。
 6. When README の find_package の節が、バージョンの指定と互換の判定に触れるとき, the README shall 利用者向けの互換の規則としてバージョン方針の文書（`docs/versioning.md`）へリンクする。
 7. The README shall FetchContent の例の近くで、リリースのタグが `v<SemVer>` の形（例 `v0.2.0`。プレリリースは `v0.2.0-rc.1` など）であることを示し、その説明を README のリリースと変更の記録の節のタグの説明と一致させる。
 
@@ -196,7 +196,7 @@ CLine を OSS として公開したいが、人が読む文書がすべて日本
 1. The 利用者向けの API の説明 shall スキーマの定義と検証、解析と結果、ヘルプと usage 行の生成、所有権と寿命の規約のそれぞれを、1 つの文書として英語で説明する。
 2. The 利用者向けの API の説明 shall 今の文書が持つ一連の例、表、規則の一覧、前提条件の一覧、誤りとエラーの一覧を、すべて英語で持つ。
 3. The 利用者向けの API の説明 shall 関数名、型名、マクロ名、エラーコード、オプションの書き方、ライブラリが出力する文面（ヘルプの文面、エラーメッセージ）を、実装と 1 文字も違えずに載せる。
-4. When 利用者向けの API の説明に載せた C の例のうち、完全なプログラムとして示したものを取り出し、今の CLine にリンクしてビルドしたとき, the 例 shall コンパイルでき、文書が述べる出力と終了コードのとおりに動く。
+4. When 利用者向けの API の説明に載せた C の例のうち、完全なプログラムとして示したものを取り出し、今の ArgX にリンクしてビルドしたとき, the 例 shall コンパイルでき、文書が述べる出力と終了コードのとおりに動く。
 5. When 利用者向けの API の説明に、完全なプログラムでない C の断片を載せるとき, the 断片 shall 今の公開ヘッダの宣言と一致する名前と引数を使う。
 
 ### Requirement 6: 文書の構成と導線
@@ -241,7 +241,7 @@ CLine を OSS として公開したいが、人が読む文書がすべて日本
 5. If 英語にする時点で、release-automation がバージョンについての注意の内容を更新していれば, then the 開発者向けの規約 shall 更新後の内容を英語にする。
 6. The 開発者向けの規約の C、CMake、シェルのコード例 shall 英語にする前と同じ意味のコードであり、コメントと仮の値の表記だけを英語にする。
 7. The 開発者向けの規約のディレクトリ構成の節 shall 英語にする時点でリポジトリにあるものを、条件を付けずにすべて一覧にする。一覧は、release-automation が作った `tools/`（`tools/release/` と `tools/ci/`）、`tests/release/`、CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`.github/workflows/` の `ci.yml`、`release-pr.yml`、`release-publish.yml` と、`tests/CMakeLists.txt` が release のテストを登録していることを含む。
-8. The 開発者向けの規約の「バージョンについての注意」にあたる節 shall release-automation が足したプレリリースの内容（`CLINE_VERSION_PRERELEASE` の書式、リリースのワークフローでバージョンを上げること、パッケージでの扱い、バージョン方針の文書とリリース手順書へのリンク）を含めて、英語にする時点の内容を英語で説明する。見出しは `Version notes`、アンカーは `#version-notes` とする。
+8. The 開発者向けの規約の「バージョンについての注意」にあたる節 shall release-automation が足したプレリリースの内容（`ARGX_VERSION_PRERELEASE` の書式、リリースのワークフローでバージョンを上げること、パッケージでの扱い、バージョン方針の文書とリリース手順書へのリンク）を含めて、英語にする時点の内容を英語で説明する。見出しは `Version notes`、アンカーは `#version-notes` とする。
 
 ### Requirement 9: リンクとアンカー
 
@@ -266,7 +266,7 @@ CLine を OSS として公開したいが、人が読む文書がすべて日本
 1. The `include/`、`src/`、`tests/`、`cmake/`、`.github/` の下のファイルと、ルートの CMakeLists.txt shall コメントと文字列に、日本語の文字を含まない。
 2. If 点検でそれらのファイルに日本語の文字が見つかれば, then the 該当するコメントと文字列 shall 意味を変えずに英語にされ、コードの挙動とテストの期待値は変わらない。
 3. The 点検 shall 日本語でない ASCII 外の文字（罫線の文字など）を、日本語の文字として扱わない。
-4. If 点検で、release-automation が作った、または変更したファイル（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`tools/` の下、`tests/release/` の下、`.github/workflows/` の下、`include/cline/version.h`、`cmake/` の下、`CMakeLists.txt`、`tests/CMakeLists.txt`、`tests/consumer/` の下、`tests/public/version_test.c`）に日本語の文字または `.kiro` の文字列が見つかれば, then このスペック shall それらのファイルを変更せず、ファイル名と行番号とともに release-automation への指摘として報告する。この場合、要件 10.2 は適用しない。
+4. If 点検で、release-automation が作った、または変更したファイル（CHANGELOG.md、`docs/releasing.md`、`docs/versioning.md`、`tools/` の下、`tests/release/` の下、`.github/workflows/` の下、`include/argx/version.h`、`cmake/` の下、`CMakeLists.txt`、`tests/CMakeLists.txt`、`tests/consumer/` の下、`tests/public/version_test.c`）に日本語の文字または `.kiro` の文字列が見つかれば, then このスペック shall それらのファイルを変更せず、ファイル名と行番号とともに release-automation への指摘として報告する。この場合、要件 10.2 は適用しない。
 
 ### Requirement 11: 機械的な確認
 

@@ -4,7 +4,7 @@
 
 - [x] 1. 土台: プレリリースを表せるバージョンと、リリースのテストの仕組み
 - [x] 1.1 バージョンヘッダにプレリリースの識別子を足し、読み取りで検査する
-  - バージョンヘッダに、プレリリースの識別子を持つ 4 つ目のマクロを、設計の VersionHeader の書式（1 行、文字列リテラル、ハイフンなし、正式版は空）で足す。冒頭のコメントに 4 つ目のマクロの書式を足す。数値のマクロと `cline_version()` は変えない
+  - バージョンヘッダに、プレリリースの識別子を持つ 4 つ目のマクロを、設計の VersionHeader の書式（1 行、文字列リテラル、ハイフンなし、正式版は空）で足す。冒頭のコメントに 4 つ目のマクロの書式を足す。数値のマクロと `argx_version()` は変えない
   - バージョンの読み取りに、任意の 3 つ目の出力（識別子）を足す。識別子のマクロは引数の数にかかわらず常に検査し、欠けている、重複している、文字列リテラルでない、SemVer のプレリリースの識別子として正しくない場合を、ほかのマクロの問題と一緒に、ヘッダのパスとマクロ名を示す 1 つのエラーにまとめる
   - 公開 API のバージョンのテストに、識別子のマクロが文字列リテラルとして使えることの確認を足す
   - リリースのテストの補助（確認の関数、失敗の集計、確認が 1 つも走らなければ失敗、フィクスチャを作業ディレクトリに写す関数）を作り、テストの登録に `release` のラベルと `release.<name>` の名前で登録する仕組みを足す。最初のテストとして、設計の Testing Strategy の `release.version_read` の内容（正しい識別子、各不正な形、2 引数の呼び出しが今と同じ値を返すこと）を足す
@@ -15,7 +15,7 @@
   - トップレベルの構成で識別子を読み、完全なバージョン（識別子があれば `<数字>-<識別子>`）を作る。`project()` に渡すのは数字の部分のまま
   - pkg-config のファイルの `Version` を完全なバージョンにし、CMake のパッケージの設定ファイルで、完全なバージョンと識別子の 2 つの変数（設計の PackageVersion の名前）を設定する。互換判定のファイルと SOVERSION は数字の部分のまま
   - consumer check の find_package と pkg_config の経路で、パッケージのバージョンの正規表現にプレリリースを許し、識別子をプログラムへ渡し、ヘッダの識別子と文字列で比べる。違えば両方を表示して失敗する。手順のスクリプトと CI のステップは変えない
-  - 完了の目安: 正式版のヘッダで、静的と動的の Debug と Release の consumer check の 4 つの経路が今と同じく通る。識別子を一時的に `rc.1` にした作業ツリーの写しで構成とインストールをすると、`cline.pc` の `Version` と完全なバージョンの変数が `0.1.0-rc.1`、`CLine_VERSION` が `0.1.0` になり、その写しで consumer check が通る（確認後、写しは捨てる）
+  - 完了の目安: 正式版のヘッダで、静的と動的の Debug と Release の consumer check の 4 つの経路が今と同じく通る。識別子を一時的に `rc.1` にした作業ツリーの写しで構成とインストールをすると、`argx.pc` の `Version` と完全なバージョンの変数が `0.1.0-rc.1`、`ArgX_VERSION` が `0.1.0` になり、その写しで consumer check が通る（確認後、写しは捨てる）
   - _Requirements: 2.3, 2.4, 2.5, 2.8_
 
 - [x] 2. コア: リリースの処理のモジュールと変更の判定
@@ -112,7 +112,7 @@
 - [x] 6. 統合と最終の確認
 - [x] 6.1 開発者向けの規約のバージョンの節を更新する
   - `docs/conventions.md` の「バージョンについての注意」の節だけに、設計の ConventionsVersionNotes の内容を足す。english-docs はこのスペックのあとに実装するので、ファイルはまだ日本語であり、日本語で書く。節の外と節の見出しは変えない（英語化後の見出し `Version notes` は README からのリンク先として固定されている）
-  - 既存の最初の項目（唯一の出どころを 3 つのマクロとする文）は、節が食い違わないように `CLINE_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改める（数字のマクロの書式の説明は残す）
+  - 既存の最初の項目（唯一の出どころを 3 つのマクロとする文）は、節が食い違わないように `ARGX_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改める（数字のマクロの書式の説明は残す）
   - バージョン方針の文書とリリース手順書へは、ファイルへのリンクで案内する
   - 完了の目安: `git diff <base>`（6.2 の定義）の差分がその節の中だけにあり、既存の 3 つの項目が（最初の項目は 4 つのマクロを挙げる形で）残り、2 つの文書へのリンク先のファイルが存在する
   - _Depends: 5.2, 5.3_
@@ -130,14 +130,14 @@
 
 ## Implementation Notes
 
-- 1.1: リリースのテストの補助は `tests/release/ReleaseTestHelpers.cmake`（`cline_test_expect_equal`、`cline_test_expect_contains`、`cline_test_expect_not_contains`、`cline_test_copy_fixture`、`cline_test_run_script`、`cline_test_finish`）。登録は `tests/CMakeLists.txt` の `cline_add_release_test(<name>)`（`release.<name>`、ラベル `release`、作業ディレクトリは開始時に空にされる）。テストは `cmake -D CLINE_SOURCE_ROOT=... -D CLINE_TEST_WORK_DIR=... -P` で動く。
-- 1.1: `cline_read_version(<header> <out> [<prerelease-out>])` は 2 引数でも識別子のマクロを検査する。トップレベルの `CMakeLists.txt` はまだ 2 引数で呼ぶ（1.2 で 3 引数にする）。
-- 2.1: SemVer は `tools/release/ClineSemver.cmake` の `cline_semver_parse(<version> <prefix>)`（`_VALID`、`_ERROR`、`_MAJOR`、`_MINOR`、`_PATCH`、`_PRERELEASE`、`_CORE`）と `cline_semver_compare(<a> <b> <out>)`（-1/0/1）。`CMAKE_MATCH_<n>` は前の一致の値が残ることがあるので注意する。FATAL_ERROR の文はCMake が折り返すので、子プロセスの出力を照合するときは行をつないでから比べる。
-- 2.2: CHANGELOG は `tools/release/ClineChangelog.cmake` の `cline_changelog_parse`、`cline_changelog_promote(<text> <version> <date> <repo-url> <out>)`、`cline_changelog_notes(<text> <version> <repo-url> <out>)`。notes の結果は末尾に改行がないので、3.2 でファイルに書くときに足す。promote は V が最新の版より大きくなければ止まる。フィクスチャと実際の CHANGELOG では Semantic Versioning へのリンクを `https://semver.org/` にし、`spec` の語を避ける。
-- 2.3: CMake 3.28 の `file(READ)` は CRLF を LF にする（`file(READ ... HEX)` のバイトには CR がある）。改行の形を保つ必要があるファイル（CHANGELOG.md、version.h）は、`tools/release/ClineVersionHeader.cmake` の HEX と `string(ASCII)` による読み方（`_cline_version_header_read_bytes`）を使うか共通化して読む。ヘッダは `cline_version_header_write(<path> <major> <minor> <patch> <prerelease>)` が書き込みと `cline_read_version` による読み直しまで行う（書く前の検査には `cline_version_header_render`）。
-- 2.4: `tools/ci/changes.cmake` は `-D CLINE_CHANGED_FILES=<一覧のファイル>`、`-D CLINE_CHANGES_OUTPUT=<出力ファイル>`（`$GITHUB_OUTPUT` をそのまま渡せる。`docs_only=<v>` を追記）。標準出力は message(STATUS) なので行頭に `-- ` が付く。終了コードは常に 0。
-- 3.1: `tools/release/prepare.cmake` の入力は `CLINE_RELEASE_VERSION`、`CLINE_RELEASE_DATE`、`CLINE_RELEASE_REPO_URL`、`CLINE_SOURCE_DIR`、`CLINE_RELEASE_TAGS_FILE`、`CLINE_RELEASE_OUTPUT`（任意）、`CLINE_RELEASE_CHECK_ONLY`（任意）。出力は `version=`、`tag=`、`prerelease=`。バイト単位の読み込みは `_cline_prepare_read_bytes` に写しがある（`ClineVersionHeader.cmake` の private 関数と重複。3.2 で共通化を検討）。
-- 3.2: `tools/release/publish.cmake` の入力は `CLINE_RELEASE_VERSION`、`CLINE_RELEASE_REPO_URL`、`CLINE_SOURCE_DIR`、`CLINE_RELEASE_NOTES`、`CLINE_RELEASE_OUTPUT`（任意）。出力は `prerelease=`、`title=v<V>`。バイト単位の読み込みは `tools/release/ClineReadBytes.cmake` の `cline_read_bytes(<path> <what> <out>)` に共通化した。
+- 1.1: リリースのテストの補助は `tests/release/ReleaseTestHelpers.cmake`（`argx_test_expect_equal`、`argx_test_expect_contains`、`argx_test_expect_not_contains`、`argx_test_copy_fixture`、`argx_test_run_script`、`argx_test_finish`）。登録は `tests/CMakeLists.txt` の `argx_add_release_test(<name>)`（`release.<name>`、ラベル `release`、作業ディレクトリは開始時に空にされる）。テストは `cmake -D ARGX_SOURCE_ROOT=... -D ARGX_TEST_WORK_DIR=... -P` で動く。
+- 1.1: `argx_read_version(<header> <out> [<prerelease-out>])` は 2 引数でも識別子のマクロを検査する。トップレベルの `CMakeLists.txt` はまだ 2 引数で呼ぶ（1.2 で 3 引数にする）。
+- 2.1: SemVer は `tools/release/ArgXSemver.cmake` の `argx_semver_parse(<version> <prefix>)`（`_VALID`、`_ERROR`、`_MAJOR`、`_MINOR`、`_PATCH`、`_PRERELEASE`、`_CORE`）と `argx_semver_compare(<a> <b> <out>)`（-1/0/1）。`CMAKE_MATCH_<n>` は前の一致の値が残ることがあるので注意する。FATAL_ERROR の文はCMake が折り返すので、子プロセスの出力を照合するときは行をつないでから比べる。
+- 2.2: CHANGELOG は `tools/release/ArgXChangelog.cmake` の `argx_changelog_parse`、`argx_changelog_promote(<text> <version> <date> <repo-url> <out>)`、`argx_changelog_notes(<text> <version> <repo-url> <out>)`。notes の結果は末尾に改行がないので、3.2 でファイルに書くときに足す。promote は V が最新の版より大きくなければ止まる。フィクスチャと実際の CHANGELOG では Semantic Versioning へのリンクを `https://semver.org/` にし、`spec` の語を避ける。
+- 2.3: CMake 3.28 の `file(READ)` は CRLF を LF にする（`file(READ ... HEX)` のバイトには CR がある）。改行の形を保つ必要があるファイル（CHANGELOG.md、version.h）は、`tools/release/ArgXVersionHeader.cmake` の HEX と `string(ASCII)` による読み方（`_argx_version_header_read_bytes`）を使うか共通化して読む。ヘッダは `argx_version_header_write(<path> <major> <minor> <patch> <prerelease>)` が書き込みと `argx_read_version` による読み直しまで行う（書く前の検査には `argx_version_header_render`）。
+- 2.4: `tools/ci/changes.cmake` は `-D ARGX_CHANGED_FILES=<一覧のファイル>`、`-D ARGX_CHANGES_OUTPUT=<出力ファイル>`（`$GITHUB_OUTPUT` をそのまま渡せる。`docs_only=<v>` を追記）。標準出力は message(STATUS) なので行頭に `-- ` が付く。終了コードは常に 0。
+- 3.1: `tools/release/prepare.cmake` の入力は `ARGX_RELEASE_VERSION`、`ARGX_RELEASE_DATE`、`ARGX_RELEASE_REPO_URL`、`ARGX_SOURCE_DIR`、`ARGX_RELEASE_TAGS_FILE`、`ARGX_RELEASE_OUTPUT`（任意）、`ARGX_RELEASE_CHECK_ONLY`（任意）。出力は `version=`、`tag=`、`prerelease=`。バイト単位の読み込みは `_argx_prepare_read_bytes` に写しがある（`ArgXVersionHeader.cmake` の private 関数と重複。3.2 で共通化を検討）。
+- 3.2: `tools/release/publish.cmake` の入力は `ARGX_RELEASE_VERSION`、`ARGX_RELEASE_REPO_URL`、`ARGX_SOURCE_DIR`、`ARGX_RELEASE_NOTES`、`ARGX_RELEASE_OUTPUT`（任意）。出力は `prerelease=`、`title=v<V>`。バイト単位の読み込みは `tools/release/ArgXReadBytes.cmake` の `argx_read_bytes(<path> <what> <out>)` に共通化した。
 - 4.1: actionlint 1.7.7 は scratchpad に go install で入れた（/tmp/claude-0/-home-user-cargs/5e68a7da-d27a-50a0-b960-8332b131ec92/scratchpad/gopath/bin/actionlint）。ワークフローの確認に使える。ci.yml の required check は `CI result`（ジョブ id は `result`）。
 - 4.2: release-pr.yml は GITHUB_TOKEN で `gh pr create` するので、リポジトリの設定 "Allow GitHub Actions to create and approve pull requests" が要る（5.3 の手順書に書く）。PR 作成に失敗したらブランチを消してやり直す、CI の dispatch に失敗したら手で CI を起動する、という案内を手順書と合わせる。
 - 4.3: release-publish.yml の concurrency はジョブに置いた（ジョブが飛ばされる実行が group に入って保留中の実行を置き換えないように）。手動のやり直しは main で起動し、`gh pr list --state merged --head release/v<V>` で同じリポジトリの PR を 1 つだけ見つける。タグが別のコミットを指すと止まる（手順書 5.3 に戻し方を書く）。

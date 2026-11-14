@@ -1,16 +1,16 @@
 /*
- * CLine - library version.
+ * ArgX - library version.
  */
-#include <cline/version.h>
+#include <argx/version.h>
 
 #include "version_internal.h"
 
-unsigned long cline_version_pack(unsigned int major, unsigned int minor, unsigned int patch)
+unsigned long argx_version_pack(unsigned int major, unsigned int minor, unsigned int patch)
 {
     return ((unsigned long)major << 16) | ((unsigned long)minor << 8) | (unsigned long)patch;
 }
 
-unsigned long cline_version(void)
+unsigned long argx_version(void)
 {
-    return cline_version_pack(CLINE_VERSION_MAJOR, CLINE_VERSION_MINOR, CLINE_VERSION_PATCH);
+    return argx_version_pack(ARGX_VERSION_MAJOR, ARGX_VERSION_MINOR, ARGX_VERSION_PATCH);
 }

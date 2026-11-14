@@ -1,8 +1,8 @@
 /*
- * CLine - internal declarations for the output of the help: the part that
+ * ArgX - internal declarations for the output of the help: the part that
  * counts columns while it passes text to a write function.
  *
- * Everything the help writes goes through a cline_out_t. It keeps the
+ * Everything the help writes goes through a argx_out_t. It keeps the
  * column of the current line, where one byte is one column, whatever the
  * byte is.
  *
@@ -20,17 +20,17 @@
  * the same code that writes it.
  *
  * The functions allocate nothing and know nothing about a schema. A
- * cline_out_t is an object of the caller, used for one generation and by
+ * argx_out_t is an object of the caller, used for one generation and by
  * one thread.
  *
  * Preconditions of every function: out is not NULL (checked with assert),
- * and, except for cline_out_init(), it was initialised with
- * cline_out_init() (not checked).
+ * and, except for argx_out_init(), it was initialised with
+ * argx_out_init() (not checked).
  */
-#ifndef CLINE_OUT_H
-#define CLINE_OUT_H
+#ifndef ARGX_OUT_H
+#define ARGX_OUT_H
 
-#include <cline/help.h>
+#include <argx/help.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -39,21 +39,21 @@
  * The state of the output. The members are read and written by the
  * functions of this header only.
  */
-typedef struct cline_out
+typedef struct argx_out
 {
-    cline_help_write_fn_t write_fn; /* NULL: only the columns are counted */
+    argx_help_write_fn_t write_fn; /* NULL: only the columns are counted */
     void *user_data;                 /* passed on to write_fn as it is */
     size_t column;                   /* the current column, with the blanks not yet written */
     size_t pending;                  /* the number of blanks not yet written */
     bool failed;                     /* write_fn has reported a failure */
-} cline_out_t;
+} argx_out_t;
 
 /*
  * Starts an output at column 0, with no blanks remembered and no failure.
  * write_fn receives the text, together with user_data; when write_fn is
  * NULL, nothing is written and only the columns are counted.
  */
-void cline_out_init(cline_out_t *out, cline_help_write_fn_t write_fn, void *user_data);
+void argx_out_init(argx_out_t *out, argx_help_write_fn_t write_fn, void *user_data);
 
 /*
  * Writes the length bytes of text: first the blanks that are remembered,
@@ -61,47 +61,47 @@ void cline_out_init(cline_out_t *out, cline_help_write_fn_t write_fn, void *user
  * happens: the blanks stay remembered.
  *
  * Preconditions: text is not NULL unless length is 0, and it holds no
- * '\n' (a line is ended with cline_out_newline()). They are checked with
+ * '\n' (a line is ended with argx_out_newline()). They are checked with
  * assert.
  */
-void cline_out_text(cline_out_t *out, const char *text, size_t length);
+void argx_out_text(argx_out_t *out, const char *text, size_t length);
 
 /*
- * The same as cline_out_text() with the length of the string text.
+ * The same as argx_out_text() with the length of the string text.
  *
  * Preconditions: text is not NULL and holds no '\n'. They are checked with
  * assert.
  */
-void cline_out_string(cline_out_t *out, const char *text);
+void argx_out_string(argx_out_t *out, const char *text);
 
 /*
  * Remembers count more blanks and advances the column by count. Nothing is
  * written yet.
  */
-void cline_out_spaces(cline_out_t *out, size_t count);
+void argx_out_spaces(argx_out_t *out, size_t count);
 
 /*
  * When the current column is to the left of column, remembers the blanks
- * that lead to it, as cline_out_spaces() does. Otherwise nothing happens.
+ * that lead to it, as argx_out_spaces() does. Otherwise nothing happens.
  */
-void cline_out_pad_to(cline_out_t *out, size_t column);
+void argx_out_pad_to(argx_out_t *out, size_t column);
 
 /*
  * Ends the line: drops the blanks that are remembered, writes the one byte
  * '\n' and sets the column to 0.
  */
-void cline_out_newline(cline_out_t *out);
+void argx_out_newline(argx_out_t *out);
 
 /*
  * Returns the current column: the number of bytes written on this line
  * plus the number of blanks that are remembered.
  */
-size_t cline_out_column(const cline_out_t *out);
+size_t argx_out_column(const argx_out_t *out);
 
 /*
  * Returns true when the write function has reported a failure. Always
  * false without a write function.
  */
-bool cline_out_failed(const cline_out_t *out);
+bool argx_out_failed(const argx_out_t *out);
 
-#endif /* CLINE_OUT_H */
+#endif /* ARGX_OUT_H */

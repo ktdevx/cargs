@@ -1,5 +1,5 @@
 /*
- * CLine - value types.
+ * ArgX - value types.
  */
 #include "type_internal.h"
 
@@ -17,37 +17,37 @@
  * The conversion function of the string type. Every input is taken, and the
  * value is the pointer to the input itself.
  */
-static cline_error_t convert_string(const char *text, void *value, void *context)
+static argx_error_t convert_string(const char *text, void *value, void *context)
 {
     (void)context;
 
     *(const char **)value = text;
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
 /* The conversion function of the integer type. */
-static cline_error_t convert_int(const char *text, void *value, void *context)
+static argx_error_t convert_int(const char *text, void *value, void *context)
 {
     (void)context;
 
-    return cline_number_parse_int(text, (int64_t *)value);
+    return argx_number_parse_int(text, (int64_t *)value);
 }
 
 /* The conversion function of the floating-point type. */
-static cline_error_t convert_float(const char *text, void *value, void *context)
+static argx_error_t convert_float(const char *text, void *value, void *context)
 {
     (void)context;
 
-    return cline_number_parse_float(text, (double *)value);
+    return argx_number_parse_float(text, (double *)value);
 }
 
 /*
  * The conversion function of a choice type. context is the value type
  * itself. The value is the index of the choice that is exactly text.
  */
-static cline_error_t convert_choice(const char *text, void *value, void *context)
+static argx_error_t convert_choice(const char *text, void *value, void *context)
 {
-    const cline_type_t *type = (const cline_type_t *)context;
+    const argx_type_t *type = (const argx_type_t *)context;
     size_t index;
 
     for (index = 0; index < type->choice_count; ++index)
@@ -55,10 +55,10 @@ static cline_error_t convert_choice(const char *text, void *value, void *context
         if (strcmp(type->choices[index], text) == 0)
         {
             *(size_t *)value = index;
-            return CLINE_ERROR_NONE;
+            return ARGX_ERROR_NONE;
         }
     }
-    return CLINE_ERROR_INVALID_VALUE;
+    return ARGX_ERROR_INVALID_VALUE;
 }
 
 /*
@@ -84,36 +84,36 @@ static bool has_duplicate(const char *const *choices, size_t count)
 }
 
 /* The built-in value types: fixed objects that are never modified. */
-static const cline_type_t string_type = {
-    CLINE_TYPE_STRING, "string", NULL, sizeof(const char *), convert_string, NULL, NULL, NULL, 0, true
+static const argx_type_t string_type = {
+    ARGX_TYPE_STRING, "string", NULL, sizeof(const char *), convert_string, NULL, NULL, NULL, 0, true
 };
 
-static const cline_type_t int_type = {
-    CLINE_TYPE_INT, "integer", NULL, sizeof(int64_t), convert_int, NULL, NULL, NULL, 0, true
+static const argx_type_t int_type = {
+    ARGX_TYPE_INT, "integer", NULL, sizeof(int64_t), convert_int, NULL, NULL, NULL, 0, true
 };
 
-static const cline_type_t float_type = {
-    CLINE_TYPE_FLOAT, "float", NULL, sizeof(double), convert_float, NULL, NULL, NULL, 0, true
+static const argx_type_t float_type = {
+    ARGX_TYPE_FLOAT, "float", NULL, sizeof(double), convert_float, NULL, NULL, NULL, 0, true
 };
 
-const cline_type_t *cline_type_string(void)
+const argx_type_t *argx_type_string(void)
 {
     return &string_type;
 }
 
-const cline_type_t *cline_type_int(void)
+const argx_type_t *argx_type_int(void)
 {
     return &int_type;
 }
 
-const cline_type_t *cline_type_float(void)
+const argx_type_t *argx_type_float(void)
 {
     return &float_type;
 }
 
-cline_error_t cline_type_create_choice(const char *const *choices, size_t count, cline_type_t **out)
+argx_error_t argx_type_create_choice(const char *const *choices, size_t count, argx_type_t **out)
 {
-    cline_type_t *type;
+    argx_type_t *type;
     size_t index;
 
     assert(out != NULL);
@@ -122,7 +122,7 @@ cline_error_t cline_type_create_choice(const char *const *choices, size_t count,
 
     if (count == 0)
     {
-        return CLINE_ERROR_INVALID_DEFINITION;
+        return ARGX_ERROR_INVALID_DEFINITION;
     }
 
     assert(choices != NULL);
@@ -133,22 +133,22 @@ cline_error_t cline_type_create_choice(const char *const *choices, size_t count,
 
     if (has_duplicate(choices, count))
     {
-        return CLINE_ERROR_INVALID_DEFINITION;
+        return ARGX_ERROR_INVALID_DEFINITION;
     }
 
     /* The size of the array of the copies must not overflow. */
     if (count > (SIZE_MAX / sizeof(char *)))
     {
-        return CLINE_ERROR_OUT_OF_MEMORY;
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
-    type = (cline_type_t *)cline_malloc(sizeof(*type));
+    type = (argx_type_t *)argx_malloc(sizeof(*type));
     if (type == NULL)
     {
-        return CLINE_ERROR_OUT_OF_MEMORY;
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
-    type->kind = CLINE_TYPE_CHOICE;
+    type->kind = ARGX_TYPE_CHOICE;
     type->name = "choice";
     type->owned_name = NULL;
     type->value_size = sizeof(size_t);
@@ -158,11 +158,11 @@ cline_error_t cline_type_create_choice(const char *const *choices, size_t count,
     type->choice_count = 0;
     type->is_static = false;
 
-    type->choices = (char **)cline_malloc(count * sizeof(char *));
+    type->choices = (char **)argx_malloc(count * sizeof(char *));
     if (type->choices == NULL)
     {
-        cline_type_destroy(type);
-        return CLINE_ERROR_OUT_OF_MEMORY;
+        argx_type_destroy(type);
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
     /*
@@ -171,23 +171,23 @@ cline_error_t cline_type_create_choice(const char *const *choices, size_t count,
      */
     for (index = 0; index < count; ++index)
     {
-        type->choices[index] = cline_strdup(choices[index]);
+        type->choices[index] = argx_strdup(choices[index]);
         if (type->choices[index] == NULL)
         {
-            cline_type_destroy(type);
-            return CLINE_ERROR_OUT_OF_MEMORY;
+            argx_type_destroy(type);
+            return ARGX_ERROR_OUT_OF_MEMORY;
         }
         ++type->choice_count;
     }
 
     *out = type;
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
-cline_error_t cline_type_create(const char *name, size_t value_size, cline_convert_fn_t convert_fn,
-                                  cline_release_fn_t release_fn, void *context, cline_type_t **out)
+argx_error_t argx_type_create(const char *name, size_t value_size, argx_convert_fn_t convert_fn,
+                                  argx_release_fn_t release_fn, void *context, argx_type_t **out)
 {
-    cline_type_t *type;
+    argx_type_t *type;
 
     assert(out != NULL);
 
@@ -199,23 +199,23 @@ cline_error_t cline_type_create(const char *name, size_t value_size, cline_conve
 
     if (name[0] == '\0')
     {
-        return CLINE_ERROR_INVALID_NAME;
+        return ARGX_ERROR_INVALID_NAME;
     }
 
-    type = (cline_type_t *)cline_malloc(sizeof(*type));
+    type = (argx_type_t *)argx_malloc(sizeof(*type));
     if (type == NULL)
     {
-        return CLINE_ERROR_OUT_OF_MEMORY;
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
-    type->owned_name = cline_strdup(name);
+    type->owned_name = argx_strdup(name);
     if (type->owned_name == NULL)
     {
-        cline_free(type);
-        return CLINE_ERROR_OUT_OF_MEMORY;
+        argx_free(type);
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
-    type->kind = CLINE_TYPE_CUSTOM;
+    type->kind = ARGX_TYPE_CUSTOM;
     type->name = type->owned_name;
     type->value_size = value_size;
     type->convert_fn = convert_fn;
@@ -226,10 +226,10 @@ cline_error_t cline_type_create(const char *name, size_t value_size, cline_conve
     type->is_static = false;
 
     *out = type;
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
-void cline_type_destroy(cline_type_t *type)
+void argx_type_destroy(argx_type_t *type)
 {
     size_t index;
 
@@ -242,47 +242,47 @@ void cline_type_destroy(cline_type_t *type)
     {
         for (index = 0; index < type->choice_count; ++index)
         {
-            cline_free(type->choices[index]);
+            argx_free(type->choices[index]);
         }
-        cline_free(type->choices);
+        argx_free(type->choices);
     }
     /* Only a copied name is freed; the other names are fixed strings. */
     if (type->owned_name != NULL)
     {
-        cline_free(type->owned_name);
+        argx_free(type->owned_name);
     }
-    cline_free(type);
+    argx_free(type);
 }
 
-const char *cline_type_name(const cline_type_t *type)
+const char *argx_type_name(const argx_type_t *type)
 {
     assert(type != NULL);
 
     return type->name;
 }
 
-cline_type_kind_t cline_type_kind(const cline_type_t *type)
+argx_type_kind_t argx_type_kind(const argx_type_t *type)
 {
     assert(type != NULL);
 
     return type->kind;
 }
 
-size_t cline_type_value_size(const cline_type_t *type)
+size_t argx_type_value_size(const argx_type_t *type)
 {
     assert(type != NULL);
 
     return type->value_size;
 }
 
-size_t cline_type_choice_count(const cline_type_t *type)
+size_t argx_type_choice_count(const argx_type_t *type)
 {
     assert(type != NULL);
 
     return type->choice_count;
 }
 
-const char *cline_type_choice_at(const cline_type_t *type, size_t index)
+const char *argx_type_choice_at(const argx_type_t *type, size_t index)
 {
     assert(type != NULL);
     assert(index < type->choice_count);
@@ -290,7 +290,7 @@ const char *cline_type_choice_at(const cline_type_t *type, size_t index)
     return type->choices[index];
 }
 
-cline_error_t cline_type_convert(const cline_type_t *type, const char *text, void *value)
+argx_error_t argx_type_convert(const argx_type_t *type, const char *text, void *value)
 {
     assert(type != NULL);
     assert(text != NULL);
@@ -299,7 +299,7 @@ cline_error_t cline_type_convert(const cline_type_t *type, const char *text, voi
     return type->convert_fn(text, value, type->context);
 }
 
-void cline_type_release(const cline_type_t *type, void *value)
+void argx_type_release(const argx_type_t *type, void *value)
 {
     assert(type != NULL);
     assert(value != NULL);

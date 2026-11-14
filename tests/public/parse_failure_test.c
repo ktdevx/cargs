@@ -1,6 +1,6 @@
 /*
- * Tests of the failure of an allocation in a parse: cline_parse() and
- * cline_parse_wide() of <cline/parse.h>.
+ * Tests of the failure of an allocation in a parse: argx_parse() and
+ * argx_parse_wide() of <argx/parse.h>.
  *
  * Each test takes one parse and makes its first, second, ... allocation
  * request fail in turn, in the shape that docs/conventions.md gives under
@@ -14,7 +14,7 @@
  * 4. parses through the wide entry.
  *
  * Whichever request fails, the parse must return
- * CLINE_ERROR_OUT_OF_MEMORY, write NULL to the place of the result, keep
+ * ARGX_ERROR_OUT_OF_MEMORY, write NULL to the place of the result, keep
  * no block of its own, and have cleaned up every value that it converted:
  * the values of a user-defined value type are counted. A result of an
  * earlier parse must be as it was. The same parse of the same schema must
@@ -31,7 +31,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -73,8 +73,8 @@
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* ---- The user-defined value type ---------------------------------------- */
@@ -101,20 +101,20 @@ typedef struct word_log
     bool reject;
 } word_log_t;
 
-static cline_error_t word_convert(const char *text, void *value, void *context)
+static argx_error_t word_convert(const char *text, void *value, void *context)
 {
     word_log_t *log = context;
     word_t word;
 
     if (log->reject && (strcmp(text, "bad") == 0))
     {
-        return CLINE_ERROR_INVALID_VALUE;
+        return ARGX_ERROR_INVALID_VALUE;
     }
     word.text = text;
     word.length = strlen(text);
     memcpy(value, &word, sizeof(word));
     log->converted++;
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
 /* Reads the value: its text must still be valid when it is cleaned up. */
@@ -146,66 +146,66 @@ static void word_release(void *value, void *context)
 typedef struct fixture
 {
     word_log_t log;
-    cline_type_t *word;
-    cline_type_t *color_type;
-    cline_command_t *root;
-    cline_option_t *verbose;
-    cline_option_t *debug;
-    cline_option_t *color;
-    cline_option_t *config;
-    cline_option_t *jobs;
-    cline_command_t *remote;
-    cline_option_t *quiet;
-    cline_option_t *name;
-    cline_command_t *add;
-    cline_option_t *force;
-    cline_option_t *extra;
-    cline_option_t *fetch;
-    cline_option_t *tag;
-    cline_option_t *ratio;
-    cline_option_t *mode;
-    cline_option_t *label;
-    cline_positional_t *item;
-    cline_positional_t *urls;
-    cline_command_t *init;
-    cline_option_t *owner;
-    cline_option_t *template_name;
-    cline_positional_t *dir;
+    argx_type_t *word;
+    argx_type_t *color_type;
+    argx_command_t *root;
+    argx_option_t *verbose;
+    argx_option_t *debug;
+    argx_option_t *color;
+    argx_option_t *config;
+    argx_option_t *jobs;
+    argx_command_t *remote;
+    argx_option_t *quiet;
+    argx_option_t *name;
+    argx_command_t *add;
+    argx_option_t *force;
+    argx_option_t *extra;
+    argx_option_t *fetch;
+    argx_option_t *tag;
+    argx_option_t *ratio;
+    argx_option_t *mode;
+    argx_option_t *label;
+    argx_positional_t *item;
+    argx_positional_t *urls;
+    argx_command_t *init;
+    argx_option_t *owner;
+    argx_option_t *template_name;
+    argx_positional_t *dir;
 } fixture_t;
 
-static cline_command_t *add_subcommand(cline_command_t *command, const char *name)
+static argx_command_t *add_subcommand(argx_command_t *command, const char *name)
 {
-    cline_command_t *subcommand = NULL;
+    argx_command_t *subcommand = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_subcommand(command, name, &subcommand) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(command, name, &subcommand) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(subcommand != NULL);
     return subcommand;
 }
 
-static cline_option_t *add_flag(cline_command_t *command, char short_name, const char *long_name)
+static argx_option_t *add_flag(argx_command_t *command, char short_name, const char *long_name)
 {
-    cline_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_flag(command, short_name, long_name, &option) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(command, short_name, long_name, &option) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     return option;
 }
 
-static cline_option_t *add_count(cline_command_t *command, char short_name, const char *long_name)
+static argx_option_t *add_count(argx_command_t *command, char short_name, const char *long_name)
 {
-    cline_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_count(command, short_name, long_name, &option) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_count(command, short_name, long_name, &option) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     return option;
 }
 
-static cline_option_t *add_negatable(cline_command_t *command, char short_name, const char *long_name)
+static argx_option_t *add_negatable(argx_command_t *command, char short_name, const char *long_name)
 {
-    cline_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_negatable(command, short_name, long_name, &option) ==
-                      CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_negatable(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     return option;
 }
@@ -214,17 +214,17 @@ static cline_option_t *add_negatable(cline_command_t *command, char short_name, 
  * Adds an option that takes a value to command. default_value may be
  * NULL: the option has no default value then.
  */
-static cline_option_t *add_value(cline_command_t *command, char short_name, const char *long_name,
-                                  const cline_type_t *type, const char *default_value)
+static argx_option_t *add_value(argx_command_t *command, char short_name, const char *long_name,
+                                  const argx_type_t *type, const char *default_value)
 {
-    cline_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_value(command, short_name, long_name, type, &option) ==
-                      CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, type, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (default_value != NULL)
     {
-        NAOS_REQUIRE_TRUE(cline_option_set_default(option, default_value) == CLINE_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_default(option, default_value) == ARGX_ERROR_NONE);
     }
     return option;
 }
@@ -233,18 +233,18 @@ static cline_option_t *add_value(cline_command_t *command, char short_name, cons
  * Adds a positional to command. default_value may be NULL: the positional
  * has no default value then.
  */
-static cline_positional_t *add_positional(cline_command_t *command, const char *name,
-                                           const cline_type_t *type, cline_arity_t arity,
+static argx_positional_t *add_positional(argx_command_t *command, const char *name,
+                                           const argx_type_t *type, argx_arity_t arity,
                                            const char *default_value)
 {
-    cline_positional_t *positional = NULL;
+    argx_positional_t *positional = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_command_add_positional(command, name, type, arity, &positional) ==
-                      CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, type, arity, &positional) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     if (default_value != NULL)
     {
-        NAOS_REQUIRE_TRUE(cline_positional_set_default(positional, default_value) == CLINE_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_positional_set_default(positional, default_value) == ARGX_ERROR_NONE);
     }
     return positional;
 }
@@ -264,18 +264,18 @@ static void set_up(fixture_t *fixture)
     fixture->color_type = NULL;
     fixture->root = NULL;
 
-    NAOS_REQUIRE_TRUE(cline_type_create("word", sizeof(word_t), word_convert, word_release, &fixture->log,
-                                         &fixture->word) == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_type_create_choice(colors, sizeof(colors) / sizeof(colors[0]),
-                                                &fixture->color_type) == CLINE_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(cline_command_create("tool", &fixture->root) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create("word", sizeof(word_t), word_convert, word_release, &fixture->log,
+                                         &fixture->word) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create_choice(colors, sizeof(colors) / sizeof(colors[0]),
+                                                &fixture->color_type) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &fixture->root) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(fixture->root != NULL);
 
     fixture->verbose = add_flag(fixture->root, 'v', "verbose");
     fixture->debug = add_count(fixture->root, 'd', "debug");
     fixture->color = add_negatable(fixture->root, 'c', "color");
-    fixture->config = add_value(fixture->root, '\0', "config", cline_type_string(), "tool.cfg");
-    fixture->jobs = add_value(fixture->root, 'j', "jobs", cline_type_int(), "2");
+    fixture->config = add_value(fixture->root, '\0', "config", argx_type_string(), "tool.cfg");
+    fixture->jobs = add_value(fixture->root, 'j', "jobs", argx_type_int(), "2");
 
     fixture->remote = add_subcommand(fixture->root, "remote");
     fixture->quiet = add_flag(fixture->remote, 'q', "quiet");
@@ -286,18 +286,18 @@ static void set_up(fixture_t *fixture)
     fixture->extra = add_count(fixture->add, 'x', "extra");
     fixture->fetch = add_negatable(fixture->add, '\0', "fetch");
     fixture->tag = add_value(fixture->add, 't', "tag", fixture->word, NULL);
-    fixture->ratio = add_value(fixture->add, '\0', "ratio", cline_type_float(), "0.5");
+    fixture->ratio = add_value(fixture->add, '\0', "ratio", argx_type_float(), "0.5");
     fixture->mode = add_value(fixture->add, '\0', "mode", fixture->color_type, "red");
     fixture->label = add_value(fixture->add, '\0', "label", fixture->word, "none");
-    fixture->item = add_positional(fixture->add, "NAME", fixture->word, CLINE_ARITY_REQUIRED, NULL);
-    fixture->urls = add_positional(fixture->add, "URL", fixture->word, CLINE_ARITY_ZERO_OR_MORE, NULL);
+    fixture->item = add_positional(fixture->add, "NAME", fixture->word, ARGX_ARITY_REQUIRED, NULL);
+    fixture->urls = add_positional(fixture->add, "URL", fixture->word, ARGX_ARITY_ZERO_OR_MORE, NULL);
 
     fixture->init = add_subcommand(fixture->root, "init");
     fixture->owner = add_value(fixture->init, '\0', "owner", fixture->word, "nobody");
     fixture->template_name = add_value(fixture->init, '\0', "template", fixture->word, "bad");
-    fixture->dir = add_positional(fixture->init, "DIR", fixture->word, CLINE_ARITY_OPTIONAL, ".");
+    fixture->dir = add_positional(fixture->init, "DIR", fixture->word, ARGX_ARITY_OPTIONAL, ".");
 
-    NAOS_REQUIRE_TRUE(cline_command_validate(fixture->root, NULL, NULL, NULL) == CLINE_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_validate(fixture->root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
     /* The validation converted the default values and cleaned them up. */
     NAOS_CHECK_UINT_EQ(fixture->log.released, fixture->log.converted);
 }
@@ -317,54 +317,54 @@ static size_t words_held(const fixture_t *fixture)
  */
 static void tear_down(fixture_t *fixture)
 {
-    cline_command_destroy(fixture->root);
-    cline_type_destroy(fixture->color_type);
-    cline_type_destroy(fixture->word);
+    argx_command_destroy(fixture->root);
+    argx_type_destroy(fixture->color_type);
+    argx_type_destroy(fixture->word);
     NAOS_CHECK_UINT_EQ(words_held(fixture), 0);
     check_clean();
 }
 
 /* ---- Reading a result --------------------------------------------------- */
 
-static void check_option_word(const cline_result_t *result, const cline_option_t *option,
-                              const char *expected, cline_source_t source)
+static void check_option_word(const argx_result_t *result, const argx_option_t *option,
+                              const char *expected, argx_source_t source)
 {
-    const word_t *word = cline_result_option_value(result, option);
+    const word_t *word = argx_result_option_value(result, option);
 
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, option), source);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, option), source);
     NAOS_REQUIRE_TRUE(word != NULL);
     NAOS_REQUIRE_TRUE(word->text != NULL);
     NAOS_CHECK_STR_EQ(word->text, expected);
 }
 
-static void check_positional_word(const cline_result_t *result, const cline_positional_t *positional,
+static void check_positional_word(const argx_result_t *result, const argx_positional_t *positional,
                                   size_t index, const char *expected)
 {
-    const word_t *word = cline_result_positional_value(result, positional, index);
+    const word_t *word = argx_result_positional_value(result, positional, index);
 
     NAOS_REQUIRE_TRUE(word != NULL);
     NAOS_REQUIRE_TRUE(word->text != NULL);
     NAOS_CHECK_STR_EQ(word->text, expected);
 }
 
-static void check_option_string(const cline_result_t *result, const cline_option_t *option,
-                                const char *expected, cline_source_t source)
+static void check_option_string(const argx_result_t *result, const argx_option_t *option,
+                                const char *expected, argx_source_t source)
 {
     const char *value = NULL;
 
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, option), source);
-    NAOS_REQUIRE_TRUE(cline_result_option_string(result, option, &value));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, option), source);
+    NAOS_REQUIRE_TRUE(argx_result_option_string(result, option, &value));
     NAOS_REQUIRE_TRUE(value != NULL);
     NAOS_CHECK_STR_EQ(value, expected);
 }
 
-static void check_option_int(const cline_result_t *result, const cline_option_t *option,
-                             int64_t expected, cline_source_t source)
+static void check_option_int(const argx_result_t *result, const argx_option_t *option,
+                             int64_t expected, argx_source_t source)
 {
     int64_t value = 0;
 
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, option), source);
-    NAOS_REQUIRE_TRUE(cline_result_option_int(result, option, &value));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, option), source);
+    NAOS_REQUIRE_TRUE(argx_result_option_int(result, option, &value));
     NAOS_CHECK_TRUE(value == expected);
 }
 
@@ -372,29 +372,29 @@ static void check_option_int(const cline_result_t *result, const cline_option_t 
  * Checks the selected commands of result: count of them, the last of which
  * is last.
  */
-static void check_commands(const cline_result_t *result, const fixture_t *fixture, size_t count,
-                           const cline_command_t *last)
+static void check_commands(const argx_result_t *result, const fixture_t *fixture, size_t count,
+                           const argx_command_t *last)
 {
-    NAOS_CHECK_UINT_EQ(cline_result_command_count(result), count);
-    NAOS_CHECK_TRUE(cline_result_command_at(result, 0) == fixture->root);
-    NAOS_CHECK_TRUE(cline_result_command(result) == last);
+    NAOS_CHECK_UINT_EQ(argx_result_command_count(result), count);
+    NAOS_CHECK_TRUE(argx_result_command_at(result, 0) == fixture->root);
+    NAOS_CHECK_TRUE(argx_result_command(result) == last);
 }
 
 /* Checks the parse error of result. */
-static void check_error(const cline_result_t *result, cline_parse_error_kind_t kind, const char *message)
+static void check_error(const argx_result_t *result, argx_parse_error_kind_t kind, const char *message)
 {
-    NAOS_CHECK_INT_EQ(cline_result_error(result), CLINE_ERROR_INVALID_COMMAND_LINE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), kind);
-    NAOS_REQUIRE_TRUE(cline_result_error_message(result) != NULL);
-    NAOS_CHECK_STR_EQ(cline_result_error_message(result), message);
+    NAOS_CHECK_INT_EQ(argx_result_error(result), ARGX_ERROR_INVALID_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), kind);
+    NAOS_REQUIRE_TRUE(argx_result_error_message(result) != NULL);
+    NAOS_CHECK_STR_EQ(argx_result_error_message(result), message);
 }
 
 /* Checks that result has no parse error. */
-static void check_success(const cline_result_t *result)
+static void check_success(const argx_result_t *result)
 {
-    NAOS_CHECK_INT_EQ(cline_result_error(result), CLINE_ERROR_NONE);
-    NAOS_CHECK_INT_EQ(cline_result_error_kind(result), CLINE_PARSE_ERROR_NONE);
-    NAOS_CHECK_TRUE(cline_result_error_message(result) == NULL);
+    NAOS_CHECK_INT_EQ(argx_result_error(result), ARGX_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_result_error_message(result) == NULL);
 }
 
 /* ---- Failing every request of a parse ----------------------------------- */
@@ -403,7 +403,7 @@ static void check_success(const cline_result_t *result)
  * What a parse that completed must have given. held is set to the number
  * of values of the value type "word" that the result must hold.
  */
-typedef void (*check_fn_t)(const fixture_t *fixture, const cline_result_t *result, size_t *held);
+typedef void (*check_fn_t)(const fixture_t *fixture, const argx_result_t *result, size_t *held);
 
 /*
  * One parse: a command line for one of the two entries, what the parse
@@ -415,19 +415,19 @@ typedef struct parse_case
     char *const *argv;          /* NULL: the parse goes through the wide entry */
     wchar_t *const *wide_argv;  /* used when argv is NULL */
     bool reject;                /* whether the value type "word" rejects "bad" */
-    cline_error_t outcome;     /* CLINE_ERROR_NONE or CLINE_ERROR_INVALID_COMMAND_LINE */
+    argx_error_t outcome;     /* ARGX_ERROR_NONE or ARGX_ERROR_INVALID_COMMAND_LINE */
     check_fn_t check_fn;
     size_t least;               /* the least number of requests that the parse must make */
 } parse_case_t;
 
-static cline_error_t run_parse(const fixture_t *fixture, const parse_case_t *parse_case,
-                                cline_result_t **out)
+static argx_error_t run_parse(const fixture_t *fixture, const parse_case_t *parse_case,
+                                argx_result_t **out)
 {
     if (parse_case->argv != NULL)
     {
-        return cline_parse(fixture->root, parse_case->argc, parse_case->argv, out);
+        return argx_parse(fixture->root, parse_case->argc, parse_case->argv, out);
     }
-    return cline_parse_wide(fixture->root, parse_case->argc, parse_case->wide_argv, out);
+    return argx_parse_wide(fixture->root, parse_case->argc, parse_case->wide_argv, out);
 }
 
 /*
@@ -438,31 +438,31 @@ static cline_error_t run_parse(const fixture_t *fixture, const parse_case_t *par
 static void check_parse_completes(const fixture_t *fixture, const parse_case_t *parse_case, size_t live)
 {
     const size_t held_before = words_held(fixture);
-    cline_result_t *result = NULL;
+    argx_result_t *result = NULL;
     size_t held = 0;
 
     NAOS_CHECK_INT_EQ(run_parse(fixture, parse_case, &result), parse_case->outcome);
     NAOS_REQUIRE_TRUE(result != NULL);
-    NAOS_CHECK_INT_EQ(cline_result_error(result), parse_case->outcome);
+    NAOS_CHECK_INT_EQ(argx_result_error(result), parse_case->outcome);
     parse_case->check_fn(fixture, result, &held);
     NAOS_CHECK_UINT_EQ(words_held(fixture), held_before + held);
 
-    cline_result_destroy(result);
+    argx_result_destroy(result);
     NAOS_CHECK_UINT_EQ(words_held(fixture), held_before);
-    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
 }
 
 /*
  * Checks other, the result of the parse of "tool" alone that was made
  * before the parse that failed: it is as it was.
  */
-static void check_other(const fixture_t *fixture, const cline_result_t *other)
+static void check_other(const fixture_t *fixture, const argx_result_t *other)
 {
     check_success(other);
     check_commands(other, fixture, 1, fixture->root);
-    NAOS_CHECK_FALSE(cline_result_flag(other, fixture->verbose));
-    check_option_string(other, fixture->config, "tool.cfg", CLINE_SOURCE_DEFAULT);
-    check_option_int(other, fixture->jobs, 2, CLINE_SOURCE_DEFAULT);
+    NAOS_CHECK_FALSE(argx_result_flag(other, fixture->verbose));
+    check_option_string(other, fixture->config, "tool.cfg", ARGX_SOURCE_DEFAULT);
+    check_option_int(other, fixture->jobs, 2, ARGX_SOURCE_DEFAULT);
 }
 
 /*
@@ -475,29 +475,29 @@ static void fail_every_request(const parse_case_t *parse_case)
     bool completed = false;
     size_t n;
 
-    cline_test_allocator_install();
+    argx_test_allocator_install();
 
     for (n = 1; n <= REQUEST_LIMIT; ++n)
     {
         fixture_t fixture;
-        cline_result_t *other = NULL;
-        cline_result_t *result;
-        cline_error_t error;
+        argx_result_t *other = NULL;
+        argx_result_t *result;
+        argx_error_t error;
         size_t live;
         size_t before;
         size_t made;
         size_t held;
 
         /* Nothing is allocated here, so the counts can start again. */
-        cline_test_allocator_reset();
+        argx_test_allocator_reset();
 
         /* The schema, and a result of it that is alive during the parse. */
         set_up(&fixture);
         fixture.log.reject = parse_case->reject;
-        NAOS_REQUIRE_TRUE(cline_parse(fixture.root, ARGC(other_argv), other_argv, &other) ==
-                          CLINE_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_parse(fixture.root, ARGC(other_argv), other_argv, &other) ==
+                          ARGX_ERROR_NONE);
         NAOS_REQUIRE_TRUE(other != NULL);
-        live = cline_test_allocator_live();
+        live = argx_test_allocator_live();
         held = words_held(&fixture);
 
         /*
@@ -505,13 +505,13 @@ static void fail_every_request(const parse_case_t *parse_case)
          * holds a pointer that is not NULL.
          */
         result = other;
-        before = cline_test_allocator_requests();
-        cline_test_allocator_fail_at(before + n);
+        before = argx_test_allocator_requests();
+        argx_test_allocator_fail_at(before + n);
         error = run_parse(&fixture, parse_case, &result);
-        made = cline_test_allocator_requests() - before;
-        cline_test_allocator_fail_at(0);
+        made = argx_test_allocator_requests() - before;
+        argx_test_allocator_fail_at(0);
 
-        if ((error != CLINE_ERROR_OUT_OF_MEMORY) && (made < n))
+        if ((error != ARGX_ERROR_OUT_OF_MEMORY) && (made < n))
         {
             size_t expected = 0;
 
@@ -526,12 +526,12 @@ static void fail_every_request(const parse_case_t *parse_case)
             NAOS_REQUIRE_TRUE(result != other);
             parse_case->check_fn(&fixture, result, &expected);
             NAOS_CHECK_UINT_EQ(words_held(&fixture), held + expected);
-            cline_result_destroy(result);
+            argx_result_destroy(result);
             NAOS_CHECK_UINT_EQ(words_held(&fixture), held);
-            NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), live);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
 
             check_other(&fixture, other);
-            cline_result_destroy(other);
+            argx_result_destroy(other);
             tear_down(&fixture);
             completed = true;
             break;
@@ -541,7 +541,7 @@ static void fail_every_request(const parse_case_t *parse_case)
          * The n-th request failed, the parse stopped there and reported
          * it, and it wrote NULL to the place of the result.
          */
-        NAOS_CHECK_INT_EQ(error, CLINE_ERROR_OUT_OF_MEMORY);
+        NAOS_CHECK_INT_EQ(error, ARGX_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_UINT_EQ(made, n);
         NAOS_CHECK_TRUE(result == NULL);
 
@@ -549,7 +549,7 @@ static void fail_every_request(const parse_case_t *parse_case)
          * Nothing of the parse stays allocated, and every value that it
          * converted was cleaned up.
          */
-        NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), live);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
         NAOS_CHECK_UINT_EQ(words_held(&fixture), held);
 
         /*
@@ -561,57 +561,57 @@ static void fail_every_request(const parse_case_t *parse_case)
         check_parse_completes(&fixture, parse_case, live);
 
         /* Destroy what exists; nothing is left and nothing was violated. */
-        cline_result_destroy(other);
+        argx_result_destroy(other);
         tear_down(&fixture);
     }
 
     /* The loop ended because the parse completed, not at the limit. */
     NAOS_CHECK_TRUE(completed);
 
-    cline_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* ---- Operation 1: a parse that succeeds --------------------------------- */
 
-static void check_full(const fixture_t *fixture, const cline_result_t *result, size_t *held)
+static void check_full(const fixture_t *fixture, const argx_result_t *result, size_t *held)
 {
     double ratio = 0.0;
     size_t mode = 99;
 
     check_success(result);
     check_commands(result, fixture, 3, fixture->add);
-    NAOS_CHECK_TRUE(cline_result_command_at(result, 1) == fixture->remote);
-    NAOS_CHECK_TRUE(cline_result_command_at(result, 2) == fixture->add);
+    NAOS_CHECK_TRUE(argx_result_command_at(result, 1) == fixture->remote);
+    NAOS_CHECK_TRUE(argx_result_command_at(result, 2) == fixture->add);
 
     /* The root. */
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture->verbose));
-    NAOS_CHECK_UINT_EQ(cline_result_count(result, fixture->debug), 2);
-    NAOS_CHECK_FALSE(cline_result_flag(result, fixture->color));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->color), CLINE_SOURCE_COMMAND_LINE);
-    check_option_string(result, fixture->config, "tool.cfg", CLINE_SOURCE_DEFAULT);
-    check_option_int(result, fixture->jobs, 4, CLINE_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture->verbose));
+    NAOS_CHECK_UINT_EQ(argx_result_count(result, fixture->debug), 2);
+    NAOS_CHECK_FALSE(argx_result_flag(result, fixture->color));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->color), ARGX_SOURCE_COMMAND_LINE);
+    check_option_string(result, fixture->config, "tool.cfg", ARGX_SOURCE_DEFAULT);
+    check_option_int(result, fixture->jobs, 4, ARGX_SOURCE_COMMAND_LINE);
 
     /* remote. */
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture->quiet));
-    check_option_word(result, fixture->name, "upstream", CLINE_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture->quiet));
+    check_option_word(result, fixture->name, "upstream", ARGX_SOURCE_COMMAND_LINE);
 
     /* add: the tag was given three times, and the last one stays. */
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture->force));
-    NAOS_CHECK_UINT_EQ(cline_result_count(result, fixture->extra), 2);
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture->fetch));
-    check_option_word(result, fixture->tag, "c", CLINE_SOURCE_COMMAND_LINE);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->ratio), CLINE_SOURCE_COMMAND_LINE);
-    NAOS_REQUIRE_TRUE(cline_result_option_float(result, fixture->ratio, &ratio));
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture->force));
+    NAOS_CHECK_UINT_EQ(argx_result_count(result, fixture->extra), 2);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture->fetch));
+    check_option_word(result, fixture->tag, "c", ARGX_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->ratio), ARGX_SOURCE_COMMAND_LINE);
+    NAOS_REQUIRE_TRUE(argx_result_option_float(result, fixture->ratio, &ratio));
     NAOS_CHECK_TRUE((ratio > 0.1234) && (ratio < 0.1235));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->mode), CLINE_SOURCE_DEFAULT);
-    NAOS_REQUIRE_TRUE(cline_result_option_choice(result, fixture->mode, &mode));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->mode), ARGX_SOURCE_DEFAULT);
+    NAOS_REQUIRE_TRUE(argx_result_option_choice(result, fixture->mode, &mode));
     NAOS_CHECK_UINT_EQ(mode, 0);
-    check_option_word(result, fixture->label, "none", CLINE_SOURCE_DEFAULT);
+    check_option_word(result, fixture->label, "none", ARGX_SOURCE_DEFAULT);
 
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture->item), 1);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture->item), 1);
     check_positional_word(result, fixture->item, 0, "one");
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture->urls), 6);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture->urls), 6);
     check_positional_word(result, fixture->urls, 0, "u1");
     check_positional_word(result, fixture->urls, 1, "u2");
     check_positional_word(result, fixture->urls, 2, "u3");
@@ -635,7 +635,7 @@ NAOS_TEST(a_parse_that_succeeds_fails_at_every_allocation_point)
     parse_case.argv = argv;
     parse_case.wide_argv = NULL;
     parse_case.reject = false;
-    parse_case.outcome = CLINE_ERROR_NONE;
+    parse_case.outcome = ARGX_ERROR_NONE;
     parse_case.check_fn = check_full;
     /*
      * The result, its arguments, three selected commands with their
@@ -651,48 +651,48 @@ NAOS_TEST(a_parse_that_succeeds_fails_at_every_allocation_point)
  * What was read before each of the errors: the name, a tag that was
  * replaced, NAME and one of URL.
  */
-static void check_read_before_error(const fixture_t *fixture, const cline_result_t *result)
+static void check_read_before_error(const fixture_t *fixture, const argx_result_t *result)
 {
     check_commands(result, fixture, 3, fixture->add);
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture->verbose));
-    check_option_word(result, fixture->name, "x", CLINE_SOURCE_COMMAND_LINE);
-    check_option_word(result, fixture->tag, "b", CLINE_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture->verbose));
+    check_option_word(result, fixture->name, "x", ARGX_SOURCE_COMMAND_LINE);
+    check_option_word(result, fixture->tag, "b", ARGX_SOURCE_COMMAND_LINE);
     check_positional_word(result, fixture->item, 0, "one");
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture->urls), 1);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture->urls), 1);
     check_positional_word(result, fixture->urls, 0, "u1");
     /* A result with a parse error holds no default value. */
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->label), CLINE_SOURCE_NONE);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->config), CLINE_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->label), ARGX_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->config), ARGX_SOURCE_NONE);
 }
 
-static void check_unknown_option(const fixture_t *fixture, const cline_result_t *result, size_t *held)
+static void check_unknown_option(const fixture_t *fixture, const argx_result_t *result, size_t *held)
 {
-    check_error(result, CLINE_PARSE_ERROR_UNKNOWN_OPTION, "unknown option '--bogus'");
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), 12);
+    check_error(result, ARGX_PARSE_ERROR_UNKNOWN_OPTION, "unknown option '--bogus'");
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), 12);
     check_read_before_error(fixture, result);
     *held = 4;
 }
 
-static void check_invalid_value(const fixture_t *fixture, const cline_result_t *result, size_t *held)
+static void check_invalid_value(const fixture_t *fixture, const argx_result_t *result, size_t *held)
 {
-    check_error(result, CLINE_PARSE_ERROR_INVALID_VALUE,
+    check_error(result, ARGX_PARSE_ERROR_INVALID_VALUE,
                 "invalid value 'bad' for argument 'URL' (expected word)");
-    NAOS_CHECK_TRUE(cline_result_error_positional(result) == fixture->urls);
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), 12);
+    NAOS_CHECK_TRUE(argx_result_error_positional(result) == fixture->urls);
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), 12);
     check_read_before_error(fixture, result);
     *held = 4;
 }
 
-static void check_missing_positional(const fixture_t *fixture, const cline_result_t *result, size_t *held)
+static void check_missing_positional(const fixture_t *fixture, const argx_result_t *result, size_t *held)
 {
-    check_error(result, CLINE_PARSE_ERROR_MISSING_POSITIONAL, "missing required argument 'NAME'");
-    NAOS_CHECK_TRUE(cline_result_error_positional(result) == fixture->item);
-    NAOS_CHECK_INT_EQ(cline_result_error_source(result), CLINE_SOURCE_NONE);
+    check_error(result, ARGX_PARSE_ERROR_MISSING_POSITIONAL, "missing required argument 'NAME'");
+    NAOS_CHECK_TRUE(argx_result_error_positional(result) == fixture->item);
+    NAOS_CHECK_INT_EQ(argx_result_error_source(result), ARGX_SOURCE_NONE);
     check_commands(result, fixture, 3, fixture->add);
-    check_option_word(result, fixture->tag, "b", CLINE_SOURCE_COMMAND_LINE);
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture->item), 0);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->name), CLINE_SOURCE_NONE);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->label), CLINE_SOURCE_NONE);
+    check_option_word(result, fixture->tag, "b", ARGX_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture->item), 0);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->name), ARGX_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->label), ARGX_SOURCE_NONE);
     *held = 1;
 }
 
@@ -700,19 +700,19 @@ static void check_missing_positional(const fixture_t *fixture, const cline_resul
  * The default values that were applied before the one that failed are
  * taken back: the result holds no value.
  */
-static void check_invalid_default(const fixture_t *fixture, const cline_result_t *result, size_t *held)
+static void check_invalid_default(const fixture_t *fixture, const argx_result_t *result, size_t *held)
 {
-    check_error(result, CLINE_PARSE_ERROR_INVALID_VALUE,
+    check_error(result, ARGX_PARSE_ERROR_INVALID_VALUE,
                 "invalid default value 'bad' for option '--template' (expected word)");
-    NAOS_CHECK_TRUE(cline_result_error_option(result) == fixture->template_name);
-    NAOS_CHECK_INT_EQ(cline_result_error_source(result), CLINE_SOURCE_DEFAULT);
+    NAOS_CHECK_TRUE(argx_result_error_option(result) == fixture->template_name);
+    NAOS_CHECK_INT_EQ(argx_result_error_source(result), ARGX_SOURCE_DEFAULT);
     check_commands(result, fixture, 2, fixture->init);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->config), CLINE_SOURCE_NONE);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->jobs), CLINE_SOURCE_NONE);
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->owner), CLINE_SOURCE_NONE);
-    NAOS_CHECK_TRUE(cline_result_option_value(result, fixture->owner) == NULL);
-    NAOS_CHECK_TRUE(cline_result_option_value(result, fixture->template_name) == NULL);
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture->dir), 0);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->config), ARGX_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->jobs), ARGX_SOURCE_NONE);
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->owner), ARGX_SOURCE_NONE);
+    NAOS_CHECK_TRUE(argx_result_option_value(result, fixture->owner) == NULL);
+    NAOS_CHECK_TRUE(argx_result_option_value(result, fixture->template_name) == NULL);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture->dir), 0);
     *held = 0;
 }
 
@@ -733,7 +733,7 @@ NAOS_TEST(a_parse_that_ends_in_a_parse_error_fails_at_every_allocation_point)
 
     parse_case.wide_argv = NULL;
     parse_case.reject = true;
-    parse_case.outcome = CLINE_ERROR_INVALID_COMMAND_LINE;
+    parse_case.outcome = ARGX_ERROR_INVALID_COMMAND_LINE;
 
     parse_case.argc = ARGC(unknown);
     parse_case.argv = unknown;
@@ -774,16 +774,16 @@ NAOS_TEST(a_parse_that_ends_in_a_parse_error_fails_at_every_allocation_point)
 
 /* ---- Operation 3: a parse that applies default values ------------------- */
 
-static void check_defaults(const fixture_t *fixture, const cline_result_t *result, size_t *held)
+static void check_defaults(const fixture_t *fixture, const argx_result_t *result, size_t *held)
 {
     check_success(result);
     check_commands(result, fixture, 2, fixture->init);
-    check_option_string(result, fixture->config, "tool.cfg", CLINE_SOURCE_DEFAULT);
-    check_option_int(result, fixture->jobs, 2, CLINE_SOURCE_DEFAULT);
-    check_option_word(result, fixture->owner, "nobody", CLINE_SOURCE_DEFAULT);
-    check_option_word(result, fixture->template_name, "bad", CLINE_SOURCE_DEFAULT);
-    NAOS_CHECK_INT_EQ(cline_result_positional_source(result, fixture->dir), CLINE_SOURCE_DEFAULT);
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture->dir), 1);
+    check_option_string(result, fixture->config, "tool.cfg", ARGX_SOURCE_DEFAULT);
+    check_option_int(result, fixture->jobs, 2, ARGX_SOURCE_DEFAULT);
+    check_option_word(result, fixture->owner, "nobody", ARGX_SOURCE_DEFAULT);
+    check_option_word(result, fixture->template_name, "bad", ARGX_SOURCE_DEFAULT);
+    NAOS_CHECK_INT_EQ(argx_result_positional_source(result, fixture->dir), ARGX_SOURCE_DEFAULT);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture->dir), 1);
     check_positional_word(result, fixture->dir, 0, ".");
     /* The owner, the template and DIR. */
     *held = 3;
@@ -798,7 +798,7 @@ NAOS_TEST(a_parse_that_applies_default_values_fails_at_every_allocation_point)
     parse_case.argv = argv;
     parse_case.wide_argv = NULL;
     parse_case.reject = false;
-    parse_case.outcome = CLINE_ERROR_NONE;
+    parse_case.outcome = ARGX_ERROR_NONE;
     parse_case.check_fn = check_defaults;
     /*
      * The result, its arguments, two selected commands, and five default
@@ -810,17 +810,17 @@ NAOS_TEST(a_parse_that_applies_default_values_fails_at_every_allocation_point)
 
 /* ---- Operation 4: parses through the wide entry ------------------------- */
 
-static void check_wide(const fixture_t *fixture, const cline_result_t *result, size_t *held)
+static void check_wide(const fixture_t *fixture, const argx_result_t *result, size_t *held)
 {
     check_success(result);
     check_commands(result, fixture, 3, fixture->add);
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture->verbose));
-    check_option_word(result, fixture->name, U_2, CLINE_SOURCE_COMMAND_LINE);
-    check_option_word(result, fixture->tag, U_3, CLINE_SOURCE_COMMAND_LINE);
-    check_option_word(result, fixture->label, "none", CLINE_SOURCE_DEFAULT);
-    check_option_string(result, fixture->config, "tool.cfg", CLINE_SOURCE_DEFAULT);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture->verbose));
+    check_option_word(result, fixture->name, U_2, ARGX_SOURCE_COMMAND_LINE);
+    check_option_word(result, fixture->tag, U_3, ARGX_SOURCE_COMMAND_LINE);
+    check_option_word(result, fixture->label, "none", ARGX_SOURCE_DEFAULT);
+    check_option_string(result, fixture->config, "tool.cfg", ARGX_SOURCE_DEFAULT);
     check_positional_word(result, fixture->item, 0, U_4);
-    NAOS_CHECK_UINT_EQ(cline_result_positional_count(result, fixture->urls), 1);
+    NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, fixture->urls), 1);
     check_positional_word(result, fixture->urls, 0, "u1");
     /* The name, the tag, the label, NAME and one of URL. */
     *held = 5;
@@ -830,14 +830,14 @@ static void check_wide(const fixture_t *fixture, const cline_result_t *result, s
  * The argument that cannot be converted is the fifth of the command line;
  * what was read before it stays.
  */
-static void check_wide_invalid(const fixture_t *fixture, const cline_result_t *result, size_t *held)
+static void check_wide_invalid(const fixture_t *fixture, const argx_result_t *result, size_t *held)
 {
-    check_error(result, CLINE_PARSE_ERROR_INVALID_ENCODING,
+    check_error(result, ARGX_PARSE_ERROR_INVALID_ENCODING,
                 "invalid character encoding in argument 'a" REPLACEMENT "b'");
-    NAOS_CHECK_UINT_EQ(cline_result_error_index(result), 4);
+    NAOS_CHECK_UINT_EQ(argx_result_error_index(result), 4);
     check_commands(result, fixture, 2, fixture->remote);
-    NAOS_CHECK_TRUE(cline_result_flag(result, fixture->verbose));
-    NAOS_CHECK_INT_EQ(cline_result_option_source(result, fixture->name), CLINE_SOURCE_NONE);
+    NAOS_CHECK_TRUE(argx_result_flag(result, fixture->verbose));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, fixture->name), ARGX_SOURCE_NONE);
     *held = 0;
 }
 
@@ -864,7 +864,7 @@ NAOS_TEST(a_parse_of_wide_arguments_fails_at_every_allocation_point)
 
     parse_case.argc = ARGC(argv);
     parse_case.wide_argv = argv;
-    parse_case.outcome = CLINE_ERROR_NONE;
+    parse_case.outcome = ARGX_ERROR_NONE;
     parse_case.check_fn = check_wide;
     /*
      * The result, its arguments, three selected commands, and the
@@ -875,7 +875,7 @@ NAOS_TEST(a_parse_of_wide_arguments_fails_at_every_allocation_point)
 
     parse_case.argc = ARGC(invalid);
     parse_case.wide_argv = invalid;
-    parse_case.outcome = CLINE_ERROR_INVALID_COMMAND_LINE;
+    parse_case.outcome = ARGX_ERROR_INVALID_COMMAND_LINE;
     parse_case.check_fn = check_wide_invalid;
     /* The result, its arguments, two selected commands, and the message. */
     parse_case.least = 5;

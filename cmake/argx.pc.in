@@ -1,0 +1,15 @@
+# argx.pc - the pkg-config file of ArgX.
+#
+#   cc main.c $(pkg-config --cflags --libs argx)
+#
+# The same for a static and a shared ArgX.
+
+prefix=@argx_pc_prefix@
+libdir=@argx_pc_libdir@
+includedir=@argx_pc_includedir@
+
+Name: argx
+Description: A command-line argument parser library for C99
+Version: @argx_version_full@
+Cflags: -I${includedir}@argx_pc_cflags@
+Libs: -L${libdir} -l@argx_pc_library@

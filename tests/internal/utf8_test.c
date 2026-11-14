@@ -57,13 +57,13 @@ static void check_convert(const wchar_t *text, const char *expected, size_t expe
     size_t written;
     size_t i;
 
-    length = cline_utf8_length(text, &valid);
+    length = argx_utf8_length(text, &valid);
     NAOS_CHECK_UINT_EQ(length, expected_length);
     NAOS_CHECK_TRUE(valid == expected_valid);
     NAOS_REQUIRE_TRUE(length < OUT_SIZE);
 
     memset(out, UNTOUCHED, sizeof out);
-    written = cline_utf8_write(text, out);
+    written = argx_utf8_write(text, out);
     NAOS_CHECK_UINT_EQ(written, length);
     NAOS_REQUIRE_TRUE(written < OUT_SIZE);
     NAOS_CHECK_MEM_EQ(out, written + 1, expected, expected_length + 1);
@@ -180,11 +180,11 @@ NAOS_TEST(valid_is_written_both_ways)
     static const wchar_t bad[] = { (wchar_t)0xDC00, 0 };
     bool valid = false;
 
-    NAOS_CHECK_UINT_EQ(cline_utf8_length(L"abc", &valid), 3);
+    NAOS_CHECK_UINT_EQ(argx_utf8_length(L"abc", &valid), 3);
     NAOS_CHECK_TRUE(valid);
 
     valid = true;
-    NAOS_CHECK_UINT_EQ(cline_utf8_length(bad, &valid), 3);
+    NAOS_CHECK_UINT_EQ(argx_utf8_length(bad, &valid), 3);
     NAOS_CHECK_FALSE(valid);
 }
 

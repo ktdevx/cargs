@@ -6,7 +6,7 @@
 - **Discovery Scope**: New Feature（core-runtime の上に、最初のコマンドライン固有のモジュールを足す）。調査の対象は、既存のコードと規約（`docs/conventions.md`、`docs/ownership.md`、`src/`、`tests/`）、後続のスペックの `brief.md`、および C 標準ライブラリの数値変換の性質である。Web での調査は行っていない。外部のライブラリを採用せず、判断の材料が既存の規約と C 標準の範囲に収まるためである。
 - **Key Findings**:
   - 既存の規約は「エラーコードにするのは実行時の失敗だけ」としている。定義の誤り（不正な名前など）は、要件の決定によりエラーコードで返す。名前や選択肢が実行時のデータ（設定やプラグイン）から来る場合があるので、実行時の失敗として扱える。`NULL` の引数や範囲外の添字は、これまでどおり前提条件とする。
-  - `CLINE_API` を変数に付けると export の確認が失敗する。組み込みの値型を公開の変数にはできないので、関数が `static const` のオブジェクトへのポインタを返す形にする。変更しない表は `static const` で書いてよい、という規約にも合う。
+  - `ARGX_API` を変数に付けると export の確認が失敗する。組み込みの値型を公開の変数にはできないので、関数が `static const` のオブジェクトへのポインタを返す形にする。変更しない表は `static const` で書いてよい、という規約にも合う。
   - `strtod` は小数点の文字がロケールで変わる。入力の形を自前で検査してから、小数点を現在のロケールの文字に置き換えた複製を `strtod` に渡すと、C 標準ライブラリだけで、ロケールによらない結果を得られる。
   - 読み取りインターフェースを公開 API にすると、公開と内部の 2 系統を持たずに済み、検証が返す定義要素を利用者がそのまま調べられる。
 
@@ -15,18 +15,18 @@
 ### 既存のコードと規約
 
 - **Context**: 新しいヘッダ、ソース、テスト、エラーコードをどこに置き、どう登録するか。
-- **Sources Consulted**: `docs/conventions.md`、`docs/ownership.md`、`include/cline/*.h`、`src/alloc_internal.h`、`src/str.h`、`src/vec.h`、`src/CMakeLists.txt`、`tests/CMakeLists.txt`、`.kiro/specs/core-runtime/design.md`。
+- **Sources Consulted**: `docs/conventions.md`、`docs/ownership.md`、`include/argx/*.h`、`src/alloc_internal.h`、`src/str.h`、`src/vec.h`、`src/CMakeLists.txt`、`tests/CMakeLists.txt`、`.kiro/specs/core-runtime/design.md`。
 - **Findings**:
-  - 生成は `cline_error_t cline_<型>_create(…, cline_<型>_t **out)`、破棄は `void cline_<型>_destroy(cline_<型>_t *)`。子を個別に破棄する関数は持たない。
-  - 渡された文字列は複製する（`cline_strdup`）。返す文字列は、返したオブジェクトが所有する。
+  - 生成は `argx_error_t argx_<型>_create(…, argx_<型>_t **out)`、破棄は `void argx_<型>_destroy(argx_<型>_t *)`。子を個別に破棄する関数は持たない。
+  - 渡された文字列は複製する（`argx_strdup`）。返す文字列は、返したオブジェクトが所有する。
   - 失敗したら、生成したものを受け取る出力先は `NULL`、既存のオブジェクトは呼び出しの前と同じ内容を保つ。
-  - エラーコードは `CLINE_ERROR_LIST` の末尾に 1 行ずつ足す。説明文の固有性は既存のテストが確かめる。
+  - エラーコードは `ARGX_ERROR_LIST` の末尾に 1 行ずつ足す。説明文の固有性は既存のテストが確かめる。
   - 内部ヘッダの名前は、同じ名前の公開ヘッダがあれば `src/<名前>_internal.h`、なければ `src/<名前>.h`。
-  - `cline_vec_t` は、追加に失敗しても元の内容を保つ。要素は `item_size` バイトの値で、伸長すると要素のアドレスが変わる。
+  - `argx_vec_t` は、追加に失敗しても元の内容を保つ。要素は `item_size` バイトの値で、伸長すると要素のアドレスが変わる。
   - 公開ヘッダで `<stdbool.h>` を使っている箇所はまだない。`<stdint.h>` は `src/` で使われている。
 - **Implications**:
-  - 定義要素のハンドルは、利用者が持ち続けるので、アドレスが変わってはならない。`cline_vec_t` には定義要素そのものではなく、個別に確保した定義要素へのポインタを入れる。
-  - build-foundation と core-runtime のファイルで直すのは、追記が前提のもの（`cline.h`、`error.h` の一覧、`src/CMakeLists.txt`、`tests/CMakeLists.txt`、文書）だけである。
+  - 定義要素のハンドルは、利用者が持ち続けるので、アドレスが変わってはならない。`argx_vec_t` には定義要素そのものではなく、個別に確保した定義要素へのポインタを入れる。
+  - build-foundation と core-runtime のファイルで直すのは、追記が前提のもの（`argx.h`、`error.h` の一覧、`src/CMakeLists.txt`、`tests/CMakeLists.txt`、文書）だけである。
 
 ### 定義の誤りをエラーコードにすること
 
@@ -76,7 +76,7 @@
   1. 内部だけ — 内部ヘッダに宣言し、後続のスペックだけが使う。
   2. 一部を公開 — 名前の取得だけを公開する。
   3. すべて公開 — 公開ヘッダに宣言し、後続のスペックも同じ関数を使う。
-- **Selected Approach**: 3。`include/cline/schema.h` と `include/cline/type.h` に宣言する。後続のスペックは、`src/schema_internal.h` を取り込まない。
+- **Selected Approach**: 3。`include/argx/schema.h` と `include/argx/type.h` に宣言する。後続のスペックは、`src/schema_internal.h` を取り込まない。
 - **Rationale**: 読み取りの経路が 1 つになる。検証が返す定義要素を、利用者が調べられる。利用者が自分でヘルプや補完を作ることもできる。
 - **Trade-offs**: 公開する関数が増え、後から形を変えにくい。関数は足せるが、既存の関数の引数と意味は変えられない。
 - **Follow-up**: argv-parser と help-formatter の設計で、足りない読み取りがあれば、このスペックに関数を足す。
@@ -90,7 +90,7 @@
   3. 変換関数が値を確保して、ポインタで返す。
 - **Selected Approach**: 2。値型は `value_size` を持つ。変換を求める側が `value_size` バイトの領域を用意し、変換関数がそこに値を書く。組み込みの型の値は、文字列が `const char *`、整数が `int64_t`、浮動小数が `double`、選択肢が `size_t`（一致した選択肢の番号）である。
 - **Rationale**: 公開の共用体を ABI にしない。組み込みの型は確保をしない。値の置き場所と寿命を、変換を求める側が決められる。
-- **Trade-offs**: 値を `void *` で受け渡すので、型の一致はコンパイラが検査しない。値の型は、値型の種類（`cline_type_kind`）で決まる、という契約で補う。
+- **Trade-offs**: 値を `void *` で受け渡すので、型の一致はコンパイラが検査しない。値の型は、値型の種類（`argx_type_kind`）で決まる、という契約で補う。
 - **Follow-up**: argv-parser は、型付きの取得関数で値型の種類を確かめる。
 
 ### Decision: 変換した値は、入力の文字列を参照してよい
@@ -104,12 +104,12 @@
 - **Trade-offs**: 変換を求める側が、入力の寿命を管理する。
 - **Follow-up**: argv-parser の設計で、入力の文字列の寿命を結果オブジェクトの寿命に合わせる。
 
-### Decision: 変換の失敗を表すエラーコード `CLINE_ERROR_INVALID_VALUE` をこのスペックで足す
+### Decision: 変換の失敗を表すエラーコード `ARGX_ERROR_INVALID_VALUE` をこのスペックで足す
 
 - **Context**: 変換関数は、失敗を呼び出し元へ伝える。失敗には「入力が不正」と「メモリ確保の失敗」（利用者定義の型）がある。
 - **Alternatives Considered**:
   1. 変換関数が真偽値を返す。
-  2. 変換関数が `cline_error_t` を返し、入力が不正なときのコードをこのスペックで定める。
+  2. 変換関数が `argx_error_t` を返し、入力が不正なときのコードをこのスペックで定める。
 - **Selected Approach**: 2。
 - **Rationale**: ほかの関数と同じ作法になる。メモリ確保の失敗と、入力の不正を区別できる。値型の契約はこのスペックのものなので、コードもここで足す。
 - **Trade-offs**: 解析時のエラーの種類の 1 つを、argv-parser より先にこのスペックが決める。
@@ -123,7 +123,7 @@
   2. 関数が、ライブラリの中の `static const` のオブジェクトへのポインタを返す。
 - **Selected Approach**: 2。文字列、整数、浮動小数に使う。選択肢は一覧を持つので、`create` で生成する。
 - **Rationale**: 確保も破棄も要らない。変更しないので、どのスレッドからも使える。
-- **Trade-offs**: `cline_type_destroy` は、組み込みの型を渡されたら何もしない、という分岐を持つ。
+- **Trade-offs**: `argx_type_destroy` は、組み込みの型を渡されたら何もしない、という分岐を持つ。
 
 ### Decision: スキーマは値型を借りる
 
@@ -158,7 +158,7 @@
 
 ## Synthesis
 
-- **Generalization**: 説明文、値の表示名、既定値の設定は、どれも「文字列を複製して、古いものと入れ替える」操作である。内部の関数 1 つ（`cline_schema_replace_string`）にまとめる。名前の重複の検査も、短い名前、長い名前と否定名、サブコマンド名、位置引数名で同じ形だが、比べる対象が違うので、検索の関数を再利用するにとどめる。
+- **Generalization**: 説明文、値の表示名、既定値の設定は、どれも「文字列を複製して、古いものと入れ替える」操作である。内部の関数 1 つ（`argx_schema_replace_string`）にまとめる。名前の重複の検査も、短い名前、長い名前と否定名、サブコマンド名、位置引数名で同じ形だが、比べる対象が違うので、検索の関数を再利用するにとどめる。
 - **Build vs. Adopt**: 整数の変換は自前で書く（`strtoll` は先頭の空白を受け付け、桁あふれを `errno` で返す）。浮動小数の変換は、形の検査だけを自前で書き、値の計算は `strtod` に任せる。
 - **Simplification**: 読み取りの内部用の層を作らない。検証の結果を保持するオブジェクトを作らず、出力用の引数で返す。スキーマ用のアリーナを作らない。値型に参照カウントを持たせない。
 

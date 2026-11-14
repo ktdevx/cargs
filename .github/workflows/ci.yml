@@ -1,4 +1,4 @@
-# CI of CLine.
+# CI of ArgX.
 #
 # Runs when a pull request is opened or updated, on every push to main, and
 # when it is started by hand (from the Actions tab, or by the Release PR
@@ -94,15 +94,15 @@ jobs:
               ;;
           esac
           if [ -f "$list" ]; then
-            cmake -D CLINE_CHANGED_FILES="$list" -D CLINE_CHANGES_OUTPUT="$GITHUB_OUTPUT" -P tools/ci/changes.cmake
+            cmake -D ARGX_CHANGED_FILES="$list" -D ARGX_CHANGES_OUTPUT="$GITHUB_OUTPUT" -P tools/ci/changes.cmake
           else
-            cmake -D CLINE_CHANGES_OUTPUT="$GITHUB_OUTPUT" -P tools/ci/changes.cmake
+            cmake -D ARGX_CHANGES_OUTPUT="$GITHUB_OUTPUT" -P tools/ci/changes.cmake
           fi
 
   # The three commands of the README, alone and with no other argument: no
   # generator, no build type, no -C for ctest. Keep these steps as they are.
   # On Windows the generator is multi-config, so this job is what proves that
-  # ctest with no -C runs the tests (cmake/ClineCTestDefaults.cmake).
+  # ctest with no -C runs the tests (cmake/ArgXCTestDefaults.cmake).
   quickstart:
     name: quickstart (${{ matrix.os }})
     needs: changes
@@ -125,8 +125,8 @@ jobs:
   # 4 x 2 = 8 jobs. Each job does the same for Debug and for Release:
   # configure, build, ctest, and the consumer check (tests/consumer/run.cmake).
   #
-  # - Warnings are errors: CLINE_WARNINGS_AS_ERRORS is left at its default.
-  # - With a shared library, ctest also runs cline.exports, the check of the
+  # - Warnings are errors: ARGX_WARNINGS_AS_ERRORS is left at its default.
+  # - With a shared library, ctest also runs argx.exports, the check of the
   #   exported symbols.
   # - The configuration is given at every step (CMAKE_BUILD_TYPE, --config,
   #   -C), so that the same commands work with a single-config generator
@@ -196,7 +196,7 @@ jobs:
       - name: Test (Debug)
         run: ctest --test-dir build/Debug -C Debug --output-on-failure --no-tests=error
       - name: Consumer check (Debug)
-        run: cmake -D CLINE_BUILD_DIR=build/Debug -D CLINE_CONFIG=Debug -D CLINE_SHARED=${{ matrix.shared }} -P tests/consumer/run.cmake
+        run: cmake -D ARGX_BUILD_DIR=build/Debug -D ARGX_CONFIG=Debug -D ARGX_SHARED=${{ matrix.shared }} -P tests/consumer/run.cmake
 
       - name: Configure (Release)
         run: cmake -S . -B build/Release -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=${{ matrix.shared }}
@@ -205,7 +205,7 @@ jobs:
       - name: Test (Release)
         run: ctest --test-dir build/Release -C Release --output-on-failure --no-tests=error
       - name: Consumer check (Release)
-        run: cmake -D CLINE_BUILD_DIR=build/Release -D CLINE_CONFIG=Release -D CLINE_SHARED=${{ matrix.shared }} -P tests/consumer/run.cmake
+        run: cmake -D ARGX_BUILD_DIR=build/Release -D ARGX_CONFIG=Release -D ARGX_SHARED=${{ matrix.shared }} -P tests/consumer/run.cmake
 
   # The one check to require on main. It runs every time, even when a job it
   # needs failed, was cancelled or was skipped, and passes only when:

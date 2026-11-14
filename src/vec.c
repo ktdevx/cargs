@@ -1,5 +1,5 @@
 /*
- * CLine - the growing array.
+ * ArgX - the growing array.
  */
 #include "vec.h"
 
@@ -10,55 +10,55 @@
 #include <string.h>
 
 /* The number of items of the first allocation. */
-#define CLINE_VEC_FIRST_CAPACITY ((size_t)4)
+#define ARGX_VEC_FIRST_CAPACITY ((size_t)4)
 
 /* The largest value of a size_t. */
-#define CLINE_VEC_SIZE_MAX ((size_t)-1)
+#define ARGX_VEC_SIZE_MAX ((size_t)-1)
 
 /*
  * Makes room for at least one more item in a full array. On failure the
  * array is unchanged.
  */
-static cline_error_t cline_vec_grow(cline_vec_t *vec)
+static argx_error_t argx_vec_grow(argx_vec_t *vec)
 {
     size_t new_capacity;
     void *new_items;
 
     if (vec->capacity == 0)
     {
-        new_capacity = CLINE_VEC_FIRST_CAPACITY;
+        new_capacity = ARGX_VEC_FIRST_CAPACITY;
     }
     else
     {
-        if (vec->capacity > (CLINE_VEC_SIZE_MAX / 2))
+        if (vec->capacity > (ARGX_VEC_SIZE_MAX / 2))
         {
-            return CLINE_ERROR_OUT_OF_MEMORY;
+            return ARGX_ERROR_OUT_OF_MEMORY;
         }
         new_capacity = vec->capacity * 2;
     }
 
-    /* cline_realloc does not check the product. */
-    if (new_capacity > (CLINE_VEC_SIZE_MAX / vec->item_size))
+    /* argx_realloc does not check the product. */
+    if (new_capacity > (ARGX_VEC_SIZE_MAX / vec->item_size))
     {
-        return CLINE_ERROR_OUT_OF_MEMORY;
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
     /*
      * The first time items is NULL, so this allocates. When it fails, the
      * old items are still valid and vec still points to them.
      */
-    new_items = cline_realloc(vec->items, new_capacity * vec->item_size);
+    new_items = argx_realloc(vec->items, new_capacity * vec->item_size);
     if (new_items == NULL)
     {
-        return CLINE_ERROR_OUT_OF_MEMORY;
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
     vec->items = new_items;
     vec->capacity = new_capacity;
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
-void cline_vec_init(cline_vec_t *vec, size_t item_size)
+void argx_vec_init(argx_vec_t *vec, size_t item_size)
 {
     assert(vec != NULL);
     assert(item_size > 0);
@@ -69,7 +69,7 @@ void cline_vec_init(cline_vec_t *vec, size_t item_size)
     vec->item_size = item_size;
 }
 
-cline_error_t cline_vec_push(cline_vec_t *vec, const void *item)
+argx_error_t argx_vec_push(argx_vec_t *vec, const void *item)
 {
     assert(vec != NULL);
     assert(item != NULL);
@@ -77,9 +77,9 @@ cline_error_t cline_vec_push(cline_vec_t *vec, const void *item)
 
     if (vec->count == vec->capacity)
     {
-        cline_error_t error = cline_vec_grow(vec);
+        argx_error_t error = argx_vec_grow(vec);
 
-        if (error != CLINE_ERROR_NONE)
+        if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
@@ -92,10 +92,10 @@ cline_error_t cline_vec_push(cline_vec_t *vec, const void *item)
     memcpy((char *)vec->items + (vec->count * vec->item_size), item,
         vec->item_size);
     ++vec->count;
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
-void *cline_vec_at(const cline_vec_t *vec, size_t index)
+void *argx_vec_at(const argx_vec_t *vec, size_t index)
 {
     assert(vec != NULL);
     assert(index < vec->count);
@@ -103,11 +103,11 @@ void *cline_vec_at(const cline_vec_t *vec, size_t index)
     return (char *)vec->items + (index * vec->item_size);
 }
 
-void cline_vec_destroy(cline_vec_t *vec)
+void argx_vec_destroy(argx_vec_t *vec)
 {
     assert(vec != NULL);
 
-    cline_free(vec->items);
+    argx_free(vec->items);
     vec->items = NULL;
     vec->count = 0;
     vec->capacity = 0;

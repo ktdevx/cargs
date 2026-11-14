@@ -1,6 +1,6 @@
 # Gap Analysis: help-formatter
 
-要件（`requirements.md`）と、現在のコード（build-foundation、core-runtime、command-schema、argv-parser の実装）との差を調べた。設計の判断材料であり、決定ではない。調べたのは、`include/cline/`、`src/`、`tests/`、`cmake/`、`docs/`、`.github/workflows/ci.yml` である。外部のライブラリは使わないので、Web での調査はしていない。要件はまだ承認されていない。
+要件（`requirements.md`）と、現在のコード（build-foundation、core-runtime、command-schema、argv-parser の実装）との差を調べた。設計の判断材料であり、決定ではない。調べたのは、`include/argx/`、`src/`、`tests/`、`cmake/`、`docs/`、`.github/workflows/ci.yml` である。外部のライブラリは使わないので、Web での調査はしていない。要件はまだ承認されていない。
 
 ## 要約
 
@@ -16,15 +16,15 @@
 
 | 資産 | 場所 | ヘルプでの使い道 |
 |---|---|---|
-| コマンドの名前、説明、親 | `cline_command_name/description/parent()` | コマンドの経路（親をルートまでたどる）、説明文（要件 1、2） |
-| 列挙 | `cline_command_option_count/at()`、`cline_command_positional_count/at()`、`cline_command_subcommand_count/at()` | 一覧を定義した順に出す（要件 1.8） |
-| オプションの読み取り | `cline_option_kind/short_name/long_name/type/description/value_name/is_required/default/initial()` | 見出しと注記（要件 3、5） |
-| 位置引数の読み取り | `cline_positional_name/arity/type/description/default()` | 見出しと注記（要件 4、5） |
-| 値型の読み取り | `cline_type_name/kind()`、`cline_type_choice_count/at()` | 値の表示名の代わり（要件 3.7）、選択肢の注記（要件 5.1） |
-| 検証済みかどうか | `cline_command_is_validated()`（木のどのコマンドでも呼べる） | 前提条件の `assert`（要件 1.10） |
-| メモリ | `cline_malloc/calloc/realloc/free()`（`src/alloc_internal.h`）、`cline_vec_t`（`src/vec.h`） | 整形の設定。文面を組み立てる領域が要る場合はそれにも |
+| コマンドの名前、説明、親 | `argx_command_name/description/parent()` | コマンドの経路（親をルートまでたどる）、説明文（要件 1、2） |
+| 列挙 | `argx_command_option_count/at()`、`argx_command_positional_count/at()`、`argx_command_subcommand_count/at()` | 一覧を定義した順に出す（要件 1.8） |
+| オプションの読み取り | `argx_option_kind/short_name/long_name/type/description/value_name/is_required/default/initial()` | 見出しと注記（要件 3、5） |
+| 位置引数の読み取り | `argx_positional_name/arity/type/description/default()` | 見出しと注記（要件 4、5） |
+| 値型の読み取り | `argx_type_name/kind()`、`argx_type_choice_count/at()` | 値の表示名の代わり（要件 3.7）、選択肢の注記（要件 5.1） |
+| 検証済みかどうか | `argx_command_is_validated()`（木のどのコマンドでも呼べる） | 前提条件の `assert`（要件 1.10） |
+| メモリ | `argx_malloc/calloc/realloc/free()`（`src/alloc_internal.h`）、`argx_vec_t`（`src/vec.h`） | 整形の設定。文面を組み立てる領域が要る場合はそれにも |
 | テスト用アロケータ | `tests/support/test_allocator.h` | 確保の各回を順に失敗させるテスト（要件 12.11） |
-| エラーコードの一覧 | `include/cline/error.h` の `CLINE_ERROR_LIST` | 書き込みの失敗のコードを末尾に 1 行足す（要件 12.7） |
+| エラーコードの一覧 | `include/argx/error.h` の `ARGX_ERROR_LIST` | 書き込みの失敗のコードを末尾に 1 行足す（要件 12.7） |
 
 設定されていない属性は `NULL` で返る（`command->description = NULL` が初期値）。空の文字列を設定した説明文は `""` で返るので、「設定されていない」と「空」は区別できる。
 
@@ -32,15 +32,15 @@
 
 - `src/message.c`（解析エラーの 1 行メッセージ）は、種類ごとの文を 1 つ確保して返す作りで、複数行の文面や出力先への書き出しには使えない。
 - `src/utf8.c` は、ワイド文字から UTF-8 への変換だけである。幅はバイトで数える（要件 7.1）ので、使う場面がない。
-- `src/str.h` は `cline_strdup()` だけで、文字列を伸ばしていく部品はない。
+- `src/str.h` は `argx_strdup()` だけで、文字列を伸ばしていく部品はない。
 
 ### 従う規約
 
-- 公開ヘッダは `include/cline/<名前>.h` に置き、`cline.h` に 1 行足す。ソースは `src/CMakeLists.txt` の一覧に 1 行、テストは `tests/CMakeLists.txt` に `cline_add_test()` を 1 行足す。
-- 生成は `cline_error_t cline_<型>_create(…, cline_<型>_t **out)` の形、破棄は `void cline_<型>_destroy()` で、`NULL` は何もしない。失敗したら `*out` は `NULL`。
-- 関数ポインタの型は `cline_<名前>_fn_t` と名づける。
-- プログラムの誤りは `assert` の前提条件。変更可能な `static` 変数を足さない。標準の確保関数を直接呼ばない（`cline.allocations` が検査する）。
-- 動的ライブラリが export するのは、公開ヘッダで `CLINE_API` を付けた関数とちょうど一致する（`cline.exports`）。
+- 公開ヘッダは `include/argx/<名前>.h` に置き、`argx.h` に 1 行足す。ソースは `src/CMakeLists.txt` の一覧に 1 行、テストは `tests/CMakeLists.txt` に `argx_add_test()` を 1 行足す。
+- 生成は `argx_error_t argx_<型>_create(…, argx_<型>_t **out)` の形、破棄は `void argx_<型>_destroy()` で、`NULL` は何もしない。失敗したら `*out` は `NULL`。
+- 関数ポインタの型は `argx_<名前>_fn_t` と名づける。
+- プログラムの誤りは `assert` の前提条件。変更可能な `static` 変数を足さない。標準の確保関数を直接呼ばない（`argx.allocations` が検査する）。
+- 動的ライブラリが export するのは、公開ヘッダで `ARGX_API` を付けた関数とちょうど一致する（`argx.exports`）。
 - CI は、Linux（GCC、Clang）、macOS、Windows（MSVC）の、静的と動的の両方で、ビルドとテストを実行する。文面を比べるテスト（要件 11.6）は、`tests/public/` に足せば、この全部で走る。
 - 使い方の文書は `docs/` に置き、`README.md` の一覧から参照する（`docs/schema.md`、`docs/parse.md` と同じ並び）。
 
@@ -59,7 +59,7 @@
 | 9 出力先 | 書き込み関数の型、失敗の伝え方 | 関数ポインタの命名規約 | Missing |
 | 10 出力先の補助 | 固定長バッファ、`FILE *` | なし | Missing。Constraint（`<stdio.h>` を公開ヘッダで使う） |
 | 11 再現性 | ロケールに頼らない書き出し、文面を比べるテスト | CI の全環境、Naos | Missing（テスト） |
-| 12 メモリ、失敗時の保証 | エラーコードの追加、失敗注入のテスト | `CLINE_ERROR_LIST`、テスト用アロケータ | Missing（コード 1 行とテスト） |
+| 12 メモリ、失敗時の保証 | エラーコードの追加、失敗注入のテスト | `ARGX_ERROR_LIST`、テスト用アロケータ | Missing（コード 1 行とテスト） |
 | 13 互換性と独立性 | 公開ヘッダ、文書 | 規約、`docs/` | Missing（ヘッダと文書） |
 
 ### 見つかった差と制約
@@ -70,7 +70,7 @@
 - **表示幅が小さいとき（Constraint）**: 説明の列の上限は、表示幅の半分と字下げ + 2 の間で決まる（6.4）。表示幅が字下げより小さい設定でも、生成は失敗せず、行が幅を超えるだけになる（7.4）。設定関数は値を拒まない前提で、失敗しない関数にできる。
 - **`FILE *` を公開ヘッダで使う（Constraint）**: `<stdio.h>` を公開ヘッダで取り込むのは初めてである。Windows で、ライブラリと利用者のプログラムが別の C ランタイムを使うと、`FILE *` を DLL の境界で渡せない。補助を別ヘッダにするか、文書に注意を書くかを設計で決める。export の検査は、宣言の引数の型を見ないので、影響しない。
 - **テキストモードの改行（Constraint）**: `FILE *` がテキストモードだと、Windows では `\n` が `\r\n` に変わる。要件 7.9 と brief は、変換を出力先に任せるとしている。バイト単位の比較のテスト（11.2）は、書き込み関数かバッファの補助で行う必要がある。
-- **バッファの補助と長さの型（Constraint）**: 必要な長さを知らせる方法（戻り値か、出力の引数か）は、戻り値を `cline_error_t` にする規約から、出力の引数になる。
+- **バッファの補助と長さの型（Constraint）**: 必要な長さを知らせる方法（戻り値か、出力の引数か）は、戻り値を `argx_error_t` にする規約から、出力の引数になる。
 - **エラーコードの名前（Missing）**: 書き込みの失敗を表すコードは、一覧にない。末尾に 1 行足す。`tests/public/error_test.c` が一覧の全体を検査しているので、テストの期待値も直す。
 - **スレッド（Constraint）**: 生成は、スキーマと設定を読むだけで、グローバル状態を持たなければ、要件 11.5 は追加の仕組みなしで満たせる。
 
@@ -78,7 +78,7 @@
 
 ### Option A: 既存のソースに足す
 
-`src/message.c` に文面の組み立てを足し、`include/cline/schema.h` に公開関数を足す。
+`src/message.c` に文面の組み立てを足し、`include/argx/schema.h` に公開関数を足す。
 
 - ✅ ファイルが増えない。
 - ❌ `message.c` は解析エラーのメッセージ用で、argv-parser の持ち物である。ヘルプを足すと、help-formatter が argv-parser のコードに依存し、ロードマップの境界（互いに知らない）に反する。
@@ -86,11 +86,11 @@
 
 ### Option B: 新しいモジュールにする
 
-公開ヘッダ `include/cline/help.h` と、`src/help.c`（必要なら、折り返しと書き出しを `src/` の内部モジュールに分ける）を足す。スキーマは公開の読み取りインターフェースだけで読む。
+公開ヘッダ `include/argx/help.h` と、`src/help.c`（必要なら、折り返しと書き出しを `src/` の内部モジュールに分ける）を足す。スキーマは公開の読み取りインターフェースだけで読む。
 
 - ✅ ロードマップの境界に合う。argv-parser のコードに触れない。
 - ✅ 折り返しと列の計算を内部関数にすれば、`tests/internal/` で単独にテストできる。
-- ✅ 既存のファイルの変更は、`cline.h`、`error.h`、`CMakeLists.txt` 2 つ、`README.md` への各 1 行程度で済む。
+- ✅ 既存のファイルの変更は、`argx.h`、`error.h`、`CMakeLists.txt` 2 つ、`README.md` への各 1 行程度で済む。
 - ❌ 内部モジュールの分け方（1 ファイルか、組み立て・整形・出力先の 3 つか）を設計で決める必要がある。
 
 ### Option C: 組み立てと書き出しを 2 層にする
@@ -154,20 +154,20 @@ Option B の上で、「スキーマから行の並び（見出しと説明の�
   - 説明文は連続した 1 つの文字列なので、そのまま折り返せる。
   - 注記は、固定の語句とスキーマの文字列を交互に並べたもので、`a` と `,`、`x` と `]` のように、語が部品の境目をまたぐ。部品ごとに折り返しを判断すると、語の長さが分からず、幅を 1〜2 桁超える行ができる。
   - 選択肢の数に上限がないので、スタックの固定長の領域には置けない。
-- **Implications**: 項目ごとに、説明文と注記を 1 つの領域に足してから折り返す。領域は `cline_vec_t` を使い回す。`Wrap` は、連続した 1 つの文字列だけを受け取る純粋な関数になり、単独でテストできる。
+- **Implications**: 項目ごとに、説明文と注記を 1 つの領域に足してから折り返す。領域は `argx_vec_t` を使い回す。`Wrap` は、連続した 1 つの文字列だけを受け取る純粋な関数になり、単独でテストできる。
 
 ### `FILE *` を動的ライブラリに渡すこと
 - **Context**: ギャップ分析の Research Needed。
 - **Sources Consulted**: Microsoft Learn「Potential errors passing CRT objects across DLL boundaries」（https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries）。この文書の内容は、設計の時点で取得し直しておらず、記憶に基づく。
 - **Findings**:
   - `FILE *` などの C ランタイムのオブジェクトは、それを作った C ランタイムの実体の中でしか使えない。DLL と実行ファイルが別の実体を使う（片方が静的リンク、または Debug と Release の組み合わせ）と、未定義の動作になる。
-  - 利用者が Debug 構成で、Release 構成の `cline.dll` を使うのは、ふつうにある組み合わせである。
-- **Implications**: ライブラリの中で `fwrite()` を呼ばない。`cline_help_print()` を公開ヘッダの `static inline` 関数にすれば、`fwrite()` は利用者の側でコンパイルされ、境界を越えるのは書き込み関数のポインタと `void *` だけになる。
+  - 利用者が Debug 構成で、Release 構成の `argx.dll` を使うのは、ふつうにある組み合わせである。
+- **Implications**: ライブラリの中で `fwrite()` を呼ばない。`argx_help_print()` を公開ヘッダの `static inline` 関数にすれば、`fwrite()` は利用者の側でコンパイルされ、境界を越えるのは書き込み関数のポインタと `void *` だけになる。
 
 ### 既存の検査との関係
 - **Context**: 公開ヘッダにインライン関数を置くのは初めてである。
-- **Sources Consulted**: `cmake/ClineCheckExports.cmake`、`tests/CMakeLists.txt`、`docs/conventions.md`。
-- **Findings**: export の検査は、`CLINE_API` の付いた宣言を集める。`static inline` の定義は対象にならない。利用者のプログラムのビルドの検査（`tests/consumer`）は、`cline.h` を取り込むので、ヘッダのインライン関数がすべてのコンパイラでコンパイルされることも確かめられる。
+- **Sources Consulted**: `cmake/ArgXCheckExports.cmake`、`tests/CMakeLists.txt`、`docs/conventions.md`。
+- **Findings**: export の検査は、`ARGX_API` の付いた宣言を集める。`static inline` の定義は対象にならない。利用者のプログラムのビルドの検査（`tests/consumer`）は、`argx.h` を取り込むので、ヘッダのインライン関数がすべてのコンパイラでコンパイルされることも確かめられる。
 - **Implications**: 検査の変更は要らない。`docs/conventions.md` に、インライン関数の扱いを 1 項目足す。
 
 ## Architecture Pattern Evaluation
@@ -213,8 +213,8 @@ Option B の上で、「スキーマから行の並び（見出しと説明の�
 - **Follow-up**: 要件のレビューで、利用者がこの扱いを変えたい場合は、要件に基準を足して設計を直す。
 
 ### Synthesis の結果
-- **Generalization**: 説明文の折り返し（1.9）と、セルの折り返し（5.9、6.8）は、開始の桁が違うだけの同じ処理である。`cline_wrap_write()` 1 つにした。usage 行の折り返し（2.8）は、単位が項目で、項目の中の空白で分けないので、別の処理として `Help` に置いた。
-- **Build vs. Adopt**: 実行時の依存は C 標準ライブラリだけ、という制約があるので、外部のライブラリは採用しない。`printf` 系の書式化は、ロケールの影響を避けるために使わない。伸びる領域は、既存の `cline_vec_t` を使い、新しい部品を作らない。
+- **Generalization**: 説明文の折り返し（1.9）と、セルの折り返し（5.9、6.8）は、開始の桁が違うだけの同じ処理である。`argx_wrap_write()` 1 つにした。usage 行の折り返し（2.8）は、単位が項目で、項目の中の空白で分けないので、別の処理として `Help` に置いた。
+- **Build vs. Adopt**: 実行時の依存は C 標準ライブラリだけ、という制約があるので、外部のライブラリは採用しない。`printf` 系の書式化は、ロケールの影響を避けるために使わない。伸びる領域は、既存の `argx_vec_t` を使い、新しい部品を作らない。
 - **Simplification**: 設定の読み取りの関数（getter）は、要件にないので作らない。`Out` の内部のバッファは持たない。`FILE *` の補助のためのソースは作らず、ヘッダの数行にした。
 
 ## Risks & Mitigations
@@ -233,7 +233,7 @@ Option B の上で、「スキーマから行の並び（見出しと説明の�
 
 ## 追記: `FILE *` 向けの補助を外した
 
-- **Context**: タスクの生成の後、利用者の判断で、`FILE *` に出力する補助（要件の旧 10.5〜10.7、`cline_help_print()`、`cline_help_print_usage()`）を外した。
+- **Context**: タスクの生成の後、利用者の判断で、`FILE *` に出力する補助（要件の旧 10.5〜10.7、`argx_help_print()`、`argx_help_print_usage()`）を外した。
 - **変更**: 要件 10 は、固定長のバッファ向けの補助だけになった（旧 10.8 は 10.5 に繰り上げた）。設計から、公開ヘッダのインライン関数と `<stdio.h>` の取り込みを取り除いた。タスクの旧 8.2 を削除し、8 を 1 つのタスクにした。
 - **影響**: 上の「`FILE *` を動的ライブラリに渡すこと」の調査と、インライン関数についての決定とリスクは、採用しなかった案の記録として残す。利用者は、`fwrite()` を呼ぶ書き込み関数を自分で書く。その例を `docs/help.md` に載せる。
 - **brief.md との差**: brief.md の Scope は「バッファ・`FILE *` 向けの補助」としている。brief.md は discovery の記録なので書き換えず、差を要件の Introduction の表に記録した。

@@ -1,5 +1,5 @@
 /*
- * CLine - the items of the help: how one option or positional of a schema
+ * ArgX - the items of the help: how one option or positional of a schema
  * is written.
  */
 #include "help_item.h"
@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <string.h>
 
-void cline_help_item_string(cline_out_t *out, const char *text)
+void argx_help_item_string(argx_out_t *out, const char *text)
 {
     const char *rest = text;
 
@@ -21,12 +21,12 @@ void cline_help_item_string(cline_out_t *out, const char *text)
 
         if (newline == NULL)
         {
-            cline_out_string(out, rest);
+            argx_out_string(out, rest);
             return;
         }
 
-        cline_out_text(out, rest, (size_t)(newline - rest));
-        cline_out_newline(out);
+        argx_out_text(out, rest, (size_t)(newline - rest));
+        argx_out_newline(out);
         rest = newline + 1;
     }
 }
@@ -36,21 +36,21 @@ void cline_help_item_string(cline_out_t *out, const char *text)
  * value name that was set, or else the name of the value type. option
  * takes a value.
  */
-static void item_value_name(cline_out_t *out, const cline_option_t *option)
+static void item_value_name(argx_out_t *out, const argx_option_t *option)
 {
-    const char *name = cline_option_value_name(option);
+    const char *name = argx_option_value_name(option);
 
     if (name == NULL)
     {
-        name = cline_type_name(cline_option_type(option));
+        name = argx_type_name(argx_option_type(option));
     }
 
-    cline_out_text(out, "<", 1);
-    cline_help_item_string(out, name);
-    cline_out_text(out, ">", 1);
+    argx_out_text(out, "<", 1);
+    argx_help_item_string(out, name);
+    argx_out_text(out, ">", 1);
 }
 
-void cline_help_item_option_heading(cline_out_t *out, const cline_option_t *option)
+void argx_help_item_option_heading(argx_out_t *out, const argx_option_t *option)
 {
     const char *long_name;
     char short_name;
@@ -61,25 +61,25 @@ void cline_help_item_option_heading(cline_out_t *out, const cline_option_t *opti
     assert(out != NULL);
     assert(option != NULL);
 
-    switch (cline_option_kind(option))
+    switch (argx_option_kind(option))
     {
-    case CLINE_OPTION_NEGATABLE:
+    case ARGX_OPTION_NEGATABLE:
         negatable = true;
         break;
-    case CLINE_OPTION_COUNT:
+    case ARGX_OPTION_COUNT:
         count = true;
         break;
-    case CLINE_OPTION_VALUE:
+    case ARGX_OPTION_VALUE:
         value = true;
         break;
-    case CLINE_OPTION_FLAG:
+    case ARGX_OPTION_FLAG:
     default:
         /* A kind of a later version is written in the simplest form. */
         break;
     }
 
-    long_name = cline_option_long_name(option);
-    short_name = cline_option_short_name(option);
+    long_name = argx_option_long_name(option);
+    short_name = argx_option_short_name(option);
 
     /*
      * The blanks belong to the heading: they are written with the text,
@@ -87,41 +87,41 @@ void cline_help_item_option_heading(cline_out_t *out, const cline_option_t *opti
      */
     if (short_name != '\0')
     {
-        cline_out_text(out, "-", 1);
-        cline_out_text(out, &short_name, 1);
+        argx_out_text(out, "-", 1);
+        argx_out_text(out, &short_name, 1);
         if (long_name != NULL)
         {
-            cline_out_text(out, ", ", 2);
+            argx_out_text(out, ", ", 2);
         }
     }
     else
     {
-        cline_out_text(out, "    ", 4);
+        argx_out_text(out, "    ", 4);
     }
 
     if (long_name != NULL)
     {
-        cline_out_text(out, "--", 2);
+        argx_out_text(out, "--", 2);
         if (negatable)
         {
-            cline_out_text(out, "[no-]", 5);
+            argx_out_text(out, "[no-]", 5);
         }
-        cline_help_item_string(out, long_name);
+        argx_help_item_string(out, long_name);
     }
 
     if (count)
     {
-        cline_out_text(out, "...", 3);
+        argx_out_text(out, "...", 3);
     }
 
     if (value)
     {
-        cline_out_text(out, " ", 1);
+        argx_out_text(out, " ", 1);
         item_value_name(out, option);
     }
 }
 
-void cline_help_item_positional_heading(cline_out_t *out, const cline_positional_t *positional)
+void argx_help_item_positional_heading(argx_out_t *out, const argx_positional_t *positional)
 {
     bool required = true;
     bool repeated = false;
@@ -129,64 +129,64 @@ void cline_help_item_positional_heading(cline_out_t *out, const cline_positional
     assert(out != NULL);
     assert(positional != NULL);
 
-    switch (cline_positional_arity(positional))
+    switch (argx_positional_arity(positional))
     {
-    case CLINE_ARITY_OPTIONAL:
+    case ARGX_ARITY_OPTIONAL:
         required = false;
         break;
-    case CLINE_ARITY_ZERO_OR_MORE:
+    case ARGX_ARITY_ZERO_OR_MORE:
         required = false;
         repeated = true;
         break;
-    case CLINE_ARITY_ONE_OR_MORE:
+    case ARGX_ARITY_ONE_OR_MORE:
         repeated = true;
         break;
-    case CLINE_ARITY_REQUIRED:
+    case ARGX_ARITY_REQUIRED:
     default:
         /* An arity of a later version is written in the simplest form. */
         break;
     }
 
-    cline_out_text(out, required ? "<" : "[", 1);
-    cline_help_item_string(out, cline_positional_name(positional));
-    cline_out_text(out, required ? ">" : "]", 1);
+    argx_out_text(out, required ? "<" : "[", 1);
+    argx_help_item_string(out, argx_positional_name(positional));
+    argx_out_text(out, required ? ">" : "]", 1);
     if (repeated)
     {
-        cline_out_text(out, "...", 3);
+        argx_out_text(out, "...", 3);
     }
 }
 
-void cline_help_item_usage_option(cline_out_t *out, const cline_option_t *option)
+void argx_help_item_usage_option(argx_out_t *out, const argx_option_t *option)
 {
     const char *long_name;
 
     assert(out != NULL);
     assert(option != NULL);
-    assert(cline_option_kind(option) == CLINE_OPTION_VALUE);
+    assert(argx_option_kind(option) == ARGX_OPTION_VALUE);
 
-    long_name = cline_option_long_name(option);
+    long_name = argx_option_long_name(option);
     if (long_name != NULL)
     {
-        cline_out_text(out, "--", 2);
-        cline_help_item_string(out, long_name);
+        argx_out_text(out, "--", 2);
+        argx_help_item_string(out, long_name);
     }
     else
     {
-        char short_name = cline_option_short_name(option);
+        char short_name = argx_option_short_name(option);
 
-        cline_out_text(out, "-", 1);
-        cline_out_text(out, &short_name, 1);
+        argx_out_text(out, "-", 1);
+        argx_out_text(out, &short_name, 1);
     }
 
     /*
      * The blank belongs to the item: it is written with the text, not
      * remembered as a blank between two items.
      */
-    cline_out_text(out, " ", 1);
+    argx_out_text(out, " ", 1);
     item_value_name(out, option);
 }
 
-cline_error_t cline_help_item_text_append(cline_vec_t *text, const char *part, size_t length)
+argx_error_t argx_help_item_text_append(argx_vec_t *text, const char *part, size_t length)
 {
     size_t index;
 
@@ -196,20 +196,20 @@ cline_error_t cline_help_item_text_append(cline_vec_t *text, const char *part, s
 
     for (index = 0; index < length; ++index)
     {
-        cline_error_t error = cline_vec_push(text, part + index);
+        argx_error_t error = argx_vec_push(text, part + index);
 
-        if (error != CLINE_ERROR_NONE)
+        if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
     }
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
 /* Appends the string part to text. */
-static cline_error_t item_text_string(cline_vec_t *text, const char *part)
+static argx_error_t item_text_string(argx_vec_t *text, const char *part)
 {
-    return cline_help_item_text_append(text, part, strlen(part));
+    return argx_help_item_text_append(text, part, strlen(part));
 }
 
 /*
@@ -217,13 +217,13 @@ static cline_error_t item_text_string(cline_vec_t *text, const char *part)
  * separates it from what stands before, unless text is empty or ends with
  * a newline, and then opening, the start of the annotation.
  */
-static cline_error_t item_note_open(cline_vec_t *text, const char *opening)
+static argx_error_t item_note_open(argx_vec_t *text, const char *opening)
 {
-    if ((text->count != 0) && (*(const char *)cline_vec_at(text, text->count - 1) != '\n'))
+    if ((text->count != 0) && (*(const char *)argx_vec_at(text, text->count - 1) != '\n'))
     {
-        cline_error_t error = cline_help_item_text_append(text, " ", 1);
+        argx_error_t error = argx_help_item_text_append(text, " ", 1);
 
-        if (error != CLINE_ERROR_NONE)
+        if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
@@ -235,41 +235,41 @@ static cline_error_t item_note_open(cline_vec_t *text, const char *opening)
  * Appends the annotation of the choices of type, "[choices: a, b, c]",
  * when type is of the kind with choices.
  */
-static cline_error_t item_choices_note(cline_vec_t *text, const cline_type_t *type)
+static argx_error_t item_choices_note(argx_vec_t *text, const argx_type_t *type)
 {
-    cline_error_t error;
+    argx_error_t error;
     size_t count;
     size_t index;
 
-    switch (cline_type_kind(type))
+    switch (argx_type_kind(type))
     {
-    case CLINE_TYPE_CHOICE:
+    case ARGX_TYPE_CHOICE:
         break;
-    case CLINE_TYPE_STRING:
-    case CLINE_TYPE_INT:
-    case CLINE_TYPE_FLOAT:
-    case CLINE_TYPE_CUSTOM:
+    case ARGX_TYPE_STRING:
+    case ARGX_TYPE_INT:
+    case ARGX_TYPE_FLOAT:
+    case ARGX_TYPE_CUSTOM:
     default:
         /* A kind of a later version is taken as one without choices. */
-        return CLINE_ERROR_NONE;
+        return ARGX_ERROR_NONE;
     }
 
     error = item_note_open(text, "[choices: ");
-    count = cline_type_choice_count(type);
-    for (index = 0; (index < count) && (error == CLINE_ERROR_NONE); ++index)
+    count = argx_type_choice_count(type);
+    for (index = 0; (index < count) && (error == ARGX_ERROR_NONE); ++index)
     {
         if (index != 0)
         {
-            error = cline_help_item_text_append(text, ", ", 2);
+            error = argx_help_item_text_append(text, ", ", 2);
         }
-        if (error == CLINE_ERROR_NONE)
+        if (error == ARGX_ERROR_NONE)
         {
-            error = item_text_string(text, cline_type_choice_at(type, index));
+            error = item_text_string(text, argx_type_choice_at(type, index));
         }
     }
-    if (error == CLINE_ERROR_NONE)
+    if (error == ARGX_ERROR_NONE)
     {
-        error = cline_help_item_text_append(text, "]", 1);
+        error = argx_help_item_text_append(text, "]", 1);
     }
     return error;
 }
@@ -278,17 +278,17 @@ static cline_error_t item_choices_note(cline_vec_t *text, const cline_type_t *ty
  * Appends the annotation of a default value, "[default: VALUE]", with the
  * string value as it is.
  */
-static cline_error_t item_default_note(cline_vec_t *text, const char *value)
+static argx_error_t item_default_note(argx_vec_t *text, const char *value)
 {
-    cline_error_t error = item_note_open(text, "[default: ");
+    argx_error_t error = item_note_open(text, "[default: ");
 
-    if (error == CLINE_ERROR_NONE)
+    if (error == ARGX_ERROR_NONE)
     {
         error = item_text_string(text, value);
     }
-    if (error == CLINE_ERROR_NONE)
+    if (error == ARGX_ERROR_NONE)
     {
-        error = cline_help_item_text_append(text, "]", 1);
+        error = argx_help_item_text_append(text, "]", 1);
     }
     return error;
 }
@@ -297,43 +297,43 @@ static cline_error_t item_default_note(cline_vec_t *text, const char *value)
  * Appends the annotations of an option with a value or of a positional:
  * the choices of type, then default_value when it is not NULL.
  */
-static cline_error_t item_value_notes(cline_vec_t *text, const cline_type_t *type,
+static argx_error_t item_value_notes(argx_vec_t *text, const argx_type_t *type,
                                        const char *default_value)
 {
-    cline_error_t error = item_choices_note(text, type);
+    argx_error_t error = item_choices_note(text, type);
 
-    if ((error == CLINE_ERROR_NONE) && (default_value != NULL))
+    if ((error == ARGX_ERROR_NONE) && (default_value != NULL))
     {
         error = item_default_note(text, default_value);
     }
     return error;
 }
 
-cline_error_t cline_help_item_option_notes(cline_vec_t *text, const cline_option_t *option)
+argx_error_t argx_help_item_option_notes(argx_vec_t *text, const argx_option_t *option)
 {
-    cline_error_t error = CLINE_ERROR_NONE;
+    argx_error_t error = ARGX_ERROR_NONE;
 
     assert(text != NULL);
     assert(text->item_size == 1);
     assert(option != NULL);
 
-    switch (cline_option_kind(option))
+    switch (argx_option_kind(option))
     {
-    case CLINE_OPTION_VALUE:
-        error = item_value_notes(text, cline_option_type(option), cline_option_default(option));
-        if ((error == CLINE_ERROR_NONE) && cline_option_is_required(option))
+    case ARGX_OPTION_VALUE:
+        error = item_value_notes(text, argx_option_type(option), argx_option_default(option));
+        if ((error == ARGX_ERROR_NONE) && argx_option_is_required(option))
         {
             error = item_note_open(text, "[required]");
         }
         break;
-    case CLINE_OPTION_NEGATABLE:
-        if (cline_option_initial(option))
+    case ARGX_OPTION_NEGATABLE:
+        if (argx_option_initial(option))
         {
             error = item_note_open(text, "[default: on]");
         }
         break;
-    case CLINE_OPTION_FLAG:
-    case CLINE_OPTION_COUNT:
+    case ARGX_OPTION_FLAG:
+    case ARGX_OPTION_COUNT:
     default:
         /* A kind of a later version has no annotation. */
         break;
@@ -341,13 +341,13 @@ cline_error_t cline_help_item_option_notes(cline_vec_t *text, const cline_option
     return error;
 }
 
-cline_error_t cline_help_item_positional_notes(cline_vec_t *text,
-                                                 const cline_positional_t *positional)
+argx_error_t argx_help_item_positional_notes(argx_vec_t *text,
+                                                 const argx_positional_t *positional)
 {
     assert(text != NULL);
     assert(text->item_size == 1);
     assert(positional != NULL);
 
-    return item_value_notes(text, cline_positional_type(positional),
-                            cline_positional_default(positional));
+    return item_value_notes(text, argx_positional_type(positional),
+                            argx_positional_default(positional));
 }

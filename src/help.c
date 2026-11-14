@@ -1,5 +1,5 @@
 /*
- * CLine - the help: the public functions that generate the text, and the
+ * ArgX - the help: the public functions that generate the text, and the
  * order of its parts.
  */
 #include "help_internal.h"
@@ -17,17 +17,17 @@
  */
 typedef struct help_context
 {
-    const cline_command_t *command; /* the command the text is about */
+    const argx_command_t *command; /* the command the text is about */
     size_t width;                    /* the width in columns; 0 means no limit */
     size_t indent;                   /* the blanks before each item of a list */
     size_t max_column;               /* the last column at which the descriptions may start */
     size_t column;                   /* the description column; set before the lists are written */
-    cline_out_t out;                /* where the text goes */
+    argx_out_t out;                /* where the text goes */
     /*
      * the cell text of one item, as bytes; used again for the
      * next item, freed before the generation returns
      */
-    cline_vec_t text;
+    argx_vec_t text;
 } help_context_t;
 
 /*
@@ -35,8 +35,8 @@ typedef struct help_context
  * their default values when options is NULL, and starts the output. The
  * cell text is empty; nothing is allocated.
  */
-static void help_context_init(help_context_t *context, const cline_command_t *command,
-                              const cline_help_options_t *options, cline_help_write_fn_t write_fn,
+static void help_context_init(help_context_t *context, const argx_command_t *command,
+                              const argx_help_options_t *options, argx_help_write_fn_t write_fn,
                               void *user_data)
 {
     context->command = command;
@@ -48,22 +48,22 @@ static void help_context_init(help_context_t *context, const cline_command_t *co
     }
     else
     {
-        context->width = CLINE_HELP_DEFAULT_WIDTH;
-        context->indent = CLINE_HELP_DEFAULT_INDENT;
-        context->max_column = CLINE_HELP_DEFAULT_MAX_COLUMN;
+        context->width = ARGX_HELP_DEFAULT_WIDTH;
+        context->indent = ARGX_HELP_DEFAULT_INDENT;
+        context->max_column = ARGX_HELP_DEFAULT_MAX_COLUMN;
     }
     context->column = 0;
-    cline_out_init(&context->out, write_fn, user_data);
-    cline_vec_init(&context->text, 1);
+    argx_out_init(&context->out, write_fn, user_data);
+    argx_vec_init(&context->text, 1);
 }
 
 /*
  * The result of a generation in which no allocation failed: whether the
  * write function has reported a failure.
  */
-static cline_error_t help_context_result(const help_context_t *context)
+static argx_error_t help_context_result(const help_context_t *context)
 {
-    return cline_out_failed(&context->out) ? CLINE_ERROR_WRITE_FAILED : CLINE_ERROR_NONE;
+    return argx_out_failed(&context->out) ? ARGX_ERROR_WRITE_FAILED : ARGX_ERROR_NONE;
 }
 
 /*
@@ -71,14 +71,14 @@ static cline_error_t help_context_result(const help_context_t *context)
  * to command, separated by one blank each. Nothing is allocated: for each
  * level, from the root down, the parents are walked again from command.
  */
-static void help_write_path(cline_out_t *out, const cline_command_t *command)
+static void help_write_path(argx_out_t *out, const argx_command_t *command)
 {
-    const cline_command_t *ancestor;
+    const argx_command_t *ancestor;
     size_t depth = 0;
     size_t level;
 
-    for (ancestor = cline_command_parent(command); ancestor != NULL;
-         ancestor = cline_command_parent(ancestor))
+    for (ancestor = argx_command_parent(command); ancestor != NULL;
+         ancestor = argx_command_parent(ancestor))
     {
         ++depth;
     }
@@ -90,14 +90,14 @@ static void help_write_path(cline_out_t *out, const cline_command_t *command)
         ancestor = command;
         for (step = 0; step < level; ++step)
         {
-            ancestor = cline_command_parent(ancestor);
+            ancestor = argx_command_parent(ancestor);
         }
 
         if (level != depth)
         {
-            cline_out_spaces(out, 1);
+            argx_out_spaces(out, 1);
         }
-        cline_help_item_string(out, cline_command_name(ancestor));
+        argx_help_item_string(out, argx_command_name(ancestor));
     }
 }
 
@@ -105,14 +105,14 @@ static void help_write_path(cline_out_t *out, const cline_command_t *command)
  * Returns whether command has an option that is not required: one that
  * takes no value, or one with a value that need not be given.
  */
-static bool help_has_optional_option(const cline_command_t *command)
+static bool help_has_optional_option(const argx_command_t *command)
 {
-    size_t count = cline_command_option_count(command);
+    size_t count = argx_command_option_count(command);
     size_t index;
 
     for (index = 0; index < count; ++index)
     {
-        if (!cline_option_is_required(cline_command_option_at(command, index)))
+        if (!argx_option_is_required(argx_command_option_at(command, index)))
         {
             return true;
         }
@@ -139,29 +139,29 @@ typedef enum help_usage_kind
 typedef struct help_usage_item
 {
     help_usage_kind_t kind;
-    const cline_option_t *option;         /* for HELP_USAGE_OPTION */
-    const cline_positional_t *positional; /* for HELP_USAGE_POSITIONAL */
+    const argx_option_t *option;         /* for HELP_USAGE_OPTION */
+    const argx_positional_t *positional; /* for HELP_USAGE_POSITIONAL */
 } help_usage_item_t;
 
 /*
  * Writes item to out: the one place that knows the text of an item, for
  * the output and for the measuring.
  */
-static void help_usage_item_write(cline_out_t *out, const help_usage_item_t *item)
+static void help_usage_item_write(argx_out_t *out, const help_usage_item_t *item)
 {
     switch (item->kind)
     {
     case HELP_USAGE_OPTIONS:
-        cline_out_string(out, "[OPTIONS]");
+        argx_out_string(out, "[OPTIONS]");
         break;
     case HELP_USAGE_OPTION:
-        cline_help_item_usage_option(out, item->option);
+        argx_help_item_usage_option(out, item->option);
         break;
     case HELP_USAGE_POSITIONAL:
-        cline_help_item_positional_heading(out, item->positional);
+        argx_help_item_positional_heading(out, item->positional);
         break;
     case HELP_USAGE_COMMAND:
-        cline_out_string(out, "[COMMAND]");
+        argx_out_string(out, "[COMMAND]");
         break;
     }
 }
@@ -200,10 +200,10 @@ static bool help_count_write(void *user_data, const char *text, size_t length)
  * at 0 after a newline. Inside an item or a heading no blank is
  * remembered, so every byte reaches the count.
  */
-static void help_counter_init(cline_out_t *counter, size_t *width)
+static void help_counter_init(argx_out_t *counter, size_t *width)
 {
     *width = 0;
-    cline_out_init(counter, help_count_write, width);
+    argx_out_init(counter, help_count_write, width);
 }
 
 /*
@@ -213,7 +213,7 @@ static void help_counter_init(cline_out_t *counter, size_t *width)
 static size_t help_usage_item_width(const help_usage_item_t *item)
 {
     size_t width;
-    cline_out_t counter;
+    argx_out_t counter;
 
     help_counter_init(&counter, &width);
     help_usage_item_write(&counter, item);
@@ -233,7 +233,7 @@ static size_t help_usage_item_width(const help_usage_item_t *item)
  */
 static void help_usage_separate(help_context_t *context, const help_usage_item_t *item)
 {
-    cline_out_t *out = &context->out;
+    argx_out_t *out = &context->out;
 
     if (context->width != 0)
     {
@@ -245,15 +245,15 @@ static void help_usage_separate(help_context_t *context, const help_usage_item_t
          * is less than the width.
          */
         if ((item_width >= context->width) ||
-            (cline_out_column(out) >= (context->width - item_width)))
+            (argx_out_column(out) >= (context->width - item_width)))
         {
-            cline_out_newline(out);
-            cline_out_spaces(out, HELP_USAGE_INDENT);
+            argx_out_newline(out);
+            argx_out_spaces(out, HELP_USAGE_INDENT);
             return;
         }
     }
 
-    cline_out_spaces(out, 1);
+    argx_out_spaces(out, 1);
 }
 
 /*
@@ -275,8 +275,8 @@ static void help_usage_add(help_context_t *context, const help_usage_item_t *ite
  */
 static void help_write_usage_line(help_context_t *context)
 {
-    const cline_command_t *command = context->command;
-    cline_out_t *out = &context->out;
+    const argx_command_t *command = context->command;
+    argx_out_t *out = &context->out;
     help_usage_item_t item;
     size_t count;
     size_t index;
@@ -286,7 +286,7 @@ static void help_write_usage_line(help_context_t *context)
      * measured. The blank is part of it: it is written even when the name
      * of the root starts with a newline.
      */
-    cline_out_text(out, "Usage: ", 7);
+    argx_out_text(out, "Usage: ", 7);
     help_write_path(out, command);
 
     item.option = NULL;
@@ -300,41 +300,41 @@ static void help_write_usage_line(help_context_t *context)
 
     /* Only an option that takes a value can be required. */
     item.kind = HELP_USAGE_OPTION;
-    count = cline_command_option_count(command);
+    count = argx_command_option_count(command);
     for (index = 0; index < count; ++index)
     {
-        item.option = cline_command_option_at(command, index);
-        if (cline_option_is_required(item.option))
+        item.option = argx_command_option_at(command, index);
+        if (argx_option_is_required(item.option))
         {
             help_usage_add(context, &item);
         }
     }
 
     item.kind = HELP_USAGE_POSITIONAL;
-    count = cline_command_positional_count(command);
+    count = argx_command_positional_count(command);
     for (index = 0; index < count; ++index)
     {
-        item.positional = cline_command_positional_at(command, index);
+        item.positional = argx_command_positional_at(command, index);
         help_usage_add(context, &item);
     }
 
-    if (cline_command_subcommand_count(command) != 0)
+    if (argx_command_subcommand_count(command) != 0)
     {
         item.kind = HELP_USAGE_COMMAND;
         help_usage_add(context, &item);
     }
 
-    cline_out_newline(out);
+    argx_out_newline(out);
 }
 
-cline_error_t cline_help_write_usage(const cline_command_t *command,
-                                       const cline_help_options_t *options,
-                                       cline_help_write_fn_t write_fn, void *user_data)
+argx_error_t argx_help_write_usage(const argx_command_t *command,
+                                       const argx_help_options_t *options,
+                                       argx_help_write_fn_t write_fn, void *user_data)
 {
     help_context_t context;
 
     assert(command != NULL);
-    assert(cline_command_is_validated(command));
+    assert(argx_command_is_validated(command));
     assert(write_fn != NULL);
 
     help_context_init(&context, command, options, write_fn, user_data);
@@ -360,9 +360,9 @@ typedef enum help_heading_kind
 typedef struct help_heading
 {
     help_heading_kind_t kind;
-    const cline_command_t *subcommand;    /* for HELP_HEADING_SUBCOMMAND */
-    const cline_positional_t *positional; /* for HELP_HEADING_POSITIONAL */
-    const cline_option_t *option;         /* for HELP_HEADING_OPTION */
+    const argx_command_t *subcommand;    /* for HELP_HEADING_SUBCOMMAND */
+    const argx_positional_t *positional; /* for HELP_HEADING_POSITIONAL */
+    const argx_option_t *option;         /* for HELP_HEADING_OPTION */
 } help_heading_t;
 
 /*
@@ -370,18 +370,18 @@ typedef struct help_heading
  * for the output and for the measuring. The heading of a subcommand is its
  * name.
  */
-static void help_heading_write(cline_out_t *out, const help_heading_t *heading)
+static void help_heading_write(argx_out_t *out, const help_heading_t *heading)
 {
     switch (heading->kind)
     {
     case HELP_HEADING_SUBCOMMAND:
-        cline_help_item_string(out, cline_command_name(heading->subcommand));
+        argx_help_item_string(out, argx_command_name(heading->subcommand));
         break;
     case HELP_HEADING_POSITIONAL:
-        cline_help_item_positional_heading(out, heading->positional);
+        argx_help_item_positional_heading(out, heading->positional);
         break;
     case HELP_HEADING_OPTION:
-        cline_help_item_option_heading(out, heading->option);
+        argx_help_item_option_heading(out, heading->option);
         break;
     }
 }
@@ -393,7 +393,7 @@ static void help_heading_write(cline_out_t *out, const help_heading_t *heading)
 static size_t help_heading_width(const help_heading_t *heading)
 {
     size_t width;
-    cline_out_t counter;
+    argx_out_t counter;
 
     help_counter_init(&counter, &width);
     help_heading_write(&counter, heading);
@@ -401,38 +401,38 @@ static size_t help_heading_width(const help_heading_t *heading)
 }
 
 /* Returns the heading of the subcommand of command at index. */
-static help_heading_t help_subcommand_heading(const cline_command_t *command, size_t index)
+static help_heading_t help_subcommand_heading(const argx_command_t *command, size_t index)
 {
     help_heading_t heading;
 
     heading.kind = HELP_HEADING_SUBCOMMAND;
-    heading.subcommand = cline_command_subcommand_at(command, index);
+    heading.subcommand = argx_command_subcommand_at(command, index);
     heading.positional = NULL;
     heading.option = NULL;
     return heading;
 }
 
 /* Returns the heading of the positional of command at index. */
-static help_heading_t help_positional_heading(const cline_command_t *command, size_t index)
+static help_heading_t help_positional_heading(const argx_command_t *command, size_t index)
 {
     help_heading_t heading;
 
     heading.kind = HELP_HEADING_POSITIONAL;
     heading.subcommand = NULL;
-    heading.positional = cline_command_positional_at(command, index);
+    heading.positional = argx_command_positional_at(command, index);
     heading.option = NULL;
     return heading;
 }
 
 /* Returns the heading of the option of command at index. */
-static help_heading_t help_option_heading(const cline_command_t *command, size_t index)
+static help_heading_t help_option_heading(const argx_command_t *command, size_t index)
 {
     help_heading_t heading;
 
     heading.kind = HELP_HEADING_OPTION;
     heading.subcommand = NULL;
     heading.positional = NULL;
-    heading.option = cline_command_option_at(command, index);
+    heading.option = argx_command_option_at(command, index);
     return heading;
 }
 
@@ -441,7 +441,7 @@ static help_heading_t help_option_heading(const cline_command_t *command, size_t
  * description can start on the line of a heading of that width.
  *
  * A width is the length of strings in memory and the indent is at most
- * CLINE_HELP_SETTING_MAX, so the sum is not expected to go beyond a
+ * ARGX_HELP_SETTING_MAX, so the sum is not expected to go beyond a
  * size_t; help_add() keeps it defined if it ever does.
  */
 static size_t help_heading_reach(const help_context_t *context, size_t width)
@@ -461,7 +461,7 @@ static size_t help_heading_reach(const help_context_t *context, size_t width)
  */
 static size_t help_description_column(const help_context_t *context)
 {
-    const cline_command_t *command = context->command;
+    const argx_command_t *command = context->command;
     help_heading_t heading;
     size_t widest = 0;
     size_t limit;
@@ -471,7 +471,7 @@ static size_t help_description_column(const help_context_t *context)
     size_t count;
     size_t index;
 
-    count = cline_command_subcommand_count(command);
+    count = argx_command_subcommand_count(command);
     for (index = 0; index < count; ++index)
     {
         heading = help_subcommand_heading(command, index);
@@ -482,7 +482,7 @@ static size_t help_description_column(const help_context_t *context)
         }
     }
 
-    count = cline_command_positional_count(command);
+    count = argx_command_positional_count(command);
     for (index = 0; index < count; ++index)
     {
         heading = help_positional_heading(command, index);
@@ -493,7 +493,7 @@ static size_t help_description_column(const help_context_t *context)
         }
     }
 
-    count = cline_command_option_count(command);
+    count = argx_command_option_count(command);
     for (index = 0; index < count; ++index)
     {
         heading = help_option_heading(command, index);
@@ -512,7 +512,7 @@ static size_t help_description_column(const help_context_t *context)
         limit = context->width / 2;
     }
 
-    /* The indent is at most CLINE_HELP_SETTING_MAX: the sum cannot wrap. */
+    /* The indent is at most ARGX_HELP_SETTING_MAX: the sum cannot wrap. */
     lowest = context->indent + 2;
     if (limit < lowest)
     {
@@ -607,8 +607,8 @@ static size_t help_first_line_length(const char *text)
  */
 static void help_write_description(help_context_t *context)
 {
-    cline_out_t *out = &context->out;
-    const char *text = cline_command_description(context->command);
+    argx_out_t *out = &context->out;
+    const char *text = argx_command_description(context->command);
     size_t newlines;
     size_t length = help_whole_length(text, &newlines);
 
@@ -617,19 +617,19 @@ static void help_write_description(help_context_t *context)
         return;
     }
 
-    cline_out_newline(out);
-    cline_wrap_write(out, text, length, 0, context->width);
-    cline_out_newline(out);
+    argx_out_newline(out);
+    argx_wrap_write(out, text, length, 0, context->width);
+    argx_out_newline(out);
 }
 
 /* Starts a list: writes an empty line and the line of its title. */
 static void help_write_title(help_context_t *context, const char *title)
 {
-    cline_out_t *out = &context->out;
+    argx_out_t *out = &context->out;
 
-    cline_out_newline(out);
-    cline_out_string(out, title);
-    cline_out_newline(out);
+    argx_out_newline(out);
+    argx_out_string(out, title);
+    argx_out_newline(out);
 }
 
 /*
@@ -650,28 +650,28 @@ static void help_write_title(help_context_t *context, const char *title)
 static void help_write_item(help_context_t *context, const help_heading_t *heading,
                             const char *text, size_t length)
 {
-    cline_out_t *out = &context->out;
+    argx_out_t *out = &context->out;
 
-    cline_out_spaces(out, context->indent);
+    argx_out_spaces(out, context->indent);
     help_heading_write(out, heading);
     if (length != 0)
     {
         if (help_heading_reach(context, help_heading_width(heading)) > context->column)
         {
-            cline_out_newline(out);
+            argx_out_newline(out);
         }
 
         /*
-         * cline_wrap_write() needs the output to stand at the description
+         * argx_wrap_write() needs the output to stand at the description
          * column or to the left of it. On the line of the heading the
          * output stands at "the indent + the width of the heading" at
          * most, less after a newline inside a name, and that is to the
          * left of the column by 2 or more; on a new line it stands at 0.
          */
-        assert(cline_out_column(out) <= context->column);
-        cline_wrap_write(out, text, length, context->column, context->width);
+        assert(argx_out_column(out) <= context->column);
+        argx_wrap_write(out, text, length, context->column, context->width);
     }
-    cline_out_newline(out);
+    argx_out_newline(out);
 }
 
 /*
@@ -682,23 +682,23 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
  * description that ends with a newline keeps it: an annotation then starts
  * on the next line.
  *
- * Returns CLINE_ERROR_OUT_OF_MEMORY when an allocation fails.
+ * Returns ARGX_ERROR_OUT_OF_MEMORY when an allocation fails.
  */
-static cline_error_t help_cell_start(help_context_t *context, const char *description)
+static argx_error_t help_cell_start(help_context_t *context, const char *description)
 {
     size_t newlines;
     size_t length = help_whole_length(description, &newlines);
-    cline_error_t error;
+    argx_error_t error;
 
     context->text.count = 0;
     if (length == 0)
     {
-        return CLINE_ERROR_NONE;
+        return ARGX_ERROR_NONE;
     }
-    error = cline_help_item_text_append(&context->text, description, length);
-    while ((error == CLINE_ERROR_NONE) && (newlines != 0))
+    error = argx_help_item_text_append(&context->text, description, length);
+    while ((error == ARGX_ERROR_NONE) && (newlines != 0))
     {
-        error = cline_help_item_text_append(&context->text, "\n", 1);
+        error = argx_help_item_text_append(&context->text, "\n", 1);
         --newlines;
     }
     return error;
@@ -712,7 +712,7 @@ static cline_error_t help_cell_start(help_context_t *context, const char *descri
 static void help_write_cell_item(help_context_t *context, const help_heading_t *heading)
 {
     size_t length = context->text.count;
-    const char *text = (length != 0) ? cline_vec_at(&context->text, 0) : NULL;
+    const char *text = (length != 0) ? argx_vec_at(&context->text, 0) : NULL;
 
     help_write_item(context, heading, text, length);
 }
@@ -724,8 +724,8 @@ static void help_write_cell_item(help_context_t *context, const help_heading_t *
  */
 static void help_write_commands(help_context_t *context)
 {
-    const cline_command_t *command = context->command;
-    size_t count = cline_command_subcommand_count(command);
+    const argx_command_t *command = context->command;
+    size_t count = argx_command_subcommand_count(command);
     size_t index;
 
     if (count == 0)
@@ -734,10 +734,10 @@ static void help_write_commands(help_context_t *context)
     }
 
     help_write_title(context, "Commands:");
-    for (index = 0; (index < count) && !cline_out_failed(&context->out); ++index)
+    for (index = 0; (index < count) && !argx_out_failed(&context->out); ++index)
     {
         help_heading_t heading = help_subcommand_heading(command, index);
-        const char *text = cline_command_description(heading.subcommand);
+        const char *text = argx_command_description(heading.subcommand);
 
         help_write_item(context, &heading, text, help_first_line_length(text));
     }
@@ -748,38 +748,38 @@ static void help_write_commands(help_context_t *context)
  * has one: in the order in which they were added, each with its whole
  * description and, behind it, its annotations.
  *
- * Returns CLINE_ERROR_OUT_OF_MEMORY when an allocation for the cell text
+ * Returns ARGX_ERROR_OUT_OF_MEMORY when an allocation for the cell text
  * fails; the list ends before the item that it was for.
  */
-static cline_error_t help_write_arguments(help_context_t *context)
+static argx_error_t help_write_arguments(help_context_t *context)
 {
-    const cline_command_t *command = context->command;
-    size_t count = cline_command_positional_count(command);
+    const argx_command_t *command = context->command;
+    size_t count = argx_command_positional_count(command);
     size_t index;
 
     if (count == 0)
     {
-        return CLINE_ERROR_NONE;
+        return ARGX_ERROR_NONE;
     }
 
     help_write_title(context, "Arguments:");
-    for (index = 0; (index < count) && !cline_out_failed(&context->out); ++index)
+    for (index = 0; (index < count) && !argx_out_failed(&context->out); ++index)
     {
         help_heading_t heading = help_positional_heading(command, index);
-        cline_error_t error =
-            help_cell_start(context, cline_positional_description(heading.positional));
+        argx_error_t error =
+            help_cell_start(context, argx_positional_description(heading.positional));
 
-        if (error == CLINE_ERROR_NONE)
+        if (error == ARGX_ERROR_NONE)
         {
-            error = cline_help_item_positional_notes(&context->text, heading.positional);
+            error = argx_help_item_positional_notes(&context->text, heading.positional);
         }
-        if (error != CLINE_ERROR_NONE)
+        if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
         help_write_cell_item(context, &heading);
     }
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
 /*
@@ -789,48 +789,48 @@ static cline_error_t help_write_arguments(help_context_t *context)
  * whole description and, behind it, its annotations. Nothing is listed
  * that the schema does not have.
  *
- * Returns CLINE_ERROR_OUT_OF_MEMORY when an allocation for the cell text
+ * Returns ARGX_ERROR_OUT_OF_MEMORY when an allocation for the cell text
  * fails; the list ends before the item that it was for.
  */
-static cline_error_t help_write_options(help_context_t *context)
+static argx_error_t help_write_options(help_context_t *context)
 {
-    const cline_command_t *command = context->command;
-    size_t count = cline_command_option_count(command);
+    const argx_command_t *command = context->command;
+    size_t count = argx_command_option_count(command);
     size_t index;
 
     if (count == 0)
     {
-        return CLINE_ERROR_NONE;
+        return ARGX_ERROR_NONE;
     }
 
     help_write_title(context, "Options:");
-    for (index = 0; (index < count) && !cline_out_failed(&context->out); ++index)
+    for (index = 0; (index < count) && !argx_out_failed(&context->out); ++index)
     {
         help_heading_t heading = help_option_heading(command, index);
-        cline_error_t error = help_cell_start(context, cline_option_description(heading.option));
+        argx_error_t error = help_cell_start(context, argx_option_description(heading.option));
 
-        if (error == CLINE_ERROR_NONE)
+        if (error == ARGX_ERROR_NONE)
         {
-            error = cline_help_item_option_notes(&context->text, heading.option);
+            error = argx_help_item_option_notes(&context->text, heading.option);
         }
-        if (error != CLINE_ERROR_NONE)
+        if (error != ARGX_ERROR_NONE)
         {
             return error;
         }
         help_write_cell_item(context, &heading);
     }
-    return CLINE_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
-cline_error_t cline_help_write(const cline_command_t *command,
-                                 const cline_help_options_t *options,
-                                 cline_help_write_fn_t write_fn, void *user_data)
+argx_error_t argx_help_write(const argx_command_t *command,
+                                 const argx_help_options_t *options,
+                                 argx_help_write_fn_t write_fn, void *user_data)
 {
     help_context_t context;
-    cline_error_t error;
+    argx_error_t error;
 
     assert(command != NULL);
-    assert(cline_command_is_validated(command));
+    assert(argx_command_is_validated(command));
     assert(write_fn != NULL);
 
     help_context_init(&context, command, options, write_fn, user_data);
@@ -842,7 +842,7 @@ cline_error_t cline_help_write(const cline_command_t *command,
     context.column = help_description_column(&context);
     help_write_commands(&context);
     error = help_write_arguments(&context);
-    if (error == CLINE_ERROR_NONE)
+    if (error == ARGX_ERROR_NONE)
     {
         error = help_write_options(&context);
     }
@@ -852,8 +852,8 @@ cline_error_t cline_help_write(const cline_command_t *command,
      * the write function never both fail: the first failure ends the
      * lists.
      */
-    cline_vec_destroy(&context.text);
-    if (error != CLINE_ERROR_NONE)
+    argx_vec_destroy(&context.text);
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
@@ -902,10 +902,10 @@ static bool help_buffer_write(void *user_data, const char *text, size_t length)
  * behind the part of the text that it holds, and *length, when length is
  * not NULL, the length of the whole text. Returns error.
  */
-static cline_error_t help_buffer_finish(help_buffer_t *target, cline_error_t error,
+static argx_error_t help_buffer_finish(help_buffer_t *target, argx_error_t error,
                                          size_t *length)
 {
-    if (error != CLINE_ERROR_NONE)
+    if (error != ARGX_ERROR_NONE)
     {
         target->length = 0;
     }
@@ -921,8 +921,8 @@ static cline_error_t help_buffer_finish(help_buffer_t *target, cline_error_t err
     return error;
 }
 
-cline_error_t cline_help_format(const cline_command_t *command,
-                                  const cline_help_options_t *options, char *buffer, size_t size,
+argx_error_t argx_help_format(const argx_command_t *command,
+                                  const argx_help_options_t *options, char *buffer, size_t size,
                                   size_t *length)
 {
     help_buffer_t target;
@@ -933,11 +933,11 @@ cline_error_t cline_help_format(const cline_command_t *command,
     target.size = size;
     target.length = 0;
     return help_buffer_finish(
-        &target, cline_help_write(command, options, help_buffer_write, &target), length);
+        &target, argx_help_write(command, options, help_buffer_write, &target), length);
 }
 
-cline_error_t cline_help_format_usage(const cline_command_t *command,
-                                        const cline_help_options_t *options, char *buffer,
+argx_error_t argx_help_format_usage(const argx_command_t *command,
+                                        const argx_help_options_t *options, char *buffer,
                                         size_t size, size_t *length)
 {
     help_buffer_t target;
@@ -948,5 +948,5 @@ cline_error_t cline_help_format_usage(const cline_command_t *command,
     target.size = size;
     target.length = 0;
     return help_buffer_finish(
-        &target, cline_help_write_usage(command, options, help_buffer_write, &target), length);
+        &target, argx_help_write_usage(command, options, help_buffer_write, &target), length);
 }

@@ -1,4 +1,4 @@
-# Release of CLine: the tag and the GitHub Release.
+# Release of ArgX: the tag and the GitHub Release.
 #
 # Started when a pull request to main is closed. The job runs only when the
 # pull request was merged, comes from a branch of this repository (not from a
@@ -9,7 +9,7 @@
 #   1. takes the version from the name of the branch release/v<version>, and
 #      the commit that the merge made on main;
 #   2. checks out that commit;
-#   3. checks that include/cline/version.h holds the version and that the
+#   3. checks that include/argx/version.h holds the version and that the
 #      newest section of CHANGELOG.md is the version, and makes the notes of
 #      the release from that section (tools/release/publish.cmake). When they
 #      do not match, it fails with the reason and creates nothing;
@@ -152,7 +152,7 @@ jobs:
           VERSION: ${{ steps.resolve.outputs.version }}
         run: |
           log="$RUNNER_TEMP/publish.log"
-          if ! cmake -D CLINE_RELEASE_VERSION="$VERSION" -D CLINE_RELEASE_REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" -D CLINE_SOURCE_DIR="$GITHUB_WORKSPACE" -D CLINE_RELEASE_NOTES="$RUNNER_TEMP/notes.md" -D CLINE_RELEASE_OUTPUT="$GITHUB_OUTPUT" -P tools/release/publish.cmake 2>&1 | tee "$log"; then
+          if ! cmake -D ARGX_RELEASE_VERSION="$VERSION" -D ARGX_RELEASE_REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" -D ARGX_SOURCE_DIR="$GITHUB_WORKSPACE" -D ARGX_RELEASE_NOTES="$RUNNER_TEMP/notes.md" -D ARGX_RELEASE_OUTPUT="$GITHUB_OUTPUT" -P tools/release/publish.cmake 2>&1 | tee "$log"; then
             {
               echo "## Release failed"
               echo
@@ -201,7 +201,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git tag -a "v$VERSION" -m "CLine v$VERSION" "$SHA"
+          git tag -a "v$VERSION" -m "ArgX v$VERSION" "$SHA"
           # Not forced: the push fails if the tag was created meanwhile.
           if ! git push origin "refs/tags/v$VERSION"; then
             fail "The push of the tag v$VERSION failed. Run the workflow again."

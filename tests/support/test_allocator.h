@@ -1,12 +1,12 @@
 /*
- * CLine test support - the test allocator: an allocator that can fail a
+ * ArgX test support - the test allocator: an allocator that can fail a
  * chosen request and that counts requests, live blocks and violations of
  * the allocator contract.
  *
  * It is not a part of the library and is not installed. A test uses it by
- * adding support/test_allocator.c to the SOURCES of its cline_add_test()
+ * adding support/test_allocator.c to the SOURCES of its argx_add_test()
  * call and by including this header as "../support/test_allocator.h". It
- * depends only on <cline/cline.h> and the C standard library, so tests of
+ * depends only on <argx/argx.h> and the C standard library, so tests of
  * the public API and tests of the internal functions can both use it.
  *
  * The state is kept in static variables: there is one test allocator per
@@ -19,7 +19,7 @@
  *   not a request.
  * - A live block is a block that was allocated and not freed yet.
  * - A violation is a call that the library must never make (see "How the
- *   library calls the functions of the allocator" in <cline/alloc.h>): a
+ *   library calls the functions of the allocator" in <argx/alloc.h>): a
  *   request of size 0 or count 0, a realloc_fn of NULL, a free_fn of NULL.
  *   A violating call is counted and does nothing else: a violating request
  *   returns NULL, allocates nothing, and leaves the block it was given
@@ -28,34 +28,34 @@
  * The memory really comes from the standard malloc, calloc, realloc and
  * free.
  */
-#ifndef CLINE_TEST_ALLOCATOR_H
-#define CLINE_TEST_ALLOCATOR_H
+#ifndef ARGX_TEST_ALLOCATOR_H
+#define ARGX_TEST_ALLOCATOR_H
 
-#include <cline/cline.h>
+#include <argx/argx.h>
 
 #include <stddef.h>
 
 /* Returns the four functions of the test allocator. Changes no state. */
-cline_allocator_t cline_test_allocator_get(void);
+argx_allocator_t argx_test_allocator_get(void);
 
 /*
- * Resets like cline_test_allocator_reset(), then sets the test allocator
+ * Resets like argx_test_allocator_reset(), then sets the test allocator
  * as the allocator of the library.
  */
-void cline_test_allocator_install(void);
+void argx_test_allocator_install(void);
 
 /*
  * Sets the library back to its default allocator. The counts stay as they
  * are, so they can be read afterwards.
  */
-void cline_test_allocator_uninstall(void);
+void argx_test_allocator_uninstall(void);
 
 /*
  * Puts the counts of requests, live blocks and violations back to 0 and
  * forgets the request to fail. If blocks are still live when it is called,
  * the count of live blocks is wrong from then on.
  */
-void cline_test_allocator_reset(void);
+void argx_test_allocator_reset(void);
 
 /*
  * Makes the request-th request after the last reset fail, counted from 1
@@ -63,21 +63,21 @@ void cline_test_allocator_reset(void);
  * fails: it returns NULL, and a failed realloc_fn leaves its block valid
  * and unchanged. With 0, no request fails.
  */
-void cline_test_allocator_fail_at(size_t request);
+void argx_test_allocator_fail_at(size_t request);
 
 /* The number of requests since the last reset, the failed ones included. */
-size_t cline_test_allocator_requests(void);
+size_t argx_test_allocator_requests(void);
 
 /*
  * The number of live blocks: up by one with an allocation that succeeds,
  * down by one with a free, unchanged by a reallocation.
  */
-size_t cline_test_allocator_live(void);
+size_t argx_test_allocator_live(void);
 
 /*
  * The number of violations of the allocator contract since the last
  * reset.
  */
-size_t cline_test_allocator_violations(void);
+size_t argx_test_allocator_violations(void);
 
-#endif /* CLINE_TEST_ALLOCATOR_H */
+#endif /* ARGX_TEST_ALLOCATOR_H */
