@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a problem with CLArgs (a wrong result, a crash, a build failure).
+description: Report a problem with ArgX (a wrong result, a crash, a build failure).
 labels:
   - bug
 body:
@@ -25,13 +25,13 @@ body:
       placeholder: |
         1. Build this program: ...
         2. Run it with: ./app --name=value
-        3. clargs_parse() returns ...
+        3. argx_parse() returns ...
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: CLArgs version
+      label: ArgX version
       description: A release (for example v0.1.0) or a commit hash.
     validations:
       required: true
@@ -56,7 +56,7 @@ body:
   - type: dropdown
     id: integration
     attributes:
-      label: How CLArgs is included
+      label: How ArgX is included
       options:
         - FetchContent
         - add_subdirectory

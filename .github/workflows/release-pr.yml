@@ -1,11 +1,11 @@
-# Release PR of CLArgs.
+# Release PR of ArgX.
 #
 # Started by hand on main, from the Actions tab, with the version to release
 # (such as 0.2.0 or 0.2.0-rc.1, without a leading "v"). It:
 #
 #   1. fails unless it was started on main;
 #   2. fails when the branch release/v<version> already exists;
-#   3. checks the release and rewrites include/clargs/version.h and
+#   3. checks the release and rewrites include/argx/version.h and
 #      CHANGELOG.md (tools/release/prepare.cmake), which fails, with the
 #      reason, when the version is not valid, when the tag v<version> exists,
 #      when the version is not higher than every release tag, when it is lower
@@ -119,7 +119,7 @@ jobs:
           DATE="$(date -u +%F)"
           echo "date=$DATE" >> "$GITHUB_OUTPUT"
           log="$RUNNER_TEMP/prepare.log"
-          if ! cmake -D CLARGS_RELEASE_VERSION="$VERSION" -D CLARGS_RELEASE_DATE="$DATE" -D CLARGS_RELEASE_REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" -D CLARGS_SOURCE_DIR="$GITHUB_WORKSPACE" -D CLARGS_RELEASE_TAGS_FILE="$RUNNER_TEMP/tags.txt" -D CLARGS_RELEASE_OUTPUT="$GITHUB_OUTPUT" -P tools/release/prepare.cmake 2>&1 | tee "$log"; then
+          if ! cmake -D ARGX_RELEASE_VERSION="$VERSION" -D ARGX_RELEASE_DATE="$DATE" -D ARGX_RELEASE_REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" -D ARGX_SOURCE_DIR="$GITHUB_WORKSPACE" -D ARGX_RELEASE_TAGS_FILE="$RUNNER_TEMP/tags.txt" -D ARGX_RELEASE_OUTPUT="$GITHUB_OUTPUT" -P tools/release/prepare.cmake 2>&1 | tee "$log"; then
             {
               echo "## Release PR failed"
               echo
@@ -140,14 +140,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git switch -c "release/v$VERSION"
-          git add include/clargs/version.h CHANGELOG.md
+          git add include/argx/version.h CHANGELOG.md
           changes="$(git status --porcelain --untracked-files=all)"
           # CHANGELOG.md always changes. The version header changes too, except
           # for a release of the version it already holds (the first release).
           sorted="$(printf '%s\n' "$changes" | LC_ALL=C sort)"
-          with_header="$(printf '%s\n' 'M  CHANGELOG.md' 'M  include/clargs/version.h')"
+          with_header="$(printf '%s\n' 'M  CHANGELOG.md' 'M  include/argx/version.h')"
           if [ "$sorted" != "$with_header" ] && [ "$sorted" != 'M  CHANGELOG.md' ]; then
-            reason="The working tree does not hold only the changes of CHANGELOG.md and include/clargs/version.h."
+            reason="The working tree does not hold only the changes of CHANGELOG.md and include/argx/version.h."
             echo "error: $reason"
             printf '%s\n' "$changes"
             {
@@ -183,13 +183,13 @@ jobs:
           guide="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/releasing.md"
           body="$RUNNER_TEMP/pr-body.md"
           if [ "$PRERELEASE" = true ]; then
-            first="This pull request releases CLArgs v$VERSION. This is a pre-release."
+            first="This pull request releases ArgX v$VERSION. This is a pre-release."
             kind="It is marked as a pre-release, and not as the latest release."
           else
-            first="This pull request releases CLArgs v$VERSION."
+            first="This pull request releases ArgX v$VERSION."
             kind="It is a full release, not a pre-release."
           fi
-          if git diff --quiet HEAD~1 HEAD -- include/clargs/version.h; then
+          if git diff --quiet HEAD~1 HEAD -- include/argx/version.h; then
             header="the version macros already hold $VERSION, so this file is not changed."
           else
             header="the version macros are set to $VERSION."
@@ -199,7 +199,7 @@ jobs:
 
           ## What this pull request changes
 
-          - \`include/clargs/version.h\`: $header
+          - \`include/argx/version.h\`: $header
           - \`CHANGELOG.md\`: the entries under [Unreleased] move to the new section [$VERSION] - $DATE, [Unreleased] is left empty, and the links at the end of the file are updated.
 
           No other file is changed.

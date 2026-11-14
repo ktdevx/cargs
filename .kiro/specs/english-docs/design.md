@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Purpose**: CLArgs の人向けの文書を英語だけにし、利用者向けと開発者向けに整理して、日本語も `.kiro/` も知らない第三者が、CLArgs を使い、開発に参加できるようにする。
+**Purpose**: ArgX の人向けの文書を英語だけにし、利用者向けと開発者向けに整理して、日本語も `.kiro/` も知らない第三者が、ArgX を使い、開発に参加できるようにする。
 
 **Users**: ライブラリ利用者は README と API の説明（schema、parse、help、ownership）を、コントリビューターは CONTRIBUTING.md と開発者向けの規約（conventions）を、メンテナーは CONTRIBUTING.md からリリース手順書（release-automation）をたどる。
 
@@ -46,7 +46,7 @@
 
 ### Allowed Dependencies
 
-- 内容の正本: 公開ヘッダ `include/clargs/*.h` のコメント、`src/` の実装、`tests/` の期待値、CMake の定義（`CMakeLists.txt`、`cmake/*`）。文書と食い違えば、これらに合わせる（要件 1.5）。
+- 内容の正本: 公開ヘッダ `include/argx/*.h` のコメント、`src/` の実装、`tests/` の期待値、CMake の定義（`CMakeLists.txt`、`cmake/*`）。文書と食い違えば、これらに合わせる（要件 1.5）。
 - 用語の正本: 公開ヘッダのコメントの英語の用語（「用語の対応」）。
 - 外部: GitHub の Markdown の表示とアンカーの生成規則、GitHub Actions のステータスバッジ、shields.io の静的バッジ。
 - 検証の道具: Python 3（標準ライブラリだけ）、CMake 3.21 以上、C99 のコンパイラ。どれもリポジトリには足さない。
@@ -204,7 +204,7 @@ graph TB
 | 2.2, 2.3, 2.4 | スペック・Kiro に触れない | OwnershipGuide、全文書、DocsChecker | `check` の `spec-term`、書き換えの一覧 | ownership のタスク |
 | 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8 | README の構成 | ReadmeEntry | README の構成 | README のタスク |
 | 3.4 | README の例が動く | ReadmeEntry、DocsChecker | `extract` | Examples build and run |
-| 4.1, 4.2, 4.3, 4.4, 4.5 | 取り込み方法 | ReadmeEntry | README の構成（Using CLArgs in your project） | README のタスク |
+| 4.1, 4.2, 4.3, 4.4, 4.5 | 取り込み方法 | ReadmeEntry | README の構成（Using ArgX in your project） | README のタスク |
 | 4.6 | find_package から versioning へ | ReadmeEntry | README の構成（find_package の節のリンク） | README のタスク |
 | 4.7 | タグの形 `v<SemVer>` とプレリリース | ReadmeEntry | README の構成（FetchContent の後の案内、Releases and changes） | README のタスク |
 | 5.1–5.3, 5.5 | API の説明 | UserGuides | 翻訳の規則、用語の対応 | 各文書のタスク |
@@ -284,7 +284,7 @@ graph TB
 | 内部関数、公開関数、内部ヘッダ、公開ヘッダ | internal function, public function, internal header, public header |
 | 静的ライブラリ、動的ライブラリ | static library, shared library |
 | 組み込む（FetchContent、add_subdirectory） | embed |
-| 取り込み方法 | ways to use CLArgs in your project |
+| 取り込み方法 | ways to use ArgX in your project |
 
 ### 共通: 文書の形
 
@@ -399,10 +399,10 @@ graph TB
 | ### エラーコードを足す | Adding an error code | `#adding-an-error-code` |
 | ### テスト用アロケータを使う | Using the test allocator | `#using-the-test-allocator` |
 | #### 確保の各回を順に失敗させる | The failure of every allocation in turn | `#the-failure-of-every-allocation-in-turn` |
-| ### `clargs_add_test()` の規則 | Rules of `clargs_add_test()` | `#rules-of-clargs_add_test` |
+| ### `argx_add_test()` の規則 | Rules of `argx_add_test()` | `#rules-of-argx_add_test` |
 | 実装の規則 | Implementation rules | `#implementation-rules` |
 | ### メモリを確保する | Allocating memory | `#allocating-memory` |
-| #### 確保関数の検査 `clargs.allocations` | The allocation check `clargs.allocations` | `#the-allocation-check-clargsallocations` |
+| #### 確保関数の検査 `argx.allocations` | The allocation check `argx.allocations` | `#the-allocation-check-argxallocations` |
 | #### グローバル状態 | Global state | `#global-state` |
 | （新規）### | Applying the ownership rules | `#applying-the-ownership-rules` |
 | （新規）#### | Forms that public functions do not take | `#forms-that-public-functions-do-not-take` |
@@ -428,16 +428,16 @@ graph TB
 
 **README の構成**（この順。`##` の見出しとアンカー）:
 
-1. `# CLArgs` と、その直下のバッジの行:
+1. `# ArgX` と、その直下のバッジの行:
    - CI: `[![CI](https://github.com/ktdevx/cargs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ktdevx/cargs/actions/workflows/ci.yml)`
    - ライセンス: `[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)`
 2. 概要の 1 段落（今の冒頭の段落の訳）。
-3. `## Features` — 今の特徴の一覧の 7 項目をすべて訳す（要件 3.1）。最後に「利用者が取り込むヘッダは `<clargs/clargs.h>` だけ、リンクするターゲットは `CLArgs::clargs`」を置く。
+3. `## Features` — 今の特徴の一覧の 7 項目をすべて訳す（要件 3.1）。最後に「利用者が取り込むヘッダは `<argx/argx.h>` だけ、リンクするターゲットは `ArgX::argx`」を置く。
 4. `## Example` — 今のサンプルプログラム（コードはそのまま。コメントは既に英語）、実行の例（出力はそのまま）、例の後の 4 つの注意の訳。
 5. `## Documentation` — 利用者向けの 4 文書と、`docs/README.md`（索引）へのリンク。各 1 行の説明（今の README の説明の訳）。開発者向けとして、[CONTRIBUTING.md](CONTRIBUTING.md) と [Development Conventions](docs/conventions.md) へのリンクも置く（要件 3.8）。
-6. `## Building and testing` — 3 つのコマンド（変えない）、Naos とネットワーク、`FETCHCONTENT_SOURCE_DIR_NAOS`、`CLARGS_BUILD_TESTS=OFF`、複数の構成を持つジェネレータ（要件 3.5、3.6）。
+6. `## Building and testing` — 3 つのコマンド（変えない）、Naos とネットワーク、`FETCHCONTENT_SOURCE_DIR_NAOS`、`ARGX_BUILD_TESTS=OFF`、複数の構成を持つジェネレータ（要件 3.5、3.6）。
 7. `## Build options` — オプションの表と注意、`BUILD_SHARED_LIBS`（要件 3.7）。
-8. `## Using CLArgs in your project` — 共通の説明と、`### FetchContent`、`### add_subdirectory`、`### find_package`、`### pkg-config`、`### Running the tests of an embedded CLArgs`（要件 4）。
+8. `## Using ArgX in your project` — 共通の説明と、`### FetchContent`、`### add_subdirectory`、`### find_package`、`### pkg-config`、`### Running the tests of an embedded ArgX`（要件 4）。
    - FetchContent の例は `GIT_TAG v0.1.0` とし、直後に「最新のリリースのタグに置き換える。タグは `v<SemVer>` の形（例 `v0.2.0`。プレリリースは `v0.2.0-rc.1` など）で、[Releases](https://github.com/ktdevx/cargs/releases) に一覧がある。再現できるビルドにはタグかコミットのハッシュに固定する。ブランチ名も書けるが、内容が変わりうる」を置く（要件 4.2、4.3、4.7）。タグの形の書き方は、`## Releases and changes` の節と同じにする。
    - find_package の節のバージョンの注意は、利用者向けの互換の規則として [docs/versioning.md](docs/versioning.md)（その互換の節の見出しのアンカーがあれば、それを付ける）へリンクする（要件 4.6）。バージョンの数字がソースのどこで決まるかの開発者向けの補足として、`[Version notes](docs/conventions.md#version-notes)` へのリンクも残す（要件 9.6）。
    - pkg-config の節は `[find_package](#find_package)` へリンクする。
@@ -458,7 +458,7 @@ graph TB
 | Intent | `docs/` の索引。読者ごとに文書を分けて示す |
 | Requirements | 6.2, 6.3 |
 
-**索引の構成**: `# CLArgs Documentation`、1 文の導入、`## Using CLArgs`（schema、parse、help、ownership、versioning の各 1 行の説明。読む順は schema → parse → help、ownership と versioning は参照用。versioning は release-automation が作った既存のファイル）、`## Contributing to CLArgs`（`../CONTRIBUTING.md`、`conventions.md`）、`## Maintaining CLArgs`（`releasing.md` と `../CHANGELOG.md`。どちらも release-automation が作った既存のファイル）。各行は、読者と内容を 1 行で示す。
+**索引の構成**: `# ArgX Documentation`、1 文の導入、`## Using ArgX`（schema、parse、help、ownership、versioning の各 1 行の説明。読む順は schema → parse → help、ownership と versioning は参照用。versioning は release-automation が作った既存のファイル）、`## Contributing to ArgX`（`../CONTRIBUTING.md`、`conventions.md`）、`## Maintaining ArgX`（`releasing.md` と `../CHANGELOG.md`。どちらも release-automation が作った既存のファイル）。各行は、読者と内容を 1 行で示す。
 
 ### 利用者向け
 
@@ -480,7 +480,7 @@ graph TB
 | 今の場所 | 扱い |
 |---|---|
 | 冒頭の読者の一覧の「ライブラリ開発者」の項（後続のスペックへの言及） | 除く。代わりに「ライブラリのコードがこの規則をどう実装するかは [Development Conventions](conventions.md#applying-the-ownership-rules) にある」と 1 文で示す |
-| 冒頭の「オブジェクトを生成する公開関数は、後続のスペックが足す」 | 除く。`clargs_example_` が仮の名前である説明は残す |
+| 冒頭の「オブジェクトを生成する公開関数は、後続のスペックが足す」 | 除く。`argx_example_` が仮の名前である説明は残す |
 | 目次の「このスペックの関数の従い方」 | `Allocator and error functions` に置き換える |
 | 規則 6 の「開発者は、次の形の公開関数を作らない」と表 | conventions へ移す（`Forms that public functions do not take`） |
 | 規則 7 の「開発者の側の書き方」の例と、その後の 3 項目 | conventions へ移す（`Returning failures`） |
@@ -488,7 +488,7 @@ graph TB
 | 「スキーマ、argv、結果への適用」冒頭の `.kiro/steering/roadmap.md が挙げる 3 つの問い` | 「次の表は、スキーマ、argv、結果、値型の寿命について、よくある問いに規則を当てはめる」のように書き換える |
 | 同節末の「argv-parser の設計で決めたものである」 | 除く。続く文（借りる関数はない、詳しくは parse.md）は残す |
 | 「ヘルプへの適用」末の「help-formatter の設計で決めたものである」 | 除く。続く文は残す |
-| 「このスペックの関数の従い方」 | 見出しを `Allocator and error functions` にし、公開関数の表（`clargs_set_allocator`、`clargs_error_message`）だけを残す。冒頭の文は「アロケータとエラーの公開関数も、この規則に従う」とする。内部ユーティリティの表、公開関数の形と違う 2 点、グローバル状態の段落は conventions へ移す（`How the internal utilities follow the rules`） |
+| 「このスペックの関数の従い方」 | 見出しを `Allocator and error functions` にし、公開関数の表（`argx_set_allocator`、`argx_error_message`）だけを残す。冒頭の文は「アロケータとエラーの公開関数も、この規則に従う」とする。内部ユーティリティの表、公開関数の形と違う 2 点、グローバル状態の段落は conventions へ移す（`How the internal utilities follow the rules`） |
 
 #### OwnershipGuide、SchemaGuide、ParseGuide、HelpGuide
 
@@ -503,7 +503,7 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
 | Intent | ルートの `CONTRIBUTING.md`。初めてのコントリビューターの入口 |
 | Requirements | 6.3, 6.4, 7.1–7.10 |
 
-**CONTRIBUTING の構成**（`# Contributing to CLArgs`）:
+**CONTRIBUTING の構成**（`# Contributing to ArgX`）:
 
 1. 導入: 歓迎の 1 文、行動規範への同意（[Code of Conduct](CODE_OF_CONDUCT.md)。要件 7.8）、目次。
 2. `## Reporting bugs and requesting features` — Issue のフォーム（バグ報告、機能の要望）を使う。大きな変更は、先に Issue で相談する。
@@ -545,7 +545,7 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
 **Version notes の扱い**（要件 8.4、8.5）:
 
 - `## Version notes` は、英語にする時点の節の内容を、項目の数と順序を保って訳す。足さず、減らさず、例のコードを変えない。
-- 実装の時点で、release-automation はその節を日本語のまま更新している。更新後の内容、すなわち既存の 3 項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）と、足されたプレリリースの内容（`CLARGS_VERSION_PRERELEASE` の書式、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`CLArgs_VERSION`、`CLArgs_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク）を、すべて忠実に訳す（要件 8.5、8.8）。万一その節が既に英語であれば、その内容を変えない。
+- 実装の時点で、release-automation はその節を日本語のまま更新している。更新後の内容、すなわち既存の 3 項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）と、足されたプレリリースの内容（`ARGX_VERSION_PRERELEASE` の書式、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`ArgX_VERSION`、`ArgX_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク）を、すべて忠実に訳す（要件 8.5、8.8）。万一その節が既に英語であれば、その内容を変えない。
 - 節の見出しとアンカー（`#version-notes`）は変えない。
 
 ### 検証
@@ -621,7 +621,7 @@ UserGuides の各ファイル。上の規則のほか、個別の注意はない
 
 ### 例のビルドと実行
 
-1. リポジトリを `cmake -S . -B build -DCLARGS_BUILD_TESTS=OFF` でビルドしてインストールし（`cmake --install build --prefix <scratch>/prefix`）、`extract` で取り出した `main` の例を、`-std=c99 -Wall -Wextra -Wpedantic -Werror` でコンパイルしてリンクする（要件 3.4、5.4）。`wmain` の例は、Windows 以外ではコンパイルだけを行う（`-c`）。
+1. リポジトリを `cmake -S . -B build -DARGX_BUILD_TESTS=OFF` でビルドしてインストールし（`cmake --install build --prefix <scratch>/prefix`）、`extract` で取り出した `main` の例を、`-std=c99 -Wall -Wextra -Wpedantic -Werror` でコンパイルしてリンクする（要件 3.4、5.4）。`wmain` の例は、Windows 以外ではコンパイルだけを行う（`-c`）。
 2. README の例を、README の実行例のコマンドラインで実行し、出力と終了コードが README と一致する（`greet --loud -n 2 world`、`greet`、`greet --count=many world`、`greet --help`）。
 3. schema の例が `the schema of pack is valid` を出して 0 で終わる。parse と help の例を、それぞれの文書が示すコマンドラインで実行し、示した出力と一致する。
 4. ownership の例（アロケータ）は、利用者の関数の定義を足した小さなファイルとリンクして実行し、0 で終わる。

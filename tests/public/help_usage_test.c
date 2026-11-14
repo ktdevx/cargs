@@ -1,5 +1,5 @@
 /*
- * Tests of the usage line: clargs_help_write_usage() of <clargs/help.h>.
+ * Tests of the usage line: argx_help_write_usage() of <argx/help.h>.
  *
  * Each test builds a schema, validates it, has the usage line of one of its
  * commands written and compares the text with the expected string, by its
@@ -11,7 +11,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -73,35 +73,35 @@ static bool sink_write(void *user_data, const char *text, size_t length)
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* Installs the test allocator and creates a root with the name "tool". */
-static clargs_command_t *create_root(void)
+static argx_command_t *create_root(void)
 {
-    clargs_command_t *root = NULL;
+    argx_command_t *root = NULL;
 
-    clargs_test_allocator_install();
-    NAOS_REQUIRE_TRUE(clargs_command_create("tool", &root) == CLARGS_ERROR_NONE);
+    argx_test_allocator_install();
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &root) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(root != NULL);
     return root;
 }
 
 /* Destroys root and ends the test: nothing stays allocated. */
-static void destroy_root(clargs_command_t *root)
+static void destroy_root(argx_command_t *root)
 {
-    clargs_command_destroy(root);
-    clargs_test_allocator_uninstall();
+    argx_command_destroy(root);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* Adds a subcommand that must succeed, and returns it. */
-static clargs_command_t *add_sub(clargs_command_t *command, const char *name)
+static argx_command_t *add_sub(argx_command_t *command, const char *name)
 {
-    clargs_command_t *sub = NULL;
+    argx_command_t *sub = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(command, name, &sub) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(command, name, &sub) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sub != NULL);
     return sub;
 }
@@ -110,49 +110,49 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name)
  * Adds an option with a value that must succeed. value_name is its display
  * name, or NULL to set none.
  */
-static void add_value(clargs_command_t *command, char short_name, const char *long_name,
-                      const clargs_type_t *type, const char *value_name, bool required)
+static void add_value(argx_command_t *command, char short_name, const char *long_name,
+                      const argx_type_t *type, const char *value_name, bool required)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, type, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (value_name != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, value_name) == ARGX_ERROR_NONE);
     }
     if (required)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_required(option, true) == ARGX_ERROR_NONE);
     }
 }
 
 /* Adds a positional of strings that must succeed. */
-static void add_positional(clargs_command_t *command, const char *name, clargs_arity_t arity)
+static void add_positional(argx_command_t *command, const char *name, argx_arity_t arity)
 {
-    NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, clargs_type_string(), arity,
-                                                    NULL) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, argx_type_string(), arity,
+                                                    NULL) == ARGX_ERROR_NONE);
 }
 
 /* Validates the tree of root; it must have no fault. */
-static void validate(clargs_command_t *root)
+static void validate(argx_command_t *root)
 {
-    NAOS_REQUIRE_TRUE(clargs_command_validate(root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
+    NAOS_REQUIRE_TRUE(argx_command_validate(root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_is_validated(root));
 }
 
 /*
  * Creates help options with the width given; the other settings keep their
  * default values.
  */
-static clargs_help_options_t *create_options(size_t width)
+static argx_help_options_t *create_options(size_t width)
 {
-    clargs_help_options_t *options = NULL;
+    argx_help_options_t *options = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(options != NULL);
-    clargs_help_options_set_width(options, width);
+    argx_help_options_set_width(options, width);
     return options;
 }
 
@@ -180,28 +180,28 @@ static bool has_blank_at_line_end(const char *text, size_t length)
  * of it ends with a blank, that no call of the write function was empty,
  * that nothing was allocated and that the schema is still validated.
  */
-static void check_usage_with(const clargs_command_t *command, const clargs_help_options_t *options,
+static void check_usage_with(const argx_command_t *command, const argx_help_options_t *options,
                              const char *expected)
 {
     sink_t sink;
-    size_t requests = clargs_test_allocator_requests();
+    size_t requests = argx_test_allocator_requests();
 
     sink_init(&sink);
 
-    NAOS_CHECK_TRUE(clargs_help_write_usage(command, options, sink_write, &sink) ==
-                    CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_write_usage(command, options, sink_write, &sink) ==
+                    ARGX_ERROR_NONE);
 
     NAOS_CHECK_UINT_EQ(sink.length, strlen(expected));
     NAOS_CHECK_MEM_EQ(sink.text, sink.length, expected, strlen(expected));
     NAOS_CHECK_TRUE(!has_blank_at_line_end(sink.text, sink.length));
     NAOS_CHECK_TRUE(!has_blank_at_line_end(expected, strlen(expected)));
     NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
-    NAOS_CHECK_TRUE(clargs_command_is_validated(command));
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
+    NAOS_CHECK_TRUE(argx_command_is_validated(command));
 }
 
 /* The same without help options: every setting has its default value. */
-static void check_usage(const clargs_command_t *command, const char *expected)
+static void check_usage(const argx_command_t *command, const char *expected)
 {
     check_usage_with(command, NULL, expected);
 }
@@ -214,7 +214,7 @@ static void check_usage(const clargs_command_t *command, const char *expected)
  */
 NAOS_TEST(command_with_nothing_is_only_its_name)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     validate(root);
     check_usage(root, "Usage: tool\n");
@@ -230,28 +230,28 @@ NAOS_TEST(command_with_nothing_is_only_its_name)
  */
 NAOS_TEST(option_that_is_not_required_gives_options_marker)
 {
-    clargs_command_t *root;
+    argx_command_t *root;
 
     root = create_root();
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
     validate(root);
     check_usage(root, "Usage: tool [OPTIONS]\n");
     destroy_root(root);
 
     root = create_root();
-    NAOS_REQUIRE_TRUE(clargs_command_add_negatable(root, '\0', "color", NULL) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_negatable(root, '\0', "color", NULL) == ARGX_ERROR_NONE);
     validate(root);
     check_usage(root, "Usage: tool [OPTIONS]\n");
     destroy_root(root);
 
     root = create_root();
-    NAOS_REQUIRE_TRUE(clargs_command_add_count(root, 'v', NULL, NULL) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_count(root, 'v', NULL, NULL) == ARGX_ERROR_NONE);
     validate(root);
     check_usage(root, "Usage: tool [OPTIONS]\n");
     destroy_root(root);
 
     root = create_root();
-    add_value(root, 'f', "format", clargs_type_string(), "FMT", false);
+    add_value(root, 'f', "format", argx_type_string(), "FMT", false);
     validate(root);
     check_usage(root, "Usage: tool [OPTIONS]\n");
     destroy_root(root);
@@ -260,11 +260,11 @@ NAOS_TEST(option_that_is_not_required_gives_options_marker)
 /* Several options that are not required give one [OPTIONS]. */
 NAOS_TEST(several_options_give_one_options_marker)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_add_count(root, 'v', "verbose", NULL) == CLARGS_ERROR_NONE);
-    add_value(root, 'f', "format", clargs_type_string(), NULL, false);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_count(root, 'v', "verbose", NULL) == ARGX_ERROR_NONE);
+    add_value(root, 'f', "format", argx_type_string(), NULL, false);
     validate(root);
     check_usage(root, "Usage: tool [OPTIONS]\n");
 
@@ -274,9 +274,9 @@ NAOS_TEST(several_options_give_one_options_marker)
 /* A command whose options are all required has no [OPTIONS]. */
 NAOS_TEST(only_required_options_give_no_options_marker)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", true);
+    add_value(root, 'o', "output", argx_type_string(), "FILE", true);
     validate(root);
     check_usage(root, "Usage: tool --output <FILE>\n");
 
@@ -291,16 +291,16 @@ NAOS_TEST(only_required_options_give_no_options_marker)
  */
 NAOS_TEST(required_option_uses_long_name)
 {
-    clargs_command_t *root;
+    argx_command_t *root;
 
     root = create_root();
-    add_value(root, '\0', "output", clargs_type_string(), "FILE", true);
+    add_value(root, '\0', "output", argx_type_string(), "FILE", true);
     validate(root);
     check_usage(root, "Usage: tool --output <FILE>\n");
     destroy_root(root);
 
     root = create_root();
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", true);
+    add_value(root, 'o', "output", argx_type_string(), "FILE", true);
     validate(root);
     check_usage(root, "Usage: tool --output <FILE>\n");
     destroy_root(root);
@@ -309,9 +309,9 @@ NAOS_TEST(required_option_uses_long_name)
 /* A required option without a long name is written with the short name. */
 NAOS_TEST(required_option_without_long_name_uses_short_name)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_value(root, 'o', NULL, clargs_type_string(), "FILE", true);
+    add_value(root, 'o', NULL, argx_type_string(), "FILE", true);
     validate(root);
     check_usage(root, "Usage: tool -o <FILE>\n");
 
@@ -322,12 +322,12 @@ NAOS_TEST(required_option_without_long_name_uses_short_name)
  * The conversion function of the user-defined value type of the tests. No
  * test converts a value with it.
  */
-static clargs_error_t convert_nothing(const char *text, void *value, void *context)
+static argx_error_t convert_nothing(const char *text, void *value, void *context)
 {
     (void)text;
     (void)context;
     *(int *)value = 0;
-    return CLARGS_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
 /*
@@ -338,17 +338,17 @@ static clargs_error_t convert_nothing(const char *text, void *value, void *conte
 NAOS_TEST(required_option_without_value_name_uses_type_name)
 {
     static const char *const choices[] = { "json", "yaml" };
-    clargs_type_t *choice = NULL;
-    clargs_type_t *port = NULL;
-    clargs_command_t *root = create_root();
+    argx_type_t *choice = NULL;
+    argx_type_t *port = NULL;
+    argx_command_t *root = create_root();
 
-    NAOS_REQUIRE_TRUE(clargs_type_create_choice(choices, 2, &choice) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_type_create("Port number", sizeof(int), convert_nothing, NULL, NULL,
-                                         &port) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create_choice(choices, 2, &choice) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create("Port number", sizeof(int), convert_nothing, NULL, NULL,
+                                         &port) == ARGX_ERROR_NONE);
 
-    add_value(root, '\0', "name", clargs_type_string(), NULL, true);
-    add_value(root, 'n', NULL, clargs_type_int(), NULL, true);
-    add_value(root, '\0', "ratio", clargs_type_float(), NULL, true);
+    add_value(root, '\0', "name", argx_type_string(), NULL, true);
+    add_value(root, 'n', NULL, argx_type_int(), NULL, true);
+    add_value(root, '\0', "ratio", argx_type_float(), NULL, true);
     add_value(root, '\0', "format", choice, NULL, true);
     add_value(root, 'p', "port", port, NULL, true);
     validate(root);
@@ -356,10 +356,10 @@ NAOS_TEST(required_option_without_value_name_uses_type_name)
     check_usage(root, "Usage: tool --name <string> -n <integer> --ratio <float> --format <choice>\n"
                       "       --port <Port number>\n");
 
-    clargs_command_destroy(root);
-    clargs_type_destroy(choice);
-    clargs_type_destroy(port);
-    clargs_test_allocator_uninstall();
+    argx_command_destroy(root);
+    argx_type_destroy(choice);
+    argx_type_destroy(port);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -370,13 +370,13 @@ NAOS_TEST(required_option_without_value_name_uses_type_name)
  */
 NAOS_TEST(required_options_follow_options_marker_in_definition_order)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_value(root, 'z', "zone", clargs_type_string(), "ZONE", true);
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
-    add_value(root, 'a', NULL, clargs_type_int(), "N", true);
-    add_value(root, 'f', "format", clargs_type_string(), "FMT", false);
-    add_value(root, '\0', "key", clargs_type_string(), "KEY", true);
+    add_value(root, 'z', "zone", argx_type_string(), "ZONE", true);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    add_value(root, 'a', NULL, argx_type_int(), "N", true);
+    add_value(root, 'f', "format", argx_type_string(), "FMT", false);
+    add_value(root, '\0', "key", argx_type_string(), "KEY", true);
     validate(root);
     check_usage(root, "Usage: tool [OPTIONS] --zone <ZONE> -a <N> --key <KEY>\n");
 
@@ -388,28 +388,28 @@ NAOS_TEST(required_options_follow_options_marker_in_definition_order)
 /* The four arities: <name>, [name], [name]... and <name>... */
 NAOS_TEST(positionals_show_their_arity)
 {
-    clargs_command_t *root;
+    argx_command_t *root;
 
     root = create_root();
-    add_positional(root, "input", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED);
     validate(root);
     check_usage(root, "Usage: tool <input>\n");
     destroy_root(root);
 
     root = create_root();
-    add_positional(root, "input", CLARGS_ARITY_OPTIONAL);
+    add_positional(root, "input", ARGX_ARITY_OPTIONAL);
     validate(root);
     check_usage(root, "Usage: tool [input]\n");
     destroy_root(root);
 
     root = create_root();
-    add_positional(root, "input", CLARGS_ARITY_ZERO_OR_MORE);
+    add_positional(root, "input", ARGX_ARITY_ZERO_OR_MORE);
     validate(root);
     check_usage(root, "Usage: tool [input]...\n");
     destroy_root(root);
 
     root = create_root();
-    add_positional(root, "input", CLARGS_ARITY_ONE_OR_MORE);
+    add_positional(root, "input", ARGX_ARITY_ONE_OR_MORE);
     validate(root);
     check_usage(root, "Usage: tool <input>...\n");
     destroy_root(root);
@@ -418,19 +418,19 @@ NAOS_TEST(positionals_show_their_arity)
 /* Several positionals come in the order in which they were added. */
 NAOS_TEST(positionals_come_in_definition_order)
 {
-    clargs_command_t *root;
+    argx_command_t *root;
 
     root = create_root();
-    add_positional(root, "source", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "target", CLARGS_ARITY_OPTIONAL);
-    add_positional(root, "extra", CLARGS_ARITY_ZERO_OR_MORE);
+    add_positional(root, "source", ARGX_ARITY_REQUIRED);
+    add_positional(root, "target", ARGX_ARITY_OPTIONAL);
+    add_positional(root, "extra", ARGX_ARITY_ZERO_OR_MORE);
     validate(root);
     check_usage(root, "Usage: tool <source> [target] [extra]...\n");
     destroy_root(root);
 
     root = create_root();
-    add_positional(root, "zeta", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "alpha", CLARGS_ARITY_ONE_OR_MORE);
+    add_positional(root, "zeta", ARGX_ARITY_REQUIRED);
+    add_positional(root, "alpha", ARGX_ARITY_ONE_OR_MORE);
     validate(root);
     check_usage(root, "Usage: tool <zeta> <alpha>...\n");
     destroy_root(root);
@@ -442,13 +442,13 @@ NAOS_TEST(positionals_come_in_definition_order)
  */
 NAOS_TEST(options_come_before_positionals)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "input", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "extra", CLARGS_ARITY_ZERO_OR_MORE);
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", true);
-    add_value(root, 'f', "format", clargs_type_string(), "FMT", false);
-    NAOS_REQUIRE_TRUE(clargs_command_add_count(root, 'v', "verbose", NULL) == CLARGS_ERROR_NONE);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED);
+    add_positional(root, "extra", ARGX_ARITY_ZERO_OR_MORE);
+    add_value(root, 'o', "output", argx_type_string(), "FILE", true);
+    add_value(root, 'f', "format", argx_type_string(), "FMT", false);
+    NAOS_REQUIRE_TRUE(argx_command_add_count(root, 'v', "verbose", NULL) == ARGX_ERROR_NONE);
     validate(root);
     check_usage(root, "Usage: tool [OPTIONS] --output <FILE> <input> [extra]...\n");
 
@@ -463,7 +463,7 @@ NAOS_TEST(options_come_before_positionals)
  */
 NAOS_TEST(subcommands_give_command_marker)
 {
-    clargs_command_t *root;
+    argx_command_t *root;
 
     root = create_root();
     add_sub(root, "build");
@@ -474,8 +474,8 @@ NAOS_TEST(subcommands_give_command_marker)
     root = create_root();
     add_sub(root, "build");
     add_sub(root, "clean");
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
-    add_value(root, '\0', "key", clargs_type_string(), "KEY", true);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    add_value(root, '\0', "key", argx_type_string(), "KEY", true);
     validate(root);
     check_usage(root, "Usage: tool [OPTIONS] --key <KEY> [COMMAND]\n");
     destroy_root(root);
@@ -488,20 +488,20 @@ NAOS_TEST(subcommands_give_command_marker)
  */
 NAOS_TEST(subcommand_usage_has_path_from_root)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *remote;
-    clargs_command_t *add;
-    clargs_command_t *list;
+    argx_command_t *root = create_root();
+    argx_command_t *remote;
+    argx_command_t *add;
+    argx_command_t *list;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
-    add_value(root, '\0', "key", clargs_type_string(), "KEY", true);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    add_value(root, '\0', "key", argx_type_string(), "KEY", true);
     remote = add_sub(root, "remote");
     add = add_sub(remote, "add");
     list = add_sub(remote, "list");
-    add_positional(add, "name", CLARGS_ARITY_REQUIRED);
-    add_positional(add, "url", CLARGS_ARITY_OPTIONAL);
-    add_value(add, 't', "track", clargs_type_string(), "BRANCH", true);
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(list, 'a', "all", NULL) == CLARGS_ERROR_NONE);
+    add_positional(add, "name", ARGX_ARITY_REQUIRED);
+    add_positional(add, "url", ARGX_ARITY_OPTIONAL);
+    add_value(add, 't', "track", argx_type_string(), "BRANCH", true);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(list, 'a', "all", NULL) == ARGX_ERROR_NONE);
     validate(root);
 
     check_usage(root, "Usage: tool [OPTIONS] --key <KEY> [COMMAND]\n");
@@ -520,16 +520,16 @@ NAOS_TEST(subcommand_usage_has_path_from_root)
  */
 NAOS_TEST(schema_strings_are_written_unchanged)
 {
-    clargs_command_t *root = NULL;
+    argx_command_t *root = NULL;
 
-    clargs_test_allocator_install();
-    NAOS_REQUIRE_TRUE(clargs_command_create("My Tool", &root) == CLARGS_ERROR_NONE);
+    argx_test_allocator_install();
+    NAOS_REQUIRE_TRUE(argx_command_create("My Tool", &root) == ARGX_ERROR_NONE);
 
-    add_value(root, 'O', "OutPut", clargs_type_string(), "File Name", true);
-    add_value(root, 'x', NULL, clargs_type_string(), "\xE5\x80\xA4", true);
-    add_positional(root, "In Put", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "\xC3\xA9t\xC3\xA9", CLARGS_ARITY_OPTIONAL);
-    add_positional(root, "two\nlines", CLARGS_ARITY_ZERO_OR_MORE);
+    add_value(root, 'O', "OutPut", argx_type_string(), "File Name", true);
+    add_value(root, 'x', NULL, argx_type_string(), "\xE5\x80\xA4", true);
+    add_positional(root, "In Put", ARGX_ARITY_REQUIRED);
+    add_positional(root, "\xC3\xA9t\xC3\xA9", ARGX_ARITY_OPTIONAL);
+    add_positional(root, "two\nlines", ARGX_ARITY_ZERO_OR_MORE);
     validate(root);
     check_usage(root, "Usage: My Tool --OutPut <File Name> -x <\xE5\x80\xA4> <In Put> "
                       "[\xC3\xA9t\xC3\xA9] [two\nlines]...\n");
@@ -547,15 +547,15 @@ NAOS_TEST(schema_strings_are_written_unchanged)
 NAOS_TEST(null_options_are_the_default_options)
 {
     static const char expected[] = "Usage: tool [OPTIONS] --output <FILE> <input> [extra]...\n";
-    clargs_help_options_t *options = NULL;
-    clargs_command_t *root = create_root();
+    argx_help_options_t *options = NULL;
+    argx_command_t *root = create_root();
 
-    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", true);
-    add_positional(root, "input", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "extra", CLARGS_ARITY_ZERO_OR_MORE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    add_value(root, 'o', "output", argx_type_string(), "FILE", true);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED);
+    add_positional(root, "extra", ARGX_ARITY_ZERO_OR_MORE);
     validate(root);
 
     check_usage_with(root, NULL, expected);
@@ -563,7 +563,7 @@ NAOS_TEST(null_options_are_the_default_options)
     check_usage_with(root, options, expected);
     check_usage_with(root, NULL, expected);
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -576,12 +576,12 @@ NAOS_TEST(null_options_are_the_default_options)
  *
  * whose items end at the columns 11, 21, 37, 45 and 56.
  */
-static void add_all_kinds_of_items(clargs_command_t *root)
+static void add_all_kinds_of_items(argx_command_t *root)
 {
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", true);
-    add_positional(root, "input", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "extra", CLARGS_ARITY_ZERO_OR_MORE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    add_value(root, 'o', "output", argx_type_string(), "FILE", true);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED);
+    add_positional(root, "extra", ARGX_ARITY_ZERO_OR_MORE);
 }
 
 /*
@@ -592,8 +592,8 @@ static void add_all_kinds_of_items(clargs_command_t *root)
  */
 NAOS_TEST(narrow_width_breaks_between_items_with_indent_of_seven)
 {
-    clargs_help_options_t *options;
-    clargs_command_t *root = create_root();
+    argx_help_options_t *options;
+    argx_command_t *root = create_root();
 
     add_all_kinds_of_items(root);
     validate(root);
@@ -605,17 +605,17 @@ NAOS_TEST(narrow_width_breaks_between_items_with_indent_of_seven)
                      "       [extra]...\n");
 
     /* One column less, and "<input>" no longer fits behind the option. */
-    clargs_help_options_set_width(options, 29);
+    argx_help_options_set_width(options, 29);
     check_usage_with(root, options,
                      "Usage: tool [OPTIONS]\n"
                      "       --output <FILE>\n"
                      "       <input> [extra]...\n");
 
     /* Wide enough for everything: one line, as without a limit. */
-    clargs_help_options_set_width(options, 56);
+    argx_help_options_set_width(options, 56);
     check_usage_with(root, options, "Usage: tool [OPTIONS] --output <FILE> <input> [extra]...\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -626,23 +626,23 @@ NAOS_TEST(narrow_width_breaks_between_items_with_indent_of_seven)
  */
 NAOS_TEST(command_marker_moves_to_next_line_when_it_does_not_fit)
 {
-    clargs_help_options_t *options;
-    clargs_command_t *root = create_root();
+    argx_help_options_t *options;
+    argx_command_t *root = create_root();
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
-    add_value(root, '\0', "key", clargs_type_string(), "KEY", true);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    add_value(root, '\0', "key", argx_type_string(), "KEY", true);
     add_sub(root, "build");
     validate(root);
 
     options = create_options(43);
     check_usage_with(root, options, "Usage: tool [OPTIONS] --key <KEY> [COMMAND]\n");
 
-    clargs_help_options_set_width(options, 42);
+    argx_help_options_set_width(options, 42);
     check_usage_with(root, options,
                      "Usage: tool [OPTIONS] --key <KEY>\n"
                      "       [COMMAND]\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -653,30 +653,30 @@ NAOS_TEST(command_marker_moves_to_next_line_when_it_does_not_fit)
  */
 NAOS_TEST(item_that_just_fits_stays_and_one_column_less_breaks)
 {
-    clargs_help_options_t *options;
-    clargs_command_t *root = create_root();
+    argx_help_options_t *options;
+    argx_command_t *root = create_root();
 
-    add_positional(root, "source", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "target", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "source", ARGX_ARITY_REQUIRED);
+    add_positional(root, "target", ARGX_ARITY_REQUIRED);
     validate(root);
 
     options = create_options(29);
     check_usage_with(root, options, "Usage: tool <source> <target>\n");
 
-    clargs_help_options_set_width(options, 28);
+    argx_help_options_set_width(options, 28);
     check_usage_with(root, options, "Usage: tool <source>\n"
                                     "       <target>\n");
 
-    clargs_help_options_set_width(options, 20);
+    argx_help_options_set_width(options, 20);
     check_usage_with(root, options, "Usage: tool <source>\n"
                                     "       <target>\n");
 
-    clargs_help_options_set_width(options, 19);
+    argx_help_options_set_width(options, 19);
     check_usage_with(root, options, "Usage: tool\n"
                                     "       <source>\n"
                                     "       <target>\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -688,14 +688,14 @@ NAOS_TEST(item_that_just_fits_stays_and_one_column_less_breaks)
  */
 NAOS_TEST(item_with_blank_inside_is_not_divided)
 {
-    clargs_help_options_t *options;
-    clargs_command_t *root = NULL;
+    argx_help_options_t *options;
+    argx_command_t *root = NULL;
 
-    clargs_test_allocator_install();
-    NAOS_REQUIRE_TRUE(clargs_command_create("My Tool", &root) == CLARGS_ERROR_NONE);
+    argx_test_allocator_install();
+    NAOS_REQUIRE_TRUE(argx_command_create("My Tool", &root) == ARGX_ERROR_NONE);
 
-    add_value(root, 'o', "output", clargs_type_string(), "File Name", true);
-    add_positional(root, "In Put", CLARGS_ARITY_REQUIRED);
+    add_value(root, 'o', "output", argx_type_string(), "File Name", true);
+    add_positional(root, "In Put", ARGX_ARITY_REQUIRED);
     validate(root);
 
     options = create_options(30);
@@ -705,15 +705,15 @@ NAOS_TEST(item_with_blank_inside_is_not_divided)
                      "       <In Put>\n");
 
     /* The whole line has 44 bytes. */
-    clargs_help_options_set_width(options, 44);
+    argx_help_options_set_width(options, 44);
     check_usage_with(root, options, "Usage: My Tool --output <File Name> <In Put>\n");
 
-    clargs_help_options_set_width(options, 43);
+    argx_help_options_set_width(options, 43);
     check_usage_with(root, options,
                      "Usage: My Tool --output <File Name>\n"
                      "       <In Put>\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -724,10 +724,10 @@ NAOS_TEST(item_with_blank_inside_is_not_divided)
  */
 NAOS_TEST(item_wider_than_width_is_written_as_it_is)
 {
-    clargs_help_options_t *options;
-    clargs_command_t *root;
-    clargs_command_t *remote;
-    clargs_command_t *add;
+    argx_help_options_t *options;
+    argx_command_t *root;
+    argx_command_t *remote;
+    argx_command_t *add;
 
     /* No line can hold two items; nothing comes before the first item. */
     root = create_root();
@@ -741,14 +741,14 @@ NAOS_TEST(item_wider_than_width_is_written_as_it_is)
                      "       --output <FILE>\n"
                      "       <input>\n"
                      "       [extra]...\n");
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 
     root = create_root();
     remote = add_sub(root, "remote");
     add = add_sub(remote, "add");
-    add_value(add, 'c', "configuration", clargs_type_string(), "FILE", true);
-    add_positional(add, "name", CLARGS_ARITY_REQUIRED);
+    add_value(add, 'c', "configuration", argx_type_string(), "FILE", true);
+    add_positional(add, "name", ARGX_ARITY_REQUIRED);
     validate(root);
 
     options = create_options(1);
@@ -760,7 +760,7 @@ NAOS_TEST(item_wider_than_width_is_written_as_it_is)
      * The path, 22 bytes, and the option, 29 bytes with the indent, are
      * wider than 20; "<name>" would fit behind neither.
      */
-    clargs_help_options_set_width(options, 20);
+    argx_help_options_set_width(options, 20);
     check_usage_with(add, options,
                      "Usage: tool remote add\n"
                      "       --configuration <FILE>\n"
@@ -770,12 +770,12 @@ NAOS_TEST(item_wider_than_width_is_written_as_it_is)
      * An item that is too wide does not push the next one down when that
      * one still fits behind it.
      */
-    clargs_help_options_set_width(options, 36);
+    argx_help_options_set_width(options, 36);
     check_usage_with(add, options,
                      "Usage: tool remote add\n"
                      "       --configuration <FILE> <name>\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -786,22 +786,22 @@ NAOS_TEST(item_wider_than_width_is_written_as_it_is)
  *
  * "<x>" ends at the column 80 and the whole line has 93 bytes.
  */
-static void add_positionals_beyond_80_columns(clargs_command_t *root)
+static void add_positionals_beyond_80_columns(argx_command_t *root)
 {
-    add_positional(root, "argument-1", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "argument-2", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "argument-3", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "argument-4", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "argument-5", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "x", CLARGS_ARITY_REQUIRED);
-    add_positional(root, "argument-7", CLARGS_ARITY_REQUIRED);
+    add_positional(root, "argument-1", ARGX_ARITY_REQUIRED);
+    add_positional(root, "argument-2", ARGX_ARITY_REQUIRED);
+    add_positional(root, "argument-3", ARGX_ARITY_REQUIRED);
+    add_positional(root, "argument-4", ARGX_ARITY_REQUIRED);
+    add_positional(root, "argument-5", ARGX_ARITY_REQUIRED);
+    add_positional(root, "x", ARGX_ARITY_REQUIRED);
+    add_positional(root, "argument-7", ARGX_ARITY_REQUIRED);
 }
 
 /* The width 0 means no limit: the usage line is one line, however long. */
 NAOS_TEST(width_zero_gives_one_line)
 {
-    clargs_help_options_t *options;
-    clargs_command_t *root = create_root();
+    argx_help_options_t *options;
+    argx_command_t *root = create_root();
 
     add_positionals_beyond_80_columns(root);
     validate(root);
@@ -811,7 +811,7 @@ NAOS_TEST(width_zero_gives_one_line)
                      "Usage: tool <argument-1> <argument-2> <argument-3> <argument-4> "
                      "<argument-5> <x> <argument-7>\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -825,8 +825,8 @@ NAOS_TEST(default_width_of_80_applies_without_options)
     static const char expected[] =
         "Usage: tool <argument-1> <argument-2> <argument-3> <argument-4> <argument-5> <x>\n"
         "       <argument-7>\n";
-    clargs_help_options_t *options = NULL;
-    clargs_command_t *root = create_root();
+    argx_help_options_t *options = NULL;
+    argx_command_t *root = create_root();
 
     /* The first line of the expected text has 80 bytes. */
     NAOS_REQUIRE_TRUE(strchr(expected, '\n') == (expected + 80));
@@ -834,21 +834,21 @@ NAOS_TEST(default_width_of_80_applies_without_options)
     add_positionals_beyond_80_columns(root);
     validate(root);
 
-    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
 
     check_usage_with(root, NULL, expected);
     check_usage_with(root, options, expected);
 
-    clargs_help_options_set_width(options, 80);
+    argx_help_options_set_width(options, 80);
     check_usage_with(root, options, expected);
 
-    clargs_help_options_set_width(options, 79);
+    argx_help_options_set_width(options, 79);
     check_usage_with(root, options,
                      "Usage: tool <argument-1> <argument-2> <argument-3> <argument-4> "
                      "<argument-5>\n"
                      "       <x> <argument-7>\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -861,11 +861,11 @@ NAOS_TEST(default_width_of_80_applies_without_options)
  */
 NAOS_TEST(item_with_newline_inside_counts_all_its_bytes)
 {
-    clargs_help_options_t *options;
-    clargs_command_t *root = create_root();
+    argx_help_options_t *options;
+    argx_command_t *root = create_root();
 
-    add_value(root, 'm', "mode", clargs_type_string(), "two\nlines", true);
-    add_positional(root, "input", CLARGS_ARITY_REQUIRED);
+    add_value(root, 'm', "mode", argx_type_string(), "two\nlines", true);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED);
     validate(root);
 
     /* 11 + 1 + 18 is 30: the option just fits. */
@@ -876,24 +876,24 @@ NAOS_TEST(item_with_newline_inside_counts_all_its_bytes)
      * One column less, and the option starts a new line. "<input>" stays
      * behind it: "lines>" ends at the column 6.
      */
-    clargs_help_options_set_width(options, 29);
+    argx_help_options_set_width(options, 29);
     check_usage_with(root, options,
                      "Usage: tool\n"
                      "       --mode <two\nlines> <input>\n");
 
     /* "lines> <input>" has 14 bytes. */
-    clargs_help_options_set_width(options, 14);
+    argx_help_options_set_width(options, 14);
     check_usage_with(root, options,
                      "Usage: tool\n"
                      "       --mode <two\nlines> <input>\n");
 
-    clargs_help_options_set_width(options, 13);
+    argx_help_options_set_width(options, 13);
     check_usage_with(root, options,
                      "Usage: tool\n"
                      "       --mode <two\nlines>\n"
                      "       <input>\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -901,23 +901,23 @@ NAOS_TEST(item_with_newline_inside_counts_all_its_bytes)
 
 /*
  * When the write function reports a failure, the call returns
- * CLARGS_ERROR_WRITE_FAILED, the write function is not called again, and
+ * ARGX_ERROR_WRITE_FAILED, the write function is not called again, and
  * what it took before stays: the start of the text.
  */
 NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
 {
     static const char expected[] = "Usage: tool [OPTIONS] --output <FILE> <input>\n";
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
     sink_t whole;
     size_t n;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(root, 'h', "help", NULL) == CLARGS_ERROR_NONE);
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", true);
-    add_positional(root, "input", CLARGS_ARITY_REQUIRED);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    add_value(root, 'o', "output", argx_type_string(), "FILE", true);
+    add_positional(root, "input", ARGX_ARITY_REQUIRED);
     validate(root);
 
     sink_init(&whole);
-    NAOS_REQUIRE_TRUE(clargs_help_write_usage(root, NULL, sink_write, &whole) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write_usage(root, NULL, sink_write, &whole) == ARGX_ERROR_NONE);
     NAOS_CHECK_MEM_EQ(whole.text, whole.length, expected, strlen(expected));
     NAOS_REQUIRE_TRUE(whole.calls >= 2);
 
@@ -929,15 +929,15 @@ NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
         sink_init(&sink);
         sink.fail_at = n;
 
-        NAOS_CHECK_TRUE(clargs_help_write_usage(root, NULL, sink_write, &sink) ==
-                        CLARGS_ERROR_WRITE_FAILED);
+        NAOS_CHECK_TRUE(argx_help_write_usage(root, NULL, sink_write, &sink) ==
+                        ARGX_ERROR_WRITE_FAILED);
         NAOS_CHECK_UINT_EQ(sink.calls, n);
         NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
         NAOS_CHECK_TRUE(sink.length < strlen(expected));
         NAOS_CHECK_MEM_EQ(sink.text, sink.length, expected, sink.length);
     }
 
-    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+    NAOS_CHECK_TRUE(argx_command_is_validated(root));
 
     destroy_root(root);
 }

@@ -1,10 +1,10 @@
-# ClargsSemver.cmake - checks a CLArgs version and compares two versions by
+# ArgXSemver.cmake - checks a ArgX version and compares two versions by
 # SemVer 2.0.0 precedence (https://semver.org/spec/v2.0.0.html).
 #
 # The release scripts include this module and run with "cmake -P". It needs
 # nothing that project() sets, and touches no file, network, git or GitHub.
 #
-#   clargs_semver_parse(<version> <prefix>)
+#   argx_semver_parse(<version> <prefix>)
 #
 # Checks that <version> is of the form
 #
@@ -24,17 +24,17 @@
 # When the version is not valid, every variable other than <prefix>_VALID and
 # <prefix>_ERROR is "". A version is valid when:
 #
-#   - It has no build metadata ("+..."). SemVer allows it, but CLArgs does not
+#   - It has no build metadata ("+..."). SemVer allows it, but ArgX does not
 #     use it, since it plays no part in precedence and a tag must name one
 #     version.
 #   - Each of major, minor and patch is a decimal number without leading zeros
 #     in the range 0-255. The range is a limit of the version header
-#     (include/clargs/version.h), not of SemVer.
+#     (include/argx/version.h), not of SemVer.
 #   - The pre-release, when there is a hyphen, is one or more identifiers
 #     separated by dots, each made of [0-9A-Za-z-] and not empty, and none that
 #     is all digits starting with 0 (other than "0" itself).
 #
-#   clargs_semver_compare(<a> <b> <out-var>)
+#   argx_semver_compare(<a> <b> <out-var>)
 #
 # Sets <out-var> to -1, 0 or 1 when <a> is lower than, equal to or higher than
 # <b> by SemVer 2.0.0 precedence:
@@ -62,7 +62,7 @@ include_guard(GLOBAL)
 cmake_policy(PUSH)
 cmake_policy(VERSION 3.21)
 
-function(clargs_semver_parse version prefix)
+function(argx_semver_parse version prefix)
     set(problems "")
     set(major "")
     set(minor "")
@@ -156,7 +156,7 @@ endfunction()
 
 # Sets <out-var> to -1, 0 or 1 as the identifier <a> is lower than, equal to or
 # higher than the identifier <b>. Both are valid pre-release identifiers.
-function(_clargs_semver_compare_identifier a b out_var)
+function(_argx_semver_compare_identifier a b out_var)
     set(a_numeric FALSE)
     set(b_numeric FALSE)
     if(a MATCHES "^[0-9]+$")
@@ -196,9 +196,9 @@ function(_clargs_semver_compare_identifier a b out_var)
     set(${out_var} ${result} PARENT_SCOPE)
 endfunction()
 
-function(clargs_semver_compare a b out_var)
-    clargs_semver_parse("${a}" a)
-    clargs_semver_parse("${b}" b)
+function(argx_semver_compare a b out_var)
+    argx_semver_parse("${a}" a)
+    argx_semver_parse("${b}" b)
     foreach(side IN ITEMS a b)
         if(NOT ${side}_VALID)
             message(FATAL_ERROR "error: cannot compare the versions: ${${side}_ERROR}")
@@ -240,7 +240,7 @@ function(clargs_semver_compare a b out_var)
                 if(result EQUAL 0)
                     list(GET a_identifiers ${index} a_identifier)
                     list(GET b_identifiers ${index} b_identifier)
-                    _clargs_semver_compare_identifier("${a_identifier}" "${b_identifier}" result)
+                    _argx_semver_compare_identifier("${a_identifier}" "${b_identifier}" result)
                 endif()
             endforeach()
             if(result EQUAL 0)

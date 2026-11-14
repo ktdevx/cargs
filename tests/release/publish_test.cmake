@@ -24,30 +24,30 @@ cmake_minimum_required(VERSION 3.21)
 
 include("${CMAKE_CURRENT_LIST_DIR}/ReleaseTestHelpers.cmake")
 
-set(script "${CLARGS_SOURCE_ROOT}/tools/release/publish.cmake")
+set(script "${ARGX_SOURCE_ROOT}/tools/release/publish.cmake")
 set(repo_url "https://github.com/example/project")
 
-clargs_test_copy_fixture(version.h header_fixture fixture-version.h)
+argx_test_copy_fixture(version.h header_fixture fixture-version.h)
 file(READ "${header_fixture}" header_fixture_text)
 
 # Sets <out-var> to the text of the header fixture, which holds 1.2.3, with
 # the four values replaced by those of <major>.<minor>.<patch>[-<prerelease>].
 function(header_text major minor patch prerelease out_var)
     set(text "${header_fixture_text}")
-    string(REPLACE "#define CLARGS_VERSION_MAJOR 1\n"
-        "#define CLARGS_VERSION_MAJOR ${major}\n" text "${text}")
-    string(REPLACE "#define CLARGS_VERSION_MINOR 2\n"
-        "#define CLARGS_VERSION_MINOR ${minor}\n" text "${text}")
-    string(REPLACE "#define CLARGS_VERSION_PATCH 3\n"
-        "#define CLARGS_VERSION_PATCH ${patch}\n" text "${text}")
-    string(REPLACE "#define CLARGS_VERSION_PRERELEASE \"\"\n"
-        "#define CLARGS_VERSION_PRERELEASE \"${prerelease}\"\n" text "${text}")
+    string(REPLACE "#define ARGX_VERSION_MAJOR 1\n"
+        "#define ARGX_VERSION_MAJOR ${major}\n" text "${text}")
+    string(REPLACE "#define ARGX_VERSION_MINOR 2\n"
+        "#define ARGX_VERSION_MINOR ${minor}\n" text "${text}")
+    string(REPLACE "#define ARGX_VERSION_PATCH 3\n"
+        "#define ARGX_VERSION_PATCH ${patch}\n" text "${text}")
+    string(REPLACE "#define ARGX_VERSION_PRERELEASE \"\"\n"
+        "#define ARGX_VERSION_PRERELEASE \"${prerelease}\"\n" text "${text}")
     set(${out_var} "${text}" PARENT_SCOPE)
 endfunction()
 
 # Sets <out-var> to the text of the fixture <fixture>, read as it is.
 function(fixture_text fixture out_var)
-    file(READ "${CLARGS_TEST_FIXTURE_DIR}/${fixture}" text)
+    file(READ "${ARGX_TEST_FIXTURE_DIR}/${fixture}" text)
     set(${out_var} "${text}" PARENT_SCOPE)
 endfunction()
 
@@ -89,12 +89,12 @@ function(tree_snapshot dir out_var)
 endfunction()
 
 # Makes the source tree <name> in the work directory, with <header> as
-# include/clargs/version.h and <changelog> as CHANGELOG.md. Sets <out-var> to
+# include/argx/version.h and <changelog> as CHANGELOG.md. Sets <out-var> to
 # the root of the tree.
 function(make_tree name header changelog out_var)
-    set(root "${CLARGS_TEST_WORK_DIR}/${name}")
-    clargs_write_bytes("${root}/include/clargs/version.h" "${header}" "the version header")
-    clargs_write_bytes("${root}/CHANGELOG.md" "${changelog}" "the changelog")
+    set(root "${ARGX_TEST_WORK_DIR}/${name}")
+    argx_write_bytes("${root}/include/argx/version.h" "${header}" "the version header")
+    argx_write_bytes("${root}/CHANGELOG.md" "${changelog}" "the changelog")
     set(${out_var} "${root}" PARENT_SCOPE)
 endfunction()
 
@@ -115,12 +115,12 @@ function(run_publish prefix root version)
     set(notes_path "${root}.notes/notes.md")
     set(output_path "${root}.output")
     file(WRITE "${output_path}" "earlier=value\n")
-    clargs_test_run_script(run "${script}"
-        "-DCLARGS_RELEASE_VERSION=${version}"
-        "-DCLARGS_RELEASE_REPO_URL=${repo_url}"
-        "-DCLARGS_SOURCE_DIR=${root}"
-        "-DCLARGS_RELEASE_NOTES=${notes_path}"
-        "-DCLARGS_RELEASE_OUTPUT=${output_path}"
+    argx_test_run_script(run "${script}"
+        "-DARGX_RELEASE_VERSION=${version}"
+        "-DARGX_RELEASE_REPO_URL=${repo_url}"
+        "-DARGX_SOURCE_DIR=${root}"
+        "-DARGX_RELEASE_NOTES=${notes_path}"
+        "-DARGX_RELEASE_OUTPUT=${output_path}"
         ${ARGN})
     flatten("${run_OUTPUT}" output)
     file(READ "${output_path}" output_file)
@@ -138,17 +138,17 @@ function(expect_publish what name header changelog version notes output)
     make_tree(${name} "${header}" "${changelog}" root)
     tree_snapshot("${root}" before)
     run_publish(run "${root}" "${version}")
-    clargs_test_expect_equal("${run_RESULT}" "0" "${what}: the script succeeds")
+    argx_test_expect_equal("${run_RESULT}" "0" "${what}: the script succeeds")
     if(NOT "${run_RESULT}" STREQUAL "0")
         message("${what}: output of the script:\n${run_OUTPUT}")
     endif()
     text_hex("${notes}" expected_hex)
     file_hex("${run_NOTES}" actual_hex)
-    clargs_test_expect_equal("${actual_hex}" "${expected_hex}" "${what}: the notes, byte for byte")
-    clargs_test_expect_equal("${run_FILE}" "earlier=value\n${output}" "${what}: the output file")
+    argx_test_expect_equal("${actual_hex}" "${expected_hex}" "${what}: the notes, byte for byte")
+    argx_test_expect_equal("${run_FILE}" "earlier=value\n${output}" "${what}: the output file")
     tree_snapshot("${root}" after)
-    clargs_test_expect_equal("${after}" "${before}" "${what}: the tree is not written")
-    clargs_test_expect_contains("${run_OUTPUT}" "v${version}" "${what}: the standard output names the tag")
+    argx_test_expect_equal("${after}" "${before}" "${what}: the tree is not written")
+    argx_test_expect_contains("${run_OUTPUT}" "v${version}" "${what}: the standard output names the tag")
 endfunction()
 
 header_text(0 1 0 "" header_0_1_0)
@@ -209,15 +209,15 @@ expect_publish("a release after pre-releases" release "${header_0_2_0}" "${publi
 
 # Without an output file, the script still writes the notes.
 make_tree(no_output "${header_0_2_0}" "${publish_changelog}" root)
-clargs_test_run_script(run "${script}"
-    "-DCLARGS_RELEASE_VERSION=0.2.0"
-    "-DCLARGS_RELEASE_REPO_URL=${repo_url}"
-    "-DCLARGS_SOURCE_DIR=${root}"
-    "-DCLARGS_RELEASE_NOTES=${root}.notes.md")
-clargs_test_expect_equal("${run_RESULT}" "0" "without an output file: the script succeeds")
+argx_test_run_script(run "${script}"
+    "-DARGX_RELEASE_VERSION=0.2.0"
+    "-DARGX_RELEASE_REPO_URL=${repo_url}"
+    "-DARGX_SOURCE_DIR=${root}"
+    "-DARGX_RELEASE_NOTES=${root}.notes.md")
+argx_test_expect_equal("${run_RESULT}" "0" "without an output file: the script succeeds")
 text_hex("${release_notes}" expected_hex)
 file_hex("${root}.notes.md" actual_hex)
-clargs_test_expect_equal("${actual_hex}" "${expected_hex}" "without an output file: the notes")
+argx_test_expect_equal("${actual_hex}" "${expected_hex}" "without an output file: the notes")
 
 # --- Failures -------------------------------------------------------------------------
 
@@ -230,29 +230,29 @@ function(expect_failure what name header changelog version reason)
     tree_snapshot("${root}" before)
     run_publish(run "${root}" "${version}" ${ARGN})
     if("${run_RESULT}" STREQUAL "0")
-        clargs_test_expect_equal("${run_RESULT}" "non-zero" "${what}: the script fails")
+        argx_test_expect_equal("${run_RESULT}" "non-zero" "${what}: the script fails")
     else()
-        clargs_test_expect_equal("failed" "failed" "${what}: the script fails")
+        argx_test_expect_equal("failed" "failed" "${what}: the script fails")
     endif()
-    clargs_test_expect_contains("${run_OUTPUT}" "error: " "${what}: the output starts the reason with error:")
-    clargs_test_expect_contains("${run_OUTPUT}" "${reason}" "${what}: the reason")
+    argx_test_expect_contains("${run_OUTPUT}" "error: " "${what}: the output starts the reason with error:")
+    argx_test_expect_contains("${run_OUTPUT}" "${reason}" "${what}: the reason")
     file_hex("${run_NOTES}" notes_hex)
-    clargs_test_expect_equal("${notes_hex}" "(no file)" "${what}: the notes file is not written")
-    clargs_test_expect_equal("${run_FILE}" "earlier=value\n" "${what}: the output file is not written")
+    argx_test_expect_equal("${notes_hex}" "(no file)" "${what}: the notes file is not written")
+    argx_test_expect_equal("${run_FILE}" "earlier=value\n" "${what}: the output file is not written")
     tree_snapshot("${root}" after)
-    clargs_test_expect_equal("${after}" "${before}" "${what}: the tree is not written")
+    argx_test_expect_equal("${after}" "${before}" "${what}: the tree is not written")
 endfunction()
 
 # Missing inputs.
 set(index 0)
-foreach(input IN ITEMS CLARGS_RELEASE_VERSION CLARGS_RELEASE_REPO_URL CLARGS_SOURCE_DIR
-        CLARGS_RELEASE_NOTES)
+foreach(input IN ITEMS ARGX_RELEASE_VERSION ARGX_RELEASE_REPO_URL ARGX_SOURCE_DIR
+        ARGX_RELEASE_NOTES)
     math(EXPR index "${index} + 1")
     expect_failure("${input} is empty" missing_${index} "${header_0_2_0}" "${publish_changelog}"
         0.2.0 "${input} is not set" "-D${input}=")
 endforeach()
 expect_failure("the source tree does not exist" no_tree "${header_0_2_0}" "${publish_changelog}"
-    0.2.0 "does not exist" "-DCLARGS_SOURCE_DIR=${CLARGS_TEST_WORK_DIR}/none")
+    0.2.0 "does not exist" "-DARGX_SOURCE_DIR=${ARGX_TEST_WORK_DIR}/none")
 
 # Versions that are not valid, such as the name of the tag or of the branch.
 foreach(version IN ITEMS 0.2 v0.2.0 release/v0.2.0 0.2.0+build 01.2.0 256.0.0)
@@ -305,4 +305,4 @@ string(CONCAT empty_changelog
 expect_failure("empty notes" notes_empty "${header_0_1_0}" "${empty_changelog}" 0.1.0
     "the notes of v0.1.0 are empty")
 
-clargs_test_finish()
+argx_test_finish()

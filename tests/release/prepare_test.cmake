@@ -12,7 +12,7 @@
 #     changelog change, byte for byte as expected, with LF and with CRLF line
 #     endings, and the output file gets version, tag and prerelease.
 #   - Only tags of the form v<version> count as releases.
-#   - With CLARGS_RELEASE_CHECK_ONLY, nothing is written.
+#   - With ARGX_RELEASE_CHECK_ONLY, nothing is written.
 #   - Every check fails with a non-zero exit code and the reason, before any
 #     file is written.
 #
@@ -22,30 +22,30 @@ cmake_minimum_required(VERSION 3.21)
 
 include("${CMAKE_CURRENT_LIST_DIR}/ReleaseTestHelpers.cmake")
 
-set(script "${CLARGS_SOURCE_ROOT}/tools/release/prepare.cmake")
+set(script "${ARGX_SOURCE_ROOT}/tools/release/prepare.cmake")
 set(repo_url "https://github.com/example/project")
 
-clargs_test_copy_fixture(version.h header_fixture fixture-version.h)
+argx_test_copy_fixture(version.h header_fixture fixture-version.h)
 file(READ "${header_fixture}" header_fixture_text)
 
 # Sets <out-var> to the text of the header fixture, which holds 1.2.3, with
 # the four values replaced by those of <major>.<minor>.<patch>[-<prerelease>].
 function(header_text major minor patch prerelease out_var)
     set(text "${header_fixture_text}")
-    string(REPLACE "#define CLARGS_VERSION_MAJOR 1\n"
-        "#define CLARGS_VERSION_MAJOR ${major}\n" text "${text}")
-    string(REPLACE "#define CLARGS_VERSION_MINOR 2\n"
-        "#define CLARGS_VERSION_MINOR ${minor}\n" text "${text}")
-    string(REPLACE "#define CLARGS_VERSION_PATCH 3\n"
-        "#define CLARGS_VERSION_PATCH ${patch}\n" text "${text}")
-    string(REPLACE "#define CLARGS_VERSION_PRERELEASE \"\"\n"
-        "#define CLARGS_VERSION_PRERELEASE \"${prerelease}\"\n" text "${text}")
+    string(REPLACE "#define ARGX_VERSION_MAJOR 1\n"
+        "#define ARGX_VERSION_MAJOR ${major}\n" text "${text}")
+    string(REPLACE "#define ARGX_VERSION_MINOR 2\n"
+        "#define ARGX_VERSION_MINOR ${minor}\n" text "${text}")
+    string(REPLACE "#define ARGX_VERSION_PATCH 3\n"
+        "#define ARGX_VERSION_PATCH ${patch}\n" text "${text}")
+    string(REPLACE "#define ARGX_VERSION_PRERELEASE \"\"\n"
+        "#define ARGX_VERSION_PRERELEASE \"${prerelease}\"\n" text "${text}")
     set(${out_var} "${text}" PARENT_SCOPE)
 endfunction()
 
 # Sets <out-var> to the text of the fixture <fixture>, read as it is.
 function(fixture_text fixture out_var)
-    file(READ "${CLARGS_TEST_FIXTURE_DIR}/${fixture}" text)
+    file(READ "${ARGX_TEST_FIXTURE_DIR}/${fixture}" text)
     set(${out_var} "${text}" PARENT_SCOPE)
 endfunction()
 
@@ -87,19 +87,19 @@ function(tree_snapshot dir out_var)
 endfunction()
 
 # Makes the source tree <name> in the work directory, with <header> as
-# include/clargs/version.h, <changelog> as CHANGELOG.md and a README.md that
+# include/argx/version.h, <changelog> as CHANGELOG.md and a README.md that
 # the script must not touch. Sets <out-var> to the root of the tree.
 function(make_tree name header changelog out_var)
-    set(root "${CLARGS_TEST_WORK_DIR}/${name}")
-    clargs_write_bytes("${root}/include/clargs/version.h" "${header}" "the version header")
+    set(root "${ARGX_TEST_WORK_DIR}/${name}")
+    argx_write_bytes("${root}/include/argx/version.h" "${header}" "the version header")
     if(changelog MATCHES "\n$")
-        clargs_write_bytes("${root}/CHANGELOG.md" "${changelog}" "the changelog")
+        argx_write_bytes("${root}/CHANGELOG.md" "${changelog}" "the changelog")
     else()
         # Only a changelog without a line ending at its end, which cannot be
         # written byte for byte on Windows; the case does not need its bytes.
         file(WRITE "${root}/CHANGELOG.md" "${changelog}")
     endif()
-    clargs_write_bytes("${root}/README.md" "# A file that a release does not change.\n" "README.md")
+    argx_write_bytes("${root}/README.md" "# A file that a release does not change.\n" "README.md")
     set(${out_var} "${root}" PARENT_SCOPE)
 endfunction()
 
@@ -120,13 +120,13 @@ function(run_prepare prefix root version date tags)
     set(output_path "${root}.output")
     file(WRITE "${tags_path}" "${tags}")
     file(WRITE "${output_path}" "earlier=value\n")
-    clargs_test_run_script(run "${script}"
-        "-DCLARGS_RELEASE_VERSION=${version}"
-        "-DCLARGS_RELEASE_DATE=${date}"
-        "-DCLARGS_RELEASE_REPO_URL=${repo_url}"
-        "-DCLARGS_SOURCE_DIR=${root}"
-        "-DCLARGS_RELEASE_TAGS_FILE=${tags_path}"
-        "-DCLARGS_RELEASE_OUTPUT=${output_path}"
+    argx_test_run_script(run "${script}"
+        "-DARGX_RELEASE_VERSION=${version}"
+        "-DARGX_RELEASE_DATE=${date}"
+        "-DARGX_RELEASE_REPO_URL=${repo_url}"
+        "-DARGX_SOURCE_DIR=${root}"
+        "-DARGX_RELEASE_TAGS_FILE=${tags_path}"
+        "-DARGX_RELEASE_OUTPUT=${output_path}"
         ${ARGN})
     flatten("${run_OUTPUT}" output)
     file(READ "${output_path}" output_file)
@@ -138,7 +138,7 @@ endfunction()
 # Checks that a run succeeded and that the tree <root> now holds exactly
 # <header> and <changelog>, besides the untouched README.md.
 function(expect_release what prefix root header changelog)
-    clargs_test_expect_equal("${${prefix}_RESULT}" "0" "${what}: the script succeeds")
+    argx_test_expect_equal("${${prefix}_RESULT}" "0" "${what}: the script succeeds")
     if(NOT "${${prefix}_RESULT}" STREQUAL "0")
         message("${what}: output of the script:\n${${prefix}_OUTPUT}")
     endif()
@@ -146,8 +146,8 @@ function(expect_release what prefix root header changelog)
     text_hex("${changelog}" changelog_hex)
     text_hex("# A file that a release does not change.\n" readme_hex)
     tree_snapshot("${root}" actual)
-    clargs_test_expect_equal("${actual}"
-        "CHANGELOG.md=${changelog_hex}\nREADME.md=${readme_hex}\ninclude/clargs/version.h=${header_hex}\n"
+    argx_test_expect_equal("${actual}"
+        "CHANGELOG.md=${changelog_hex}\nREADME.md=${readme_hex}\ninclude/argx/version.h=${header_hex}\n"
         "${what}: only the header and the changelog change, as expected")
 endfunction()
 
@@ -162,12 +162,12 @@ fixture_text(CHANGELOG-first-release-expected.md first_expected)
 make_tree(first "${header_0_1_0}" "${first_changelog}" root)
 run_prepare(run "${root}" 0.1.0 2026-11-13 "")
 expect_release("the first release" run "${root}" "${header_0_1_0}" "${first_expected}")
-clargs_test_expect_equal("${run_FILE}"
+argx_test_expect_equal("${run_FILE}"
     "earlier=value\nversion=0.1.0\ntag=v0.1.0\nprerelease=false\n"
     "the first release: the output file")
-clargs_test_expect_contains("${run_OUTPUT}" "0.1.0"
+argx_test_expect_contains("${run_OUTPUT}" "0.1.0"
     "the first release: the standard output names the version")
-clargs_test_expect_contains("${run_OUTPUT}" "CHANGELOG.md"
+argx_test_expect_contains("${run_OUTPUT}" "CHANGELOG.md"
     "the first release: the standard output names the changelog")
 
 # The same with CRLF line endings: they are kept in both files.
@@ -199,7 +199,7 @@ string(CONCAT tags
 make_tree(pre "${header_0_1_0}" "${second_changelog}" root)
 run_prepare(run "${root}" 0.2.0-rc.1 2026-12-01 "${tags}")
 expect_release("a pre-release" run "${root}" "${header_rc}" "${second_expected}")
-clargs_test_expect_equal("${run_FILE}"
+argx_test_expect_equal("${run_FILE}"
     "earlier=value\nversion=0.2.0-rc.1\ntag=v0.2.0-rc.1\nprerelease=true\n"
     "a pre-release: the output file")
 
@@ -214,12 +214,12 @@ expect_release("a pre-release with CRLF" run "${root}" "${header_rc_crlf}" "${se
 # Without an output file, the script still rewrites the two files.
 make_tree(no_output "${header_0_1_0}" "${second_changelog}" root)
 file(WRITE "${root}.tags" "v0.1.0\n")
-clargs_test_run_script(run "${script}"
-    "-DCLARGS_RELEASE_VERSION=0.2.0-rc.1"
-    "-DCLARGS_RELEASE_DATE=2026-12-01"
-    "-DCLARGS_RELEASE_REPO_URL=${repo_url}"
-    "-DCLARGS_SOURCE_DIR=${root}"
-    "-DCLARGS_RELEASE_TAGS_FILE=${root}.tags")
+argx_test_run_script(run "${script}"
+    "-DARGX_RELEASE_VERSION=0.2.0-rc.1"
+    "-DARGX_RELEASE_DATE=2026-12-01"
+    "-DARGX_RELEASE_REPO_URL=${repo_url}"
+    "-DARGX_SOURCE_DIR=${root}"
+    "-DARGX_RELEASE_TAGS_FILE=${root}.tags")
 expect_release("a pre-release without an output file" run "${root}" "${header_rc}" "${second_expected}")
 
 # --- Check only ------------------------------------------------------------------
@@ -227,12 +227,12 @@ expect_release("a pre-release without an output file" run "${root}" "${header_rc
 # The checks pass, but neither the tree nor the output file is written.
 make_tree(check "${header_0_1_0}" "${first_changelog}" root)
 tree_snapshot("${root}" before)
-run_prepare(run "${root}" 0.1.0 2026-11-13 "" "-DCLARGS_RELEASE_CHECK_ONLY=ON")
-clargs_test_expect_equal("${run_RESULT}" "0" "check only: the script succeeds")
+run_prepare(run "${root}" 0.1.0 2026-11-13 "" "-DARGX_RELEASE_CHECK_ONLY=ON")
+argx_test_expect_equal("${run_RESULT}" "0" "check only: the script succeeds")
 tree_snapshot("${root}" after)
-clargs_test_expect_equal("${after}" "${before}" "check only: the tree is not written")
-clargs_test_expect_equal("${run_FILE}" "earlier=value\n" "check only: the output file is not written")
-clargs_test_expect_contains("${run_OUTPUT}" "0.1.0" "check only: the standard output names the version")
+argx_test_expect_equal("${after}" "${before}" "check only: the tree is not written")
+argx_test_expect_equal("${run_FILE}" "earlier=value\n" "check only: the output file is not written")
+argx_test_expect_contains("${run_OUTPUT}" "0.1.0" "check only: the standard output names the version")
 
 # --- Failures ----------------------------------------------------------------------
 
@@ -245,21 +245,21 @@ function(expect_failure what name header changelog version tags reason)
     tree_snapshot("${root}" before)
     run_prepare(run "${root}" "${version}" 2026-12-01 "${tags}" ${ARGN})
     if("${run_RESULT}" STREQUAL "0")
-        clargs_test_expect_equal("${run_RESULT}" "non-zero" "${what}: the script fails")
+        argx_test_expect_equal("${run_RESULT}" "non-zero" "${what}: the script fails")
     else()
-        clargs_test_expect_equal("failed" "failed" "${what}: the script fails")
+        argx_test_expect_equal("failed" "failed" "${what}: the script fails")
     endif()
-    clargs_test_expect_contains("${run_OUTPUT}" "error: " "${what}: the output starts the reason with error:")
-    clargs_test_expect_contains("${run_OUTPUT}" "${reason}" "${what}: the reason")
+    argx_test_expect_contains("${run_OUTPUT}" "error: " "${what}: the output starts the reason with error:")
+    argx_test_expect_contains("${run_OUTPUT}" "${reason}" "${what}: the reason")
     tree_snapshot("${root}" after)
-    clargs_test_expect_equal("${after}" "${before}" "${what}: the tree is not written")
-    clargs_test_expect_equal("${run_FILE}" "earlier=value\n" "${what}: the output file is not written")
+    argx_test_expect_equal("${after}" "${before}" "${what}: the tree is not written")
+    argx_test_expect_equal("${run_FILE}" "earlier=value\n" "${what}: the output file is not written")
 endfunction()
 
 # Missing inputs and a date of another form.
 set(index 0)
-foreach(input IN ITEMS CLARGS_RELEASE_VERSION CLARGS_RELEASE_DATE CLARGS_RELEASE_REPO_URL
-        CLARGS_SOURCE_DIR CLARGS_RELEASE_TAGS_FILE)
+foreach(input IN ITEMS ARGX_RELEASE_VERSION ARGX_RELEASE_DATE ARGX_RELEASE_REPO_URL
+        ARGX_SOURCE_DIR ARGX_RELEASE_TAGS_FILE)
     math(EXPR index "${index} + 1")
     expect_failure("${input} is empty" missing_${index} "${header_0_1_0}" "${second_changelog}"
         0.2.0 "v0.1.0\n" "${input} is not set" "-D${input}=")
@@ -267,12 +267,12 @@ endforeach()
 foreach(date IN ITEMS 2026-1-01 26-12-01 2026/12/01 2026-12-01T00:00)
     string(MAKE_C_IDENTIFIER "${date}" id)
     expect_failure("the date \"${date}\"" date_${id} "${header_0_1_0}" "${second_changelog}"
-        0.2.0 "v0.1.0\n" "is not of the form YYYY-MM-DD" "-DCLARGS_RELEASE_DATE=${date}")
+        0.2.0 "v0.1.0\n" "is not of the form YYYY-MM-DD" "-DARGX_RELEASE_DATE=${date}")
 endforeach()
 expect_failure("the tags file does not exist" no_tags "${header_0_1_0}" "${second_changelog}"
-    0.2.0 "" "does not exist" "-DCLARGS_RELEASE_TAGS_FILE=${CLARGS_TEST_WORK_DIR}/none.txt")
+    0.2.0 "" "does not exist" "-DARGX_RELEASE_TAGS_FILE=${ARGX_TEST_WORK_DIR}/none.txt")
 expect_failure("the source tree does not exist" no_tree "${header_0_1_0}" "${second_changelog}"
-    0.2.0 "" "does not exist" "-DCLARGS_SOURCE_DIR=${CLARGS_TEST_WORK_DIR}/none")
+    0.2.0 "" "does not exist" "-DARGX_SOURCE_DIR=${ARGX_TEST_WORK_DIR}/none")
 
 # Versions that are not of the form <major>.<minor>.<patch>[-<pre-release>],
 # build metadata included, and numbers beyond what the header can hold.
@@ -332,24 +332,24 @@ expect_failure("the changelog lists a higher version" changelog_higher "${header
 string(REGEX REPLACE "\n+$" "" no_newline_changelog "${second_changelog}")
 expect_failure("no line ending at the end, as on Windows" no_newline "${header_0_1_0}"
     "${no_newline_changelog}" 0.2.0-rc.1 "v0.1.0\n" "ends with a line ending"
-    "-DCLARGS_WRITE_BYTES_WITH_CONFIGURE=ON")
+    "-DARGX_WRITE_BYTES_WITH_CONFIGURE=ON")
 expect_failure("no line ending at the end, check only" no_newline_check "${header_0_1_0}"
     "${no_newline_changelog}" 0.2.0-rc.1 "v0.1.0\n" "ends with a line ending"
-    "-DCLARGS_WRITE_BYTES_WITH_CONFIGURE=ON" "-DCLARGS_RELEASE_CHECK_ONLY=ON")
+    "-DARGX_WRITE_BYTES_WITH_CONFIGURE=ON" "-DARGX_RELEASE_CHECK_ONLY=ON")
 
 # Running the script twice with the same input: the second run stops, since
 # the changelog lists the version now.
 make_tree(twice "${header_0_1_0}" "${second_changelog}" root)
 run_prepare(run "${root}" 0.2.0-rc.1 2026-12-01 "v0.1.0\n")
-clargs_test_expect_equal("${run_RESULT}" "0" "twice: the first run succeeds")
+argx_test_expect_equal("${run_RESULT}" "0" "twice: the first run succeeds")
 tree_snapshot("${root}" before)
 run_prepare(run "${root}" 0.2.0-rc.1 2026-12-01 "v0.1.0\n")
 if("${run_RESULT}" STREQUAL "0")
-    clargs_test_expect_equal("${run_RESULT}" "non-zero" "twice: the second run fails")
+    argx_test_expect_equal("${run_RESULT}" "non-zero" "twice: the second run fails")
 endif()
-clargs_test_expect_contains("${run_OUTPUT}" "0.2.0-rc.1 is already listed in"
+argx_test_expect_contains("${run_OUTPUT}" "0.2.0-rc.1 is already listed in"
     "twice: the second run names the reason")
 tree_snapshot("${root}" after)
-clargs_test_expect_equal("${after}" "${before}" "twice: the second run writes nothing")
+argx_test_expect_equal("${after}" "${before}" "twice: the second run writes nothing")
 
-clargs_test_finish()
+argx_test_finish()

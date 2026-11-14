@@ -1,8 +1,8 @@
 /*
  * Tests of where the text of a help goes: the write function of
- * clargs_help_write() and clargs_help_write_usage() of <clargs/help.h>,
+ * argx_help_write() and argx_help_write_usage() of <argx/help.h>,
  * and the functions that put the same texts into an array of the caller,
- * clargs_help_format() and clargs_help_format_usage().
+ * argx_help_format() and argx_help_format_usage().
  *
  * What the tests pin down:
  *
@@ -10,12 +10,12 @@
  *   calls, are the text that the array gets. No part has the length 0, and
  *   the user data reaches the write function as it was given.
  * - A write function that reports a failure in its n-th call is called n
- *   times, and the generation returns CLARGS_ERROR_WRITE_FAILED.
+ *   times, and the generation returns ARGX_ERROR_WRITE_FAILED.
  * - With a size that is not 0, the array gets the first bytes of the text,
  *   size - 1 at most, and a '\0' behind them; with the size 0 it gets
  *   nothing, and may be NULL. No other byte is written. The length that is
  *   told is the one of the whole text, and a text that is cut is a success.
- * - When an allocation of clargs_help_format() fails, the array holds the
+ * - When an allocation of argx_help_format() fails, the array holds the
  *   empty string, or is untouched with the size 0, and the length is 0.
  *
  * A behaviour that the help and the usage line share is tested for both:
@@ -26,7 +26,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -63,8 +63,8 @@
 /* The two texts that the library generates. */
 typedef enum text_kind
 {
-    TEXT_HELP, /* clargs_help_write(), clargs_help_format() */
-    TEXT_USAGE /* clargs_help_write_usage(), clargs_help_format_usage() */
+    TEXT_HELP, /* argx_help_write(), argx_help_format() */
+    TEXT_USAGE /* argx_help_write_usage(), argx_help_format_usage() */
 } text_kind_t;
 
 /* What the write function of the tests has received. */
@@ -117,35 +117,35 @@ static bool sink_write(void *user_data, const char *text, size_t length)
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* Adds a subcommand with a description; it must succeed. */
-static void add_sub(clargs_command_t *command, const char *name, const char *description)
+static void add_sub(argx_command_t *command, const char *name, const char *description)
 {
-    clargs_command_t *sub = NULL;
+    argx_command_t *sub = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(command, name, &sub) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(command, name, &sub) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sub != NULL);
-    NAOS_REQUIRE_TRUE(clargs_command_set_description(sub, description) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_description(sub, description) == ARGX_ERROR_NONE);
 }
 
 /*
  * Adds a flag that must succeed. short_name is '\0' for none; description
  * is its description, or NULL to set none.
  */
-static void add_flag(clargs_command_t *command, char short_name, const char *long_name,
+static void add_flag(argx_command_t *command, char short_name, const char *long_name,
                      const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(command, short_name, long_name, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
     }
 }
 
@@ -154,24 +154,24 @@ static void add_flag(clargs_command_t *command, char short_name, const char *lon
  * must succeed. short_name is '\0' for none. default_value is its default
  * value, or NULL for an option that is required.
  */
-static void add_file(clargs_command_t *command, char short_name, const char *long_name,
+static void add_file(argx_command_t *command, char short_name, const char *long_name,
                      const char *default_value, const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, clargs_type_string(),
-                                               &option) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, argx_type_string(),
+                                               &option) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, "FILE") == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, "FILE") == ARGX_ERROR_NONE);
     if (default_value != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_default(option, default_value) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_default(option, default_value) == ARGX_ERROR_NONE);
     }
     else
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_required(option, true) == ARGX_ERROR_NONE);
     }
-    NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
 }
 
 /*
@@ -181,16 +181,16 @@ static void add_file(clargs_command_t *command, char short_name, const char *lon
  * an item whose description starts on the next line, and annotations; its
  * usage line has two lines.
  */
-static clargs_command_t *create_schema(void)
+static argx_command_t *create_schema(void)
 {
-    clargs_command_t *root = NULL;
+    argx_command_t *root = NULL;
 
-    clargs_test_allocator_install();
-    NAOS_REQUIRE_TRUE(clargs_command_create("tool", &root) == CLARGS_ERROR_NONE);
+    argx_test_allocator_install();
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &root) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(root != NULL);
-    NAOS_REQUIRE_TRUE(clargs_command_set_description(
+    NAOS_REQUIRE_TRUE(argx_command_set_description(
                           root, "Shows how the text of a help leaves the library, part by part.") ==
-                      CLARGS_ERROR_NONE);
+                      ARGX_ERROR_NONE);
 
     add_sub(root, "add", "Add a thing");
     add_sub(root, "remove", "Remove a thing\nfor ever");
@@ -200,19 +200,19 @@ static clargs_command_t *create_schema(void)
     add_file(root, '\0', "config", NULL, "Read the settings from FILE");
     add_flag(root, '\0', "quiet", NULL);
 
-    NAOS_REQUIRE_TRUE(clargs_command_validate(root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
+    NAOS_REQUIRE_TRUE(argx_command_validate(root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_is_validated(root));
     return root;
 }
 
 /* Creates the help options of the tests: the width 40. */
-static clargs_help_options_t *create_narrow(void)
+static argx_help_options_t *create_narrow(void)
 {
-    clargs_help_options_t *options = NULL;
+    argx_help_options_t *options = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(options != NULL);
-    clargs_help_options_set_width(options, 40);
+    argx_help_options_set_width(options, 40);
     return options;
 }
 
@@ -220,11 +220,11 @@ static clargs_help_options_t *create_narrow(void)
  * Destroys the help options and the schema, and ends the test: nothing
  * stays allocated.
  */
-static void destroy_schema(clargs_command_t *root, clargs_help_options_t *options)
+static void destroy_schema(argx_command_t *root, argx_help_options_t *options)
 {
-    clargs_help_options_destroy(options);
-    clargs_command_destroy(root);
-    clargs_test_allocator_uninstall();
+    argx_help_options_destroy(options);
+    argx_command_destroy(root);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -259,38 +259,38 @@ static const char narrow_help[] = "Usage: tool [OPTIONS] --config <FILE>\n"
 static const char default_usage[] = "Usage: tool [OPTIONS] --config <FILE> [COMMAND]\n";
 
 /* Has the text of the kind passed to a write function. */
-static clargs_error_t write_text(text_kind_t kind, const clargs_command_t *command,
-                                 const clargs_help_options_t *options,
-                                 clargs_help_write_fn_t write_fn, void *user_data)
+static argx_error_t write_text(text_kind_t kind, const argx_command_t *command,
+                                 const argx_help_options_t *options,
+                                 argx_help_write_fn_t write_fn, void *user_data)
 {
     if (kind == TEXT_USAGE)
     {
-        return clargs_help_write_usage(command, options, write_fn, user_data);
+        return argx_help_write_usage(command, options, write_fn, user_data);
     }
-    return clargs_help_write(command, options, write_fn, user_data);
+    return argx_help_write(command, options, write_fn, user_data);
 }
 
 /* Has the text of the kind put into an array. */
-static clargs_error_t format_text(text_kind_t kind, const clargs_command_t *command,
-                                  const clargs_help_options_t *options, char *buffer, size_t size,
+static argx_error_t format_text(text_kind_t kind, const argx_command_t *command,
+                                  const argx_help_options_t *options, char *buffer, size_t size,
                                   size_t *length)
 {
     if (kind == TEXT_USAGE)
     {
-        return clargs_help_format_usage(command, options, buffer, size, length);
+        return argx_help_format_usage(command, options, buffer, size, length);
     }
-    return clargs_help_format(command, options, buffer, size, length);
+    return argx_help_format(command, options, buffer, size, length);
 }
 
 /*
  * Has the whole text of the kind written to sink; it must succeed, with a
  * call or more and no call without a text.
  */
-static void collect(text_kind_t kind, const clargs_command_t *command,
-                    const clargs_help_options_t *options, sink_t *sink)
+static void collect(text_kind_t kind, const argx_command_t *command,
+                    const argx_help_options_t *options, sink_t *sink)
 {
     sink_init(sink);
-    NAOS_REQUIRE_TRUE(write_text(kind, command, options, sink_write, sink) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(write_text(kind, command, options, sink_write, sink) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sink->calls > 0);
     NAOS_REQUIRE_TRUE(sink->length > 0);
     NAOS_REQUIRE_TRUE(sink->length < (AREA_SIZE - (2 * GUARD_SIZE)));
@@ -316,15 +316,15 @@ typedef struct format_call
  *
  * text and text_length are the whole text that is expected.
  */
-static void check_format(text_kind_t kind, const clargs_command_t *command,
-                         const clargs_help_options_t *options, const char *text, size_t text_length,
+static void check_format(text_kind_t kind, const argx_command_t *command,
+                         const argx_help_options_t *options, const char *text, size_t text_length,
                          format_call_t call)
 {
     char area[AREA_SIZE];
     char want[AREA_SIZE];
     size_t length = LENGTH_UNSET;
-    size_t live = clargs_test_allocator_live();
-    clargs_error_t error;
+    size_t live = argx_test_allocator_live();
+    argx_error_t error;
 
     NAOS_REQUIRE_TRUE(call.size <= (AREA_SIZE - (2 * GUARD_SIZE)));
     NAOS_REQUIRE_TRUE(!call.null_buffer || (call.size == 0));
@@ -342,11 +342,11 @@ static void check_format(text_kind_t kind, const clargs_command_t *command,
     error = format_text(kind, command, options, call.null_buffer ? NULL : (area + GUARD_SIZE),
                         call.size, call.with_length ? &length : NULL);
 
-    NAOS_CHECK_TRUE(error == CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(error == ARGX_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(length, call.with_length ? text_length : LENGTH_UNSET);
     NAOS_CHECK_MEM_EQ(area, sizeof area, want, sizeof want);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /*
@@ -354,8 +354,8 @@ static void check_format(text_kind_t kind, const clargs_command_t *command,
  * without a place for the length, and for the size 0 also with NULL as the
  * array. The text that is expected is the one that a write function gets.
  */
-static void check_size(text_kind_t kind, const clargs_command_t *command,
-                       const clargs_help_options_t *options, size_t size)
+static void check_size(text_kind_t kind, const argx_command_t *command,
+                       const argx_help_options_t *options, size_t size)
 {
     sink_t sink;
     format_call_t call;
@@ -379,8 +379,8 @@ static void check_size(text_kind_t kind, const clargs_command_t *command,
 }
 
 /* The length of the text of the kind, as a write function gets it. */
-static size_t text_length(text_kind_t kind, const clargs_command_t *command,
-                          const clargs_help_options_t *options)
+static size_t text_length(text_kind_t kind, const argx_command_t *command,
+                          const argx_help_options_t *options)
 {
     sink_t sink;
 
@@ -395,9 +395,9 @@ static size_t text_length(text_kind_t kind, const clargs_command_t *command,
  */
 static void check_sizes(bool from_length, size_t delta)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
-    const clargs_help_options_t *settings[2];
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
+    const argx_help_options_t *settings[2];
     size_t setting;
     int kind;
 
@@ -422,14 +422,14 @@ static void check_sizes(bool from_length, size_t delta)
 
 NAOS_TEST(format_gives_the_help_as_a_string)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
     char buffer[SINK_SIZE];
     size_t length = LENGTH_UNSET;
 
     memset(buffer, SENTINEL, sizeof buffer);
-    NAOS_CHECK_TRUE(clargs_help_format(root, narrow, buffer, sizeof buffer, &length) ==
-                    CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_format(root, narrow, buffer, sizeof buffer, &length) ==
+                    ARGX_ERROR_NONE);
 
     NAOS_CHECK_UINT_EQ(length, strlen(narrow_help));
     NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
@@ -440,14 +440,14 @@ NAOS_TEST(format_gives_the_help_as_a_string)
 
 NAOS_TEST(format_usage_gives_the_usage_line_as_a_string)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
     char buffer[SINK_SIZE];
     size_t length = LENGTH_UNSET;
 
     memset(buffer, SENTINEL, sizeof buffer);
-    NAOS_CHECK_TRUE(clargs_help_format_usage(root, narrow, buffer, sizeof buffer, &length) ==
-                    CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_format_usage(root, narrow, buffer, sizeof buffer, &length) ==
+                    ARGX_ERROR_NONE);
 
     NAOS_CHECK_UINT_EQ(length, strlen(narrow_usage));
     NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
@@ -456,8 +456,8 @@ NAOS_TEST(format_usage_gives_the_usage_line_as_a_string)
     /* Without help options the settings have their default values. */
     length = LENGTH_UNSET;
     memset(buffer, SENTINEL, sizeof buffer);
-    NAOS_CHECK_TRUE(clargs_help_format_usage(root, NULL, buffer, sizeof buffer, &length) ==
-                    CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_format_usage(root, NULL, buffer, sizeof buffer, &length) ==
+                    ARGX_ERROR_NONE);
 
     NAOS_CHECK_UINT_EQ(length, strlen(default_usage));
     NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
@@ -470,9 +470,9 @@ NAOS_TEST(format_usage_gives_the_usage_line_as_a_string)
 
 NAOS_TEST(parts_of_the_write_function_joined_are_the_text_of_the_buffer)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
-    const clargs_help_options_t *settings[2];
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
+    const argx_help_options_t *settings[2];
     size_t setting;
     int kind;
 
@@ -493,7 +493,7 @@ NAOS_TEST(parts_of_the_write_function_joined_are_the_text_of_the_buffer)
 
             memset(buffer, SENTINEL, sizeof buffer);
             NAOS_CHECK_TRUE(format_text((text_kind_t)kind, root, settings[setting], buffer,
-                                        sizeof buffer, &length) == CLARGS_ERROR_NONE);
+                                        sizeof buffer, &length) == ARGX_ERROR_NONE);
 
             NAOS_CHECK_UINT_EQ(length, sink.length);
             NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
@@ -553,8 +553,8 @@ static bool null_user_data_write(void *user_data, const char *text, size_t lengt
 
 NAOS_TEST(user_data_reaches_the_write_function_unchanged)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
     int kind;
 
     for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
@@ -566,14 +566,14 @@ NAOS_TEST(user_data_reaches_the_write_function_unchanged)
         probe.mismatches = 0;
 
         NAOS_CHECK_TRUE(write_text((text_kind_t)kind, root, narrow, probe_write, &probe) ==
-                        CLARGS_ERROR_NONE);
+                        ARGX_ERROR_NONE);
         NAOS_CHECK_TRUE(probe.calls > 1);
         NAOS_CHECK_UINT_EQ(probe.mismatches, 0);
         NAOS_CHECK_TRUE(probe.self == &probe);
 
         /* NULL is passed on as NULL. */
         NAOS_CHECK_TRUE(write_text((text_kind_t)kind, root, narrow, null_user_data_write, NULL) ==
-                        CLARGS_ERROR_NONE);
+                        ARGX_ERROR_NONE);
     }
 
     destroy_schema(root, narrow);
@@ -581,9 +581,9 @@ NAOS_TEST(user_data_reaches_the_write_function_unchanged)
 
 NAOS_TEST(write_function_is_never_called_with_the_length_0)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
-    const clargs_help_options_t *settings[2];
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
+    const argx_help_options_t *settings[2];
     size_t setting;
     int kind;
 
@@ -606,9 +606,9 @@ NAOS_TEST(write_function_is_never_called_with_the_length_0)
 
 NAOS_TEST(failure_in_the_nth_call_stops_the_generation_after_n_calls)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
-    size_t live = clargs_test_allocator_live();
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
+    size_t live = argx_test_allocator_live();
     int kind;
 
     for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
@@ -626,7 +626,7 @@ NAOS_TEST(failure_in_the_nth_call_stops_the_generation_after_n_calls)
             sink.fail_at = n;
 
             NAOS_CHECK_TRUE(write_text((text_kind_t)kind, root, narrow, sink_write, &sink) ==
-                            CLARGS_ERROR_WRITE_FAILED);
+                            ARGX_ERROR_WRITE_FAILED);
 
             /* The failed call is the last one. */
             NAOS_CHECK_UINT_EQ(sink.calls, n);
@@ -634,8 +634,8 @@ NAOS_TEST(failure_in_the_nth_call_stops_the_generation_after_n_calls)
             /* What was taken before is the start of the text. */
             NAOS_CHECK_TRUE(sink.length < whole.length);
             NAOS_CHECK_MEM_EQ(sink.text, sink.length, whole.text, sink.length);
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
         }
 
         /* A failure that would come behind the last call is never seen. */
@@ -645,13 +645,13 @@ NAOS_TEST(failure_in_the_nth_call_stops_the_generation_after_n_calls)
             sink_init(&sink);
             sink.fail_at = whole.calls + 1;
             NAOS_CHECK_TRUE(write_text((text_kind_t)kind, root, narrow, sink_write, &sink) ==
-                            CLARGS_ERROR_NONE);
+                            ARGX_ERROR_NONE);
             NAOS_CHECK_UINT_EQ(sink.calls, whole.calls);
             NAOS_CHECK_MEM_EQ(sink.text, sink.length, whole.text, whole.length);
         }
     }
 
-    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+    NAOS_CHECK_TRUE(argx_command_is_validated(root));
     destroy_schema(root, narrow);
 }
 
@@ -693,8 +693,8 @@ NAOS_TEST(size_0_writes_nothing_and_takes_null)
 
 NAOS_TEST(two_calls_get_the_whole_text)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
     int kind;
 
     for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
@@ -706,14 +706,14 @@ NAOS_TEST(two_calls_get_the_whole_text)
 
         /* The first call tells the length; the text was cut. */
         NAOS_CHECK_TRUE(format_text((text_kind_t)kind, root, narrow, NULL, 0, &length) ==
-                        CLARGS_ERROR_NONE);
+                        ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, strlen(expected));
         NAOS_REQUIRE_TRUE((length + 1) <= sizeof buffer);
 
         /* The second call, with the length + 1 bytes, gets all of it. */
         memset(buffer, SENTINEL, sizeof buffer);
         NAOS_CHECK_TRUE(format_text((text_kind_t)kind, root, narrow, buffer, length + 1, &second) ==
-                        CLARGS_ERROR_NONE);
+                        ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(second, length);
         NAOS_CHECK_TRUE(second < (length + 1));
         NAOS_CHECK_TRUE(buffer[length] == '\0');
@@ -727,9 +727,9 @@ NAOS_TEST(two_calls_get_the_whole_text)
 
 NAOS_TEST(format_leaves_nothing_allocated_and_format_usage_allocates_nothing)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
-    size_t live = clargs_test_allocator_live();
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
+    size_t live = argx_test_allocator_live();
     size_t sizes[4];
     size_t index;
 
@@ -742,42 +742,42 @@ NAOS_TEST(format_leaves_nothing_allocated_and_format_usage_allocates_nothing)
     {
         char buffer[SINK_SIZE];
         size_t length = LENGTH_UNSET;
-        size_t requests = clargs_test_allocator_requests();
+        size_t requests = argx_test_allocator_requests();
 
-        NAOS_CHECK_TRUE(clargs_help_format_usage(root, narrow, buffer, sizes[index], &length) ==
-                        CLARGS_ERROR_NONE);
+        NAOS_CHECK_TRUE(argx_help_format_usage(root, narrow, buffer, sizes[index], &length) ==
+                        ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, strlen(narrow_usage));
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
 
         length = LENGTH_UNSET;
-        NAOS_CHECK_TRUE(clargs_help_format(root, narrow, buffer, sizes[index], &length) ==
-                        CLARGS_ERROR_NONE);
+        NAOS_CHECK_TRUE(argx_help_format(root, narrow, buffer, sizes[index], &length) ==
+                        ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, strlen(narrow_help));
         /* The help of this schema needs memory, and gives it back. */
-        NAOS_CHECK_TRUE(clargs_test_allocator_requests() > requests);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+        NAOS_CHECK_TRUE(argx_test_allocator_requests() > requests);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
     }
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
     destroy_schema(root, narrow);
 }
 
 /*
- * Makes the first allocation of clargs_help_format() fail, with an array of
+ * Makes the first allocation of argx_help_format() fail, with an array of
  * call.size bytes in the middle of an area of sentinel bytes. The call
- * returns CLARGS_ERROR_OUT_OF_MEMORY; the array holds the empty string, or
+ * returns ARGX_ERROR_OUT_OF_MEMORY; the array holds the empty string, or
  * is untouched with the size 0; no byte outside the array is written; the
  * length, when it is asked for, is 0; nothing stays allocated.
  */
-static void check_out_of_memory(const clargs_command_t *command,
-                                const clargs_help_options_t *options, format_call_t call)
+static void check_out_of_memory(const argx_command_t *command,
+                                const argx_help_options_t *options, format_call_t call)
 {
     char area[AREA_SIZE];
     char want[AREA_SIZE];
     size_t length = LENGTH_UNSET;
-    size_t live = clargs_test_allocator_live();
-    clargs_error_t error;
+    size_t live = argx_test_allocator_live();
+    argx_error_t error;
 
     NAOS_REQUIRE_TRUE(call.size <= (AREA_SIZE - (2 * GUARD_SIZE)));
     NAOS_REQUIRE_TRUE(!call.null_buffer || (call.size == 0));
@@ -785,12 +785,12 @@ static void check_out_of_memory(const clargs_command_t *command,
     memset(area, SENTINEL, sizeof area);
     memset(want, SENTINEL, sizeof want);
 
-    clargs_test_allocator_fail_at(clargs_test_allocator_requests() + 1);
-    error = clargs_help_format(command, options, call.null_buffer ? NULL : (area + GUARD_SIZE),
+    argx_test_allocator_fail_at(argx_test_allocator_requests() + 1);
+    error = argx_help_format(command, options, call.null_buffer ? NULL : (area + GUARD_SIZE),
                                call.size, call.with_length ? &length : NULL);
-    clargs_test_allocator_fail_at(0);
+    argx_test_allocator_fail_at(0);
 
-    NAOS_CHECK_TRUE(error == CLARGS_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_TRUE(error == ARGX_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_UINT_EQ(length, call.with_length ? (size_t)0 : LENGTH_UNSET);
 
     if (call.size != 0)
@@ -805,14 +805,14 @@ static void check_out_of_memory(const clargs_command_t *command,
     NAOS_CHECK_MEM_EQ(area + GUARD_SIZE + call.size, sizeof area - GUARD_SIZE - call.size,
                       want + GUARD_SIZE + call.size, sizeof want - GUARD_SIZE - call.size);
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 NAOS_TEST(format_out_of_memory_empties_the_buffer_and_the_length)
 {
-    clargs_command_t *root = create_schema();
-    clargs_help_options_t *narrow = create_narrow();
+    argx_command_t *root = create_schema();
+    argx_help_options_t *narrow = create_narrow();
     size_t whole = strlen(narrow_help);
     format_call_t call;
     int with_length;
@@ -849,10 +849,10 @@ NAOS_TEST(format_out_of_memory_empties_the_buffer_and_the_length)
         char buffer[SINK_SIZE];
         size_t length = LENGTH_UNSET;
 
-        NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+        NAOS_CHECK_TRUE(argx_command_is_validated(root));
         memset(buffer, SENTINEL, sizeof buffer);
-        NAOS_CHECK_TRUE(clargs_help_format(root, narrow, buffer, sizeof buffer, &length) ==
-                        CLARGS_ERROR_NONE);
+        NAOS_CHECK_TRUE(argx_help_format(root, narrow, buffer, sizeof buffer, &length) ==
+                        ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, whole);
         NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
         NAOS_CHECK_MEM_EQ(buffer, strlen(buffer), narrow_help, whole);

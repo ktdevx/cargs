@@ -4,7 +4,7 @@ This document explains how to pass one command of a validated schema and generat
 
 This document covers generating the help and the usage line, the help options, and the output. Defining and validating a schema is in [Schemas](schema.md). Parsing argv and parse errors are in [Parsing](parse.md). Generation only reads the schema; it does not need a parse result. The library does not print the text anywhere by itself, does not end the process, and reads neither environment variables nor the terminal width. It does not add an option such as `--help` to the schema either.
 
-The detailed description and the preconditions of each function are in the comments of the public header `include/clargs/help.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
+The detailed description and the preconditions of each function are in the comments of the public header `include/argx/help.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
 
 Terms used in this document:
 
@@ -19,8 +19,8 @@ Terms used in this document:
 | annotation | A phrase made from the definition, such as `[default: 6]`, that follows the description text |
 | column | The number of bytes counted from the start of the line. The start of a line is column 0. One byte counts as one column |
 | description column | The column where the descriptions of the items start |
-| help options | The object that holds the width, the indent and the maximum description column (`clargs_help_options_t`) |
-| write function | Your function that receives the generated text (`clargs_help_write_fn_t`) |
+| help options | The object that holds the width, the indent and the maximum description column (`argx_help_options_t`) |
+| write function | Your function that receives the generated text (`argx_help_write_fn_t`) |
 
 Contents:
 
@@ -37,20 +37,20 @@ Contents:
 
 ## A minimal example
 
-The example prints the help of `fetch`, a made-up program, to the standard output, and then prints the usage line alone. The example is one translation unit, and it includes only `<clargs/clargs.h>` and standard headers. You can copy it out and compile it as it is.
+The example prints the help of `fetch`, a made-up program, to the standard output, and then prints the usage line alone. The example is one translation unit, and it includes only `<argx/argx.h>` and standard headers. You can copy it out and compile it as it is.
 
 ```c
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 /* Keeps the result of a call in *error and tells whether the call failed. */
-static bool failed(clargs_error_t *error, clargs_error_t result)
+static bool failed(argx_error_t *error, argx_error_t result)
 {
     *error = result;
-    return result != CLARGS_ERROR_NONE;
+    return result != ARGX_ERROR_NONE;
 }
 
 /*
@@ -65,47 +65,47 @@ static bool write_to_stream(void *user_data, const char *text, size_t length)
 
 int main(void)
 {
-    clargs_command_t *root = NULL;
-    clargs_option_t *option = NULL;
-    clargs_positional_t *positional = NULL;
-    clargs_error_t error;
+    argx_command_t *root = NULL;
+    argx_option_t *option = NULL;
+    argx_positional_t *positional = NULL;
+    argx_error_t error;
     int status = EXIT_FAILURE;
 
     /* The schema. The help is generated from it, so it must be validated. */
-    if (failed(&error, clargs_command_create("fetch", &root)) ||
-        failed(&error, clargs_command_set_description(root, "Download a file.")) ||
-        failed(&error, clargs_command_add_flag(root, 'q', "quiet", &option)) ||
-        failed(&error, clargs_option_set_description(option, "Print nothing.")) ||
+    if (failed(&error, argx_command_create("fetch", &root)) ||
+        failed(&error, argx_command_set_description(root, "Download a file.")) ||
+        failed(&error, argx_command_add_flag(root, 'q', "quiet", &option)) ||
+        failed(&error, argx_option_set_description(option, "Print nothing.")) ||
         failed(&error,
-               clargs_command_add_value(root, 'o', "output", clargs_type_string(), &option)) ||
-        failed(&error, clargs_option_set_description(option, "The file to write.")) ||
-        failed(&error, clargs_option_set_value_name(option, "FILE")) ||
-        failed(&error, clargs_option_set_required(option, true)) ||
-        failed(&error, clargs_command_add_value(root, 'r', "retries", clargs_type_int(), &option)) ||
-        failed(&error, clargs_option_set_description(option, "How often to try again.")) ||
-        failed(&error, clargs_option_set_default(option, "3")) ||
-        failed(&error, clargs_command_add_positional(root, "url", clargs_type_string(),
-                                                     CLARGS_ARITY_REQUIRED, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The address to read.")) ||
-        failed(&error, clargs_command_validate(root, NULL, NULL, NULL)))
+               argx_command_add_value(root, 'o', "output", argx_type_string(), &option)) ||
+        failed(&error, argx_option_set_description(option, "The file to write.")) ||
+        failed(&error, argx_option_set_value_name(option, "FILE")) ||
+        failed(&error, argx_option_set_required(option, true)) ||
+        failed(&error, argx_command_add_value(root, 'r', "retries", argx_type_int(), &option)) ||
+        failed(&error, argx_option_set_description(option, "How often to try again.")) ||
+        failed(&error, argx_option_set_default(option, "3")) ||
+        failed(&error, argx_command_add_positional(root, "url", argx_type_string(),
+                                                     ARGX_ARITY_REQUIRED, &positional)) ||
+        failed(&error, argx_positional_set_description(positional, "The address to read.")) ||
+        failed(&error, argx_command_validate(root, NULL, NULL, NULL)))
     {
-        fprintf(stderr, "fetch: cannot define the command line: %s\n", clargs_error_message(error));
+        fprintf(stderr, "fetch: cannot define the command line: %s\n", argx_error_message(error));
     }
     else
     {
         /* The help of the root, with the default settings (NULL). */
-        error = clargs_help_write(root, NULL, write_to_stream, stdout);
+        error = argx_help_write(root, NULL, write_to_stream, stdout);
 
-        if (error == CLARGS_ERROR_NONE)
+        if (error == ARGX_ERROR_NONE)
         {
             /* The usage line alone: the first line of the help. */
             printf("----\n");
-            error = clargs_help_write_usage(root, NULL, write_to_stream, stdout);
+            error = argx_help_write_usage(root, NULL, write_to_stream, stdout);
         }
 
-        if (error != CLARGS_ERROR_NONE)
+        if (error != ARGX_ERROR_NONE)
         {
-            fprintf(stderr, "fetch: cannot print the help: %s\n", clargs_error_message(error));
+            fprintf(stderr, "fetch: cannot print the help: %s\n", argx_error_message(error));
         }
         else
         {
@@ -113,7 +113,7 @@ int main(void)
         }
     }
 
-    clargs_command_destroy(root);
+    argx_command_destroy(root);
 
     return status;
 }
@@ -141,7 +141,7 @@ Points of the example:
 
 - Generation takes four things: a command of a validated schema, the help options, a write function, and the data passed to the write function. If the help options are `NULL`, the default values are used.
 - The library only passes the text to the write function. The write function decides where it goes. The `write_to_stream` of the example writes to a `FILE *` with `fwrite()` ([Writing to standard output](#writing-to-standard-output)).
-- `clargs_help_write` generates the help, and `clargs_help_write_usage` generates the usage line alone. The `----` line is written by the example program.
+- `argx_help_write` generates the help, and `argx_help_write_usage` generates the usage line alone. The `----` line is written by the example program.
 - The text of the usage line alone is byte for byte the same as the usage line of the help for the same command and help options.
 - The text is made from the definitions of the schema. `<integer>` is the name of the value type of `--retries`, which has no value name set. `[required]` and `[default: 3]` are annotations made from the required and default value definitions.
 - Generation changes neither the schema nor the help options. Nothing that the generating functions return is freed by you.
@@ -153,7 +153,7 @@ The library does not treat `--help` specially. `--help` is a flag that you defin
 The next example uses `pack`, a made-up program. When `--help` is given, it prints the help to the standard output. On a parse error, it prints the message with the usage line to the standard error stream. You can compile this one as it is, too.
 
 ```c
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -162,16 +162,16 @@ The next example uses `pack`, a made-up program. When `--help` is given, it prin
 /* The schema of pack. The root owns all of it. */
 typedef struct pack_schema
 {
-    clargs_command_t *root;
-    clargs_command_t *create;
-    clargs_command_t *list;
+    argx_command_t *root;
+    argx_command_t *create;
+    argx_command_t *list;
 } pack_schema_t;
 
 /* Keeps the result of a call in *error and tells whether the call failed. */
-static bool failed(clargs_error_t *error, clargs_error_t result)
+static bool failed(argx_error_t *error, argx_error_t result)
 {
     *error = result;
-    return result != CLARGS_ERROR_NONE;
+    return result != ARGX_ERROR_NONE;
 }
 
 /*
@@ -179,74 +179,74 @@ static bool failed(clargs_error_t *error, clargs_error_t result)
  * and an option is only known where its command is the current command, so
  * every command gets its own.
  */
-static clargs_error_t add_help(clargs_command_t *command)
+static argx_error_t add_help(argx_command_t *command)
 {
-    clargs_option_t *option = NULL;
-    clargs_error_t error;
+    argx_option_t *option = NULL;
+    argx_error_t error;
 
-    if (failed(&error, clargs_command_add_flag(command, 'h', "help", &option)))
+    if (failed(&error, argx_command_add_flag(command, 'h', "help", &option)))
     {
         return error;
     }
-    return clargs_option_set_description(option, "Print this help.");
+    return argx_option_set_description(option, "Print this help.");
 }
 
 /*
  * Defines the schema. When it fails, schema->root is NULL or a schema that
  * can be destroyed.
  */
-static clargs_error_t define_schema(pack_schema_t *schema)
+static argx_error_t define_schema(pack_schema_t *schema)
 {
-    clargs_option_t *option = NULL;
-    clargs_positional_t *positional = NULL;
-    clargs_error_t error;
+    argx_option_t *option = NULL;
+    argx_positional_t *positional = NULL;
+    argx_error_t error;
 
     schema->root = NULL;
 
-    if (failed(&error, clargs_command_create("pack", &schema->root)) ||
-        failed(&error, clargs_command_set_description(schema->root,
+    if (failed(&error, argx_command_create("pack", &schema->root)) ||
+        failed(&error, argx_command_set_description(schema->root,
                                                       "Pack files into an archive.")) ||
         failed(&error, add_help(schema->root)) ||
-        failed(&error, clargs_command_add_count(schema->root, 'v', "verbose", &option)) ||
-        failed(&error, clargs_option_set_description(option, "Print more; can be repeated.")) ||
-        failed(&error, clargs_command_add_negatable(schema->root, '\0', "color", &option)) ||
-        failed(&error, clargs_option_set_description(option, "Color the output.")) ||
-        failed(&error, clargs_option_set_initial(option, true)))
+        failed(&error, argx_command_add_count(schema->root, 'v', "verbose", &option)) ||
+        failed(&error, argx_option_set_description(option, "Print more; can be repeated.")) ||
+        failed(&error, argx_command_add_negatable(schema->root, '\0', "color", &option)) ||
+        failed(&error, argx_option_set_description(option, "Color the output.")) ||
+        failed(&error, argx_option_set_initial(option, true)))
     {
         return error;
     }
 
-    if (failed(&error, clargs_command_add_subcommand(schema->root, "create", &schema->create)) ||
-        failed(&error, clargs_command_set_description(schema->create, "Create an archive.")) ||
+    if (failed(&error, argx_command_add_subcommand(schema->root, "create", &schema->create)) ||
+        failed(&error, argx_command_set_description(schema->create, "Create an archive.")) ||
         failed(&error, add_help(schema->create)) ||
-        failed(&error, clargs_command_add_value(schema->create, 'o', "output", clargs_type_string(),
+        failed(&error, argx_command_add_value(schema->create, 'o', "output", argx_type_string(),
                                                 &option)) ||
-        failed(&error, clargs_option_set_description(option, "The archive to write.")) ||
-        failed(&error, clargs_option_set_value_name(option, "FILE")) ||
-        failed(&error, clargs_option_set_required(option, true)) ||
+        failed(&error, argx_option_set_description(option, "The archive to write.")) ||
+        failed(&error, argx_option_set_value_name(option, "FILE")) ||
+        failed(&error, argx_option_set_required(option, true)) ||
         failed(&error,
-               clargs_command_add_value(schema->create, 'l', "level", clargs_type_int(), &option)) ||
-        failed(&error, clargs_option_set_description(option, "The compression level.")) ||
-        failed(&error, clargs_option_set_value_name(option, "LEVEL")) ||
-        failed(&error, clargs_option_set_default(option, "6")) ||
-        failed(&error, clargs_command_add_positional(schema->create, "file", clargs_type_string(),
-                                                     CLARGS_ARITY_ONE_OR_MORE, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The files to pack.")))
+               argx_command_add_value(schema->create, 'l', "level", argx_type_int(), &option)) ||
+        failed(&error, argx_option_set_description(option, "The compression level.")) ||
+        failed(&error, argx_option_set_value_name(option, "LEVEL")) ||
+        failed(&error, argx_option_set_default(option, "6")) ||
+        failed(&error, argx_command_add_positional(schema->create, "file", argx_type_string(),
+                                                     ARGX_ARITY_ONE_OR_MORE, &positional)) ||
+        failed(&error, argx_positional_set_description(positional, "The files to pack.")))
     {
         return error;
     }
 
-    if (failed(&error, clargs_command_add_subcommand(schema->root, "list", &schema->list)) ||
+    if (failed(&error, argx_command_add_subcommand(schema->root, "list", &schema->list)) ||
         failed(&error,
-               clargs_command_set_description(schema->list, "List the files of an archive.")) ||
+               argx_command_set_description(schema->list, "List the files of an archive.")) ||
         failed(&error, add_help(schema->list)) ||
-        failed(&error, clargs_command_add_positional(schema->list, "archive", clargs_type_string(),
-                                                     CLARGS_ARITY_REQUIRED, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The archive to read.")) ||
-        failed(&error, clargs_command_add_positional(schema->list, "pattern", clargs_type_string(),
-                                                     CLARGS_ARITY_OPTIONAL, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The files to list.")) ||
-        failed(&error, clargs_positional_set_default(positional, "*")))
+        failed(&error, argx_command_add_positional(schema->list, "archive", argx_type_string(),
+                                                     ARGX_ARITY_REQUIRED, &positional)) ||
+        failed(&error, argx_positional_set_description(positional, "The archive to read.")) ||
+        failed(&error, argx_command_add_positional(schema->list, "pattern", argx_type_string(),
+                                                     ARGX_ARITY_OPTIONAL, &positional)) ||
+        failed(&error, argx_positional_set_description(positional, "The files to list.")) ||
+        failed(&error, argx_positional_set_default(positional, "*")))
     {
         return error;
     }
@@ -255,7 +255,7 @@ static clargs_error_t define_schema(pack_schema_t *schema)
      * A schema must be validated before it is parsed with, and before a
      * help is generated from it.
      */
-    return clargs_command_validate(schema->root, NULL, NULL, NULL);
+    return argx_command_validate(schema->root, NULL, NULL, NULL);
 }
 
 /*
@@ -263,16 +263,16 @@ static clargs_error_t define_schema(pack_schema_t *schema)
  * command line selected. This also works on a result with a parse error:
  * it holds what was read before the error.
  */
-static bool help_was_given(const clargs_result_t *result)
+static bool help_was_given(const argx_result_t *result)
 {
     size_t i;
 
-    for (i = 0; i < clargs_result_command_count(result); ++i)
+    for (i = 0; i < argx_result_command_count(result); ++i)
     {
-        const clargs_command_t *command = clargs_result_command_at(result, i);
-        const clargs_option_t *help = clargs_command_find_long(command, "help", 4, NULL);
+        const argx_command_t *command = argx_result_command_at(result, i);
+        const argx_option_t *help = argx_command_find_long(command, "help", 4, NULL);
 
-        if (help != NULL && clargs_result_flag(result, help))
+        if (help != NULL && argx_result_flag(result, help))
         {
             return true;
         }
@@ -292,22 +292,22 @@ static bool write_to_stream(void *user_data, const char *text, size_t length)
 int main(int argc, char **argv)
 {
     pack_schema_t schema;
-    clargs_result_t *result = NULL;
-    clargs_error_t error;
+    argx_result_t *result = NULL;
+    argx_error_t error;
     int status = EXIT_FAILURE;
 
     if (failed(&error, define_schema(&schema)))
     {
-        fprintf(stderr, "pack: cannot define the command line: %s\n", clargs_error_message(error));
+        fprintf(stderr, "pack: cannot define the command line: %s\n", argx_error_message(error));
     }
     else
     {
-        error = clargs_parse(schema.root, argc, argv, &result);
+        error = argx_parse(schema.root, argc, argv, &result);
 
         if (result == NULL)
         {
-            /* CLARGS_ERROR_OUT_OF_MEMORY: there is no result. */
-            fprintf(stderr, "pack: %s\n", clargs_error_message(error));
+            /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
+            fprintf(stderr, "pack: %s\n", argx_error_message(error));
         }
         else if (help_was_given(result))
         {
@@ -317,20 +317,20 @@ int main(int argc, char **argv)
              * of the command that the command line ends in. Ending the
              * program is up to this code: the library never exits.
              */
-            if (clargs_help_write(clargs_result_command(result), NULL, write_to_stream, stdout) ==
-                CLARGS_ERROR_NONE)
+            if (argx_help_write(argx_result_command(result), NULL, write_to_stream, stdout) ==
+                ARGX_ERROR_NONE)
             {
                 status = EXIT_SUCCESS;
             }
         }
-        else if (error == CLARGS_ERROR_INVALID_COMMAND_LINE)
+        else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
         {
             /*
              * The message, then the usage line of the command in which the
              * error was found, both to the standard error stream.
              */
-            fprintf(stderr, "pack: %s\n", clargs_result_error_message(result));
-            clargs_help_write_usage(clargs_result_error_command(result), NULL, write_to_stream,
+            fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
+            argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream,
                                     stderr);
             fprintf(stderr, "Try 'pack --help' for more information.\n");
         }
@@ -343,8 +343,8 @@ int main(int argc, char **argv)
     }
 
     /* The result first, then the schema it was made from. */
-    clargs_result_destroy(result);
-    clargs_command_destroy(schema.root);
+    argx_result_destroy(result);
+    argx_command_destroy(schema.root);
 
     return status;
 }
@@ -394,8 +394,8 @@ Try 'pack --help' for more information.
 Points of the example:
 
 - You define `--help` on every command yourself (`add_help`). The library never adds it. The `Options:` list of the help shows only the options in the schema, and `--help` appears in the same form as the other options.
-- The command whose help is printed is `clargs_result_command` (the last command that the command line selected). `pack create --help` gives the help of `create`.
-- The command of the usage line printed with a parse error is `clargs_result_error_command` (the current command when the error was found). On a result with a parse error, it is not `NULL`.
+- The command whose help is printed is `argx_result_command` (the last command that the command line selected). `pack create --help` gives the help of `create`.
+- The command of the usage line printed with a parse error is `argx_result_error_command` (the current command when the error was found). On a result with a parse error, it is not `NULL`.
 - The text of the usage line ends with a newline. Do not add a newline when you print it after the message.
 - The library does not end the process. Your code decides the exit status and returns from `main`.
 - You change the destination with the data passed to the write function. The example writes the help to `stdout` and the usage line to `stderr`.
@@ -403,26 +403,26 @@ Points of the example:
 ## Generating functions
 
 ```
-clargs_error_t clargs_help_write(const clargs_command_t *command,
-                                 const clargs_help_options_t *options,
-                                 clargs_help_write_fn_t write_fn, void *user_data);
-clargs_error_t clargs_help_write_usage(const clargs_command_t *command,
-                                       const clargs_help_options_t *options,
-                                       clargs_help_write_fn_t write_fn, void *user_data);
-clargs_error_t clargs_help_format(const clargs_command_t *command,
-                                  const clargs_help_options_t *options,
+argx_error_t argx_help_write(const argx_command_t *command,
+                                 const argx_help_options_t *options,
+                                 argx_help_write_fn_t write_fn, void *user_data);
+argx_error_t argx_help_write_usage(const argx_command_t *command,
+                                       const argx_help_options_t *options,
+                                       argx_help_write_fn_t write_fn, void *user_data);
+argx_error_t argx_help_format(const argx_command_t *command,
+                                  const argx_help_options_t *options,
                                   char *buffer, size_t size, size_t *length);
-clargs_error_t clargs_help_format_usage(const clargs_command_t *command,
-                                        const clargs_help_options_t *options,
+argx_error_t argx_help_format_usage(const argx_command_t *command,
+                                        const argx_help_options_t *options,
                                         char *buffer, size_t size, size_t *length);
 ```
 
 | Function | Generates | Destination |
 |---|---|---|
-| `clargs_help_write` | The help | A write function |
-| `clargs_help_write_usage` | The usage line | A write function |
-| `clargs_help_format` | The help | Your buffer |
-| `clargs_help_format_usage` | The usage line | Your buffer |
+| `argx_help_write` | The help | A write function |
+| `argx_help_write_usage` | The usage line | A write function |
+| `argx_help_format` | The help | Your buffer |
+| `argx_help_format_usage` | The usage line | Your buffer |
 
 - `command` may be the root command or a subcommand at any depth. The schema of that command must be validated ([Preconditions](#preconditions)).
 - `options` are the help options. If you pass `NULL`, every setting has its default value ([Help options](#help-options)).
@@ -505,10 +505,10 @@ The notation of a positional depends on its arity. The headings of the `Argument
 
 | Arity | Notation |
 |---|---|
-| `CLARGS_ARITY_REQUIRED` | `<name>` |
-| `CLARGS_ARITY_OPTIONAL` | `[name]` |
-| `CLARGS_ARITY_ZERO_OR_MORE` | `[name]...` |
-| `CLARGS_ARITY_ONE_OR_MORE` | `<name>...` |
+| `ARGX_ARITY_REQUIRED` | `<name>` |
+| `ARGX_ARITY_OPTIONAL` | `[name]` |
+| `ARGX_ARITY_ZERO_OR_MORE` | `[name]...` |
+| `ARGX_ARITY_ONE_OR_MORE` | `<name>...` |
 
 The name shown when no value name is set is described in [Headings](#headings).
 
@@ -577,7 +577,7 @@ The continuation for each kind:
 | Count | `...` right after the names part | `-v, --verbose...` |
 | Option with a value | After the names part, one blank, `<`, the value name and `>` | `-o, --output <FILE>` |
 
-For an option with a value that has no value name set (`clargs_option_set_value_name`), the name of the value type is shown in place of the value name. The names of the built-in value types are `string`, `integer` and `float`. The name of a choice value type is `choice`, and the name of a user-defined value type is the name passed when the value type was created. The same applies to the required options in the usage line.
+For an option with a value that has no value name set (`argx_option_set_value_name`), the name of the value type is shown in place of the value name. The names of the built-in value types are `string`, `integer` and `float`. The name of a choice value type is `choice`, and the name of a user-defined value type is the name passed when the value type was created. The same applies to the required options in the usage line.
 
 A help that shows every notation:
 
@@ -725,15 +725,15 @@ Options:
 
 ## Help options
 
-The help options (`clargs_help_options_t`) are an object that holds the values that decide the layout of the text. You create them, pass them to the generating functions, and destroy them.
+The help options (`argx_help_options_t`) are an object that holds the values that decide the layout of the text. You create them, pass them to the generating functions, and destroy them.
 
 | To do this | Function | Notes |
 |---|---|---|
-| Create | `clargs_help_options_create` | Every setting has its default value. When the allocation fails, it returns `CLARGS_ERROR_OUT_OF_MEMORY` and `*out` is `NULL` |
-| Destroy | `clargs_help_options_destroy` | `NULL` does nothing |
-| Set the width | `clargs_help_options_set_width` | Cannot fail |
-| Set the indent | `clargs_help_options_set_indent` | Cannot fail |
-| Set the maximum description column | `clargs_help_options_set_max_column` | Cannot fail |
+| Create | `argx_help_options_create` | Every setting has its default value. When the allocation fails, it returns `ARGX_ERROR_OUT_OF_MEMORY` and `*out` is `NULL` |
+| Destroy | `argx_help_options_destroy` | `NULL` does nothing |
+| Set the width | `argx_help_options_set_width` | Cannot fail |
+| Set the indent | `argx_help_options_set_indent` | Cannot fail |
+| Set the maximum description column | `argx_help_options_set_max_column` | Cannot fail |
 
 | Setting | Meaning | Default value |
 |---|---|---|
@@ -753,26 +753,26 @@ The next function prints the help to the standard output at the width 40 (`write
 
 ```c
 /* Prints the help of command to the standard output, 40 columns wide. */
-static clargs_error_t print_narrow_help(const clargs_command_t *command)
+static argx_error_t print_narrow_help(const argx_command_t *command)
 {
-    clargs_help_options_t *options = NULL;
-    clargs_error_t error;
+    argx_help_options_t *options = NULL;
+    argx_error_t error;
 
     /* The settings start with their default values: 80, 2 and 32. */
-    error = clargs_help_options_create(&options);
-    if (error != CLARGS_ERROR_NONE)
+    error = argx_help_options_create(&options);
+    if (error != ARGX_ERROR_NONE)
     {
-        /* CLARGS_ERROR_OUT_OF_MEMORY: options is NULL. */
+        /* ARGX_ERROR_OUT_OF_MEMORY: options is NULL. */
         return error;
     }
 
     /* The functions that set a value cannot fail. */
-    clargs_help_options_set_width(options, 40);
+    argx_help_options_set_width(options, 40);
 
-    error = clargs_help_write(command, options, write_to_stream, stdout);
+    error = argx_help_write(command, options, write_to_stream, stdout);
 
     /* The settings belong to the caller. */
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     return error;
 }
 ```
@@ -807,7 +807,7 @@ The generating functions pass the text to a write function, or write it into you
 ### The write function contract
 
 ```
-typedef bool (*clargs_help_write_fn_t)(void *user_data, const char *text, size_t length);
+typedef bool (*argx_help_write_fn_t)(void *user_data, const char *text, size_t length);
 ```
 
 The library passes the text to the write function from the start, in order, split into several parts.
@@ -818,7 +818,7 @@ The library passes the text to the write function from the start, in order, spli
 - The calls are made in order from the start of the text. Joining the parts in the order of the calls gives the whole text.
 - How many parts the text is split into, and where, is not specified. It may change between versions. Do not assume that a part is one line or one word.
 - `text` is valid only during that call. If you use it later, copy it inside the call.
-- Return `true` if the part was written, and `false` if it could not be written. When it returns `false`, generation stops there, and the write function is not called again for that generation. The generating function returns `CLARGS_ERROR_WRITE_FAILED`.
+- Return `true` if the part was written, and `false` if it could not be written. When it returns `false`, generation stops there, and the write function is not called again for that generation. The generating function returns `ARGX_ERROR_WRITE_FAILED`.
 - Inside the write function, do not change or destroy the schema passed to the generation.
 
 ### Writing to standard output
@@ -838,17 +838,17 @@ static bool write_to_stream(void *user_data, const char *text, size_t length)
 ```
 
 ```
-error = clargs_help_write(root, NULL, write_to_stream, stdout);
+error = argx_help_write(root, NULL, write_to_stream, stdout);
 ```
 
-- If `fwrite()` wrote fewer bytes than `length`, it returns `false`. Generation stops, and `CLARGS_ERROR_WRITE_FAILED` is returned.
+- If `fwrite()` wrote fewer bytes than `length`, it returns `false`. Generation stops, and `ARGX_ERROR_WRITE_FAILED` is returned.
 - `text` is not terminated, so it cannot be passed to `fputs()` or `printf("%s")`.
 - The write function is called many times, in units of words and blanks. A `FILE *` is buffered by the standard library, so this is not a problem. When you write to a destination that is not buffered, collect the parts in the write function.
 - **On a stream in text mode, newlines are converted on Windows.** The only newline that the library passes is `\n`. `stdout` is usually in text mode, and on Windows each `\n` written comes out as `\r\n`. For output to a terminal, this is correct. When you compare the output byte for byte, or keep `\n` as it is in a file, write to a stream opened in binary mode (add `b` to the mode of `fopen()`).
 
 ### Formatting into a buffer
 
-`clargs_help_format` and `clargs_help_format_usage` write the text as a string into an array that you provide. No write function is needed.
+`argx_help_format` and `argx_help_format_usage` write the text as a string into an array that you provide. No write function is needed.
 
 | `size` | What is written into `buffer` |
 |---|---|
@@ -856,8 +856,8 @@ error = clargs_help_write(root, NULL, write_to_stream, stdout);
 | 1 or greater | As much of the text from the start as fits (at most `size - 1` bytes), followed by a terminating null character. Nothing is written outside the array |
 
 - If `length` is not `NULL`, `*length` receives the length of the whole text (not counting the terminating null character), whether or not it fit.
-- A text that does not fit is truncated. **Truncation is not a failure: `CLARGS_ERROR_NONE` is returned.** If `*length` is `size` or greater, the text was truncated. A truncated text may end in the middle of a line.
-- The text is byte for byte the same as the text that `clargs_help_write` and `clargs_help_write_usage` pass to a write function for the same command and help options.
+- A text that does not fit is truncated. **Truncation is not a failure: `ARGX_ERROR_NONE` is returned.** If `*length` is `size` or greater, the text was truncated. A truncated text may end in the middle of a line.
+- The text is byte for byte the same as the text that `argx_help_write` and `argx_help_write_usage` pass to a write function for the same command and help options.
 
 To get the whole text, call twice. The first call passes `size` 0 and `buffer` `NULL`, and gets the length. The second call passes an array of `*length + 1` bytes.
 
@@ -866,7 +866,7 @@ To get the whole text, call twice. The first call passes `size` 0 and `buffer` `
  * Returns the help of command as a string that the caller frees with
  * free(), or NULL when it cannot be made.
  */
-static char *help_string(const clargs_command_t *command)
+static char *help_string(const argx_command_t *command)
 {
     char *text = NULL;
     size_t length = 0;
@@ -875,7 +875,7 @@ static char *help_string(const clargs_command_t *command)
      * First the length: with the size 0 nothing is written, and the buffer
      * may be NULL.
      */
-    if (clargs_help_format(command, NULL, NULL, 0, &length) != CLARGS_ERROR_NONE)
+    if (argx_help_format(command, NULL, NULL, 0, &length) != ARGX_ERROR_NONE)
     {
         return NULL;
     }
@@ -890,7 +890,7 @@ static char *help_string(const clargs_command_t *command)
      * Then the text. The schema and the settings are the same as in the
      * first call, so the text has the same length and fits.
      */
-    if (clargs_help_format(command, NULL, text, length + 1, NULL) != CLARGS_ERROR_NONE)
+    if (argx_help_format(command, NULL, text, length + 1, NULL) != ARGX_ERROR_NONE)
     {
         free(text);
         return NULL;
@@ -899,17 +899,17 @@ static char *help_string(const clargs_command_t *command)
 }
 ```
 
-The next example receives the usage line in a fixed-size array. `clargs_help_format_usage` cannot fail, so the return value is not checked.
+The next example receives the usage line in a fixed-size array. `argx_help_format_usage` cannot fail, so the return value is not checked.
 
 ```c
 /* Prints an error message with the usage line of command behind it. */
-static void print_error(const clargs_command_t *command, const char *message)
+static void print_error(const argx_command_t *command, const char *message)
 {
     char usage[256];
     size_t length = 0;
 
     /* The usage line cannot fail. It is cut when it does not fit. */
-    clargs_help_format_usage(command, NULL, usage, sizeof(usage), &length);
+    argx_help_format_usage(command, NULL, usage, sizeof(usage), &length);
 
     if (length >= sizeof(usage))
     {
@@ -981,56 +981,56 @@ static void print_error(const clargs_command_t *command, const char *message)
 
 ## On failure
 
-There are two runtime failures: a write failure and an allocation failure. Both are reported by the returned `clargs_error_t`.
+There are two runtime failures: a write failure and an allocation failure. Both are reported by the returned `argx_error_t`.
 
 | Return value | Meaning | Returned by |
 |---|---|---|
-| `CLARGS_ERROR_NONE` | Success. For the functions that format into a buffer, truncation is also a success | All |
-| `CLARGS_ERROR_WRITE_FAILED` | The write function returned `false` | `clargs_help_write`, `clargs_help_write_usage` |
-| `CLARGS_ERROR_OUT_OF_MEMORY` | An allocation failed | `clargs_help_write`, `clargs_help_format`, `clargs_help_options_create` |
+| `ARGX_ERROR_NONE` | Success. For the functions that format into a buffer, truncation is also a success | All |
+| `ARGX_ERROR_WRITE_FAILED` | The write function returned `false` | `argx_help_write`, `argx_help_write_usage` |
+| `ARGX_ERROR_OUT_OF_MEMORY` | An allocation failed | `argx_help_write`, `argx_help_format`, `argx_help_options_create` |
 
 **When generation fails, the text passed to the write function before the failure stays at the destination.** The library cannot take back text it has passed.
 
 | Function | Failure | What is left at the destination |
 |---|---|---|
-| `clargs_help_write`, `clargs_help_write_usage` | Write failure | The parts received by the calls in which the write function returned `true`. This is the text from the start up to some position. It may end in the middle of a line |
-| `clargs_help_write` | Allocation failure | The text from the start up to the line of the item (an option or a positional) that needed the allocation. It ends with the newline of the line before |
-| `clargs_help_format` | Allocation failure | If `size` is not 0, `buffer` holds the empty string. `*length` is 0. If `size` is 0, nothing is written into `buffer` |
-| `clargs_help_options_create` | Allocation failure | `*out` is `NULL` |
+| `argx_help_write`, `argx_help_write_usage` | Write failure | The parts received by the calls in which the write function returned `true`. This is the text from the start up to some position. It may end in the middle of a line |
+| `argx_help_write` | Allocation failure | The text from the start up to the line of the item (an option or a positional) that needed the allocation. It ends with the newline of the line before |
+| `argx_help_format` | Allocation failure | If `size` is not 0, `buffer` holds the empty string. `*length` is 0. If `size` is 0, nothing is written into `buffer` |
+| `argx_help_options_create` | Allocation failure | `*out` is `NULL` |
 
 - After a write failure, the write function is not called again for that generation.
-- When `clargs_help_format` fails to allocate, `buffer` holds the empty string, but the contents of the bytes of the array after the terminating null character are unspecified. Part of the text generated before the failure may be left there. Nothing is written outside the array.
-- Generating the usage line alone (`clargs_help_write_usage`, `clargs_help_format_usage`) allocates no memory. It never returns `CLARGS_ERROR_OUT_OF_MEMORY`. `clargs_help_format_usage` cannot fail.
-- `clargs_help_format` does not return `CLARGS_ERROR_WRITE_FAILED`.
+- When `argx_help_format` fails to allocate, `buffer` holds the empty string, but the contents of the bytes of the array after the terminating null character are unspecified. Part of the text generated before the failure may be left there. Nothing is written outside the array.
+- Generating the usage line alone (`argx_help_write_usage`, `argx_help_format_usage`) allocates no memory. It never returns `ARGX_ERROR_OUT_OF_MEMORY`. `argx_help_format_usage` cannot fail.
+- `argx_help_format` does not return `ARGX_ERROR_WRITE_FAILED`.
 - A failure changes neither the schema nor the help options. All memory allocated for the generation is freed before the function returns, on success and on failure. After a failure, you can generate again with the same schema and help options.
-- If you do not want partial text left at the destination, format into a buffer with `clargs_help_format`, check that it succeeded, and then write it out.
+- If you do not want partial text left at the destination, format into a buffer with `argx_help_format`, check that it succeeded, and then write it out.
 - A `NULL` argument, or a schema that is not validated, is not a failure but a programming error ([Preconditions](#preconditions)).
 
 ## Lifetime rules
 
 | Thing | Owner | Valid for |
 |---|---|---|
-| Help options (`clargs_help_options_t`) | You, who created them | Until destroyed with `clargs_help_options_destroy`. They are independent of the schema, and either may be destroyed first |
+| Help options (`argx_help_options_t`) | You, who created them | Until destroyed with `argx_help_options_destroy`. They are independent of the schema, and either may be destroyed first |
 | `text` passed to the write function | The library or the schema | Only during that call. You neither free nor change it |
 | Buffer (`buffer`) | You | It needs to be valid only during the call of the generation. The library does not refer to it after the call returns |
 | The schema and the value types it uses | You | Neither changed nor destroyed during the call of the generation |
 
 - The generating functions borrow the schema and the help options only during the call. They change neither of them, and do not refer to them after returning.
 - Nothing that the generating functions return is freed by you. No function returns a string allocated by the library.
-- Memory for the generation is allocated from the allocator set for the library (`clargs_set_allocator`), and freed before the function returns. The help options object is also allocated from the same allocator. Do not set the allocator again while a help options object still exists ([Ownership and Lifetime](ownership.md#5-allocator)).
+- Memory for the generation is allocated from the allocator set for the library (`argx_set_allocator`), and freed before the function returns. The help options object is also allocated from the same allocator. Do not set the allocator again while a help options object still exists ([Ownership and Lifetime](ownership.md#5-allocator)).
 - While the schema and the help options are not being changed, generation with the same schema and help options can be called from several threads at the same time. Pass a different buffer to each call. Whether the write function works correctly when called at the same time depends on your write function.
 
 ## Preconditions
 
-Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The preconditions of each function are also written in the comments of the public header `include/clargs/help.h`, under `Preconditions:`.
+Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The preconditions of each function are also written in the comments of the public header `include/argx/help.h`, under `Preconditions:`.
 
 | Function | Preconditions checked with `assert` | Preconditions not checked |
 |---|---|---|
-| `clargs_help_options_create` | `out` is not `NULL` | None |
-| `clargs_help_options_destroy` | None | `options` is `NULL` or help options that have not been destroyed. No other thread is using those help options |
-| `clargs_help_options_set_width`, `clargs_help_options_set_indent`, `clargs_help_options_set_max_column` | `options` is not `NULL` | `options` has not been destroyed. During the call, no other thread is using those help options |
-| `clargs_help_write`, `clargs_help_write_usage` | `command` is not `NULL`. The schema of `command` has been validated (`clargs_command_is_validated`). `write_fn` is not `NULL` | The ones common to generation. The write function neither changes nor destroys the schema |
-| `clargs_help_format`, `clargs_help_format_usage` | `command` is not `NULL`. The schema of `command` has been validated (`clargs_command_is_validated`). If `size` is not 0, `buffer` is not `NULL` | The ones common to generation. `buffer` points to an array of at least `size` bytes |
+| `argx_help_options_create` | `out` is not `NULL` | None |
+| `argx_help_options_destroy` | None | `options` is `NULL` or help options that have not been destroyed. No other thread is using those help options |
+| `argx_help_options_set_width`, `argx_help_options_set_indent`, `argx_help_options_set_max_column` | `options` is not `NULL` | `options` has not been destroyed. During the call, no other thread is using those help options |
+| `argx_help_write`, `argx_help_write_usage` | `command` is not `NULL`. The schema of `command` has been validated (`argx_command_is_validated`). `write_fn` is not `NULL` | The ones common to generation. The write function neither changes nor destroys the schema |
+| `argx_help_format`, `argx_help_format_usage` | `command` is not `NULL`. The schema of `command` has been validated (`argx_command_is_validated`). If `size` is not 0, `buffer` is not `NULL` | The ones common to generation. `buffer` points to an array of at least `size` bytes |
 
 The preconditions common to generation, not checked:
 
@@ -1040,8 +1040,8 @@ The preconditions common to generation, not checked:
 Arguments that may be `NULL`:
 
 - The `options` of the generating functions (the default values are used).
-- The `user_data` of `clargs_help_write` and `clargs_help_write_usage`.
-- The `length` of `clargs_help_format` and `clargs_help_format_usage` (the length is not received), and `buffer` when `size` is 0.
-- The `options` of `clargs_help_options_destroy`.
+- The `user_data` of `argx_help_write` and `argx_help_write_usage`.
+- The `length` of `argx_help_format` and `argx_help_format_usage` (the length is not received), and `buffer` when `size` is 0.
+- The `options` of `argx_help_options_destroy`.
 
 Passing a schema that is not validated to generation violates a precondition. Adding a definition element to the schema or setting an attribute makes the schema unvalidated again, so validate it again before generating. When you pass a subcommand, it is still its root that you validate ([Schemas](schema.md#validation-and-finding-the-cause-of-a-failure)).

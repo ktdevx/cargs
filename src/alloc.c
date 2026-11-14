@@ -1,11 +1,11 @@
 /*
- * CLArgs - the allocator that is set, the default allocator and the internal
+ * ArgX - the allocator that is set, the default allocator and the internal
  * memory functions.
  *
  * This is the only source file of the library that uses the standard
  * malloc, realloc, calloc and free.
  */
-#include <clargs/alloc.h>
+#include <argx/alloc.h>
 
 #include "alloc_internal.h"
 
@@ -42,15 +42,15 @@ static void default_free(void *ptr)
 
 #define DEFAULT_ALLOCATOR { default_malloc, default_realloc, default_calloc, default_free }
 
-static const clargs_allocator_t default_allocator = DEFAULT_ALLOCATOR;
+static const argx_allocator_t default_allocator = DEFAULT_ALLOCATOR;
 
 /*
  * The allocator that is set. This is the only mutable global state of the
- * library. Only clargs_set_allocator() writes it.
+ * library. Only argx_set_allocator() writes it.
  */
-static clargs_allocator_t current_allocator = DEFAULT_ALLOCATOR;
+static argx_allocator_t current_allocator = DEFAULT_ALLOCATOR;
 
-void clargs_set_allocator(const clargs_allocator_t *allocator)
+void argx_set_allocator(const argx_allocator_t *allocator)
 {
     if (allocator == NULL)
     {
@@ -66,7 +66,7 @@ void clargs_set_allocator(const clargs_allocator_t *allocator)
     current_allocator = *allocator;
 }
 
-void *clargs_malloc(size_t size)
+void *argx_malloc(size_t size)
 {
     if (size == 0)
     {
@@ -76,7 +76,7 @@ void *clargs_malloc(size_t size)
     return current_allocator.malloc_fn(size);
 }
 
-void *clargs_calloc(size_t count, size_t size)
+void *argx_calloc(size_t count, size_t size)
 {
     if ((count == 0) || (size == 0))
     {
@@ -91,22 +91,22 @@ void *clargs_calloc(size_t count, size_t size)
     return current_allocator.calloc_fn(count, size);
 }
 
-void *clargs_realloc(void *ptr, size_t size)
+void *argx_realloc(void *ptr, size_t size)
 {
     if (ptr == NULL)
     {
-        return clargs_malloc(size);
+        return argx_malloc(size);
     }
     if (size == 0)
     {
-        clargs_free(ptr);
+        argx_free(ptr);
         return NULL;
     }
 
     return current_allocator.realloc_fn(ptr, size);
 }
 
-void clargs_free(void *ptr)
+void argx_free(void *ptr)
 {
     if (ptr == NULL)
     {

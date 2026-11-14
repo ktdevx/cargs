@@ -1,11 +1,11 @@
 /*
  * Tests of the failure of an allocation, across the help: the functions of
- * <clargs/help.h> that allocate.
+ * <argx/help.h> that allocate.
  *
  * The help options are the only object of the help that the caller creates
  * and destroys. The tests check that creating and destroying them leaves
  * nothing allocated, that a creation whose allocation fails returns
- * CLARGS_ERROR_OUT_OF_MEMORY, writes NULL to its output and keeps no
+ * ARGX_ERROR_OUT_OF_MEMORY, writes NULL to its output and keeps no
  * block, that destroying NULL does nothing, and that the functions that
  * set a setting never allocate.
  *
@@ -13,11 +13,11 @@
  * positional: when the first cell that is not empty is built, and again
  * whenever a cell is longer than every cell before it. The tests take a
  * schema with annotations and long descriptions, count the requests of a
- * generation, and make each of them fail in turn, for clargs_help_write()
- * and for clargs_help_format(). Every failure returns
- * CLARGS_ERROR_OUT_OF_MEMORY and keeps no block; the write function has
+ * generation, and make each of them fail in turn, for argx_help_write()
+ * and for argx_help_format(). Every failure returns
+ * ARGX_ERROR_OUT_OF_MEMORY and keeps no block; the write function has
  * received a start of the text that ends with a whole line; the array of
- * clargs_help_format() holds the empty string, or is untouched with the
+ * argx_help_format() holds the empty string, or is untouched with the
  * size 0, and the length is 0. After every failure the schema reads as
  * before, and every generation gives the text it gave before. The usage
  * line alone is generated without a request.
@@ -27,7 +27,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -47,7 +47,7 @@
 #define SINK_SIZE ((size_t)4096)
 
 /*
- * The bytes before the array that clargs_help_format() is given, and the
+ * The bytes before the array that argx_help_format() is given, and the
  * least number of bytes behind it: they must stay as they were.
  */
 #define GUARD_SIZE ((size_t)16)
@@ -92,16 +92,16 @@
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /*
- * Help options that are not a result of clargs_help_options_create(): what
+ * Help options that are not a result of argx_help_options_create(): what
  * an output holds before the call, so that a call that does not write its
  * output is seen. It is never read through.
  */
-static clargs_help_options_t *stale_options(void)
+static argx_help_options_t *stale_options(void)
 {
     /* Aligned for an object of any type, as allocated memory is. */
     static union
@@ -112,27 +112,27 @@ static clargs_help_options_t *stale_options(void)
         void (*function)(void);
     } object;
 
-    return (clargs_help_options_t *)(void *)&object;
+    return (argx_help_options_t *)(void *)&object;
 }
 
 NAOS_TEST(creating_and_destroying_help_options_leaves_nothing_allocated)
 {
-    clargs_help_options_t *options = stale_options();
+    argx_help_options_t *options = stale_options();
 
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_CHECK_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(options != NULL);
     NAOS_CHECK_TRUE(options != stale_options());
-    NAOS_CHECK_TRUE(clargs_test_allocator_requests() >= 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), clargs_test_allocator_requests());
+    NAOS_CHECK_TRUE(argx_test_allocator_requests() >= 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), argx_test_allocator_requests());
 
     if (options != stale_options())
     {
-        clargs_help_options_destroy(options);
+        argx_help_options_destroy(options);
     }
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -141,35 +141,35 @@ NAOS_TEST(creating_help_options_fails_cleanly_at_every_allocation_point)
     bool completed = false;
     size_t n;
 
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
     for (n = 1; n <= REQUEST_LIMIT; ++n)
     {
-        clargs_help_options_t *options = stale_options();
-        clargs_error_t error;
+        argx_help_options_t *options = stale_options();
+        argx_error_t error;
 
-        clargs_test_allocator_reset();
-        clargs_test_allocator_fail_at(n);
+        argx_test_allocator_reset();
+        argx_test_allocator_fail_at(n);
 
-        error = clargs_help_options_create(&options);
+        error = argx_help_options_create(&options);
 
-        if (error == CLARGS_ERROR_NONE)
+        if (error == ARGX_ERROR_NONE)
         {
             /*
              * The creation ended before the request to fail was reached:
              * every allocation point has failed once. The creation is not
              * an operation without requests.
              */
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n - 1);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), n - 1);
             NAOS_CHECK_TRUE(n > 1);
             NAOS_CHECK_TRUE(options != NULL);
             NAOS_CHECK_TRUE(options != stale_options());
             if (options != stale_options())
             {
-                clargs_help_options_destroy(options);
+                argx_help_options_destroy(options);
             }
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
             completed = true;
             break;
         }
@@ -178,57 +178,57 @@ NAOS_TEST(creating_help_options_fails_cleanly_at_every_allocation_point)
          * The nth request failed, and the creation reported it: the output
          * is NULL and no block is kept.
          */
-        NAOS_CHECK_TRUE(error == CLARGS_ERROR_OUT_OF_MEMORY);
+        NAOS_CHECK_TRUE(error == ARGX_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_TRUE(options == NULL);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), n);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
     }
 
     NAOS_CHECK_TRUE(completed);
 
     /* After the failures, a creation succeeds as before. */
     {
-        clargs_help_options_t *options = stale_options();
+        argx_help_options_t *options = stale_options();
 
-        clargs_test_allocator_reset();
-        NAOS_CHECK_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+        argx_test_allocator_reset();
+        NAOS_CHECK_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
         NAOS_CHECK_TRUE(options != NULL);
         if (options != stale_options())
         {
-            clargs_help_options_destroy(options);
+            argx_help_options_destroy(options);
         }
     }
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(destroying_null_help_options_does_nothing)
 {
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
-    clargs_help_options_destroy(NULL);
-    clargs_help_options_destroy(NULL);
+    argx_help_options_destroy(NULL);
+    argx_help_options_destroy(NULL);
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 NAOS_TEST(setting_help_options_never_allocates)
 {
-    clargs_help_options_t *options = NULL;
+    argx_help_options_t *options = NULL;
     size_t requests;
     size_t live;
 
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(options != NULL);
-    requests = clargs_test_allocator_requests();
-    live = clargs_test_allocator_live();
+    requests = argx_test_allocator_requests();
+    live = argx_test_allocator_live();
     NAOS_CHECK_UINT_EQ(live, 1);
 
     /*
@@ -236,32 +236,32 @@ NAOS_TEST(setting_help_options_never_allocates)
      * limit, a value above the limit and the greatest size_t, each setting
      * set more than once.
      */
-    clargs_test_allocator_fail_at(requests + 1);
+    argx_test_allocator_fail_at(requests + 1);
 
-    clargs_help_options_set_width(options, 100);
-    clargs_help_options_set_width(options, 0);
-    clargs_help_options_set_width(options, 65535);
-    clargs_help_options_set_width(options, 65536);
-    clargs_help_options_set_width(options, (size_t)-1);
+    argx_help_options_set_width(options, 100);
+    argx_help_options_set_width(options, 0);
+    argx_help_options_set_width(options, 65535);
+    argx_help_options_set_width(options, 65536);
+    argx_help_options_set_width(options, (size_t)-1);
 
-    clargs_help_options_set_indent(options, 4);
-    clargs_help_options_set_indent(options, 0);
-    clargs_help_options_set_indent(options, 65535);
-    clargs_help_options_set_indent(options, 65536);
-    clargs_help_options_set_indent(options, (size_t)-1);
+    argx_help_options_set_indent(options, 4);
+    argx_help_options_set_indent(options, 0);
+    argx_help_options_set_indent(options, 65535);
+    argx_help_options_set_indent(options, 65536);
+    argx_help_options_set_indent(options, (size_t)-1);
 
-    clargs_help_options_set_max_column(options, 24);
-    clargs_help_options_set_max_column(options, 0);
-    clargs_help_options_set_max_column(options, 65535);
-    clargs_help_options_set_max_column(options, 65536);
-    clargs_help_options_set_max_column(options, (size_t)-1);
+    argx_help_options_set_max_column(options, 24);
+    argx_help_options_set_max_column(options, 0);
+    argx_help_options_set_max_column(options, 65535);
+    argx_help_options_set_max_column(options, 65536);
+    argx_help_options_set_max_column(options, (size_t)-1);
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -307,8 +307,8 @@ static bool sink_write(void *user_data, const char *text, size_t length)
 }
 
 /*
- * A picture of a schema: everything that the functions of <clargs/schema.h>
- * and <clargs/type.h> tell about it, as a text, and the pointers that they
+ * A picture of a schema: everything that the functions of <argx/schema.h>
+ * and <argx/type.h> tell about it, as a text, and the pointers that they
  * return, in the order of the reading. Two pictures of a schema that did
  * not change are equal byte by byte.
  */
@@ -389,7 +389,7 @@ static void put_count(picture_t *picture, const char *label, size_t count)
  * Appends the label and the value type: its name, its kind, the size of
  * its value and its choices; "none" for NULL.
  */
-static void put_type(picture_t *picture, const char *label, const clargs_type_t *type)
+static void put_type(picture_t *picture, const char *label, const argx_type_t *type)
 {
     size_t index;
 
@@ -400,86 +400,86 @@ static void put_type(picture_t *picture, const char *label, const clargs_type_t 
         put(picture, "none");
         return;
     }
-    put_text(picture, "{name=", clargs_type_name(type));
-    put_count(picture, " kind=", (size_t)clargs_type_kind(type));
-    put_count(picture, " size=", clargs_type_value_size(type));
-    put_count(picture, " choices=", clargs_type_choice_count(type));
-    for (index = 0; index < clargs_type_choice_count(type); ++index)
+    put_text(picture, "{name=", argx_type_name(type));
+    put_count(picture, " kind=", (size_t)argx_type_kind(type));
+    put_count(picture, " size=", argx_type_value_size(type));
+    put_count(picture, " choices=", argx_type_choice_count(type));
+    for (index = 0; index < argx_type_choice_count(type); ++index)
     {
-        put_text(picture, " ", clargs_type_choice_at(type, index));
+        put_text(picture, " ", argx_type_choice_at(type, index));
     }
     put(picture, "}");
 }
 
 /* Appends the option with all that can be read of it. */
-static void put_option(picture_t *picture, const clargs_option_t *option)
+static void put_option(picture_t *picture, const argx_option_t *option)
 {
     char short_name[2];
 
-    short_name[0] = clargs_option_short_name(option);
+    short_name[0] = argx_option_short_name(option);
     short_name[1] = '\0';
 
     put_pointer(picture, option);
-    put_pointer(picture, clargs_option_command(option));
-    put_count(picture, "  option kind=", (size_t)clargs_option_kind(option));
+    put_pointer(picture, argx_option_command(option));
+    put_count(picture, "  option kind=", (size_t)argx_option_kind(option));
     put(picture, " short=[");
     put(picture, short_name);
     put(picture, "]");
-    put_text(picture, " long=", clargs_option_long_name(option));
-    put_text(picture, " negated=", clargs_option_negated_name(option));
-    put_type(picture, " type=", clargs_option_type(option));
-    put_text(picture, " description=", clargs_option_description(option));
-    put_text(picture, " value_name=", clargs_option_value_name(option));
-    put_count(picture, " required=", clargs_option_is_required(option) ? 1u : 0u);
-    put_text(picture, " default=", clargs_option_default(option));
-    put_count(picture, " initial=", clargs_option_initial(option) ? 1u : 0u);
+    put_text(picture, " long=", argx_option_long_name(option));
+    put_text(picture, " negated=", argx_option_negated_name(option));
+    put_type(picture, " type=", argx_option_type(option));
+    put_text(picture, " description=", argx_option_description(option));
+    put_text(picture, " value_name=", argx_option_value_name(option));
+    put_count(picture, " required=", argx_option_is_required(option) ? 1u : 0u);
+    put_text(picture, " default=", argx_option_default(option));
+    put_count(picture, " initial=", argx_option_initial(option) ? 1u : 0u);
     put(picture, "\n");
 }
 
 /* Appends the positional with all that can be read of it. */
-static void put_positional(picture_t *picture, const clargs_positional_t *positional)
+static void put_positional(picture_t *picture, const argx_positional_t *positional)
 {
     put_pointer(picture, positional);
-    put_pointer(picture, clargs_positional_command(positional));
-    put_text(picture, "  positional ", clargs_positional_name(positional));
-    put_count(picture, " arity=", (size_t)clargs_positional_arity(positional));
-    put_type(picture, " type=", clargs_positional_type(positional));
-    put_text(picture, " description=", clargs_positional_description(positional));
-    put_text(picture, " default=", clargs_positional_default(positional));
+    put_pointer(picture, argx_positional_command(positional));
+    put_text(picture, "  positional ", argx_positional_name(positional));
+    put_count(picture, " arity=", (size_t)argx_positional_arity(positional));
+    put_type(picture, " type=", argx_positional_type(positional));
+    put_text(picture, " description=", argx_positional_description(positional));
+    put_text(picture, " default=", argx_positional_default(positional));
     put(picture, "\n");
 }
 
 /* Appends the command, and then every command below it. */
-static void put_command(picture_t *picture, const clargs_command_t *command)
+static void put_command(picture_t *picture, const argx_command_t *command)
 {
     size_t index;
 
     put_pointer(picture, command);
-    put_pointer(picture, clargs_command_parent(command));
-    put_text(picture, "command ", clargs_command_name(command));
-    put_text(picture, " description=", clargs_command_description(command));
-    put_count(picture, " validated=", clargs_command_is_validated(command) ? 1u : 0u);
-    put_count(picture, " options=", clargs_command_option_count(command));
-    put_count(picture, " positionals=", clargs_command_positional_count(command));
-    put_count(picture, " subcommands=", clargs_command_subcommand_count(command));
+    put_pointer(picture, argx_command_parent(command));
+    put_text(picture, "command ", argx_command_name(command));
+    put_text(picture, " description=", argx_command_description(command));
+    put_count(picture, " validated=", argx_command_is_validated(command) ? 1u : 0u);
+    put_count(picture, " options=", argx_command_option_count(command));
+    put_count(picture, " positionals=", argx_command_positional_count(command));
+    put_count(picture, " subcommands=", argx_command_subcommand_count(command));
     put(picture, "\n");
 
-    for (index = 0; index < clargs_command_option_count(command); ++index)
+    for (index = 0; index < argx_command_option_count(command); ++index)
     {
-        put_option(picture, clargs_command_option_at(command, index));
+        put_option(picture, argx_command_option_at(command, index));
     }
-    for (index = 0; index < clargs_command_positional_count(command); ++index)
+    for (index = 0; index < argx_command_positional_count(command); ++index)
     {
-        put_positional(picture, clargs_command_positional_at(command, index));
+        put_positional(picture, argx_command_positional_at(command, index));
     }
-    for (index = 0; index < clargs_command_subcommand_count(command); ++index)
+    for (index = 0; index < argx_command_subcommand_count(command); ++index)
     {
-        put_command(picture, clargs_command_subcommand_at(command, index));
+        put_command(picture, argx_command_subcommand_at(command, index));
     }
 }
 
 /* Makes picture the picture of the tree of root. */
-static void draw(picture_t *picture, const clargs_command_t *root)
+static void draw(picture_t *picture, const argx_command_t *root)
 {
     memset(picture, 0, sizeof *picture);
     put_command(picture, root);
@@ -492,8 +492,8 @@ static void draw(picture_t *picture, const clargs_command_t *root)
  */
 typedef struct help_case
 {
-    const clargs_command_t *command;
-    const clargs_help_options_t *options; /* NULL: the default settings */
+    const argx_command_t *command;
+    const argx_help_options_t *options; /* NULL: the default settings */
     char text[SINK_SIZE];                 /* the help */
     size_t length;
     size_t requests;                      /* of one generation of the help */
@@ -507,10 +507,10 @@ typedef struct help_case
  */
 typedef struct fixture
 {
-    clargs_type_t *format; /* the choices of --format */
-    clargs_type_t *target; /* the choices of <target> and of --mode */
-    clargs_command_t *root;
-    clargs_help_options_t *narrow; /* width 40, indent 4, column 20 at most */
+    argx_type_t *format; /* the choices of --format */
+    argx_type_t *target; /* the choices of <target> and of --mode */
+    argx_command_t *root;
+    argx_help_options_t *narrow; /* width 40, indent 4, column 20 at most */
     help_case_t cases[CASE_COUNT];
     picture_t before;
 } fixture_t;
@@ -519,50 +519,50 @@ typedef struct fixture
  * Adds an option with a value to command and sets what is not NULL or
  * false; it must succeed.
  */
-static void add_value(clargs_command_t *command, char short_name, const char *long_name,
-                      const clargs_type_t *type, const char *value_name, const char *default_value,
+static void add_value(argx_command_t *command, char short_name, const char *long_name,
+                      const argx_type_t *type, const char *value_name, const char *default_value,
                       bool required, const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, type, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (value_name != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, value_name) == ARGX_ERROR_NONE);
     }
     if (default_value != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_default(option, default_value) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_default(option, default_value) == ARGX_ERROR_NONE);
     }
     if (required)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_required(option, true) == ARGX_ERROR_NONE);
     }
-    NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
 }
 
 /*
  * Adds a positional to command, with a default value when default_value is
  * not NULL; it must succeed.
  */
-static void add_positional(clargs_command_t *command, const char *name, const clargs_type_t *type,
-                           clargs_arity_t arity, const char *default_value,
+static void add_positional(argx_command_t *command, const char *name, const argx_type_t *type,
+                           argx_arity_t arity, const char *default_value,
                            const char *description)
 {
-    clargs_positional_t *positional = NULL;
+    argx_positional_t *positional = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, arity, &positional) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, type, arity, &positional) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     if (default_value != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_positional_set_default(positional, default_value) ==
-                          CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_positional_set_default(positional, default_value) ==
+                          ARGX_ERROR_NONE);
     }
-    NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_positional_set_description(positional, description) ==
+                      ARGX_ERROR_NONE);
 }
 
 /*
@@ -579,67 +579,67 @@ static void build_schema(fixture_t *fixture)
 {
     static const char *const formats[] = {"text", "json", "xml"};
     static const char *const targets[] = {"debug", "release", "profile"};
-    clargs_command_t *build = NULL;
-    clargs_command_t *clean = NULL;
-    clargs_option_t *option = NULL;
+    argx_command_t *build = NULL;
+    argx_command_t *clean = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_type_create_choice(formats, 3, &fixture->format) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_type_create_choice(targets, 3, &fixture->target) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create_choice(formats, 3, &fixture->format) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create_choice(targets, 3, &fixture->target) ==
+                      ARGX_ERROR_NONE);
 
-    NAOS_REQUIRE_TRUE(clargs_command_create("tool", &fixture->root) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &fixture->root) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(fixture->root != NULL);
-    NAOS_REQUIRE_TRUE(clargs_command_set_description(
+    NAOS_REQUIRE_TRUE(argx_command_set_description(
                           fixture->root,
                           "Builds the parts of a project and keeps the results of every build, "
                           "so that a part that did not change is not built a second time.\n"
                           "\n"
                           "Every command reads the settings of the project first.") ==
-                      CLARGS_ERROR_NONE);
+                      ARGX_ERROR_NONE);
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(fixture->root, 'v', "verbose", &option) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_option_set_description(option, "Say more") == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(fixture->root, 'v', "verbose", &option) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_description(option, "Say more") == ARGX_ERROR_NONE);
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_negatable(fixture->root, '\0', "color", &option) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_option_set_initial(option, true) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_option_set_description(option, "Use colors in the messages") ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_negatable(fixture->root, '\0', "color", &option) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_initial(option, true) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_description(option, "Use colors in the messages") ==
+                      ARGX_ERROR_NONE);
 
     add_value(fixture->root, 'f', "format", fixture->format, "FMT", "text", false,
               "The format of the report that is written when a command ends, for a person "
               "to read or for another program to take apart");
-    add_value(fixture->root, 'o', "output", clargs_type_string(), "FILE", NULL, true,
+    add_value(fixture->root, 'o', "output", argx_type_string(), "FILE", NULL, true,
               "The file that the report is written to. The directories of the file are "
               "created when they do not exist, and a file of the same name is replaced "
               "without a question.\n"
               "The name is taken as it is given: it is not looked up in the directory of "
               "the project, and no ending is added to it, whatever the format of the "
               "report is.");
-    add_value(fixture->root, 'j', "jobs", clargs_type_int(), "N", "4", false,
+    add_value(fixture->root, 'j', "jobs", argx_type_int(), "N", "4", false,
               "How many parts are built at a time");
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(fixture->root, "build", &build) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_set_description(
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(fixture->root, "build", &build) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_description(
                           build, "Builds the parts that changed\nThe other parts are kept.") ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(fixture->root, "clean", &clean) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_set_description(clean, "Removes the results of the builds") ==
-                      CLARGS_ERROR_NONE);
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(fixture->root, "clean", &clean) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_description(clean, "Removes the results of the builds") ==
+                      ARGX_ERROR_NONE);
 
-    add_positional(build, "target", fixture->target, CLARGS_ARITY_REQUIRED, NULL, "What to build");
-    add_positional(build, "label", clargs_type_string(), CLARGS_ARITY_OPTIONAL, "latest",
+    add_positional(build, "target", fixture->target, ARGX_ARITY_REQUIRED, NULL, "What to build");
+    add_positional(build, "label", argx_type_string(), ARGX_ARITY_OPTIONAL, "latest",
                    "The label that the results of this build are kept under, so that a later "
                    "build finds them again and does not build the same parts once more");
-    NAOS_REQUIRE_TRUE(clargs_command_add_negatable(build, 'c', "cache", &option) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_option_set_initial(option, true) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_option_set_description(option, "Keep the results") ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_negatable(build, 'c', "cache", &option) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_initial(option, true) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_description(option, "Keep the results") ==
+                      ARGX_ERROR_NONE);
     add_value(build, 'm', "mode", fixture->target, NULL, NULL, true,
               "How the parts are built. The mode decides which checks are compiled into the "
               "parts and how much time the compiler may spend on each of them; the parts of "
@@ -647,9 +647,9 @@ static void build_schema(fixture_t *fixture)
               "A part that was built in another mode is never taken for a part of this "
               "mode, also when its sources did not change in between.");
 
-    NAOS_REQUIRE_TRUE(clargs_command_validate(fixture->root, NULL, NULL, NULL) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_is_validated(fixture->root));
+    NAOS_REQUIRE_TRUE(argx_command_validate(fixture->root, NULL, NULL, NULL) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_is_validated(fixture->root));
 }
 
 /*
@@ -669,21 +669,21 @@ static void check_same_text(const char *a, size_t length, const char *b, size_t 
  */
 static void fixture_start(fixture_t *fixture)
 {
-    const clargs_command_t *build;
+    const argx_command_t *build;
     size_t index;
 
     memset(fixture, 0, sizeof *fixture);
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
     build_schema(fixture);
-    build = clargs_command_find_subcommand(fixture->root, "build");
+    build = argx_command_find_subcommand(fixture->root, "build");
     NAOS_REQUIRE_TRUE(build != NULL);
 
-    NAOS_REQUIRE_TRUE(clargs_help_options_create(&fixture->narrow) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&fixture->narrow) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(fixture->narrow != NULL);
-    clargs_help_options_set_width(fixture->narrow, 40);
-    clargs_help_options_set_indent(fixture->narrow, 4);
-    clargs_help_options_set_max_column(fixture->narrow, 20);
+    argx_help_options_set_width(fixture->narrow, 40);
+    argx_help_options_set_indent(fixture->narrow, 4);
+    argx_help_options_set_max_column(fixture->narrow, 20);
 
     fixture->cases[0].command = fixture->root;
     fixture->cases[0].options = NULL;
@@ -699,14 +699,14 @@ static void fixture_start(fixture_t *fixture)
     for (index = 0; index < CASE_COUNT; ++index)
     {
         help_case_t *item = &fixture->cases[index];
-        size_t live = clargs_test_allocator_live();
-        size_t requests = clargs_test_allocator_requests();
+        size_t live = argx_test_allocator_live();
+        size_t requests = argx_test_allocator_requests();
         sink_t sink;
 
         sink_init(&sink);
-        NAOS_REQUIRE_TRUE(clargs_help_write(item->command, item->options, sink_write, &sink) ==
-                          CLARGS_ERROR_NONE);
-        item->requests = clargs_test_allocator_requests() - requests;
+        NAOS_REQUIRE_TRUE(argx_help_write(item->command, item->options, sink_write, &sink) ==
+                          ARGX_ERROR_NONE);
+        item->requests = argx_test_allocator_requests() - requests;
         memcpy(item->text, sink.text, sink.length);
         item->length = sink.length;
 
@@ -719,11 +719,11 @@ static void fixture_start(fixture_t *fixture)
         NAOS_REQUIRE_TRUE(item->length >= 2);
         NAOS_CHECK_TRUE(item->text[item->length - 1] == '\n');
         NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
 
         sink_init(&sink);
-        NAOS_REQUIRE_TRUE(clargs_help_write_usage(item->command, item->options, sink_write,
-                                                  &sink) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_help_write_usage(item->command, item->options, sink_write,
+                                                  &sink) == ARGX_ERROR_NONE);
         memcpy(item->usage, sink.text, sink.length);
         item->usage_length = sink.length;
         NAOS_REQUIRE_TRUE(item->usage_length >= 2);
@@ -745,7 +745,7 @@ static void fixture_start(fixture_t *fixture)
                     (memcmp(fixture->cases[2].text, fixture->cases[3].text,
                            fixture->cases[2].length) != 0));
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /*
@@ -754,11 +754,11 @@ static void fixture_start(fixture_t *fixture)
  */
 static void fixture_end(fixture_t *fixture)
 {
-    clargs_help_options_destroy(fixture->narrow);
-    clargs_command_destroy(fixture->root);
-    clargs_type_destroy(fixture->target);
-    clargs_type_destroy(fixture->format);
-    clargs_test_allocator_uninstall();
+    argx_help_options_destroy(fixture->narrow);
+    argx_command_destroy(fixture->root);
+    argx_type_destroy(fixture->target);
+    argx_type_destroy(fixture->format);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -771,7 +771,7 @@ static void fixture_end(fixture_t *fixture)
 static void check_unchanged(const fixture_t *fixture)
 {
     picture_t now;
-    size_t live = clargs_test_allocator_live();
+    size_t live = argx_test_allocator_live();
     size_t index;
 
     draw(&now, fixture->root);
@@ -779,41 +779,41 @@ static void check_unchanged(const fixture_t *fixture)
     NAOS_CHECK_UINT_EQ(now.pointer_count, fixture->before.pointer_count);
     NAOS_CHECK_MEM_EQ(now.pointers, sizeof now.pointers, fixture->before.pointers,
                       sizeof fixture->before.pointers);
-    NAOS_CHECK_TRUE(clargs_command_is_validated(fixture->root));
+    NAOS_CHECK_TRUE(argx_command_is_validated(fixture->root));
 
     for (index = 0; index < CASE_COUNT; ++index)
     {
         const help_case_t *item = &fixture->cases[index];
-        size_t requests = clargs_test_allocator_requests();
+        size_t requests = argx_test_allocator_requests();
         char buffer[SINK_SIZE];
         size_t length = LENGTH_UNSET;
         sink_t sink;
 
         sink_init(&sink);
-        NAOS_CHECK_TRUE(clargs_help_write(item->command, item->options, sink_write, &sink) ==
-                        CLARGS_ERROR_NONE);
+        NAOS_CHECK_TRUE(argx_help_write(item->command, item->options, sink_write, &sink) ==
+                        ARGX_ERROR_NONE);
         check_same_text(sink.text, sink.length, item->text, item->length);
         NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests() - requests, item->requests);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_requests() - requests, item->requests);
 
         memset(buffer, SENTINEL, sizeof buffer);
-        NAOS_CHECK_TRUE(clargs_help_format(item->command, item->options, buffer, sizeof buffer,
-                                           &length) == CLARGS_ERROR_NONE);
+        NAOS_CHECK_TRUE(argx_help_format(item->command, item->options, buffer, sizeof buffer,
+                                           &length) == ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, item->length);
         NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
         check_same_text(buffer, strlen(buffer), item->text, item->length);
 
         sink_init(&sink);
-        NAOS_CHECK_TRUE(clargs_help_write_usage(item->command, item->options, sink_write,
-                                                &sink) == CLARGS_ERROR_NONE);
+        NAOS_CHECK_TRUE(argx_help_write_usage(item->command, item->options, sink_write,
+                                                &sink) == ARGX_ERROR_NONE);
         check_same_text(sink.text, sink.length, item->usage, item->usage_length);
     }
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
-/* How clargs_help_format() is called in a check. */
+/* How argx_help_format() is called in a check. */
 typedef struct format_call
 {
     size_t size;      /* the size of the array */
@@ -822,9 +822,9 @@ typedef struct format_call
 } format_call_t;
 
 /*
- * Makes the nth request of a clargs_help_format() of the case fail, with
+ * Makes the nth request of a argx_help_format() of the case fail, with
  * an array of call.size bytes in the middle of an area of sentinel bytes.
- * The call returns CLARGS_ERROR_OUT_OF_MEMORY after n requests; the array
+ * The call returns ARGX_ERROR_OUT_OF_MEMORY after n requests; the array
  * holds the empty string, or is untouched with the size 0; no byte outside
  * the array is written; the length, when it is asked for, is 0; nothing
  * stays allocated.
@@ -834,9 +834,9 @@ static void check_format_failure(const help_case_t *item, size_t nth, format_cal
     char area[AREA_SIZE];
     char want[AREA_SIZE];
     size_t length = LENGTH_UNSET;
-    size_t live = clargs_test_allocator_live();
-    size_t requests = clargs_test_allocator_requests();
-    clargs_error_t error;
+    size_t live = argx_test_allocator_live();
+    size_t requests = argx_test_allocator_requests();
+    argx_error_t error;
 
     NAOS_REQUIRE_TRUE(call.size <= (AREA_SIZE - (2 * GUARD_SIZE)));
     NAOS_REQUIRE_TRUE(!call.null_buffer || (call.size == 0));
@@ -844,14 +844,14 @@ static void check_format_failure(const help_case_t *item, size_t nth, format_cal
     memset(area, SENTINEL, sizeof area);
     memset(want, SENTINEL, sizeof want);
 
-    clargs_test_allocator_fail_at(requests + nth);
-    error = clargs_help_format(item->command, item->options,
+    argx_test_allocator_fail_at(requests + nth);
+    error = argx_help_format(item->command, item->options,
                                call.null_buffer ? NULL : (area + GUARD_SIZE), call.size,
                                call.with_length ? &length : NULL);
-    clargs_test_allocator_fail_at(0);
+    argx_test_allocator_fail_at(0);
 
-    NAOS_CHECK_TRUE(error == CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests() - requests, nth);
+    NAOS_CHECK_TRUE(error == ARGX_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests() - requests, nth);
     NAOS_CHECK_UINT_EQ(length, call.with_length ? (size_t)0 : LENGTH_UNSET);
 
     if (call.size != 0)
@@ -870,8 +870,8 @@ static void check_format_failure(const help_case_t *item, size_t nth, format_cal
     NAOS_CHECK_MEM_EQ(area + GUARD_SIZE + call.size, sizeof area - GUARD_SIZE - call.size,
                       want + GUARD_SIZE + call.size, sizeof want - GUARD_SIZE - call.size);
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /*
@@ -896,26 +896,26 @@ NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
 
         for (n = 1; n <= REQUEST_LIMIT; ++n)
         {
-            size_t live = clargs_test_allocator_live();
-            size_t requests = clargs_test_allocator_requests();
-            clargs_error_t error;
+            size_t live = argx_test_allocator_live();
+            size_t requests = argx_test_allocator_requests();
+            argx_error_t error;
             sink_t sink;
 
             sink_init(&sink);
-            clargs_test_allocator_fail_at(requests + n);
-            error = clargs_help_write(item->command, item->options, sink_write, &sink);
-            clargs_test_allocator_fail_at(0);
+            argx_test_allocator_fail_at(requests + n);
+            error = argx_help_write(item->command, item->options, sink_write, &sink);
+            argx_test_allocator_fail_at(0);
 
-            if (error == CLARGS_ERROR_NONE)
+            if (error == ARGX_ERROR_NONE)
             {
                 /*
                  * The generation ended before the request to fail was
                  * reached: every allocation point has failed once.
                  */
-                NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests() - requests, n - 1);
+                NAOS_CHECK_UINT_EQ(argx_test_allocator_requests() - requests, n - 1);
                 NAOS_CHECK_UINT_EQ(n - 1, item->requests);
                 check_same_text(sink.text, sink.length, item->text, item->length);
-                NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
+                NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
                 completed = true;
                 break;
             }
@@ -925,10 +925,10 @@ NAOS_TEST(writing_a_help_fails_cleanly_at_every_allocation_point)
              * made no request after it. No block is kept.
              */
             ++failures;
-            NAOS_CHECK_TRUE(error == CLARGS_ERROR_OUT_OF_MEMORY);
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests() - requests, n);
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+            NAOS_CHECK_TRUE(error == ARGX_ERROR_OUT_OF_MEMORY);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_requests() - requests, n);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 
             /*
              * What the write function received is a start of the text, and
@@ -1039,15 +1039,15 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
         {
             char buffer[SINK_SIZE];
             size_t length = LENGTH_UNSET;
-            size_t requests = clargs_test_allocator_requests();
+            size_t requests = argx_test_allocator_requests();
 
             memset(buffer, SENTINEL, sizeof buffer);
-            clargs_test_allocator_fail_at(requests + item->requests + 1);
-            NAOS_CHECK_TRUE(clargs_help_format(item->command, item->options, buffer,
-                                               sizeof buffer, &length) == CLARGS_ERROR_NONE);
-            clargs_test_allocator_fail_at(0);
+            argx_test_allocator_fail_at(requests + item->requests + 1);
+            NAOS_CHECK_TRUE(argx_help_format(item->command, item->options, buffer,
+                                               sizeof buffer, &length) == ARGX_ERROR_NONE);
+            argx_test_allocator_fail_at(0);
 
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests() - requests, item->requests);
+            NAOS_CHECK_UINT_EQ(argx_test_allocator_requests() - requests, item->requests);
             NAOS_CHECK_UINT_EQ(length, item->length);
             NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
             check_same_text(buffer, strlen(buffer), item->text, item->length);
@@ -1073,42 +1073,42 @@ NAOS_TEST(generating_a_usage_line_never_allocates)
     for (index = 0; index < CASE_COUNT; ++index)
     {
         const help_case_t *item = &fixture.cases[index];
-        size_t live = clargs_test_allocator_live();
-        size_t requests = clargs_test_allocator_requests();
+        size_t live = argx_test_allocator_live();
+        size_t requests = argx_test_allocator_requests();
         char buffer[SINK_SIZE];
         size_t length = LENGTH_UNSET;
         sink_t sink;
 
-        clargs_test_allocator_fail_at(requests + 1);
+        argx_test_allocator_fail_at(requests + 1);
 
         sink_init(&sink);
-        NAOS_CHECK_TRUE(clargs_help_write_usage(item->command, item->options, sink_write,
-                                                &sink) == CLARGS_ERROR_NONE);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+        NAOS_CHECK_TRUE(argx_help_write_usage(item->command, item->options, sink_write,
+                                                &sink) == ARGX_ERROR_NONE);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
         check_same_text(sink.text, sink.length, item->usage, item->usage_length);
         NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
 
         memset(buffer, SENTINEL, sizeof buffer);
-        NAOS_CHECK_TRUE(clargs_help_format_usage(item->command, item->options, buffer,
-                                                 sizeof buffer, &length) == CLARGS_ERROR_NONE);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+        NAOS_CHECK_TRUE(argx_help_format_usage(item->command, item->options, buffer,
+                                                 sizeof buffer, &length) == ARGX_ERROR_NONE);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
         NAOS_CHECK_UINT_EQ(length, item->usage_length);
         NAOS_REQUIRE_TRUE(memchr(buffer, '\0', sizeof buffer) != NULL);
         check_same_text(buffer, strlen(buffer), item->usage, item->usage_length);
 
         /* Also an array that cuts the text, the size 0 and no length. */
-        NAOS_CHECK_TRUE(clargs_help_format_usage(item->command, item->options, buffer, 5,
-                                                 NULL) == CLARGS_ERROR_NONE);
+        NAOS_CHECK_TRUE(argx_help_format_usage(item->command, item->options, buffer, 5,
+                                                 NULL) == ARGX_ERROR_NONE);
         length = LENGTH_UNSET;
-        NAOS_CHECK_TRUE(clargs_help_format_usage(item->command, item->options, NULL, 0,
-                                                 &length) == CLARGS_ERROR_NONE);
+        NAOS_CHECK_TRUE(argx_help_format_usage(item->command, item->options, NULL, 0,
+                                                 &length) == ARGX_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, item->usage_length);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
 
-        clargs_test_allocator_fail_at(0);
+        argx_test_allocator_fail_at(0);
 
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
     }
 
     fixture_end(&fixture);

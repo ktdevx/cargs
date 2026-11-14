@@ -1,5 +1,5 @@
 /*
- * CLArgs - the wrapping of the help: writes one text broken into lines at
+ * ArgX - the wrapping of the help: writes one text broken into lines at
  * the blanks.
  */
 #include "wrap.h"
@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
+void argx_wrap_write(argx_out_t *out, const char *text, size_t length,
                        size_t column, size_t width)
 {
     size_t position = 0;
@@ -18,7 +18,7 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
 
     assert(out != NULL);
     assert((text != NULL) || (length == 0));
-    assert(clargs_out_column(out) <= column);
+    assert(argx_out_column(out) <= column);
 
     while ((length != 0) && (text[length - 1] == '\n'))
     {
@@ -29,7 +29,7 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
         return;
     }
 
-    clargs_out_pad_to(out, column);
+    argx_out_pad_to(out, column);
 
     while (position < length)
     {
@@ -42,8 +42,8 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
              * included, are dropped by the newline.
              */
             ++position;
-            clargs_out_newline(out);
-            clargs_out_pad_to(out, column);
+            argx_out_newline(out);
+            argx_out_pad_to(out, column);
             line_has_word = false;
         }
         else if (text[position] == ' ')
@@ -52,7 +52,7 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
             {
                 ++position;
             }
-            clargs_out_spaces(out, position - start);
+            argx_out_spaces(out, position - start);
         }
         else
         {
@@ -69,15 +69,15 @@ void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
              * "current + word > width" without the sum: the subtraction
              * cannot wrap around, because current < width there.
              */
-            current = clargs_out_column(out);
+            current = argx_out_column(out);
             if (line_has_word && (width != 0) && ((current >= width) || (word > (width - current))))
             {
                 /* The blanks before the word are dropped by the newline. */
-                clargs_out_newline(out);
-                clargs_out_pad_to(out, column);
+                argx_out_newline(out);
+                argx_out_pad_to(out, column);
             }
 
-            clargs_out_text(out, text + start, word);
+            argx_out_text(out, text + start, word);
             line_has_word = true;
         }
     }

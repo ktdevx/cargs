@@ -161,7 +161,7 @@ class CheckTests(unittest.TestCase):
             ## Usage
             ## Usage
             ## `--help` and errors
-            ## 確保関数の検査 `clargs.allocations`
+            ## 確保関数の検査 `argx.allocations`
             ## 6. Whoever allocates, frees
 
             ```c
@@ -173,10 +173,10 @@ class CheckTests(unittest.TestCase):
             ~~~
 
             [ok1](#usage) [ok2](#usage-1) [ok3](#--help-and-errors)
-            [ok4](#確保関数の検査-clargsallocations)
+            [ok4](#確保関数の検査-argxallocations)
             [ok5](#6-whoever-allocates-frees) [ok6](a.md#usage-1)
             [bad1](#usage-2) [bad2](#hidden-heading) [bad3](#also-hidden)
-            [ok7](#%E7%A2%BA%E4%BF%9D%E9%96%A2%E6%95%B0%E3%81%AE%E6%A4%9C%E6%9F%BB-clargsallocations)
+            [ok7](#%E7%A2%BA%E4%BF%9D%E9%96%A2%E6%95%B0%E3%81%AE%E6%A4%9C%E6%9F%BB-argxallocations)
             [bad4](../README.md#nope) [ok8](../README.md#usage)
             [ok9](../src/a.c#L1)
             """)
@@ -276,7 +276,7 @@ class CheckTests(unittest.TestCase):
         files = dict(CLEAN)
         for path in ("cmake/x.cmake", "CMakeLists.txt", "tests/CMakeLists.txt",
                      "tests/consumer/a.c", "tests/public/version_test.c",
-                     "include/clargs/version.h"):
+                     "include/argx/version.h"):
             files[path] = "# \u65e5\n"
         files["tests/public/other_test.c"] = "/* \u65e5 */\n"
         files["src/CMakeLists.txt"] = "# \u65e5\n"

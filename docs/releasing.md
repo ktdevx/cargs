@@ -1,6 +1,6 @@
 # Releasing
 
-This document describes how a maintainer releases a new version of CLArgs,
+This document describes how a maintainer releases a new version of ArgX,
 the repository settings the release process needs, and how to recover when
 something goes wrong. How version numbers are chosen is described in
 [the versioning policy](versioning.md). The changes of each version are listed
@@ -14,7 +14,7 @@ published by hand.
 1. A maintainer starts the **Release PR** workflow
    (`.github/workflows/release-pr.yml`) on `main`, with the version to
    release. The workflow checks the version, rewrites
-   `include/clargs/version.h` and `CHANGELOG.md` on a new branch
+   `include/argx/version.h` and `CHANGELOG.md` on a new branch
    `release/v<version>`, opens the pull request "Release v\<version\>" to
    `main`, and starts the **CI** workflow (`.github/workflows/ci.yml`) on that
    branch.
@@ -148,14 +148,14 @@ of the file by hand. The **Release PR** workflow does it.
      of its numbers is above 255 or has a leading zero;
    - the tag `v<version>` already exists, or the version is not higher than
      every release tag;
-   - the version is lower than the version in `include/clargs/version.h`. The
+   - the version is lower than the version in `include/argx/version.h`. The
      version in the header itself is accepted while it has no tag, as for the
      first release;
    - the changelog is not in the expected form, already lists the version, or
      has no entry under `Unreleased`.
 4. Otherwise the workflow opens the pull request "Release v\<version\>". It
    changes only two files:
-   - `include/clargs/version.h`: the version macros are set to the version
+   - `include/argx/version.h`: the version macros are set to the version
      (unchanged when the header already holds it, as for the first release);
    - `CHANGELOG.md`: the entries under `Unreleased` move to the new section
      `[<version>] - <date>`, where the date is the day the workflow ran, in
@@ -171,13 +171,13 @@ of the file by hand. The **Release PR** workflow does it.
    - if the pull request is merged on a later day than the date of the
      section, the date may be corrected on the release branch.
 
-   Commit only to `include/clargs/version.h` and `CHANGELOG.md` on the
+   Commit only to `include/argx/version.h` and `CHANGELOG.md` on the
    release branch, and keep the version in both equal to the version of the
    branch name: the **Release** workflow refuses the merge otherwise. A push by
    a maintainer to the branch starts CI as for any pull request.
 6. Merge the pull request into `main`.
 7. The **Release** workflow starts. It checks that the merged commit holds the
-   version in `include/clargs/version.h` and as the newest section of
+   version in `include/argx/version.h` and as the newest section of
    `CHANGELOG.md`, then creates:
    - the annotated tag `v<version>` on the merge commit, made by
      `github-actions[bot]`;
@@ -202,7 +202,7 @@ gh workflow run release-pr.yml --ref main -f version=0.2.0-rc.1
 The differences are:
 
 - The pull request says that it is a pre-release.
-- The version header gets `CLARGS_VERSION_PRERELEASE` set to the identifiers,
+- The version header gets `ARGX_VERSION_PRERELEASE` set to the identifiers,
   such as `"rc.1"`, and the changelog gets the section `[0.2.0-rc.1] - <date>`.
 - The GitHub Release is marked as a pre-release and is not made the latest
   release.
@@ -294,7 +294,7 @@ The summary of the run gives the reason and lists what was created. Then:
 - **The merged commit does not match the version.** The version header or the
   newest section of the changelog of the merged commit is not the version of
   the branch name. No tag and no Release were created. The merged commit
-  cannot be published. Make `include/clargs/version.h` and `CHANGELOG.md`
+  cannot be published. Make `include/argx/version.h` and `CHANGELOG.md`
   consistent on `main` with an ordinary pull request. In the changelog, move
   the entries of the section of the unpublished version back under
   `Unreleased`, and remove the heading of that section and its link at the
@@ -366,7 +366,7 @@ test tag or Release.
 3. Check:
    - that a wrong input stops the workflow without creating anything, for
      example `0.2.0+build`, `0.2`, or a run started on another branch;
-   - the content of the pull request: only `include/clargs/version.h` and
+   - the content of the pull request: only `include/argx/version.h` and
      `CHANGELOG.md` change, and the description says it is a pre-release;
    - that `CI result` shows on the pull request and satisfies the required
      check;
@@ -381,30 +381,30 @@ test tag or Release.
    delete the fork, since its `main` now holds the test version.
 
 The scripts can also be tried locally, without GitHub. Copy
-`include/clargs/version.h` and `CHANGELOG.md` into a scratch directory with
+`include/argx/version.h` and `CHANGELOG.md` into a scratch directory with
 the same layout (or use a copy of the working tree), list the tags, and run
-`prepare.cmake` on the copy. With `CLARGS_RELEASE_CHECK_ONLY=ON` it runs every
+`prepare.cmake` on the copy. With `ARGX_RELEASE_CHECK_ONLY=ON` it runs every
 check and writes nothing:
 
 ```sh
 git tag --list 'v*' > /tmp/tags.txt
-cmake -D CLARGS_RELEASE_VERSION=0.2.0-rc.1 \
-      -D CLARGS_RELEASE_DATE=2026-01-15 \
-      -D CLARGS_RELEASE_REPO_URL=https://github.com/<owner>/<repo> \
-      -D CLARGS_SOURCE_DIR=/tmp/clargs-copy \
-      -D CLARGS_RELEASE_TAGS_FILE=/tmp/tags.txt \
-      -D CLARGS_RELEASE_CHECK_ONLY=ON \
+cmake -D ARGX_RELEASE_VERSION=0.2.0-rc.1 \
+      -D ARGX_RELEASE_DATE=2026-01-15 \
+      -D ARGX_RELEASE_REPO_URL=https://github.com/<owner>/<repo> \
+      -D ARGX_SOURCE_DIR=/tmp/argx-copy \
+      -D ARGX_RELEASE_TAGS_FILE=/tmp/tags.txt \
+      -D ARGX_RELEASE_CHECK_ONLY=ON \
       -P tools/release/prepare.cmake
 ```
 
-Without `CLARGS_RELEASE_CHECK_ONLY`, it rewrites the two files of the copy.
+Without `ARGX_RELEASE_CHECK_ONLY`, it rewrites the two files of the copy.
 `publish.cmake` then checks the rewritten copy and writes the notes:
 
 ```sh
-cmake -D CLARGS_RELEASE_VERSION=0.2.0-rc.1 \
-      -D CLARGS_RELEASE_REPO_URL=https://github.com/<owner>/<repo> \
-      -D CLARGS_SOURCE_DIR=/tmp/clargs-copy \
-      -D CLARGS_RELEASE_NOTES=/tmp/notes.md \
+cmake -D ARGX_RELEASE_VERSION=0.2.0-rc.1 \
+      -D ARGX_RELEASE_REPO_URL=https://github.com/<owner>/<repo> \
+      -D ARGX_SOURCE_DIR=/tmp/argx-copy \
+      -D ARGX_RELEASE_NOTES=/tmp/notes.md \
       -P tools/release/publish.cmake
 ```
 
@@ -417,4 +417,4 @@ with `ctest -L release` in a build directory.
 Before the first release, check that the FetchContent example in README.md
 pins the tag you are about to create. If it does not, fix README.md with a
 separate pull request, merged before the release pull request: a release pull
-request changes only `include/clargs/version.h` and `CHANGELOG.md`.
+request changes only `include/argx/version.h` and `CHANGELOG.md`.

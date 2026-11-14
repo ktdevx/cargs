@@ -1,6 +1,6 @@
 /*
  * Tests of the failure of an allocation, across the schema: the functions
- * of <clargs/type.h> and <clargs/schema.h> that allocate.
+ * of <argx/type.h> and <argx/schema.h> that allocate.
  *
  * Each test takes one operation that is made of many calls and makes its
  * first, second, ... allocation request fail in turn, in the shape that
@@ -13,7 +13,7 @@
  * 3. creating a choice value type and a user-defined value type,
  * 4. validating a tree that has default values, twice.
  *
- * The call that fails must return CLARGS_ERROR_OUT_OF_MEMORY, write NULL to
+ * The call that fails must return ARGX_ERROR_OUT_OF_MEMORY, write NULL to
  * its outputs, keep no block of its own, and leave the value types and the
  * whole tree as they were before it: every count, every name, every
  * attribute, and whether the tree is validated. That is checked at the call
@@ -31,7 +31,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -57,8 +57,8 @@
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* ---- The picture of the value types and the tree ------------------------- */
@@ -124,7 +124,7 @@ static void put_text(picture_t *picture, const char *label, const char *text)
     }
 }
 
-static void put_type(picture_t *picture, const char *label, const clargs_type_t *type)
+static void put_type(picture_t *picture, const char *label, const argx_type_t *type)
 {
     size_t index;
 
@@ -134,77 +134,77 @@ static void put_type(picture_t *picture, const char *label, const clargs_type_t 
         put(picture, "(none)");
         return;
     }
-    put_text(picture, "", clargs_type_name(type));
-    put_count(picture, " kind=", (size_t)clargs_type_kind(type));
-    put_count(picture, " size=", clargs_type_value_size(type));
-    put_count(picture, " choices=", clargs_type_choice_count(type));
-    for (index = 0; index < clargs_type_choice_count(type); ++index)
+    put_text(picture, "", argx_type_name(type));
+    put_count(picture, " kind=", (size_t)argx_type_kind(type));
+    put_count(picture, " size=", argx_type_value_size(type));
+    put_count(picture, " choices=", argx_type_choice_count(type));
+    for (index = 0; index < argx_type_choice_count(type); ++index)
     {
-        put_text(picture, " ", clargs_type_choice_at(type, index));
+        put_text(picture, " ", argx_type_choice_at(type, index));
     }
 }
 
-static void put_option(picture_t *picture, const clargs_option_t *option)
+static void put_option(picture_t *picture, const argx_option_t *option)
 {
     char short_name[2];
 
-    short_name[0] = clargs_option_short_name(option);
+    short_name[0] = argx_option_short_name(option);
     short_name[1] = '\0';
 
-    put_count(picture, "  option kind=", (size_t)clargs_option_kind(option));
+    put_count(picture, "  option kind=", (size_t)argx_option_kind(option));
     put_text(picture, " short=", short_name);
-    put_text(picture, " long=", clargs_option_long_name(option));
-    put_text(picture, " negated=", clargs_option_negated_name(option));
-    put_type(picture, " type=", clargs_option_type(option));
-    put_text(picture, " description=", clargs_option_description(option));
-    put_text(picture, " value_name=", clargs_option_value_name(option));
-    put_count(picture, " required=", clargs_option_is_required(option) ? 1u : 0u);
-    put_text(picture, " default=", clargs_option_default(option));
-    put_count(picture, " initial=", clargs_option_initial(option) ? 1u : 0u);
+    put_text(picture, " long=", argx_option_long_name(option));
+    put_text(picture, " negated=", argx_option_negated_name(option));
+    put_type(picture, " type=", argx_option_type(option));
+    put_text(picture, " description=", argx_option_description(option));
+    put_text(picture, " value_name=", argx_option_value_name(option));
+    put_count(picture, " required=", argx_option_is_required(option) ? 1u : 0u);
+    put_text(picture, " default=", argx_option_default(option));
+    put_count(picture, " initial=", argx_option_initial(option) ? 1u : 0u);
     put(picture, "\n");
 }
 
-static void put_positional(picture_t *picture, const clargs_positional_t *positional)
+static void put_positional(picture_t *picture, const argx_positional_t *positional)
 {
-    put_text(picture, "  positional ", clargs_positional_name(positional));
-    put_count(picture, " arity=", (size_t)clargs_positional_arity(positional));
-    put_type(picture, " type=", clargs_positional_type(positional));
-    put_text(picture, " description=", clargs_positional_description(positional));
-    put_text(picture, " default=", clargs_positional_default(positional));
+    put_text(picture, "  positional ", argx_positional_name(positional));
+    put_count(picture, " arity=", (size_t)argx_positional_arity(positional));
+    put_type(picture, " type=", argx_positional_type(positional));
+    put_text(picture, " description=", argx_positional_description(positional));
+    put_text(picture, " default=", argx_positional_default(positional));
     put(picture, "\n");
 }
 
 /* The command, and then every command below it. */
-static void put_command(picture_t *picture, const clargs_command_t *command)
+static void put_command(picture_t *picture, const argx_command_t *command)
 {
-    const clargs_command_t *parent = clargs_command_parent(command);
+    const argx_command_t *parent = argx_command_parent(command);
     size_t index;
 
-    put_text(picture, "command ", clargs_command_name(command));
-    put_text(picture, " parent=", (parent != NULL) ? clargs_command_name(parent) : NULL);
-    put_text(picture, " description=", clargs_command_description(command));
-    put_count(picture, " options=", clargs_command_option_count(command));
-    put_count(picture, " positionals=", clargs_command_positional_count(command));
-    put_count(picture, " subcommands=", clargs_command_subcommand_count(command));
+    put_text(picture, "command ", argx_command_name(command));
+    put_text(picture, " parent=", (parent != NULL) ? argx_command_name(parent) : NULL);
+    put_text(picture, " description=", argx_command_description(command));
+    put_count(picture, " options=", argx_command_option_count(command));
+    put_count(picture, " positionals=", argx_command_positional_count(command));
+    put_count(picture, " subcommands=", argx_command_subcommand_count(command));
     put(picture, "\n");
 
-    for (index = 0; index < clargs_command_option_count(command); ++index)
+    for (index = 0; index < argx_command_option_count(command); ++index)
     {
-        const clargs_option_t *option = clargs_command_option_at(command, index);
+        const argx_option_t *option = argx_command_option_at(command, index);
 
-        NAOS_CHECK_TRUE(clargs_option_command(option) == command);
+        NAOS_CHECK_TRUE(argx_option_command(option) == command);
         put_option(picture, option);
     }
-    for (index = 0; index < clargs_command_positional_count(command); ++index)
+    for (index = 0; index < argx_command_positional_count(command); ++index)
     {
-        const clargs_positional_t *positional = clargs_command_positional_at(command, index);
+        const argx_positional_t *positional = argx_command_positional_at(command, index);
 
-        NAOS_CHECK_TRUE(clargs_positional_command(positional) == command);
+        NAOS_CHECK_TRUE(argx_positional_command(positional) == command);
         put_positional(picture, positional);
     }
-    for (index = 0; index < clargs_command_subcommand_count(command); ++index)
+    for (index = 0; index < argx_command_subcommand_count(command); ++index)
     {
-        put_command(picture, clargs_command_subcommand_at(command, index));
+        put_command(picture, argx_command_subcommand_at(command, index));
     }
 }
 
@@ -232,19 +232,19 @@ typedef struct sweep
      * What the operation and its preparation created; NULL for what does
      * not exist.
      */
-    clargs_type_t *choice;
-    clargs_type_t *custom;
-    clargs_command_t *root;
+    argx_type_t *choice;
+    argx_type_t *custom;
+    argx_command_t *root;
 
     /*
      * Handles of another tree and another value type. Every output holds
      * one of them before a call, so an output that a call does not write
      * does not pass for NULL.
      */
-    clargs_command_t *other;
-    clargs_option_t *other_option;
-    clargs_positional_t *other_positional;
-    clargs_type_t *other_type;
+    argx_command_t *other;
+    argx_option_t *other_option;
+    argx_positional_t *other_positional;
+    argx_type_t *other_type;
 
     /* Taken before the call that is running. */
     picture_t before;
@@ -255,17 +255,17 @@ typedef struct sweep
 /* The handles of the tree that the operations build and work on. */
 typedef struct tree
 {
-    clargs_command_t *build;
-    clargs_command_t *run;
-    clargs_option_t *verbose;
-    clargs_option_t *color;
-    clargs_option_t *quiet;
-    clargs_option_t *output;
-    clargs_option_t *ratio;
-    clargs_option_t *mode;
-    clargs_option_t *port;
-    clargs_option_t *jobs;
-    clargs_positional_t *target;
+    argx_command_t *build;
+    argx_command_t *run;
+    argx_option_t *verbose;
+    argx_option_t *color;
+    argx_option_t *quiet;
+    argx_option_t *output;
+    argx_option_t *ratio;
+    argx_option_t *mode;
+    argx_option_t *port;
+    argx_option_t *jobs;
+    argx_positional_t *target;
 } tree_t;
 
 static void draw(const sweep_t *sweep, picture_t *picture)
@@ -283,7 +283,7 @@ static void draw(const sweep_t *sweep, picture_t *picture)
     }
     else
     {
-        put_count(picture, "validated=", clargs_command_is_validated(sweep->root) ? 1u : 0u);
+        put_count(picture, "validated=", argx_command_is_validated(sweep->root) ? 1u : 0u);
         put(picture, "\n");
         put_command(picture, sweep->root);
     }
@@ -292,7 +292,7 @@ static void draw(const sweep_t *sweep, picture_t *picture)
 }
 
 /* The conversion of the user-defined value type: a port number. */
-static clargs_error_t port_convert(const char *text, void *value, void *context)
+static argx_error_t port_convert(const char *text, void *value, void *context)
 {
     int *out = value;
     int port = 0;
@@ -302,29 +302,29 @@ static clargs_error_t port_convert(const char *text, void *value, void *context)
 
     if (text[0] == '\0')
     {
-        return CLARGS_ERROR_INVALID_VALUE;
+        return ARGX_ERROR_INVALID_VALUE;
     }
     for (index = 0; text[index] != '\0'; ++index)
     {
         if ((text[index] < '0') || (text[index] > '9'))
         {
-            return CLARGS_ERROR_INVALID_VALUE;
+            return ARGX_ERROR_INVALID_VALUE;
         }
         port = (port * 10) + (text[index] - '0');
         if (port > 65535)
         {
-            return CLARGS_ERROR_INVALID_VALUE;
+            return ARGX_ERROR_INVALID_VALUE;
         }
     }
     *out = port;
-    return CLARGS_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
 /* Starts a run: nothing is allocated before, and nothing fails yet. */
 static void open_sweep(sweep_t *sweep)
 {
     /* Nothing is allocated here, so the counts can start again. */
-    clargs_test_allocator_reset();
+    argx_test_allocator_reset();
 
     sweep->nth = 0;
     sweep->used = 0;
@@ -338,14 +338,14 @@ static void open_sweep(sweep_t *sweep)
     sweep->other_positional = NULL;
     sweep->other_type = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_create("other", &sweep->other) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(sweep->other, 's', "sentinel", &sweep->other_option) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_add_positional(sweep->other, "sentinel", clargs_type_string(),
-                                                    CLARGS_ARITY_REQUIRED,
-                                                    &sweep->other_positional) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_type_create("other", sizeof(int), port_convert, NULL, NULL,
-                                         &sweep->other_type) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_create("other", &sweep->other) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(sweep->other, 's', "sentinel", &sweep->other_option) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(sweep->other, "sentinel", argx_type_string(),
+                                                    ARGX_ARITY_REQUIRED,
+                                                    &sweep->other_positional) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create("other", sizeof(int), port_convert, NULL, NULL,
+                                         &sweep->other_type) == ARGX_ERROR_NONE);
 }
 
 /*
@@ -354,11 +354,11 @@ static void open_sweep(sweep_t *sweep)
  */
 static void close_sweep(sweep_t *sweep)
 {
-    clargs_command_destroy(sweep->root);
-    clargs_command_destroy(sweep->other);
-    clargs_type_destroy(sweep->choice);
-    clargs_type_destroy(sweep->custom);
-    clargs_type_destroy(sweep->other_type);
+    argx_command_destroy(sweep->root);
+    argx_command_destroy(sweep->other);
+    argx_type_destroy(sweep->choice);
+    argx_type_destroy(sweep->custom);
+    argx_type_destroy(sweep->other_type);
     check_clean();
 }
 
@@ -383,16 +383,16 @@ static void begin_call(sweep_t *sweep)
 {
     if (sweep->validates && (sweep->root != NULL))
     {
-        NAOS_REQUIRE_TRUE(clargs_command_validate(sweep->root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
-        NAOS_REQUIRE_TRUE(clargs_command_is_validated(sweep->root));
+        NAOS_REQUIRE_TRUE(argx_command_validate(sweep->root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_command_is_validated(sweep->root));
     }
 
     draw(sweep, &sweep->before);
-    sweep->live_before = clargs_test_allocator_live();
-    sweep->requests_before = clargs_test_allocator_requests();
+    sweep->live_before = argx_test_allocator_live();
+    sweep->requests_before = argx_test_allocator_requests();
     if (sweep->nth > sweep->used)
     {
-        clargs_test_allocator_fail_at(sweep->requests_before + (sweep->nth - sweep->used));
+        argx_test_allocator_fail_at(sweep->requests_before + (sweep->nth - sweep->used));
     }
 }
 
@@ -401,14 +401,14 @@ static void begin_call(sweep_t *sweep)
  * whether all of its outputs hold NULL. Returns whether the call succeeded.
  * For a call that failed, checks everything that a failure must keep.
  */
-static bool end_call(sweep_t *sweep, clargs_error_t error, bool outputs_are_null)
+static bool end_call(sweep_t *sweep, argx_error_t error, bool outputs_are_null)
 {
     static picture_t after;
 
-    sweep->used += clargs_test_allocator_requests() - sweep->requests_before;
-    clargs_test_allocator_fail_at(0);
+    sweep->used += argx_test_allocator_requests() - sweep->requests_before;
+    argx_test_allocator_fail_at(0);
 
-    if (error == CLARGS_ERROR_NONE)
+    if (error == ARGX_ERROR_NONE)
     {
         return true;
     }
@@ -418,20 +418,20 @@ static bool end_call(sweep_t *sweep, clargs_error_t error, bool outputs_are_null
      * The request that was set to fail failed, it was the last one of the
      * call, and the call reported it.
      */
-    NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_INT_EQ(error, ARGX_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_TRUE(sweep->nth != 0);
     NAOS_CHECK_UINT_EQ(sweep->used, sweep->nth);
     NAOS_CHECK_TRUE(outputs_are_null);
 
     /* The call kept no block and freed none that it did not allocate. */
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), sweep->live_before);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), sweep->live_before);
 
     /* The value types and the tree are as they were before the call. */
     draw(sweep, &after);
     NAOS_CHECK_STR_EQ(after.text, sweep->before.text);
     if (sweep->validates && (sweep->root != NULL))
     {
-        NAOS_CHECK_TRUE(clargs_command_is_validated(sweep->root));
+        NAOS_CHECK_TRUE(argx_command_is_validated(sweep->root));
     }
     return false;
 }
@@ -446,11 +446,11 @@ static bool end_call(sweep_t *sweep, clargs_error_t error, bool outputs_are_null
 static bool create_choice_type(sweep_t *sweep)
 {
     static const char *const choices[] = { "fast", "slow", "exact" };
-    clargs_type_t *type = sweep->other_type;
-    clargs_error_t error;
+    argx_type_t *type = sweep->other_type;
+    argx_error_t error;
 
     begin_call(sweep);
-    error = clargs_type_create_choice(choices, sizeof(choices) / sizeof(choices[0]), &type);
+    error = argx_type_create_choice(choices, sizeof(choices) / sizeof(choices[0]), &type);
     if (!end_call(sweep, error, type == NULL))
     {
         return false;
@@ -462,11 +462,11 @@ static bool create_choice_type(sweep_t *sweep)
 
 static bool create_custom_type(sweep_t *sweep)
 {
-    clargs_type_t *type = sweep->other_type;
-    clargs_error_t error;
+    argx_type_t *type = sweep->other_type;
+    argx_error_t error;
 
     begin_call(sweep);
-    error = clargs_type_create("port", sizeof(int), port_convert, NULL, NULL, &type);
+    error = argx_type_create("port", sizeof(int), port_convert, NULL, NULL, &type);
     if (!end_call(sweep, error, type == NULL))
     {
         return false;
@@ -478,11 +478,11 @@ static bool create_custom_type(sweep_t *sweep)
 
 static bool create_root(sweep_t *sweep)
 {
-    clargs_command_t *root = sweep->other;
-    clargs_error_t error;
+    argx_command_t *root = sweep->other;
+    argx_error_t error;
 
     begin_call(sweep);
-    error = clargs_command_create("app", &root);
+    error = argx_command_create("app", &root);
     if (!end_call(sweep, error, root == NULL))
     {
         return false;
@@ -492,14 +492,14 @@ static bool create_root(sweep_t *sweep)
     return true;
 }
 
-static bool add_subcommand(sweep_t *sweep, clargs_command_t *command, const char *name,
-                           clargs_command_t **out)
+static bool add_subcommand(sweep_t *sweep, argx_command_t *command, const char *name,
+                           argx_command_t **out)
 {
-    clargs_command_t *sub = sweep->other;
-    clargs_error_t error;
+    argx_command_t *sub = sweep->other;
+    argx_error_t error;
 
     begin_call(sweep);
-    error = clargs_command_add_subcommand(command, name, &sub);
+    error = argx_command_add_subcommand(command, name, &sub);
     if (!end_call(sweep, error, sub == NULL))
     {
         return false;
@@ -516,27 +516,27 @@ static bool add_subcommand(sweep_t *sweep, clargs_command_t *command, const char
  * type is the value type of an option that takes a value, and is not used
  * for another kind.
  */
-static bool add_option(sweep_t *sweep, clargs_command_t *command, clargs_option_kind_t kind,
-                       char short_name, const char *long_name, const clargs_type_t *type,
-                       clargs_option_t **out)
+static bool add_option(sweep_t *sweep, argx_command_t *command, argx_option_kind_t kind,
+                       char short_name, const char *long_name, const argx_type_t *type,
+                       argx_option_t **out)
 {
-    clargs_option_t *option = sweep->other_option;
-    clargs_error_t error = CLARGS_ERROR_NONE;
+    argx_option_t *option = sweep->other_option;
+    argx_error_t error = ARGX_ERROR_NONE;
 
     begin_call(sweep);
     switch (kind)
     {
-    case CLARGS_OPTION_FLAG:
-        error = clargs_command_add_flag(command, short_name, long_name, &option);
+    case ARGX_OPTION_FLAG:
+        error = argx_command_add_flag(command, short_name, long_name, &option);
         break;
-    case CLARGS_OPTION_NEGATABLE:
-        error = clargs_command_add_negatable(command, short_name, long_name, &option);
+    case ARGX_OPTION_NEGATABLE:
+        error = argx_command_add_negatable(command, short_name, long_name, &option);
         break;
-    case CLARGS_OPTION_COUNT:
-        error = clargs_command_add_count(command, short_name, long_name, &option);
+    case ARGX_OPTION_COUNT:
+        error = argx_command_add_count(command, short_name, long_name, &option);
         break;
-    case CLARGS_OPTION_VALUE:
-        error = clargs_command_add_value(command, short_name, long_name, type, &option);
+    case ARGX_OPTION_VALUE:
+        error = argx_command_add_value(command, short_name, long_name, type, &option);
         break;
     default:
         NAOS_FAIL("a test asked for an unknown kind of option");
@@ -554,15 +554,15 @@ static bool add_option(sweep_t *sweep, clargs_command_t *command, clargs_option_
     return true;
 }
 
-static bool add_positional(sweep_t *sweep, clargs_command_t *command, const char *name,
-                           const clargs_type_t *type, clargs_arity_t arity,
-                           clargs_positional_t **out)
+static bool add_positional(sweep_t *sweep, argx_command_t *command, const char *name,
+                           const argx_type_t *type, argx_arity_t arity,
+                           argx_positional_t **out)
 {
-    clargs_positional_t *positional = sweep->other_positional;
-    clargs_error_t error;
+    argx_positional_t *positional = sweep->other_positional;
+    argx_error_t error;
 
     begin_call(sweep);
-    error = clargs_command_add_positional(command, name, type, arity, &positional);
+    error = argx_command_add_positional(command, name, type, arity, &positional);
     if (!end_call(sweep, error, positional == NULL))
     {
         return false;
@@ -593,40 +593,40 @@ typedef enum bool_attribute
     OPTION_INITIAL
 } bool_attribute_t;
 
-static bool set_command_text(sweep_t *sweep, clargs_command_t *command, const char *text)
+static bool set_command_text(sweep_t *sweep, argx_command_t *command, const char *text)
 {
-    clargs_error_t error;
+    argx_error_t error;
 
     begin_call(sweep);
-    error = clargs_command_set_description(command, text);
+    error = argx_command_set_description(command, text);
     if (!end_call(sweep, error, true))
     {
         return false;
     }
-    NAOS_CHECK_STR_EQ(clargs_command_description(command), text);
+    NAOS_CHECK_STR_EQ(argx_command_description(command), text);
     return true;
 }
 
-static bool set_option_text(sweep_t *sweep, text_attribute_t attribute, clargs_option_t *option,
+static bool set_option_text(sweep_t *sweep, text_attribute_t attribute, argx_option_t *option,
                             const char *text)
 {
-    clargs_error_t error = CLARGS_ERROR_NONE;
+    argx_error_t error = ARGX_ERROR_NONE;
     const char *read = NULL;
 
     begin_call(sweep);
     switch (attribute)
     {
     case OPTION_DESCRIPTION:
-        error = clargs_option_set_description(option, text);
-        read = clargs_option_description(option);
+        error = argx_option_set_description(option, text);
+        read = argx_option_description(option);
         break;
     case OPTION_VALUE_NAME:
-        error = clargs_option_set_value_name(option, text);
-        read = clargs_option_value_name(option);
+        error = argx_option_set_value_name(option, text);
+        read = argx_option_value_name(option);
         break;
     case OPTION_DEFAULT:
-        error = clargs_option_set_default(option, text);
-        read = clargs_option_default(option);
+        error = argx_option_set_default(option, text);
+        read = argx_option_default(option);
         break;
     case COMMAND_DESCRIPTION:
     case POSITIONAL_DESCRIPTION:
@@ -645,21 +645,21 @@ static bool set_option_text(sweep_t *sweep, text_attribute_t attribute, clargs_o
 }
 
 static bool set_positional_text(sweep_t *sweep, text_attribute_t attribute,
-                                clargs_positional_t *positional, const char *text)
+                                argx_positional_t *positional, const char *text)
 {
-    clargs_error_t error = CLARGS_ERROR_NONE;
+    argx_error_t error = ARGX_ERROR_NONE;
     const char *read = NULL;
 
     begin_call(sweep);
     switch (attribute)
     {
     case POSITIONAL_DESCRIPTION:
-        error = clargs_positional_set_description(positional, text);
-        read = clargs_positional_description(positional);
+        error = argx_positional_set_description(positional, text);
+        read = argx_positional_description(positional);
         break;
     case POSITIONAL_DEFAULT:
-        error = clargs_positional_set_default(positional, text);
-        read = clargs_positional_default(positional);
+        error = argx_positional_set_default(positional, text);
+        read = argx_positional_default(positional);
         break;
     case COMMAND_DESCRIPTION:
     case OPTION_DESCRIPTION:
@@ -678,22 +678,22 @@ static bool set_positional_text(sweep_t *sweep, text_attribute_t attribute,
     return true;
 }
 
-static bool set_option_bool(sweep_t *sweep, bool_attribute_t attribute, clargs_option_t *option,
+static bool set_option_bool(sweep_t *sweep, bool_attribute_t attribute, argx_option_t *option,
                             bool value)
 {
-    clargs_error_t error = CLARGS_ERROR_NONE;
+    argx_error_t error = ARGX_ERROR_NONE;
     bool read = !value;
 
     begin_call(sweep);
     switch (attribute)
     {
     case OPTION_REQUIRED:
-        error = clargs_option_set_required(option, value);
-        read = clargs_option_is_required(option);
+        error = argx_option_set_required(option, value);
+        read = argx_option_is_required(option);
         break;
     case OPTION_INITIAL:
-        error = clargs_option_set_initial(option, value);
-        read = clargs_option_initial(option);
+        error = argx_option_set_initial(option, value);
+        read = argx_option_initial(option);
         break;
     default:
         NAOS_FAIL("a test asked for an unknown attribute");
@@ -710,19 +710,19 @@ static bool set_option_bool(sweep_t *sweep, bool_attribute_t attribute, clargs_o
 /* A validation of the tree, which has no fault. */
 static bool validate_tree(sweep_t *sweep)
 {
-    const clargs_command_t *command = sweep->other;
-    const clargs_option_t *option = sweep->other_option;
-    const clargs_positional_t *positional = sweep->other_positional;
-    clargs_error_t error;
+    const argx_command_t *command = sweep->other;
+    const argx_option_t *option = sweep->other_option;
+    const argx_positional_t *positional = sweep->other_positional;
+    argx_error_t error;
 
     begin_call(sweep);
-    error = clargs_command_validate(sweep->root, &command, &option, &positional);
+    error = argx_command_validate(sweep->root, &command, &option, &positional);
     if (!end_call(sweep, error, (command == NULL) && (option == NULL) && (positional == NULL)))
     {
         return false;
     }
     NAOS_CHECK_TRUE((command == NULL) && (option == NULL) && (positional == NULL));
-    NAOS_CHECK_TRUE(clargs_command_is_validated(sweep->root));
+    NAOS_CHECK_TRUE(argx_command_is_validated(sweep->root));
     return true;
 }
 
@@ -760,7 +760,7 @@ static bool create_types(sweep_t *sweep)
  */
 static bool build_tree(sweep_t *sweep, tree_t *tree)
 {
-    clargs_command_t *root;
+    argx_command_t *root;
 
     if (!create_root(sweep))
     {
@@ -768,33 +768,33 @@ static bool build_tree(sweep_t *sweep, tree_t *tree)
     }
     root = sweep->root;
 
-    return add_option(sweep, root, CLARGS_OPTION_FLAG, 'v', "verbose", NULL, &tree->verbose) &&
-           add_option(sweep, root, CLARGS_OPTION_NEGATABLE, '\0', "color", NULL, &tree->color) &&
+    return add_option(sweep, root, ARGX_OPTION_FLAG, 'v', "verbose", NULL, &tree->verbose) &&
+           add_option(sweep, root, ARGX_OPTION_NEGATABLE, '\0', "color", NULL, &tree->color) &&
            add_subcommand(sweep, root, "build", &tree->build) &&
-           add_option(sweep, root, CLARGS_OPTION_COUNT, 'q', "quiet", NULL, &tree->quiet) &&
-           add_option(sweep, root, CLARGS_OPTION_VALUE, 'o', "output", clargs_type_string(),
+           add_option(sweep, root, ARGX_OPTION_COUNT, 'q', "quiet", NULL, &tree->quiet) &&
+           add_option(sweep, root, ARGX_OPTION_VALUE, 'o', "output", argx_type_string(),
                       &tree->output) &&
            add_subcommand(sweep, root, "run", &tree->run) &&
-           add_option(sweep, root, CLARGS_OPTION_VALUE, '\0', "ratio", clargs_type_float(),
+           add_option(sweep, root, ARGX_OPTION_VALUE, '\0', "ratio", argx_type_float(),
                       &tree->ratio) &&
-           add_option(sweep, root, CLARGS_OPTION_VALUE, 'm', "mode", sweep->choice, &tree->mode) &&
-           add_option(sweep, root, CLARGS_OPTION_VALUE, 'p', NULL, sweep->custom, &tree->port) &&
+           add_option(sweep, root, ARGX_OPTION_VALUE, 'm', "mode", sweep->choice, &tree->mode) &&
+           add_option(sweep, root, ARGX_OPTION_VALUE, 'p', NULL, sweep->custom, &tree->port) &&
            add_subcommand(sweep, root, "test", NULL) &&
            add_subcommand(sweep, root, "bench", NULL) &&
            add_subcommand(sweep, root, "clean", NULL) &&
-           add_option(sweep, tree->build, CLARGS_OPTION_VALUE, 'j', "jobs", clargs_type_int(),
+           add_option(sweep, tree->build, ARGX_OPTION_VALUE, 'j', "jobs", argx_type_int(),
                       &tree->jobs) &&
-           add_positional(sweep, tree->build, "source", clargs_type_string(),
-                          CLARGS_ARITY_REQUIRED, NULL) &&
-           add_positional(sweep, tree->build, "level", clargs_type_int(), CLARGS_ARITY_REQUIRED,
+           add_positional(sweep, tree->build, "source", argx_type_string(),
+                          ARGX_ARITY_REQUIRED, NULL) &&
+           add_positional(sweep, tree->build, "level", argx_type_int(), ARGX_ARITY_REQUIRED,
                           NULL) &&
-           add_positional(sweep, tree->build, "first", sweep->choice, CLARGS_ARITY_REQUIRED, NULL) &&
-           add_positional(sweep, tree->build, "second", sweep->custom, CLARGS_ARITY_REQUIRED, NULL) &&
-           add_positional(sweep, tree->build, "target", clargs_type_string(),
-                          CLARGS_ARITY_OPTIONAL, &tree->target) &&
-           add_option(sweep, tree->run, CLARGS_OPTION_FLAG, 'v', "verbose", NULL, NULL) &&
-           add_positional(sweep, tree->run, "args", clargs_type_string(),
-                          CLARGS_ARITY_ZERO_OR_MORE, NULL);
+           add_positional(sweep, tree->build, "first", sweep->choice, ARGX_ARITY_REQUIRED, NULL) &&
+           add_positional(sweep, tree->build, "second", sweep->custom, ARGX_ARITY_REQUIRED, NULL) &&
+           add_positional(sweep, tree->build, "target", argx_type_string(),
+                          ARGX_ARITY_OPTIONAL, &tree->target) &&
+           add_option(sweep, tree->run, ARGX_OPTION_FLAG, 'v', "verbose", NULL, NULL) &&
+           add_positional(sweep, tree->run, "args", argx_type_string(),
+                          ARGX_ARITY_ZERO_OR_MORE, NULL);
 }
 
 /*
@@ -882,12 +882,12 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
         {
             return false;
         }
-        NAOS_CHECK_UINT_EQ(clargs_command_option_count(sweep->root), 7);
-        NAOS_CHECK_UINT_EQ(clargs_command_subcommand_count(sweep->root), 5);
-        NAOS_CHECK_UINT_EQ(clargs_command_option_count(tree.build), 1);
-        NAOS_CHECK_UINT_EQ(clargs_command_positional_count(tree.build), 5);
-        NAOS_CHECK_UINT_EQ(clargs_command_positional_count(tree.run), 1);
-        NAOS_CHECK_FALSE(clargs_command_is_validated(sweep->root));
+        NAOS_CHECK_UINT_EQ(argx_command_option_count(sweep->root), 7);
+        NAOS_CHECK_UINT_EQ(argx_command_subcommand_count(sweep->root), 5);
+        NAOS_CHECK_UINT_EQ(argx_command_option_count(tree.build), 1);
+        NAOS_CHECK_UINT_EQ(argx_command_positional_count(tree.build), 5);
+        NAOS_CHECK_UINT_EQ(argx_command_positional_count(tree.run), 1);
+        NAOS_CHECK_FALSE(argx_command_is_validated(sweep->root));
         return true;
 
     case OPERATION_SET_ATTRIBUTES:
@@ -899,7 +899,7 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
         {
             return false;
         }
-        NAOS_CHECK_FALSE(clargs_command_is_validated(sweep->root));
+        NAOS_CHECK_FALSE(argx_command_is_validated(sweep->root));
         return true;
 
     case OPERATION_CREATE_TYPES:
@@ -909,11 +909,11 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
         {
             return false;
         }
-        NAOS_CHECK_TRUE(clargs_type_kind(sweep->choice) == CLARGS_TYPE_CHOICE);
-        NAOS_CHECK_UINT_EQ(clargs_type_choice_count(sweep->choice), 3);
-        NAOS_CHECK_STR_EQ(clargs_type_choice_at(sweep->choice, 2), "exact");
-        NAOS_CHECK_TRUE(clargs_type_kind(sweep->custom) == CLARGS_TYPE_CUSTOM);
-        NAOS_CHECK_STR_EQ(clargs_type_name(sweep->custom), "port");
+        NAOS_CHECK_TRUE(argx_type_kind(sweep->choice) == ARGX_TYPE_CHOICE);
+        NAOS_CHECK_UINT_EQ(argx_type_choice_count(sweep->choice), 3);
+        NAOS_CHECK_STR_EQ(argx_type_choice_at(sweep->choice, 2), "exact");
+        NAOS_CHECK_TRUE(argx_type_kind(sweep->custom) == ARGX_TYPE_CUSTOM);
+        NAOS_CHECK_STR_EQ(argx_type_name(sweep->custom), "port");
         return true;
 
     case OPERATION_VALIDATE:
@@ -926,7 +926,7 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
         {
             return false;
         }
-        NAOS_CHECK_TRUE(clargs_command_is_validated(sweep->root));
+        NAOS_CHECK_TRUE(argx_command_is_validated(sweep->root));
         return true;
 
     default:
@@ -945,7 +945,7 @@ static void fail_every_allocation_of(operation_t operation)
     bool completed = false;
     size_t n;
 
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
     for (n = 1; n <= REQUEST_LIMIT; ++n)
     {
@@ -988,7 +988,7 @@ static void fail_every_allocation_of(operation_t operation)
     /* The loop ended because the operation completed, not at the limit. */
     NAOS_CHECK_TRUE(completed);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 

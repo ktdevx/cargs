@@ -1,5 +1,5 @@
 /*
- * Tests of the help: clargs_help_write() of <clargs/help.h>.
+ * Tests of the help: argx_help_write() of <argx/help.h>.
  *
  * Each test builds a schema, validates it, has the help of one of its
  * commands written and compares the text with the expected string, by its
@@ -23,7 +23,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -85,45 +85,45 @@ static bool sink_write(void *user_data, const char *text, size_t length)
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* Installs the test allocator and creates a root with the name "tool". */
-static clargs_command_t *create_root(void)
+static argx_command_t *create_root(void)
 {
-    clargs_command_t *root = NULL;
+    argx_command_t *root = NULL;
 
-    clargs_test_allocator_install();
-    NAOS_REQUIRE_TRUE(clargs_command_create("tool", &root) == CLARGS_ERROR_NONE);
+    argx_test_allocator_install();
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &root) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(root != NULL);
     return root;
 }
 
 /* Destroys root and ends the test: nothing stays allocated. */
-static void destroy_root(clargs_command_t *root)
+static void destroy_root(argx_command_t *root)
 {
-    clargs_command_destroy(root);
-    clargs_test_allocator_uninstall();
+    argx_command_destroy(root);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* Sets the description of command; it must succeed. */
-static void describe(clargs_command_t *command, const char *description)
+static void describe(argx_command_t *command, const char *description)
 {
-    NAOS_REQUIRE_TRUE(clargs_command_set_description(command, description) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_description(command, description) == ARGX_ERROR_NONE);
 }
 
 /*
  * Adds a subcommand that must succeed, and returns it. description is its
  * description, or NULL to set none.
  */
-static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
+static argx_command_t *add_sub(argx_command_t *command, const char *name,
                                  const char *description)
 {
-    clargs_command_t *sub = NULL;
+    argx_command_t *sub = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(command, name, &sub) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(command, name, &sub) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sub != NULL);
     if (description != NULL)
     {
@@ -136,18 +136,18 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
  * Adds a positional of strings that must succeed. description is its
  * description, or NULL to set none.
  */
-static void add_positional(clargs_command_t *command, const char *name, clargs_arity_t arity,
+static void add_positional(argx_command_t *command, const char *name, argx_arity_t arity,
                            const char *description)
 {
-    clargs_positional_t *positional = NULL;
+    argx_positional_t *positional = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, clargs_type_string(), arity,
-                                                    &positional) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, argx_type_string(), arity,
+                                                    &positional) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
-                          CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_positional_set_description(positional, description) ==
+                          ARGX_ERROR_NONE);
     }
 }
 
@@ -156,17 +156,17 @@ static void add_positional(clargs_command_t *command, const char *name, clargs_a
  * for a name that the option does not have; description is its
  * description, or NULL to set none.
  */
-static void add_flag(clargs_command_t *command, char short_name, const char *long_name,
+static void add_flag(argx_command_t *command, char short_name, const char *long_name,
                      const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(command, short_name, long_name, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
     }
 }
 
@@ -174,17 +174,17 @@ static void add_flag(clargs_command_t *command, char short_name, const char *lon
  * Adds a count that must succeed, with the names and the description as
  * for add_flag().
  */
-static void add_count(clargs_command_t *command, char short_name, const char *long_name,
+static void add_count(argx_command_t *command, char short_name, const char *long_name,
                       const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_count(command, short_name, long_name, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_count(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
     }
 }
 
@@ -193,40 +193,40 @@ static void add_count(clargs_command_t *command, char short_name, const char *lo
  * display name value_name. The option is not required and has no default
  * value.
  */
-static void add_value(clargs_command_t *command, char short_name, const char *long_name,
+static void add_value(argx_command_t *command, char short_name, const char *long_name,
                       const char *value_name, const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, clargs_type_string(),
-                                               &option) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, argx_type_string(),
+                                               &option) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, value_name) == ARGX_ERROR_NONE);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
     }
 }
 
 /* Validates the tree of root; it must have no fault. */
-static void validate(clargs_command_t *root)
+static void validate(argx_command_t *root)
 {
-    NAOS_REQUIRE_TRUE(clargs_command_validate(root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
+    NAOS_REQUIRE_TRUE(argx_command_validate(root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_is_validated(root));
 }
 
 /*
  * Creates help options with the width and the indent given; the maximum
  * column keeps its default value.
  */
-static clargs_help_options_t *create_options(size_t width, size_t indent)
+static argx_help_options_t *create_options(size_t width, size_t indent)
 {
-    clargs_help_options_t *options = NULL;
+    argx_help_options_t *options = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(options != NULL);
-    clargs_help_options_set_width(options, width);
-    clargs_help_options_set_indent(options, indent);
+    argx_help_options_set_width(options, width);
+    argx_help_options_set_indent(options, indent);
     return options;
 }
 
@@ -290,28 +290,28 @@ static void check_shape(const char *text, size_t length)
  * allocator, and that the schema is still validated. The generation may
  * allocate: for the cell text of an option or of a positional.
  */
-static void check_help_with(const clargs_command_t *command, const clargs_help_options_t *options,
+static void check_help_with(const argx_command_t *command, const argx_help_options_t *options,
                             const char *expected)
 {
     sink_t sink;
-    size_t live = clargs_test_allocator_live();
+    size_t live = argx_test_allocator_live();
 
     sink_init(&sink);
 
-    NAOS_CHECK_TRUE(clargs_help_write(command, options, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_write(command, options, sink_write, &sink) == ARGX_ERROR_NONE);
 
     NAOS_CHECK_UINT_EQ(sink.length, strlen(expected));
     NAOS_CHECK_MEM_EQ(sink.text, sink.length, expected, strlen(expected));
     check_shape(sink.text, sink.length);
     check_shape(expected, strlen(expected));
     NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
-    NAOS_CHECK_TRUE(clargs_command_is_validated(command));
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
+    NAOS_CHECK_TRUE(argx_command_is_validated(command));
 }
 
 /* The same without help options: every setting has its default value. */
-static void check_help(const clargs_command_t *command, const char *expected)
+static void check_help(const argx_command_t *command, const char *expected)
 {
     check_help_with(command, NULL, expected);
 }
@@ -325,7 +325,7 @@ static void check_help(const clargs_command_t *command, const char *expected)
  */
 NAOS_TEST(root_with_description_and_subcommands)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "Manage the remote repositories.");
     add_sub(root, "add", "Add a remote");
@@ -353,14 +353,14 @@ NAOS_TEST(root_with_description_and_subcommands)
  */
 NAOS_TEST(second_level_subcommand_with_positionals)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *remote = add_sub(root, "remote", "Manage the remotes");
-    clargs_command_t *add = add_sub(remote, "add", "Add a remote.");
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add_sub(root, "remote", "Manage the remotes");
+    argx_command_t *add = add_sub(remote, "add", "Add a remote.");
 
     describe(root, "The tool.");
-    add_positional(add, "name", CLARGS_ARITY_REQUIRED, "Name of the remote");
-    add_positional(add, "url", CLARGS_ARITY_OPTIONAL, "Address of the remote");
-    add_positional(add, "tags", CLARGS_ARITY_ZERO_OR_MORE, "Tags to set");
+    add_positional(add, "name", ARGX_ARITY_REQUIRED, "Name of the remote");
+    add_positional(add, "url", ARGX_ARITY_OPTIONAL, "Address of the remote");
+    add_positional(add, "tags", ARGX_ARITY_ZERO_OR_MORE, "Tags to set");
     validate(root);
 
     check_help(add,
@@ -400,7 +400,7 @@ NAOS_TEST(command_without_description)
                                    "\n"
                                    "Commands:\n"
                                    "  add  Add a remote\n";
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "add", "Add a remote");
     validate(root);
@@ -414,7 +414,7 @@ NAOS_TEST(command_without_description)
 /* A command with nothing at all: the help is the usage line. */
 NAOS_TEST(command_with_nothing_is_only_the_usage_line)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     validate(root);
     check_help(root, "Usage: tool\n");
@@ -425,7 +425,7 @@ NAOS_TEST(command_with_nothing_is_only_the_usage_line)
 /* A command with a description only: no list and no title of a list. */
 NAOS_TEST(command_with_description_only)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "Do one thing.");
     validate(root);
@@ -445,15 +445,15 @@ NAOS_TEST(command_with_description_only)
  */
 NAOS_TEST(parts_are_separated_by_one_empty_line)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *run = add_sub(root, "run", "Run it");
-    clargs_command_t *stop = add_sub(root, "stop", NULL);
-    clargs_command_t *wait = add_sub(root, "wait", NULL);
+    argx_command_t *root = create_root();
+    argx_command_t *run = add_sub(root, "run", "Run it");
+    argx_command_t *stop = add_sub(root, "stop", NULL);
+    argx_command_t *wait = add_sub(root, "wait", NULL);
     sink_t sink;
 
     describe(root, "Do things.");
-    add_positional(run, "x", CLARGS_ARITY_OPTIONAL, "A thing");
-    add_positional(stop, "y", CLARGS_ARITY_OPTIONAL, "Another thing");
+    add_positional(run, "x", ARGX_ARITY_OPTIONAL, "A thing");
+    add_positional(stop, "y", ARGX_ARITY_OPTIONAL, "Another thing");
     describe(stop, "Stop it.");
     validate(root);
 
@@ -467,7 +467,7 @@ NAOS_TEST(parts_are_separated_by_one_empty_line)
                "  stop  Stop it.\n"
                "  wait\n");
     sink_init(&sink);
-    NAOS_REQUIRE_TRUE(clargs_help_write(root, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write(root, NULL, sink_write, &sink) == ARGX_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(count_empty_lines(sink.text, sink.length), 2);
 
     check_help(stop,
@@ -478,7 +478,7 @@ NAOS_TEST(parts_are_separated_by_one_empty_line)
                "Arguments:\n"
                "  [y]  Another thing\n");
     sink_init(&sink);
-    NAOS_REQUIRE_TRUE(clargs_help_write(stop, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write(stop, NULL, sink_write, &sink) == ARGX_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(count_empty_lines(sink.text, sink.length), 2);
 
     /*
@@ -495,14 +495,14 @@ NAOS_TEST(parts_are_separated_by_one_empty_line)
 
     check_help(wait, "Usage: tool wait\n");
     sink_init(&sink);
-    NAOS_REQUIRE_TRUE(clargs_help_write(wait, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write(wait, NULL, sink_write, &sink) == ARGX_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(count_empty_lines(sink.text, sink.length), 0);
 
     destroy_root(root);
 
     /* A list only: one. */
     root = create_root();
-    add_positional(root, "x", CLARGS_ARITY_OPTIONAL, "A thing");
+    add_positional(root, "x", ARGX_ARITY_OPTIONAL, "A thing");
     validate(root);
 
     check_help(root,
@@ -511,7 +511,7 @@ NAOS_TEST(parts_are_separated_by_one_empty_line)
                "Arguments:\n"
                "  [x]  A thing\n");
     sink_init(&sink);
-    NAOS_REQUIRE_TRUE(clargs_help_write(root, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write(root, NULL, sink_write, &sink) == ARGX_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(count_empty_lines(sink.text, sink.length), 1);
 
     destroy_root(root);
@@ -525,13 +525,13 @@ NAOS_TEST(parts_are_separated_by_one_empty_line)
  */
 NAOS_TEST(items_come_in_definition_order)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *zeta = add_sub(root, "zeta", "Last letter");
+    argx_command_t *root = create_root();
+    argx_command_t *zeta = add_sub(root, "zeta", "Last letter");
 
     add_sub(root, "alpha", "First letter");
     add_sub(root, "mid", "Between");
-    add_positional(zeta, "second", CLARGS_ARITY_REQUIRED, "Added first");
-    add_positional(zeta, "first", CLARGS_ARITY_ONE_OR_MORE, "Added second");
+    add_positional(zeta, "second", ARGX_ARITY_REQUIRED, "Added first");
+    add_positional(zeta, "first", ARGX_ARITY_ONE_OR_MORE, "Added second");
     validate(root);
 
     check_help(root,
@@ -561,11 +561,11 @@ NAOS_TEST(items_come_in_definition_order)
  */
 NAOS_TEST(grandchildren_are_not_listed)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *remote = add_sub(root, "remote", "Manage the remotes");
-    clargs_command_t *add = add_sub(remote, "add-a-new-remote", "Add a remote");
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add_sub(root, "remote", "Manage the remotes");
+    argx_command_t *add = add_sub(remote, "add-a-new-remote", "Add a remote");
 
-    add_positional(add, "where-to-look", CLARGS_ARITY_OPTIONAL, "Where to look");
+    add_positional(add, "where-to-look", ARGX_ARITY_OPTIONAL, "Where to look");
     add_sub(root, "log", "Show the history");
     validate(root);
 
@@ -585,8 +585,8 @@ NAOS_TEST(grandchildren_are_not_listed)
  */
 NAOS_TEST(subcommand_description_is_cut_at_first_newline)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *add = add_sub(root, "add", "Add a remote\n\nThe remote is not fetched.");
+    argx_command_t *root = create_root();
+    argx_command_t *add = add_sub(root, "add", "Add a remote\n\nThe remote is not fetched.");
 
     add_sub(root, "list", "List the remotes\n");
     validate(root);
@@ -614,10 +614,10 @@ NAOS_TEST(subcommand_description_is_cut_at_first_newline)
  */
 NAOS_TEST(positional_description_is_written_whole)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "input", CLARGS_ARITY_REQUIRED, "File to read\nor - for the input\n");
-    add_positional(root, "x", CLARGS_ARITY_OPTIONAL, "A thing");
+    add_positional(root, "input", ARGX_ARITY_REQUIRED, "File to read\nor - for the input\n");
+    add_positional(root, "x", ARGX_ARITY_OPTIONAL, "A thing");
     validate(root);
 
     check_help(root,
@@ -638,17 +638,17 @@ NAOS_TEST(positional_description_is_written_whole)
  */
 NAOS_TEST(empty_description_is_not_written)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *add;
+    argx_command_t *root = create_root();
+    argx_command_t *add;
 
     describe(root, "");
     add = add_sub(root, "add", "");
     add_sub(root, "remove", "\n\n");
     add_sub(root, "rename", "\nOnly on the second line");
     add_sub(root, "list", "List the remotes");
-    add_positional(add, "x", CLARGS_ARITY_OPTIONAL, "");
-    add_positional(add, "y", CLARGS_ARITY_OPTIONAL, "\n");
-    add_positional(add, "z", CLARGS_ARITY_OPTIONAL, "A thing");
+    add_positional(add, "x", ARGX_ARITY_OPTIONAL, "");
+    add_positional(add, "y", ARGX_ARITY_OPTIONAL, "\n");
+    add_positional(add, "z", ARGX_ARITY_OPTIONAL, "A thing");
     validate(root);
 
     check_help(root,
@@ -691,13 +691,13 @@ NAOS_TEST(empty_description_is_not_written)
  */
 NAOS_TEST(item_without_description_is_heading_only)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *add = add_sub(root, "add", "Add a remote");
+    argx_command_t *root = create_root();
+    argx_command_t *add = add_sub(root, "add", "Add a remote");
 
     add_sub(root, "remove-all", NULL);
-    add_positional(add, "name", CLARGS_ARITY_REQUIRED, NULL);
-    add_positional(add, "x", CLARGS_ARITY_OPTIONAL, "A thing");
-    add_positional(add, "rest", CLARGS_ARITY_ZERO_OR_MORE, NULL);
+    add_positional(add, "name", ARGX_ARITY_REQUIRED, NULL);
+    add_positional(add, "x", ARGX_ARITY_OPTIONAL, "A thing");
+    add_positional(add, "rest", ARGX_ARITY_ZERO_OR_MORE, NULL);
     validate(root);
 
     check_help(root,
@@ -727,7 +727,7 @@ NAOS_TEST(item_without_description_is_heading_only)
  */
 NAOS_TEST(command_description_keeps_inner_newlines_and_drops_trailing_ones)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "First line.\nSecond line.\n\nSecond paragraph.\n\n");
     add_sub(root, "add", "Add a remote");
@@ -755,10 +755,10 @@ NAOS_TEST(command_description_keeps_inner_newlines_and_drops_trailing_ones)
  */
 NAOS_TEST(heading_with_newline_inside_counts_all_its_bytes)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "a\nb", CLARGS_ARITY_REQUIRED, "Two lines");
-    add_positional(root, "in", CLARGS_ARITY_REQUIRED, "One line");
+    add_positional(root, "a\nb", ARGX_ARITY_REQUIRED, "Two lines");
+    add_positional(root, "in", ARGX_ARITY_REQUIRED, "One line");
     validate(root);
 
     check_help(root,
@@ -780,7 +780,7 @@ NAOS_TEST(heading_with_newline_inside_counts_all_its_bytes)
  */
 NAOS_TEST(descriptions_wrap_at_default_width)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "This description of the command is long enough to go beyond the "
                    "eighty columns of the default width.");
@@ -808,12 +808,12 @@ NAOS_TEST(descriptions_wrap_at_default_width)
  */
 NAOS_TEST(width_and_indent_of_options_are_used)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *add = add_sub(root, "add", "Add a remote to the list of the known remotes");
-    clargs_help_options_t *options = create_options(40, 4);
+    argx_command_t *root = create_root();
+    argx_command_t *add = add_sub(root, "add", "Add a remote to the list of the known remotes");
+    argx_help_options_t *options = create_options(40, 4);
 
     describe(root, "Manage the remote repositories of the project.");
-    add_positional(add, "x", CLARGS_ARITY_OPTIONAL, "The name that the remote is known by");
+    add_positional(add, "x", ARGX_ARITY_OPTIONAL, "The name that the remote is known by");
     validate(root);
 
     /* The column is 4 + 3 + 2 = 9, at most half the width. */
@@ -837,7 +837,7 @@ NAOS_TEST(width_and_indent_of_options_are_used)
                     "         known by\n");
 
     /* The indent 0: the items start the line. */
-    clargs_help_options_set_indent(options, 0);
+    argx_help_options_set_indent(options, 0);
     check_help_with(root, options,
                     "Usage: tool [COMMAND]\n"
                     "\n"
@@ -858,8 +858,8 @@ NAOS_TEST(width_and_indent_of_options_are_used)
                     "     by\n");
 
     /* The width 0: nothing is broken. */
-    clargs_help_options_set_width(options, 0);
-    clargs_help_options_set_indent(options, 2);
+    argx_help_options_set_width(options, 0);
+    argx_help_options_set_indent(options, 2);
     check_help_with(root, options,
                     "Usage: tool [COMMAND]\n"
                     "\n"
@@ -875,7 +875,7 @@ NAOS_TEST(width_and_indent_of_options_are_used)
                     "Arguments:\n"
                     "  [x]  The name that the remote is known by\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -894,34 +894,34 @@ NAOS_TEST(null_options_are_the_default_options)
                                        "\n"
                                        "Arguments:\n"
                                        "  [x]  A thing\n";
-    clargs_command_t *root = create_root();
-    clargs_command_t *run = add_sub(root, "run", "Run it");
-    clargs_help_options_t *options = NULL;
+    argx_command_t *root = create_root();
+    argx_command_t *run = add_sub(root, "run", "Run it");
+    argx_help_options_t *options = NULL;
 
     describe(root, "Do things.");
-    add_positional(run, "x", CLARGS_ARITY_OPTIONAL, "A thing");
+    add_positional(run, "x", ARGX_ARITY_OPTIONAL, "A thing");
     validate(root);
 
-    NAOS_REQUIRE_TRUE(clargs_help_options_create(&options) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_options_create(&options) == ARGX_ERROR_NONE);
 
     check_help(root, expected_root);
     check_help_with(root, options, expected_root);
     check_help(run, expected_run);
     check_help_with(run, options, expected_run);
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
 /* ---- The usage line -------------------------------------------------------- */
 
 /*
- * Checks that the text of clargs_help_write_usage() for command and
- * options is the start of the text of clargs_help_write(), and that the
+ * Checks that the text of argx_help_write_usage() for command and
+ * options is the start of the text of argx_help_write(), and that the
  * help goes on behind it.
  */
-static void check_usage_is_head(const clargs_command_t *command,
-                                const clargs_help_options_t *options)
+static void check_usage_is_head(const argx_command_t *command,
+                                const argx_help_options_t *options)
 {
     sink_t usage;
     sink_t help;
@@ -929,9 +929,9 @@ static void check_usage_is_head(const clargs_command_t *command,
     sink_init(&usage);
     sink_init(&help);
 
-    NAOS_REQUIRE_TRUE(clargs_help_write_usage(command, options, sink_write, &usage) ==
-                      CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_help_write(command, options, sink_write, &help) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write_usage(command, options, sink_write, &usage) ==
+                      ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write(command, options, sink_write, &help) == ARGX_ERROR_NONE);
 
     NAOS_REQUIRE_TRUE(usage.length != 0);
     NAOS_REQUIRE_TRUE(help.length > usage.length);
@@ -946,14 +946,14 @@ static void check_usage_is_head(const clargs_command_t *command,
  */
 NAOS_TEST(usage_alone_is_the_head_of_the_help)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *remote = add_sub(root, "remote", "Manage the remotes");
-    clargs_help_options_t *options = create_options(30, 2);
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add_sub(root, "remote", "Manage the remotes");
+    argx_help_options_t *options = create_options(30, 2);
 
     describe(root, "The tool.");
-    add_positional(remote, "name", CLARGS_ARITY_REQUIRED, "Name of the remote");
-    add_positional(remote, "url", CLARGS_ARITY_OPTIONAL, "Address");
-    add_positional(remote, "tags", CLARGS_ARITY_ZERO_OR_MORE, "Tags to set");
+    add_positional(remote, "name", ARGX_ARITY_REQUIRED, "Name of the remote");
+    add_positional(remote, "url", ARGX_ARITY_OPTIONAL, "Address");
+    add_positional(remote, "tags", ARGX_ARITY_ZERO_OR_MORE, "Tags to set");
     validate(root);
 
     check_usage_is_head(root, NULL);
@@ -977,7 +977,7 @@ NAOS_TEST(usage_alone_is_the_head_of_the_help)
                     "  [url]      Address\n"
                     "  [tags]...  Tags to set\n");
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -992,48 +992,48 @@ typedef struct snapshot
     bool validated;
     const char *root_name;
     const char *root_description;
-    const clargs_command_t *root_parent;
+    const argx_command_t *root_parent;
     size_t options;
     size_t positionals;
     size_t subcommands;
     size_t sub_positionals;
     size_t sub_subcommands;
-    const clargs_command_t *sub;
+    const argx_command_t *sub;
     const char *sub_name;
     const char *sub_description;
-    const clargs_command_t *sub_parent;
-    const clargs_positional_t *positional;
+    const argx_command_t *sub_parent;
+    const argx_positional_t *positional;
     const char *positional_name;
     const char *positional_description;
     const char *positional_default;
-    clargs_arity_t positional_arity;
-    const clargs_type_t *positional_type;
+    argx_arity_t positional_arity;
+    const argx_type_t *positional_type;
 } snapshot_t;
 
-static snapshot_t take_snapshot(const clargs_command_t *root)
+static snapshot_t take_snapshot(const argx_command_t *root)
 {
     snapshot_t snapshot;
 
     memset(&snapshot, 0, sizeof snapshot);
-    snapshot.validated = clargs_command_is_validated(root);
-    snapshot.root_name = clargs_command_name(root);
-    snapshot.root_description = clargs_command_description(root);
-    snapshot.root_parent = clargs_command_parent(root);
-    snapshot.options = clargs_command_option_count(root);
-    snapshot.positionals = clargs_command_positional_count(root);
-    snapshot.subcommands = clargs_command_subcommand_count(root);
-    snapshot.sub = clargs_command_subcommand_at(root, 0);
-    snapshot.sub_name = clargs_command_name(snapshot.sub);
-    snapshot.sub_description = clargs_command_description(snapshot.sub);
-    snapshot.sub_parent = clargs_command_parent(snapshot.sub);
-    snapshot.sub_positionals = clargs_command_positional_count(snapshot.sub);
-    snapshot.sub_subcommands = clargs_command_subcommand_count(snapshot.sub);
-    snapshot.positional = clargs_command_positional_at(snapshot.sub, 0);
-    snapshot.positional_name = clargs_positional_name(snapshot.positional);
-    snapshot.positional_description = clargs_positional_description(snapshot.positional);
-    snapshot.positional_default = clargs_positional_default(snapshot.positional);
-    snapshot.positional_arity = clargs_positional_arity(snapshot.positional);
-    snapshot.positional_type = clargs_positional_type(snapshot.positional);
+    snapshot.validated = argx_command_is_validated(root);
+    snapshot.root_name = argx_command_name(root);
+    snapshot.root_description = argx_command_description(root);
+    snapshot.root_parent = argx_command_parent(root);
+    snapshot.options = argx_command_option_count(root);
+    snapshot.positionals = argx_command_positional_count(root);
+    snapshot.subcommands = argx_command_subcommand_count(root);
+    snapshot.sub = argx_command_subcommand_at(root, 0);
+    snapshot.sub_name = argx_command_name(snapshot.sub);
+    snapshot.sub_description = argx_command_description(snapshot.sub);
+    snapshot.sub_parent = argx_command_parent(snapshot.sub);
+    snapshot.sub_positionals = argx_command_positional_count(snapshot.sub);
+    snapshot.sub_subcommands = argx_command_subcommand_count(snapshot.sub);
+    snapshot.positional = argx_command_positional_at(snapshot.sub, 0);
+    snapshot.positional_name = argx_positional_name(snapshot.positional);
+    snapshot.positional_description = argx_positional_description(snapshot.positional);
+    snapshot.positional_default = argx_positional_default(snapshot.positional);
+    snapshot.positional_arity = argx_positional_arity(snapshot.positional);
+    snapshot.positional_type = argx_positional_type(snapshot.positional);
     return snapshot;
 }
 
@@ -1042,7 +1042,7 @@ static snapshot_t take_snapshot(const clargs_command_t *root)
  * before: the same objects, the same strings at the same places with the
  * same bytes.
  */
-static void check_snapshot(const clargs_command_t *root, const snapshot_t *before)
+static void check_snapshot(const argx_command_t *root, const snapshot_t *before)
 {
     snapshot_t after = take_snapshot(root);
 
@@ -1088,15 +1088,15 @@ NAOS_TEST(same_input_gives_same_text_and_schema_is_unchanged)
                                    "\n"
                                    "Commands:\n"
                                    "  run  Run it\n";
-    clargs_command_t *root = create_root();
-    clargs_command_t *run = add_sub(root, "run", "Run it\nwith care");
-    clargs_help_options_t *options = create_options(60, 2);
+    argx_command_t *root = create_root();
+    argx_command_t *run = add_sub(root, "run", "Run it\nwith care");
+    argx_help_options_t *options = create_options(60, 2);
     snapshot_t before;
     sink_t first;
     sink_t second;
 
     describe(root, "Do things.\n\nIn two paragraphs.\n");
-    add_positional(run, "x", CLARGS_ARITY_OPTIONAL, "A thing\n");
+    add_positional(run, "x", ARGX_ARITY_OPTIONAL, "A thing\n");
     validate(root);
 
     before = take_snapshot(root);
@@ -1104,9 +1104,9 @@ NAOS_TEST(same_input_gives_same_text_and_schema_is_unchanged)
 
     sink_init(&first);
     sink_init(&second);
-    NAOS_REQUIRE_TRUE(clargs_help_write(root, options, sink_write, &first) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write(root, options, sink_write, &first) == ARGX_ERROR_NONE);
     check_snapshot(root, &before);
-    NAOS_REQUIRE_TRUE(clargs_help_write(root, options, sink_write, &second) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write(root, options, sink_write, &second) == ARGX_ERROR_NONE);
     check_snapshot(root, &before);
 
     NAOS_CHECK_UINT_EQ(first.length, strlen(expected));
@@ -1125,7 +1125,7 @@ NAOS_TEST(same_input_gives_same_text_and_schema_is_unchanged)
                     "  [x]  A thing\n");
     check_snapshot(root, &before);
 
-    clargs_help_options_destroy(options);
+    argx_help_options_destroy(options);
     destroy_root(root);
 }
 
@@ -1133,7 +1133,7 @@ NAOS_TEST(same_input_gives_same_text_and_schema_is_unchanged)
 
 /*
  * Whichever call of the write function fails: the generation returns
- * CLARGS_ERROR_WRITE_FAILED, the write function is not called again, and
+ * ARGX_ERROR_WRITE_FAILED, the write function is not called again, and
  * what it took before is the start of the text.
  */
 NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
@@ -1145,7 +1145,7 @@ NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
                                    "Commands:\n"
                                    "  run   Run it\n"
                                    "  stop  Stop it\n";
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
     sink_t whole;
     size_t requests;
     size_t n;
@@ -1156,12 +1156,12 @@ NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
     validate(root);
 
     sink_init(&whole);
-    NAOS_REQUIRE_TRUE(clargs_help_write(root, NULL, sink_write, &whole) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_help_write(root, NULL, sink_write, &whole) == ARGX_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(whole.length, strlen(expected));
     NAOS_CHECK_MEM_EQ(whole.text, whole.length, expected, strlen(expected));
     NAOS_REQUIRE_TRUE(whole.calls >= 2);
 
-    requests = clargs_test_allocator_requests();
+    requests = argx_test_allocator_requests();
 
     /* Each call in turn is the one that fails. */
     for (n = 1; n <= whole.calls; ++n)
@@ -1171,16 +1171,16 @@ NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
         sink_init(&sink);
         sink.fail_at = n;
 
-        NAOS_CHECK_TRUE(clargs_help_write(root, NULL, sink_write, &sink) ==
-                        CLARGS_ERROR_WRITE_FAILED);
+        NAOS_CHECK_TRUE(argx_help_write(root, NULL, sink_write, &sink) ==
+                        ARGX_ERROR_WRITE_FAILED);
         NAOS_CHECK_UINT_EQ(sink.calls, n);
         NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
         NAOS_CHECK_TRUE(sink.length < strlen(expected));
         NAOS_CHECK_MEM_EQ(sink.text, sink.length, expected, sink.length);
     }
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
-    NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
+    NAOS_CHECK_TRUE(argx_command_is_validated(root));
 
     /* The schema is as usable as before: the next generation succeeds. */
     check_help(root, expected);
@@ -1197,7 +1197,7 @@ NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
  */
 NAOS_TEST(root_with_description_subcommands_and_options)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     describe(root, "Manage the remote repositories.");
     add_sub(root, "add", "Add a remote");
@@ -1231,13 +1231,13 @@ NAOS_TEST(root_with_description_subcommands_and_options)
  */
 NAOS_TEST(second_level_subcommand_with_positionals_and_options)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *remote = add_sub(root, "remote", "Manage the remotes");
-    clargs_command_t *add = add_sub(remote, "add", "Add a remote.");
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add_sub(root, "remote", "Manage the remotes");
+    argx_command_t *add = add_sub(remote, "add", "Add a remote.");
 
     describe(root, "The tool.");
-    add_positional(add, "name", CLARGS_ARITY_REQUIRED, "Name of the remote");
-    add_positional(add, "url", CLARGS_ARITY_OPTIONAL, "Address of the remote");
+    add_positional(add, "name", ARGX_ARITY_REQUIRED, "Name of the remote");
+    add_positional(add, "url", ARGX_ARITY_OPTIONAL, "Address of the remote");
     add_flag(add, 'f', "force", "Replace an existing remote");
     add_value(add, 't', "track", "BRANCH", "Branch to track");
     validate(root);
@@ -1264,8 +1264,8 @@ NAOS_TEST(second_level_subcommand_with_positionals_and_options)
  */
 NAOS_TEST(command_with_options_only)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *run = add_sub(root, "run", NULL);
+    argx_command_t *root = create_root();
+    argx_command_t *run = add_sub(root, "run", NULL);
     sink_t sink;
 
     add_flag(run, 'q', "quiet", "Say nothing");
@@ -1278,7 +1278,7 @@ NAOS_TEST(command_with_options_only)
                "  -q, --quiet  Say nothing\n");
 
     sink_init(&sink);
-    NAOS_CHECK_TRUE(clargs_help_write(run, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_write(run, NULL, sink_write, &sink) == ARGX_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(count_empty_lines(sink.text, sink.length), 1);
 
     describe(run, "Run it.");
@@ -1303,9 +1303,9 @@ NAOS_TEST(command_with_options_only)
  */
 NAOS_TEST(options_of_other_commands_are_not_listed)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *run = add_sub(root, "run", "Run it");
-    clargs_command_t *fast = add_sub(run, "fast", "Run it fast");
+    argx_command_t *root = create_root();
+    argx_command_t *run = add_sub(root, "run", "Run it");
+    argx_command_t *fast = add_sub(run, "fast", "Run it fast");
 
     add_flag(root, 'v', "verbose", "Say more");
     add_flag(run, 'k', "keep-going", "Go on after a failure");
@@ -1349,7 +1349,7 @@ NAOS_TEST(options_of_other_commands_are_not_listed)
  */
 NAOS_TEST(options_come_in_definition_order)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_flag(root, 'z', NULL, "Last letter");
     add_count(root, '\0', "alpha", "First letter");
@@ -1376,7 +1376,7 @@ NAOS_TEST(options_come_in_definition_order)
  */
 NAOS_TEST(commands_and_options_share_the_description_column)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_sub(root, "a", "First");
     add_flag(root, '\0', "long-option-name", "Wide");
@@ -1418,9 +1418,9 @@ NAOS_TEST(commands_and_options_share_the_description_column)
  */
 NAOS_TEST(arguments_and_options_share_the_description_column)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_positional(root, "in", CLARGS_ARITY_REQUIRED, "Input");
+    add_positional(root, "in", ARGX_ARITY_REQUIRED, "Input");
     add_flag(root, '\0', "long-option-name", "Wide");
     validate(root);
 
@@ -1436,7 +1436,7 @@ NAOS_TEST(arguments_and_options_share_the_description_column)
     destroy_root(root);
 
     root = create_root();
-    add_positional(root, "a-long-argument-name", CLARGS_ARITY_ZERO_OR_MORE, "Wide");
+    add_positional(root, "a-long-argument-name", ARGX_ARITY_ZERO_OR_MORE, "Wide");
     add_flag(root, 'q', NULL, "Quiet");
     validate(root);
 

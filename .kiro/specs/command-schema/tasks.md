@@ -146,17 +146,17 @@
 
 ## Implementation Notes
 
-- 3.3: `struct clargs_type` に、設計の Logical Data Model にない `char *owned_name` がある（利用者定義の値型だけが持つ、複製した型の名前。破棄で `const` を外さずに解放するため）。構造体は非公開で、設計の欄はそのまま残る。
+- 3.3: `struct argx_type` に、設計の Logical Data Model にない `char *owned_name` がある（利用者定義の値型だけが持つ、複製した型の名前。破棄で `const` を外さずに解放するため）。構造体は非公開で、設計の欄はそのまま残る。
 - 3.x: 生成の関数は、先頭で `*out = NULL` にし、検査をすべて確保より前に行う。テストは、確保を伴うものを `check_clean()`（未解放 0、契約違反 0）で終え、定数の条件の検査の代わりに `NAOS_FAIL` を使う（MSVC の C4127 を避ける）。
-- 4.1: `clargs_command_find_short()` は `'\0'` に必ず `NULL` を返す（短い名前のないオプションは `'\0'` で持つ）。`<clargs/schema.h>` は、値型を使う宣言を足すタスク（4.2）で `<clargs/type.h>` を取り込む。オプションと位置引数が入った状態の列挙、検索、破棄は、4.2 と 4.4 のテストで公開 API から確かめる。
-- 4.2: 検査の表の 6 行目（否定名の衝突）は、`clargs_command_find_long()` でなく、オプションの列挙で同じ比較をする（`src/option.c` の `negated_name_is_in_use()`）。`no-<名前>` を作るには確保が要り、検査を確保より前に行う設計の順序を保てないためである。
+- 4.1: `argx_command_find_short()` は `'\0'` に必ず `NULL` を返す（短い名前のないオプションは `'\0'` で持つ）。`<argx/schema.h>` は、値型を使う宣言を足すタスク（4.2）で `<argx/type.h>` を取り込む。オプションと位置引数が入った状態の列挙、検索、破棄は、4.2 と 4.4 のテストで公開 API から確かめる。
+- 4.2: 検査の表の 6 行目（否定名の衝突）は、`argx_command_find_long()` でなく、オプションの列挙で同じ比較をする（`src/option.c` の `negated_name_is_in_use()`）。`no-<名前>` を作るには確保が要り、検査を確保より前に行う設計の順序を保てないためである。
 - 4.2: 「追加が成功したら木を未検証にする」は実装済みだが、公開の読み取りがないので、表明は 5.1 のテストで行う。`src/option.c` の `free_new_option()` は `long_name` と `negated_name` だけを解放する（追加の直後は、ほかの文字列は必ず `NULL`）。
-- 4.3: `<clargs/schema.h>` のオプションの文字列の設定の Preconditions に、設計にない 1 文（今その属性として持っている文字列やその一部を渡さない）がある。実装は複製してから解放するので不要で、`clargs_command_set_description()` のコメントとも食い違う。6.2 のヘッダのコメントの点検で消す。位置引数の設定（4.4）には書かない。
+- 4.3: `<argx/schema.h>` のオプションの文字列の設定の Preconditions に、設計にない 1 文（今その属性として持っている文字列やその一部を渡さない）がある。実装は複製してから解放するので不要で、`argx_command_set_description()` のコメントとも食い違う。6.2 のヘッダのコメントの点検で消す。位置引数の設定（4.4）には書かない。
 - 5.1: `tests/public/validate_test.c` の状態のテストは、失敗させる確保点の個数の下限を持ち、`src/vec.c` の初期の容量 4 に依存する。`an_empty_root_is_valid` は、検証が確保を求めないことを表明する（既定値のない木なので、5.2 の後も成り立つ）。
-- 5.2: 変換が `CLARGS_ERROR_OUT_OF_MEMORY` を返したときも、領域の確保の失敗と同じく、3 つの出力先に `NULL` を書く（設計の Postconditions の「確保の失敗」に当たる）。`tests/public/validate_test.c` の確保の回数の表明は、「既定値 1 つにつき確保 1 回」と、`src/number.c` の `SHORT_COPY_SIZE`（64）に依存する。
+- 5.2: 変換が `ARGX_ERROR_OUT_OF_MEMORY` を返したときも、領域の確保の失敗と同じく、3 つの出力先に `NULL` を書く（設計の Postconditions の「確保の失敗」に当たる）。`tests/public/validate_test.c` の確保の回数の表明は、「既定値 1 つにつき確保 1 回」と、`src/number.c` の `SHORT_COPY_SIZE`（64）に依存する。
 - 6.1: Release の構成（`NDEBUG`）では、`assert` の中でしか使わない `static` 関数が未使用になり、警告がエラーになる（4.4 の `src/positional.c` の `is_arity()` がこれに当たり、6.1 の後に式を `assert` に直接書く形へ直した。規約文書「前提条件の検査」）。検証は Debug と Release の両方で行う。
-- 6.2: このスペックの境界の外に、古くなった記述が残っている。`README.md` の冒頭（公開関数は `clargs_version()` だけ、引数パーサーの機能はこれから追加する）と、`docs/ownership.md` の「オブジェクトを生成する公開関数は、後続のスペックが足す」。設計の Modified Files に入っていないので、ここでは直していない。
+- 6.2: このスペックの境界の外に、古くなった記述が残っている。`README.md` の冒頭（公開関数は `argx_version()` だけ、引数パーサーの機能はこれから追加する）と、`docs/ownership.md` の「オブジェクトを生成する公開関数は、後続のスペックが足す」。設計の Modified Files に入っていないので、ここでは直していない。
 - 6.3: MSVC（`/W4 /WX`）は、テストの 2 つの書き方を警告にする。`NAOS_FAIL` は戻らないので、その後に `break;` 以外の文を書かない（C4702）。ASCII の範囲外のバイトは `(char)0x80` でなく `'\x80'` と書く（C4310）。この環境に MSVC はないので、Windows の結果は push の後の CI で確かめる。
 - 6.3: `src/number.c` は、設計の Allowed Dependencies が挙げる `<math.h>` でなく、`<float.h>`（`DBL_MAX`）を使う。どちらも C の標準ヘッダである。
-- 6.3: 要件 9.13（読み取りで返す文字列はルートの破棄まで有効）と、要件 5.7・設計の「古い文字列の解放と入れ替え」は、設定し直せる属性の文字列について食い違う。実装は設計に従い、設定し直すと前の文字列を解放する。`<clargs/schema.h>` と `docs/schema.md` に、その文字列は属性を設定し直すまで有効、と書き足した（`docs/ownership.md` の規則 3 が、関数のコメントに短い期間を書くことを認めている）。要件 9.13 と設計の Components and Interfaces の共通の規則にも、同じ但し書きを足した。
-- 最終検証: `tests/public/error_test.c` に、足した 5 つのエラーコードの値と説明文を固定するテストを 2 つ足した（1.1）。設計の Modified Files にはないが、追加だけで、既存のテストは変えていない。`docs/conventions.md` には、設計の挙げる変更のほかに、MSVC の注意 2 項目（C4702、C4310）を足した。属性の文字列の短い寿命は、`<clargs/schema.h>` の冒頭のコメントに書いてあり、`docs/ownership.md` の規則 3 の「関数のコメント」を、ヘッダの冒頭のコメントも含めて読む。
+- 6.3: 要件 9.13（読み取りで返す文字列はルートの破棄まで有効）と、要件 5.7・設計の「古い文字列の解放と入れ替え」は、設定し直せる属性の文字列について食い違う。実装は設計に従い、設定し直すと前の文字列を解放する。`<argx/schema.h>` と `docs/schema.md` に、その文字列は属性を設定し直すまで有効、と書き足した（`docs/ownership.md` の規則 3 が、関数のコメントに短い期間を書くことを認めている）。要件 9.13 と設計の Components and Interfaces の共通の規則にも、同じ但し書きを足した。
+- 最終検証: `tests/public/error_test.c` に、足した 5 つのエラーコードの値と説明文を固定するテストを 2 つ足した（1.1）。設計の Modified Files にはないが、追加だけで、既存のテストは変えていない。`docs/conventions.md` には、設計の挙げる変更のほかに、MSVC の注意 2 項目（C4702、C4310）を足した。属性の文字列の短い寿命は、`<argx/schema.h>` の冒頭のコメントに書いてあり、`docs/ownership.md` の規則 3 の「関数のコメント」を、ヘッダの冒頭のコメントも含めて読む。

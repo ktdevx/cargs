@@ -1,16 +1,16 @@
 /*
- * CLArgs - library version.
+ * ArgX - library version.
  */
-#include <clargs/version.h>
+#include <argx/version.h>
 
 #include "version_internal.h"
 
-unsigned long clargs_version_pack(unsigned int major, unsigned int minor, unsigned int patch)
+unsigned long argx_version_pack(unsigned int major, unsigned int minor, unsigned int patch)
 {
     return ((unsigned long)major << 16) | ((unsigned long)minor << 8) | (unsigned long)patch;
 }
 
-unsigned long clargs_version(void)
+unsigned long argx_version(void)
 {
-    return clargs_version_pack(CLARGS_VERSION_MAJOR, CLARGS_VERSION_MINOR, CLARGS_VERSION_PATCH);
+    return argx_version_pack(ARGX_VERSION_MAJOR, ARGX_VERSION_MINOR, ARGX_VERSION_PATCH);
 }

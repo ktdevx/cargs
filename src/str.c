@@ -1,5 +1,5 @@
 /*
- * CLArgs - the internal string functions.
+ * ArgX - the internal string functions.
  */
 #include "str.h"
 
@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 
-char *clargs_strdup(const char *str)
+char *argx_strdup(const char *str)
 {
     size_t size;
     char *copy;
@@ -21,7 +21,7 @@ char *clargs_strdup(const char *str)
      * the string and its terminator are an object that exists.
      */
     size = strlen(str) + 1;
-    copy = clargs_malloc(size);
+    copy = argx_malloc(size);
     if (copy == NULL)
     {
         return NULL;

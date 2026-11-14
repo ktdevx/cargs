@@ -1,24 +1,24 @@
-# ClargsTesting.cmake - the test framework (Naos) and the registration of tests.
+# ArgXTesting.cmake - the test framework (Naos) and the registration of tests.
 #
-# Included only when the option CLARGS_BUILD_TESTS is ON. Including it fetches
+# Included only when the option ARGX_BUILD_TESTS is ON. Including it fetches
 # Naos at configure time, so a build without tests never includes it.
 #
-#   clargs_add_test(<name>
+#   argx_add_test(<name>
 #       SOURCES <source>...
 #       [INTERNAL])
 #
 # Registers one test executable. Call it from tests/CMakeLists.txt:
 #
-#   clargs_add_test(version SOURCES public/version_test.c)
-#   clargs_add_test(version_internal SOURCES internal/version_internal_test.c INTERNAL)
+#   argx_add_test(version SOURCES public/version_test.c)
+#   argx_add_test(version_internal SOURCES internal/version_internal_test.c INTERNAL)
 #
-#   - Makes the executable clargs_test_<name> from the sources.
-#   - Gives it the compile settings of the CLArgs targets, without the strict
-#     warnings of the libraries: clargs_target_defaults(<target>).
+#   - Makes the executable argx_test_<name> from the sources.
+#   - Gives it the compile settings of the ArgX targets, without the strict
+#     warnings of the libraries: argx_target_defaults(<target>).
 #   - Links it to Naos::naos and to the code under test:
-#       without INTERNAL  CLArgs::clargs, static or shared as configured, for
+#       without INTERNAL  ArgX::argx, static or shared as configured, for
 #                         the tests of the public API;
-#       with INTERNAL     clargs_internal, always linked statically, for the
+#       with INTERNAL     argx_internal, always linked statically, for the
 #                         tests of the internal functions. The test includes
 #                         an internal header as "version_internal.h".
 #   - On Windows with a shared library, copies the DLLs a test of the public
@@ -47,66 +47,66 @@ FetchContent_Declare(Naos
 )
 FetchContent_MakeAvailable(Naos)
 
-function(clargs_add_test)
-    set(usage "Usage: clargs_add_test(<name> SOURCES <source>... [INTERNAL]).")
+function(argx_add_test)
+    set(usage "Usage: argx_add_test(<name> SOURCES <source>... [INTERNAL]).")
 
     if(ARGC EQUAL 0)
-        message(FATAL_ERROR "clargs_add_test: the test name is missing. ${usage}")
+        message(FATAL_ERROR "argx_add_test: the test name is missing. ${usage}")
     endif()
     set(name "${ARGV0}")
     if(name STREQUAL "SOURCES" OR name STREQUAL "INTERNAL")
         message(FATAL_ERROR
-            "clargs_add_test: the test name is missing: the first argument is "
+            "argx_add_test: the test name is missing: the first argument is "
             "the keyword ${name}. ${usage}")
     endif()
     if(NOT name MATCHES "^[A-Za-z0-9_]+$")
         message(FATAL_ERROR
-            "clargs_add_test: invalid test name \"${name}\": use letters, digits "
+            "argx_add_test: invalid test name \"${name}\": use letters, digits "
             "and underscores only. ${usage}")
     endif()
 
     cmake_parse_arguments(PARSE_ARGV 1 arg "INTERNAL" "" "SOURCES")
     if(DEFINED arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR
-            "clargs_add_test(${name}): unknown arguments: ${arg_UNPARSED_ARGUMENTS}. "
+            "argx_add_test(${name}): unknown arguments: ${arg_UNPARSED_ARGUMENTS}. "
             "${usage}")
     endif()
     if(NOT DEFINED arg_SOURCES)
         message(FATAL_ERROR
-            "clargs_add_test(${name}): no source files: SOURCES is required and "
+            "argx_add_test(${name}): no source files: SOURCES is required and "
             "takes at least one file. ${usage}")
     endif()
 
-    set(target "clargs_test_${name}")
+    set(target "argx_test_${name}")
     if(TARGET "${target}")
         message(FATAL_ERROR
-            "clargs_add_test(${name}): the test name \"${name}\" is already used "
+            "argx_add_test(${name}): the test name \"${name}\" is already used "
             "(the target ${target} exists).")
     endif()
 
     if(arg_INTERNAL)
-        set(library clargs_internal)
+        set(library argx_internal)
         set(label internal)
     else()
-        set(library CLArgs::clargs)
+        set(library ArgX::argx)
         set(label public)
     endif()
     if(NOT TARGET "${library}")
         message(FATAL_ERROR
-            "clargs_add_test(${name}): the target ${library} does not exist. "
-            "Tests are registered only when CLARGS_BUILD_TESTS is ON.")
+            "argx_add_test(${name}): the target ${library} does not exist. "
+            "Tests are registered only when ARGX_BUILD_TESTS is ON.")
     endif()
 
     add_executable("${target}" ${arg_SOURCES})
-    clargs_target_defaults("${target}")
+    argx_target_defaults("${target}")
     target_link_libraries("${target}" PRIVATE Naos::naos "${library}")
 
     # Windows looks for a DLL next to the executable. This command is added
     # before the registration below on purpose: the commands that follow a
     # build run in the order they were added, and Naos lists the tests by
     # running the executable, which needs the DLL already.
-    get_target_property(clargs_type clargs TYPE)
-    if(WIN32 AND clargs_type STREQUAL "SHARED_LIBRARY" AND NOT arg_INTERNAL)
+    get_target_property(argx_type argx TYPE)
+    if(WIN32 AND argx_type STREQUAL "SHARED_LIBRARY" AND NOT arg_INTERNAL)
         add_custom_command(TARGET "${target}" POST_BUILD
             COMMAND "${CMAKE_COMMAND}" -E copy_if_different
                 "$<TARGET_RUNTIME_DLLS:${target}>"

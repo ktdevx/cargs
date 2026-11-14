@@ -8,7 +8,7 @@
 
 ## Current State
 
-リポジトリにはスペック駆動開発の設定（`.claude/`、`.kiro/`、`CLAUDE.md`）だけがあり、ソースコード、ビルド設定、CI はない。公開名は決まっている（`roadmap.md` の Naming。プロジェクト名 CLArgs、ライブラリ名 clargs）。
+リポジトリにはスペック駆動開発の設定（`.claude/`、`.kiro/`、`CLAUDE.md`）だけがあり、ソースコード、ビルド設定、CI はない。公開名は決まっている（`roadmap.md` の Naming。プロジェクト名 ArgX、ライブラリ名 argx）。
 
 ## Desired Outcome
 
@@ -32,7 +32,7 @@ CMake 3.21 以上の、ターゲット中心の構成にする。
 ## Scope
 
 - **In**:
-  - 公開名の反映（ライブラリ名 `clargs`、ヘッダ `<clargs/clargs.h>`、接頭辞 `clargs_` / `CLARGS_`、`find_package(CLArgs)` と `CLArgs::clargs`、`clargs.pc`）と、細かな命名規約
+  - 公開名の反映（ライブラリ名 `argx`、ヘッダ `<argx/argx.h>`、接頭辞 `argx_` / `ARGX_`、`find_package(ArgX)` と `ArgX::argx`、`argx.pc`）と、細かな命名規約
   - ディレクトリ構成（公開ヘッダ、ソース、テスト、CMake モジュール）
   - CMake プロジェクト、ライブラリターゲット、C99 の指定、警告の設定
   - 静的/動的の切り替え、export マクロ、可視性、SOVERSION、Debug ビルドの名前

@@ -1,5 +1,5 @@
 /*
- * CLArgs - the help options: the settings of the layout of a help text.
+ * ArgX - the help options: the settings of the layout of a help text.
  */
 #include "help_internal.h"
 
@@ -13,51 +13,51 @@
  */
 static size_t clamp_setting(size_t value)
 {
-    return (value > CLARGS_HELP_SETTING_MAX) ? CLARGS_HELP_SETTING_MAX : value;
+    return (value > ARGX_HELP_SETTING_MAX) ? ARGX_HELP_SETTING_MAX : value;
 }
 
-clargs_error_t clargs_help_options_create(clargs_help_options_t **out)
+argx_error_t argx_help_options_create(argx_help_options_t **out)
 {
-    clargs_help_options_t *options;
+    argx_help_options_t *options;
 
     assert(out != NULL);
 
     *out = NULL;
 
-    options = clargs_malloc(sizeof(*options));
+    options = argx_malloc(sizeof(*options));
     if (options == NULL)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
-    options->width = CLARGS_HELP_DEFAULT_WIDTH;
-    options->indent = CLARGS_HELP_DEFAULT_INDENT;
-    options->max_column = CLARGS_HELP_DEFAULT_MAX_COLUMN;
+    options->width = ARGX_HELP_DEFAULT_WIDTH;
+    options->indent = ARGX_HELP_DEFAULT_INDENT;
+    options->max_column = ARGX_HELP_DEFAULT_MAX_COLUMN;
 
     *out = options;
-    return CLARGS_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
-void clargs_help_options_destroy(clargs_help_options_t *options)
+void argx_help_options_destroy(argx_help_options_t *options)
 {
-    clargs_free(options);
+    argx_free(options);
 }
 
-void clargs_help_options_set_width(clargs_help_options_t *options, size_t width)
+void argx_help_options_set_width(argx_help_options_t *options, size_t width)
 {
     assert(options != NULL);
 
     options->width = clamp_setting(width);
 }
 
-void clargs_help_options_set_indent(clargs_help_options_t *options, size_t indent)
+void argx_help_options_set_indent(argx_help_options_t *options, size_t indent)
 {
     assert(options != NULL);
 
     options->indent = clamp_setting(indent);
 }
 
-void clargs_help_options_set_max_column(clargs_help_options_t *options, size_t column)
+void argx_help_options_set_max_column(argx_help_options_t *options, size_t column)
 {
     assert(options != NULL);
 

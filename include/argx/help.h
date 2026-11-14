@@ -1,48 +1,48 @@
 /*
- * CLArgs - help: the text that describes a command.
+ * ArgX - help: the text that describes a command.
  *
  * This header holds the type of the write function, which is how the text
  * of a help message leaves the library: the library passes the text, part
  * by part, to a function of the caller, and the caller decides where it
- * goes. It also holds the help options, clargs_help_options_t: the
+ * goes. It also holds the help options, argx_help_options_t: the
  * settings of the layout of the text, and the functions that generate the
- * help of a command, clargs_help_write(), and its usage line alone,
- * clargs_help_write_usage(). clargs_help_format() and
- * clargs_help_format_usage() put the same texts into an array of the
+ * help of a command, argx_help_write(), and its usage line alone,
+ * argx_help_write_usage(). argx_help_format() and
+ * argx_help_format_usage() put the same texts into an array of the
  * caller, as a string, so that the caller needs no write function.
  *
  * Ownership:
  *
  * - The caller creates the help options and destroys them with
- *   clargs_help_options_destroy(). They are independent of every schema.
+ *   argx_help_options_destroy(). They are independent of every schema.
  * - A generation borrows the schema and the help options for the call. It
  *   changes neither, keeps nothing allocated when it returns, and returns
  *   nothing that the caller has to free.
  *
  * Errors:
  *
- * - A generation returns a clargs_error_t. When the write function reports
- *   a failure, the generation stops and returns CLARGS_ERROR_WRITE_FAILED;
+ * - A generation returns a argx_error_t. When the write function reports
+ *   a failure, the generation stops and returns ARGX_ERROR_WRITE_FAILED;
  *   the part of the text that was passed before stays where the write
  *   function put it.
- * - When an allocation fails, clargs_help_write() and clargs_help_format()
- *   return CLARGS_ERROR_OUT_OF_MEMORY. What clargs_help_write() passed
+ * - When an allocation fails, argx_help_write() and argx_help_format()
+ *   return ARGX_ERROR_OUT_OF_MEMORY. What argx_help_write() passed
  *   before stays where the write function put it; the array of
- *   clargs_help_format() then holds the empty string. The usage line alone
+ *   argx_help_format() then holds the empty string. The usage line alone
  *   is generated without memory.
- * - A text that does not fit into the array of clargs_help_format() or
- *   clargs_help_format_usage() is cut, and that is not an error: the
+ * - A text that does not fit into the array of argx_help_format() or
+ *   argx_help_format_usage() is cut, and that is not an error: the
  *   functions tell the length of the whole text.
  * - A NULL pointer where none is allowed and a schema that is not validated
  *   are errors of the program, not error codes: see the preconditions of
  *   each function.
  */
-#ifndef CLARGS_HELP_H
-#define CLARGS_HELP_H
+#ifndef ARGX_HELP_H
+#define ARGX_HELP_H
 
-#include <clargs/error.h>
-#include <clargs/export.h>
-#include <clargs/schema.h>
+#include <argx/error.h>
+#include <argx/export.h>
+#include <argx/schema.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -73,7 +73,7 @@
  * - The write function must not change or destroy the schema that the text
  *   is generated from.
  */
-typedef bool (*clargs_help_write_fn_t)(void *user_data, const char *text, size_t length);
+typedef bool (*argx_help_write_fn_t)(void *user_data, const char *text, size_t length);
 
 /*
  * The help options: the settings of the layout of a help text. The contents
@@ -88,11 +88,11 @@ typedef bool (*clargs_help_write_fn_t)(void *user_data, const char *text, size_t
  * - the maximum column: the last column at which the descriptions of the
  *   items may start. The default is 32. Half of the width, when the width
  *   is not 0, and the indent + 2 bound it further: see
- *   clargs_help_options_set_max_column().
+ *   argx_help_options_set_max_column().
  *
  * No setting is greater than 65535: a greater value is kept as 65535.
  */
-typedef struct clargs_help_options clargs_help_options_t;
+typedef struct argx_help_options argx_help_options_t;
 
 #ifdef __cplusplus
 extern "C"
@@ -104,9 +104,9 @@ extern "C"
  * default value: the width 80, the indent 2, the maximum column 32.
  *
  * The caller owns the help options and destroys them with
- * clargs_help_options_destroy().
+ * argx_help_options_destroy().
  *
- * Returns CLARGS_ERROR_NONE, or CLARGS_ERROR_OUT_OF_MEMORY when the
+ * Returns ARGX_ERROR_NONE, or ARGX_ERROR_OUT_OF_MEMORY when the
  * allocation fails. When the call fails, *out is NULL and nothing is left
  * allocated.
  *
@@ -114,18 +114,18 @@ extern "C"
  *
  * - out is not NULL. Checked with assert.
  */
-CLARGS_API clargs_error_t clargs_help_options_create(clargs_help_options_t **out);
+ARGX_API argx_error_t argx_help_options_create(argx_help_options_t **out);
 
 /*
  * Destroys help options and frees their memory. Does nothing for NULL.
  *
  * Preconditions:
  *
- * - options is NULL, or help options that clargs_help_options_create()
+ * - options is NULL, or help options that argx_help_options_create()
  *   created and that have not been destroyed. Not checked.
  * - No other thread is using the help options. Not checked.
  */
-CLARGS_API void clargs_help_options_destroy(clargs_help_options_t *options);
+ARGX_API void argx_help_options_destroy(argx_help_options_t *options);
 
 /*
  * Sets the width, in columns. 0 means that there is no limit: the text is
@@ -133,7 +133,7 @@ CLARGS_API void clargs_help_options_destroy(clargs_help_options_t *options);
  * kept as 65535. The default is 80.
  *
  * A width that is not 0 also limits the column at which the descriptions
- * of the items start: see clargs_help_options_set_max_column().
+ * of the items start: see argx_help_options_set_max_column().
  *
  * The function allocates no memory and cannot fail.
  *
@@ -144,7 +144,7 @@ CLARGS_API void clargs_help_options_destroy(clargs_help_options_t *options);
  *   checked. Help options that are not being changed may be used by
  *   several threads at the same time.
  */
-CLARGS_API void clargs_help_options_set_width(clargs_help_options_t *options, size_t width);
+ARGX_API void argx_help_options_set_width(argx_help_options_t *options, size_t width);
 
 /*
  * Sets the indent: the number of blanks before each item of a list. An
@@ -159,7 +159,7 @@ CLARGS_API void clargs_help_options_set_width(clargs_help_options_t *options, si
  *   checked. Help options that are not being changed may be used by
  *   several threads at the same time.
  */
-CLARGS_API void clargs_help_options_set_indent(clargs_help_options_t *options, size_t indent);
+ARGX_API void argx_help_options_set_indent(argx_help_options_t *options, size_t indent);
 
 /*
  * Sets the maximum column: the last column at which the descriptions of
@@ -168,7 +168,7 @@ CLARGS_API void clargs_help_options_set_indent(clargs_help_options_t *options, s
  *
  * The limit that a help uses is the smaller of the maximum column and,
  * when the width is not 0, half of the width, rounded down; but it is
- * never less than the indent + 2. clargs_help_write() tells how the limit
+ * never less than the indent + 2. argx_help_write() tells how the limit
  * is used.
  *
  * The function allocates no memory and cannot fail.
@@ -180,7 +180,7 @@ CLARGS_API void clargs_help_options_set_indent(clargs_help_options_t *options, s
  *   checked. Help options that are not being changed may be used by
  *   several threads at the same time.
  */
-CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *options, size_t column);
+ARGX_API void argx_help_options_set_max_column(argx_help_options_t *options, size_t column);
 
 /*
  * Generates the usage line of command, such as
@@ -235,7 +235,7 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
  * called for the same schema and help options from several threads at the
  * same time.
  *
- * Returns CLARGS_ERROR_NONE on success, and CLARGS_ERROR_WRITE_FAILED when
+ * Returns ARGX_ERROR_NONE on success, and ARGX_ERROR_WRITE_FAILED when
  * write_fn returns false. write_fn is then not called again, and the part
  * of the text that it took before the failure stays where it put it: the
  * output may hold the start of the usage line.
@@ -244,7 +244,7 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
  *
  * - command is not NULL. Checked with assert.
  * - The schema that command belongs to is validated: see
- *   clargs_command_is_validated(). Checked with assert.
+ *   argx_command_is_validated(). Checked with assert.
  * - write_fn is not NULL. Checked with assert.
  * - options may be NULL. If not, they have not been destroyed, and no other
  *   thread is changing them during the call. Not checked.
@@ -252,9 +252,9 @@ CLARGS_API void clargs_help_options_set_max_column(clargs_help_options_t *option
  *   write_fn. Not checked.
  * - user_data may be NULL.
  */
-CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *command,
-                                                  const clargs_help_options_t *options,
-                                                  clargs_help_write_fn_t write_fn, void *user_data);
+ARGX_API argx_error_t argx_help_write_usage(const argx_command_t *command,
+                                                  const argx_help_options_t *options,
+                                                  argx_help_write_fn_t write_fn, void *user_data);
 
 /*
  * Generates the help of command, such as
@@ -275,7 +275,7 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * are, and when the name of the root starts with a newline, the blank of
  * "Usage: " ends the first line. Its parts, in this order:
  *
- * - The usage line: byte by byte the text of clargs_help_write_usage() for
+ * - The usage line: byte by byte the text of argx_help_write_usage() for
  *   the same command and help options.
  * - The description of command, from the start of the line, without the
  *   newlines at its end.
@@ -389,20 +389,20 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  * be called for the same schema and help options from several threads at
  * the same time.
  *
- * Returns CLARGS_ERROR_NONE on success. On failure the generation stops,
+ * Returns ARGX_ERROR_NONE on success. On failure the generation stops,
  * write_fn is not called again, and the part of the text that it took
  * before the failure stays where it put it: the output may hold the start
  * of the help.
  *
- * - CLARGS_ERROR_WRITE_FAILED: write_fn returned false.
- * - CLARGS_ERROR_OUT_OF_MEMORY: an allocation failed. The text then ends
+ * - ARGX_ERROR_WRITE_FAILED: write_fn returned false.
+ * - ARGX_ERROR_OUT_OF_MEMORY: an allocation failed. The text then ends
  *   before the line of the option or positional that the memory was for.
  *
  * Preconditions:
  *
  * - command is not NULL. Checked with assert.
  * - The schema that command belongs to is validated: see
- *   clargs_command_is_validated(). Checked with assert.
+ *   argx_command_is_validated(). Checked with assert.
  * - write_fn is not NULL. Checked with assert.
  * - options may be NULL. If not, they have not been destroyed, and no other
  *   thread is changing them during the call. Not checked.
@@ -410,12 +410,12 @@ CLARGS_API clargs_error_t clargs_help_write_usage(const clargs_command_t *comman
  *   write_fn. Not checked.
  * - user_data may be NULL.
  */
-CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
-                                            const clargs_help_options_t *options,
-                                            clargs_help_write_fn_t write_fn, void *user_data);
+ARGX_API argx_error_t argx_help_write(const argx_command_t *command,
+                                            const argx_help_options_t *options,
+                                            argx_help_write_fn_t write_fn, void *user_data);
 
 /*
- * Generates the help of command, the text of clargs_help_write() for the
+ * Generates the help of command, the text of argx_help_write() for the
  * same command and help options, byte by byte, and puts it into buffer, an
  * array of size bytes of the caller, as a string.
  *
@@ -443,19 +443,19 @@ CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
  * help options from several threads at the same time, each with its own
  * buffer.
  *
- * Returns CLARGS_ERROR_NONE on success, also when the text was cut, and
- * CLARGS_ERROR_OUT_OF_MEMORY when an allocation fails. When the call
+ * Returns ARGX_ERROR_NONE on success, also when the text was cut, and
+ * ARGX_ERROR_OUT_OF_MEMORY when an allocation fails. When the call
  * fails, buffer holds the empty string if size is not 0, and is not
  * written to if size is 0; *length, when length is not NULL, is 0. The
  * bytes of the array behind the '\0' of that empty string are then not
  * specified: they may hold a part of the text that was generated before
- * the failure. The function never returns CLARGS_ERROR_WRITE_FAILED.
+ * the failure. The function never returns ARGX_ERROR_WRITE_FAILED.
  *
  * Preconditions:
  *
  * - command is not NULL. Checked with assert.
  * - The schema that command belongs to is validated: see
- *   clargs_command_is_validated(). Checked with assert.
+ *   argx_command_is_validated(). Checked with assert.
  * - buffer is not NULL when size is not 0. Checked with assert. buffer may
  *   be NULL when size is 0.
  * - buffer points to an array of size bytes or more. Not checked.
@@ -464,17 +464,17 @@ CLARGS_API clargs_error_t clargs_help_write(const clargs_command_t *command,
  * - The schema is not changed or destroyed during the call. Not checked.
  * - length may be NULL.
  */
-CLARGS_API clargs_error_t clargs_help_format(const clargs_command_t *command,
-                                             const clargs_help_options_t *options, char *buffer,
+ARGX_API argx_error_t argx_help_format(const argx_command_t *command,
+                                             const argx_help_options_t *options, char *buffer,
                                              size_t size, size_t *length);
 
 /*
  * Generates the usage line of command, the text of
- * clargs_help_write_usage() for the same command and help options, byte by
+ * argx_help_write_usage() for the same command and help options, byte by
  * byte, and puts it into buffer, an array of size bytes of the caller, as a
  * string.
  *
- * buffer, size and length work as in clargs_help_format(): when size is
+ * buffer, size and length work as in argx_help_format(): when size is
  * not 0, the first bytes of the text, size - 1 at most, and a '\0' right
  * behind them are written to buffer, and nothing else; when size is 0,
  * nothing is written, and buffer may be NULL; *length, when length is not
@@ -489,14 +489,14 @@ CLARGS_API clargs_error_t clargs_help_format(const clargs_command_t *command,
  * called for the same schema and help options from several threads at the
  * same time, each with its own buffer.
  *
- * Returns CLARGS_ERROR_NONE, also when the text was cut. The function
+ * Returns ARGX_ERROR_NONE, also when the text was cut. The function
  * cannot fail: buffer and *length are always set as told above.
  *
  * Preconditions:
  *
  * - command is not NULL. Checked with assert.
  * - The schema that command belongs to is validated: see
- *   clargs_command_is_validated(). Checked with assert.
+ *   argx_command_is_validated(). Checked with assert.
  * - buffer is not NULL when size is not 0. Checked with assert. buffer may
  *   be NULL when size is 0.
  * - buffer points to an array of size bytes or more. Not checked.
@@ -505,12 +505,12 @@ CLARGS_API clargs_error_t clargs_help_format(const clargs_command_t *command,
  * - The schema is not changed or destroyed during the call. Not checked.
  * - length may be NULL.
  */
-CLARGS_API clargs_error_t clargs_help_format_usage(const clargs_command_t *command,
-                                                   const clargs_help_options_t *options,
+ARGX_API argx_error_t argx_help_format_usage(const argx_command_t *command,
+                                                   const argx_help_options_t *options,
                                                    char *buffer, size_t size, size_t *length);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CLARGS_HELP_H */
+#endif /* ARGX_HELP_H */

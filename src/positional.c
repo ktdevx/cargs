@@ -1,5 +1,5 @@
 /*
- * CLArgs - positionals: the addition of a positional to a command, the
+ * ArgX - positionals: the addition of a positional to a command, the
  * attributes of a positional, and the reading of a positional.
  */
 #include "schema_internal.h"
@@ -17,14 +17,14 @@
  * Whether command has a positional with the name name. The whole name is
  * compared, byte by byte.
  */
-static bool name_is_in_use(const clargs_command_t *command, const char *name)
+static bool name_is_in_use(const argx_command_t *command, const char *name)
 {
-    size_t count = clargs_command_positional_count(command);
+    size_t count = argx_command_positional_count(command);
     size_t index;
 
     for (index = 0; index < count; ++index)
     {
-        if (strcmp(clargs_command_positional_at(command, index)->name, name) == 0)
+        if (strcmp(argx_command_positional_at(command, index)->name, name) == 0)
         {
             return true;
         }
@@ -37,10 +37,10 @@ static bool name_is_in_use(const clargs_command_t *command, const char *name)
  * in the array of the command. Returns NULL, with nothing left allocated,
  * when an allocation fails.
  */
-static clargs_positional_t *new_positional(clargs_command_t *command, const char *name,
-                                           const clargs_type_t *type, clargs_arity_t arity)
+static argx_positional_t *new_positional(argx_command_t *command, const char *name,
+                                           const argx_type_t *type, argx_arity_t arity)
 {
-    clargs_positional_t *positional = (clargs_positional_t *)clargs_malloc(sizeof(*positional));
+    argx_positional_t *positional = (argx_positional_t *)argx_malloc(sizeof(*positional));
 
     if (positional == NULL)
     {
@@ -53,10 +53,10 @@ static clargs_positional_t *new_positional(clargs_command_t *command, const char
     positional->description = NULL;
     positional->default_value = NULL;
 
-    positional->name = clargs_strdup(name);
+    positional->name = argx_strdup(name);
     if (positional->name == NULL)
     {
-        clargs_free(positional);
+        argx_free(positional);
         return NULL;
     }
 
@@ -67,25 +67,25 @@ static clargs_positional_t *new_positional(clargs_command_t *command, const char
  * Frees a positional that new_positional() returned and that is in no
  * array: it has no string but its name.
  */
-static void free_new_positional(clargs_positional_t *positional)
+static void free_new_positional(argx_positional_t *positional)
 {
-    clargs_free(positional->name);
-    clargs_free(positional);
+    argx_free(positional->name);
+    argx_free(positional);
 }
 
 /* ---- Addition ----------------------------------------------------------- */
 
-clargs_error_t clargs_command_add_positional(clargs_command_t *command, const char *name,
-                                             const clargs_type_t *type, clargs_arity_t arity,
-                                             clargs_positional_t **out)
+argx_error_t argx_command_add_positional(argx_command_t *command, const char *name,
+                                             const argx_type_t *type, argx_arity_t arity,
+                                             argx_positional_t **out)
 {
-    clargs_positional_t *positional;
+    argx_positional_t *positional;
 
     assert(command != NULL);
     assert(name != NULL);
     assert(type != NULL);
-    assert((arity == CLARGS_ARITY_REQUIRED) || (arity == CLARGS_ARITY_OPTIONAL) ||
-           (arity == CLARGS_ARITY_ZERO_OR_MORE) || (arity == CLARGS_ARITY_ONE_OR_MORE));
+    assert((arity == ARGX_ARITY_REQUIRED) || (arity == ARGX_ARITY_OPTIONAL) ||
+           (arity == ARGX_ARITY_ZERO_OR_MORE) || (arity == ARGX_ARITY_ONE_OR_MORE));
 
     if (out != NULL)
     {
@@ -98,40 +98,40 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
      */
     if (name[0] == '\0')
     {
-        return CLARGS_ERROR_INVALID_NAME;
+        return ARGX_ERROR_INVALID_NAME;
     }
-    if (clargs_command_subcommand_count(command) != 0)
+    if (argx_command_subcommand_count(command) != 0)
     {
-        return CLARGS_ERROR_INVALID_DEFINITION;
+        return ARGX_ERROR_INVALID_DEFINITION;
     }
     if (name_is_in_use(command, name))
     {
-        return CLARGS_ERROR_NAME_CONFLICT;
+        return ARGX_ERROR_NAME_CONFLICT;
     }
 
     positional = new_positional(command, name, type, arity);
     if (positional == NULL)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
     /*
      * The tree is changed last: a push that fails leaves the array as it
      * was.
      */
-    if (clargs_vec_push(&command->positionals, &positional) != CLARGS_ERROR_NONE)
+    if (argx_vec_push(&command->positionals, &positional) != ARGX_ERROR_NONE)
     {
         free_new_positional(positional);
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return ARGX_ERROR_OUT_OF_MEMORY;
     }
 
-    clargs_schema_touch(command);
+    argx_schema_touch(command);
 
     if (out != NULL)
     {
         *out = positional;
     }
-    return CLARGS_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
 /* ---- Attributes --------------------------------------------------------- */
@@ -140,20 +140,20 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
  * Sets an attribute that is a string: *slot, a member of positional, gets a
  * copy of text.
  */
-static clargs_error_t set_string(clargs_positional_t *positional, char **slot, const char *text)
+static argx_error_t set_string(argx_positional_t *positional, char **slot, const char *text)
 {
-    clargs_error_t error = clargs_schema_replace_string(slot, text);
+    argx_error_t error = argx_schema_replace_string(slot, text);
 
-    if (error != CLARGS_ERROR_NONE)
+    if (error != ARGX_ERROR_NONE)
     {
         return error;
     }
 
-    clargs_schema_touch(positional->command);
-    return CLARGS_ERROR_NONE;
+    argx_schema_touch(positional->command);
+    return ARGX_ERROR_NONE;
 }
 
-clargs_error_t clargs_positional_set_description(clargs_positional_t *positional, const char *text)
+argx_error_t argx_positional_set_description(argx_positional_t *positional, const char *text)
 {
     assert(positional != NULL);
     assert(text != NULL);
@@ -161,7 +161,7 @@ clargs_error_t clargs_positional_set_description(clargs_positional_t *positional
     return set_string(positional, &positional->description, text);
 }
 
-clargs_error_t clargs_positional_set_default(clargs_positional_t *positional, const char *value)
+argx_error_t argx_positional_set_default(argx_positional_t *positional, const char *value)
 {
     assert(positional != NULL);
     assert(value != NULL);
@@ -170,9 +170,9 @@ clargs_error_t clargs_positional_set_default(clargs_positional_t *positional, co
      * The check of the arity comes before the allocation, so a set on
      * another arity touches nothing.
      */
-    if (positional->arity != CLARGS_ARITY_OPTIONAL)
+    if (positional->arity != ARGX_ARITY_OPTIONAL)
     {
-        return CLARGS_ERROR_INVALID_DEFINITION;
+        return ARGX_ERROR_INVALID_DEFINITION;
     }
 
     return set_string(positional, &positional->default_value, value);
@@ -180,42 +180,42 @@ clargs_error_t clargs_positional_set_default(clargs_positional_t *positional, co
 
 /* ---- Reading ------------------------------------------------------------ */
 
-const clargs_command_t *clargs_positional_command(const clargs_positional_t *positional)
+const argx_command_t *argx_positional_command(const argx_positional_t *positional)
 {
     assert(positional != NULL);
 
     return positional->command;
 }
 
-const char *clargs_positional_name(const clargs_positional_t *positional)
+const char *argx_positional_name(const argx_positional_t *positional)
 {
     assert(positional != NULL);
 
     return positional->name;
 }
 
-clargs_arity_t clargs_positional_arity(const clargs_positional_t *positional)
+argx_arity_t argx_positional_arity(const argx_positional_t *positional)
 {
     assert(positional != NULL);
 
     return positional->arity;
 }
 
-const clargs_type_t *clargs_positional_type(const clargs_positional_t *positional)
+const argx_type_t *argx_positional_type(const argx_positional_t *positional)
 {
     assert(positional != NULL);
 
     return positional->type;
 }
 
-const char *clargs_positional_description(const clargs_positional_t *positional)
+const char *argx_positional_description(const argx_positional_t *positional)
 {
     assert(positional != NULL);
 
     return positional->description;
 }
 
-const char *clargs_positional_default(const clargs_positional_t *positional)
+const char *argx_positional_default(const argx_positional_t *positional)
 {
     assert(positional != NULL);
 

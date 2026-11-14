@@ -1,7 +1,7 @@
 /*
  * Tests of the headings of the options and of the annotations of the
  * options and positionals in the help: the "Options:" and "Arguments:"
- * lists of clargs_help_write() of <clargs/help.h>.
+ * lists of argx_help_write() of <argx/help.h>.
  *
  * Each test builds a schema, validates it, has the help of one of its
  * commands written and compares the text with the expected string, by its
@@ -20,7 +20,7 @@
  * executable. A test starts with an install, destroys what it created, sets
  * the default allocator back before it ends, and ends with check_clean().
  */
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include "../support/test_allocator.h"
 
@@ -82,26 +82,26 @@ static bool sink_write(void *user_data, const char *text, size_t length)
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* Installs the test allocator and creates a root with the name "tool". */
-static clargs_command_t *create_root(void)
+static argx_command_t *create_root(void)
 {
-    clargs_command_t *root = NULL;
+    argx_command_t *root = NULL;
 
-    clargs_test_allocator_install();
-    NAOS_REQUIRE_TRUE(clargs_command_create("tool", &root) == CLARGS_ERROR_NONE);
+    argx_test_allocator_install();
+    NAOS_REQUIRE_TRUE(argx_command_create("tool", &root) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(root != NULL);
     return root;
 }
 
 /* Destroys root and ends the test: nothing stays allocated. */
-static void destroy_root(clargs_command_t *root)
+static void destroy_root(argx_command_t *root)
 {
-    clargs_command_destroy(root);
-    clargs_test_allocator_uninstall();
+    argx_command_destroy(root);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -109,12 +109,12 @@ static void destroy_root(clargs_command_t *root)
  * Sets the description of option, when description is not NULL; it must
  * succeed.
  */
-static void describe_option(clargs_option_t *option, const char *description)
+static void describe_option(argx_option_t *option, const char *description)
 {
     NAOS_REQUIRE_TRUE(option != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_description(option, description) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_description(option, description) == ARGX_ERROR_NONE);
     }
 }
 
@@ -123,35 +123,35 @@ static void describe_option(clargs_option_t *option, const char *description)
  * for a name that the option does not have; description is its
  * description, or NULL to set none.
  */
-static void add_flag(clargs_command_t *command, char short_name, const char *long_name,
+static void add_flag(argx_command_t *command, char short_name, const char *long_name,
                      const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_flag(command, short_name, long_name, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     describe_option(option, description);
 }
 
 /* Adds a negatable flag that must succeed; its initial state stays off. */
-static void add_negatable(clargs_command_t *command, char short_name, const char *long_name,
+static void add_negatable(argx_command_t *command, char short_name, const char *long_name,
                           const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_negatable(command, short_name, long_name, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_negatable(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     describe_option(option, description);
 }
 
 /* Adds a count that must succeed. */
-static void add_count(clargs_command_t *command, char short_name, const char *long_name,
+static void add_count(argx_command_t *command, char short_name, const char *long_name,
                       const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_count(command, short_name, long_name, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_count(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     describe_option(option, description);
 }
 
@@ -160,17 +160,17 @@ static void add_count(clargs_command_t *command, char short_name, const char *lo
  * the display name of the value, or NULL to set none. The option is not
  * required and has no default value.
  */
-static void add_value(clargs_command_t *command, char short_name, const char *long_name,
-                      const clargs_type_t *type, const char *value_name, const char *description)
+static void add_value(argx_command_t *command, char short_name, const char *long_name,
+                      const argx_type_t *type, const char *value_name, const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, type, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (value_name != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, value_name) == ARGX_ERROR_NONE);
     }
     describe_option(option, description);
 }
@@ -179,24 +179,24 @@ static void add_value(clargs_command_t *command, char short_name, const char *lo
  * The conversion function of the user-defined value types of the tests: no
  * test converts a value with it.
  */
-static clargs_error_t convert_nothing(const char *text, void *value, void *context)
+static argx_error_t convert_nothing(const char *text, void *value, void *context)
 {
     (void)text;
     (void)value;
     (void)context;
-    return CLARGS_ERROR_NONE;
+    return ARGX_ERROR_NONE;
 }
 
 /*
  * Creates a user-defined value type with the name given; it must succeed.
  * The test destroys it after the schema that uses it.
  */
-static clargs_type_t *create_type(const char *name)
+static argx_type_t *create_type(const char *name)
 {
-    clargs_type_t *type = NULL;
+    argx_type_t *type = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_type_create(name, sizeof(int), convert_nothing, NULL, NULL, &type) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create(name, sizeof(int), convert_nothing, NULL, NULL, &type) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(type != NULL);
     return type;
 }
@@ -205,25 +205,25 @@ static clargs_type_t *create_type(const char *name)
  * Adds a subcommand that must succeed, and returns it. description is its
  * description, or NULL to set none.
  */
-static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
+static argx_command_t *add_sub(argx_command_t *command, const char *name,
                                  const char *description)
 {
-    clargs_command_t *sub = NULL;
+    argx_command_t *sub = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_subcommand(command, name, &sub) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_subcommand(command, name, &sub) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sub != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_command_set_description(sub, description) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_command_set_description(sub, description) == ARGX_ERROR_NONE);
     }
     return sub;
 }
 
 /* Validates the tree of root; it must have no fault. */
-static void validate(clargs_command_t *root)
+static void validate(argx_command_t *root)
 {
-    NAOS_REQUIRE_TRUE(clargs_command_validate(root, NULL, NULL, NULL) == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
+    NAOS_REQUIRE_TRUE(argx_command_validate(root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_is_validated(root));
 }
 
 /*
@@ -267,28 +267,28 @@ static void check_shape(const char *text, size_t length)
  * allocator, and that the schema is still validated. The generation may
  * allocate: for the cell text of an option or of a positional.
  */
-static void check_help_with(const clargs_command_t *command, const clargs_help_options_t *options,
+static void check_help_with(const argx_command_t *command, const argx_help_options_t *options,
                             const char *expected)
 {
     sink_t sink;
-    size_t live = clargs_test_allocator_live();
+    size_t live = argx_test_allocator_live();
 
     sink_init(&sink);
 
-    NAOS_CHECK_TRUE(clargs_help_write(command, options, sink_write, &sink) == CLARGS_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_help_write(command, options, sink_write, &sink) == ARGX_ERROR_NONE);
 
     NAOS_CHECK_UINT_EQ(sink.length, strlen(expected));
     NAOS_CHECK_MEM_EQ(sink.text, sink.length, expected, strlen(expected));
     check_shape(sink.text, sink.length);
     check_shape(expected, strlen(expected));
     NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
-    NAOS_CHECK_TRUE(clargs_command_is_validated(command));
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
+    NAOS_CHECK_TRUE(argx_command_is_validated(command));
 }
 
 /* The same without help options: every setting has its default value. */
-static void check_help(const clargs_command_t *command, const char *expected)
+static void check_help(const argx_command_t *command, const char *expected)
 {
     check_help_with(command, NULL, expected);
 }
@@ -302,7 +302,7 @@ static void check_help(const clargs_command_t *command, const char *expected)
  */
 NAOS_TEST(flag_heading_has_three_forms_of_names)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_flag(root, 'v', "verbose", "Say more");
     add_flag(root, 'q', NULL, "Say less");
@@ -327,7 +327,7 @@ NAOS_TEST(flag_heading_has_three_forms_of_names)
  */
 NAOS_TEST(long_name_alone_keeps_its_four_blanks)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_flag(root, '\0', "force", "Do it anyway");
     add_flag(root, '\0', "all", "Take everything");
@@ -351,7 +351,7 @@ NAOS_TEST(long_name_alone_keeps_its_four_blanks)
  */
 NAOS_TEST(negatable_flag_heading_shows_the_negated_form)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_negatable(root, 'c', "color", "Use colors");
     add_negatable(root, '\0', "pager", "Page the output");
@@ -372,7 +372,7 @@ NAOS_TEST(negatable_flag_heading_shows_the_negated_form)
 /* A count: "..." right behind the names, in each of their three forms. */
 NAOS_TEST(count_heading_ends_with_dots)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_count(root, 'v', "verbose", "Say more");
     add_count(root, 'd', NULL, "Debug");
@@ -397,12 +397,12 @@ NAOS_TEST(count_heading_ends_with_dots)
  */
 NAOS_TEST(value_heading_shows_the_display_name)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", "Write to FILE");
-    add_value(root, 'n', NULL, clargs_type_string(), "NUM", "Repeat NUM times");
-    add_value(root, '\0', "config", clargs_type_string(), "PATH", "Read the settings");
-    add_value(root, 'j', "jobs", clargs_type_int(), "N", "Run N jobs");
+    add_value(root, 'o', "output", argx_type_string(), "FILE", "Write to FILE");
+    add_value(root, 'n', NULL, argx_type_string(), "NUM", "Repeat NUM times");
+    add_value(root, '\0', "config", argx_type_string(), "PATH", "Read the settings");
+    add_value(root, 'j', "jobs", argx_type_int(), "N", "Run N jobs");
     validate(root);
 
     check_help(root,
@@ -424,12 +424,12 @@ NAOS_TEST(value_heading_shows_the_display_name)
  */
 NAOS_TEST(value_heading_without_display_name_shows_the_type_name)
 {
-    clargs_command_t *root = create_root();
-    clargs_type_t *port = create_type("port");
+    argx_command_t *root = create_root();
+    argx_type_t *port = create_type("port");
 
-    add_value(root, 's', "name", clargs_type_string(), NULL, "Name to use");
-    add_value(root, '\0', "count", clargs_type_int(), NULL, "How many");
-    add_value(root, 'r', NULL, clargs_type_float(), NULL, "Ratio");
+    add_value(root, 's', "name", argx_type_string(), NULL, "Name to use");
+    add_value(root, '\0', "count", argx_type_int(), NULL, "How many");
+    add_value(root, 'r', NULL, argx_type_float(), NULL, "Ratio");
     add_value(root, 'p', "port", port, NULL, "Port to use");
     validate(root);
 
@@ -442,21 +442,21 @@ NAOS_TEST(value_heading_without_display_name_shows_the_type_name)
                "  -r <float>             Ratio\n"
                "  -p, --port <port>      Port to use\n");
 
-    clargs_command_destroy(root);
-    clargs_type_destroy(port);
-    clargs_test_allocator_uninstall();
+    argx_command_destroy(root);
+    argx_type_destroy(port);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /* The four kinds in one list, each with both names. */
 NAOS_TEST(all_kinds_stand_in_one_list)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_flag(root, 'f', "force", "A flag");
     add_negatable(root, 'c', "color", "A negatable flag");
     add_count(root, 'v', "verbose", "A count");
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", "A value");
+    add_value(root, 'o', "output", argx_type_string(), "FILE", "A value");
     validate(root);
 
     check_help(root,
@@ -481,9 +481,9 @@ NAOS_TEST(all_kinds_stand_in_one_list)
  */
 NAOS_TEST(help_flag_of_the_schema_is_listed_and_none_is_added)
 {
-    clargs_command_t *root = create_root();
-    clargs_command_t *run = add_sub(root, "run", "Run it");
-    clargs_command_t *show = add_sub(root, "show", "Show it");
+    argx_command_t *root = create_root();
+    argx_command_t *run = add_sub(root, "run", "Run it");
+    argx_command_t *show = add_sub(root, "show", "Show it");
 
     add_flag(root, 'h', "help", "Show this help");
     add_flag(root, 'V', "version", "Show the version");
@@ -528,13 +528,13 @@ NAOS_TEST(help_flag_of_the_schema_is_listed_and_none_is_added)
  */
 NAOS_TEST(bytes_of_the_schema_are_written_unchanged)
 {
-    clargs_command_t *root = create_root();
-    clargs_type_t *port = create_type("Port Number");
+    argx_command_t *root = create_root();
+    argx_type_t *port = create_type("Port Number");
 
     add_flag(root, 'V', "Verbose", "Be VERBOSE");
     add_flag(root, 'v', "version", "Print the Version");
-    add_value(root, 'O', "OutPut", clargs_type_string(), "File Name", "Write to a File");
-    add_value(root, 'x', NULL, clargs_type_string(), "\xE5\x80\xA4", "\xE8\xAA\xAC\xE6\x98\x8E");
+    add_value(root, 'O', "OutPut", argx_type_string(), "File Name", "Write to a File");
+    add_value(root, 'x', NULL, argx_type_string(), "\xE5\x80\xA4", "\xE8\xAA\xAC\xE6\x98\x8E");
     add_value(root, '\0', "port", port, NULL, "Port to Use");
     validate(root);
 
@@ -548,9 +548,9 @@ NAOS_TEST(bytes_of_the_schema_are_written_unchanged)
                "  -x <\xE5\x80\xA4>                  \xE8\xAA\xAC\xE6\x98\x8E\n"
                "      --port <Port Number>  Port to Use\n");
 
-    clargs_command_destroy(root);
-    clargs_type_destroy(port);
-    clargs_test_allocator_uninstall();
+    argx_command_destroy(root);
+    argx_type_destroy(port);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -561,9 +561,9 @@ NAOS_TEST(bytes_of_the_schema_are_written_unchanged)
  */
 NAOS_TEST(option_heading_with_newline_inside_counts_all_its_bytes)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    add_value(root, 'o', NULL, clargs_type_string(), "A\nB", "Two lines");
+    add_value(root, 'o', NULL, argx_type_string(), "A\nB", "Two lines");
     add_flag(root, 'q', NULL, "One line");
     validate(root);
 
@@ -588,7 +588,7 @@ NAOS_TEST(option_heading_with_newline_inside_counts_all_its_bytes)
  */
 NAOS_TEST(option_description_is_written_whole)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_flag(root, 'a', NULL, NULL);
     add_flag(root, 'b', NULL, "");
@@ -615,33 +615,33 @@ NAOS_TEST(option_description_is_written_whole)
  * Adds an option with a value of type that must succeed, and returns it,
  * so that the test can set what add_value() does not.
  */
-static clargs_option_t *add_value_option(clargs_command_t *command, char short_name,
-                                         const char *long_name, const clargs_type_t *type,
+static argx_option_t *add_value_option(argx_command_t *command, char short_name,
+                                         const char *long_name, const argx_type_t *type,
                                          const char *value_name, const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_value(command, short_name, long_name, type, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_value(command, short_name, long_name, type, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
     if (value_name != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_option_set_value_name(option, value_name) == CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_option_set_value_name(option, value_name) == ARGX_ERROR_NONE);
     }
     describe_option(option, description);
     return option;
 }
 
 /* Adds a negatable flag that must succeed, with the initial state given. */
-static void add_negatable_initial(clargs_command_t *command, char short_name,
+static void add_negatable_initial(argx_command_t *command, char short_name,
                                   const char *long_name, bool on, const char *description)
 {
-    clargs_option_t *option = NULL;
+    argx_option_t *option = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_negatable(command, short_name, long_name, &option) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_negatable(command, short_name, long_name, &option) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(option != NULL);
-    NAOS_REQUIRE_TRUE(clargs_option_set_initial(option, on) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_initial(option, on) == ARGX_ERROR_NONE);
     describe_option(option, description);
 }
 
@@ -649,44 +649,44 @@ static void add_negatable_initial(clargs_command_t *command, char short_name,
  * Adds a positional that must succeed, and returns it. description is its
  * description, or NULL to set none.
  */
-static clargs_positional_t *add_positional(clargs_command_t *command, const char *name,
-                                           const clargs_type_t *type, clargs_arity_t arity,
+static argx_positional_t *add_positional(argx_command_t *command, const char *name,
+                                           const argx_type_t *type, argx_arity_t arity,
                                            const char *description)
 {
-    clargs_positional_t *positional = NULL;
+    argx_positional_t *positional = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_command_add_positional(command, name, type, arity, &positional) ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_positional(command, name, type, arity, &positional) ==
+                      ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(positional != NULL);
     if (description != NULL)
     {
-        NAOS_REQUIRE_TRUE(clargs_positional_set_description(positional, description) ==
-                          CLARGS_ERROR_NONE);
+        NAOS_REQUIRE_TRUE(argx_positional_set_description(positional, description) ==
+                          ARGX_ERROR_NONE);
     }
     return positional;
 }
 
 /* Sets the default value of option; it must succeed. */
-static void set_option_default(clargs_option_t *option, const char *value)
+static void set_option_default(argx_option_t *option, const char *value)
 {
-    NAOS_REQUIRE_TRUE(clargs_option_set_default(option, value) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_default(option, value) == ARGX_ERROR_NONE);
 }
 
 /* Makes option required; it must succeed. */
-static void set_option_required(clargs_option_t *option)
+static void set_option_required(argx_option_t *option)
 {
-    NAOS_REQUIRE_TRUE(clargs_option_set_required(option, true) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_option_set_required(option, true) == ARGX_ERROR_NONE);
 }
 
 /*
  * Creates a value type with the count choices given; it must succeed. The
  * test destroys it after the schema that uses it.
  */
-static clargs_type_t *create_choice(const char *const *choices, size_t count)
+static argx_type_t *create_choice(const char *const *choices, size_t count)
 {
-    clargs_type_t *type = NULL;
+    argx_type_t *type = NULL;
 
-    NAOS_REQUIRE_TRUE(clargs_type_create_choice(choices, count, &type) == CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_type_create_choice(choices, count, &type) == ARGX_ERROR_NONE);
     NAOS_REQUIRE_TRUE(type != NULL);
     return type;
 }
@@ -695,11 +695,11 @@ static clargs_type_t *create_choice(const char *const *choices, size_t count)
  * Destroys root and then type, and ends the test: nothing stays
  * allocated.
  */
-static void destroy_root_and_type(clargs_command_t *root, clargs_type_t *type)
+static void destroy_root_and_type(argx_command_t *root, argx_type_t *type)
 {
-    clargs_command_destroy(root);
-    clargs_type_destroy(type);
-    clargs_test_allocator_uninstall();
+    argx_command_destroy(root);
+    argx_type_destroy(type);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -712,11 +712,11 @@ static void destroy_root_and_type(clargs_command_t *root, clargs_type_t *type)
 NAOS_TEST(option_with_choices_shows_them)
 {
     static const char *const formats[] = {"text", "json", "xml"};
-    clargs_command_t *root = create_root();
-    clargs_type_t *format = create_choice(formats, 3);
+    argx_command_t *root = create_root();
+    argx_type_t *format = create_choice(formats, 3);
 
     add_value(root, 'f', "format", format, "FMT", "Output format");
-    add_value(root, 'o', "output", clargs_type_string(), "FILE", "Write to FILE");
+    add_value(root, 'o', "output", argx_type_string(), "FILE", "Write to FILE");
     validate(root);
 
     check_help(root,
@@ -737,8 +737,8 @@ NAOS_TEST(option_with_choices_shows_them)
 NAOS_TEST(choice_heading_without_display_name_shows_the_type_name_and_the_choices)
 {
     static const char *const whens[] = {"auto", "always", "never"};
-    clargs_command_t *root = create_root();
-    clargs_type_t *when = create_choice(whens, 3);
+    argx_command_t *root = create_root();
+    argx_type_t *when = create_choice(whens, 3);
 
     add_value(root, 'c', "color", when, NULL, "When to use colors");
     validate(root);
@@ -758,14 +758,14 @@ NAOS_TEST(choice_heading_without_display_name_shows_the_type_name_and_the_choice
  */
 NAOS_TEST(option_with_default_shows_it)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
-    set_option_default(add_value_option(root, 'j', "jobs", clargs_type_int(), "N", "Run N jobs"),
+    set_option_default(add_value_option(root, 'j', "jobs", argx_type_int(), "N", "Run N jobs"),
                        "4");
     set_option_default(
-        add_value_option(root, 'd', "dir", clargs_type_string(), "DIR", "Where to write"),
+        add_value_option(root, 'd', "dir", argx_type_string(), "DIR", "Where to write"),
         "My Files");
-    add_value(root, 'n', "name", clargs_type_string(), "NAME", "Name to use");
+    add_value(root, 'n', "name", argx_type_string(), "NAME", "Name to use");
     validate(root);
 
     check_help(root,
@@ -785,13 +785,13 @@ NAOS_TEST(option_with_default_shows_it)
  */
 NAOS_TEST(required_option_shows_it)
 {
-    clargs_command_t *root = create_root();
-    clargs_option_t *user;
+    argx_command_t *root = create_root();
+    argx_option_t *user;
 
     set_option_required(
-        add_value_option(root, 't', "token", clargs_type_string(), "TOKEN", "Access token"));
-    user = add_value_option(root, 'u', "user", clargs_type_string(), "NAME", "Who asks");
-    NAOS_REQUIRE_TRUE(clargs_option_set_required(user, false) == CLARGS_ERROR_NONE);
+        add_value_option(root, 't', "token", argx_type_string(), "TOKEN", "Access token"));
+    user = add_value_option(root, 'u', "user", argx_type_string(), "NAME", "Who asks");
+    NAOS_REQUIRE_TRUE(argx_option_set_required(user, false) == ARGX_ERROR_NONE);
     validate(root);
 
     check_help(root,
@@ -813,8 +813,8 @@ NAOS_TEST(required_option_shows_it)
 NAOS_TEST(annotations_stand_in_their_order)
 {
     static const char *const speeds[] = {"fast", "slow"};
-    clargs_command_t *root = create_root();
-    clargs_type_t *speed = create_choice(speeds, 2);
+    argx_command_t *root = create_root();
+    argx_type_t *speed = create_choice(speeds, 2);
 
     set_option_default(add_value_option(root, 'm', "mode", speed, "MODE", "How to run"), "fast");
     set_option_required(add_value_option(root, 'l', "level", speed, NULL, "Pick one"));
@@ -838,11 +838,11 @@ NAOS_TEST(annotations_stand_in_their_order)
 NAOS_TEST(positional_with_choices_shows_them_and_no_required)
 {
     static const char *const actions[] = {"start", "stop"};
-    clargs_command_t *root = create_root();
-    clargs_type_t *action = create_choice(actions, 2);
+    argx_command_t *root = create_root();
+    argx_type_t *action = create_choice(actions, 2);
 
-    add_positional(root, "action", action, CLARGS_ARITY_REQUIRED, "What to do");
-    add_positional(root, "name", clargs_type_string(), CLARGS_ARITY_REQUIRED, "What to act on");
+    add_positional(root, "action", action, ARGX_ARITY_REQUIRED, "What to do");
+    add_positional(root, "name", argx_type_string(), ARGX_ARITY_REQUIRED, "What to act on");
     validate(root);
 
     check_help(root,
@@ -862,17 +862,17 @@ NAOS_TEST(positional_with_choices_shows_them_and_no_required)
 NAOS_TEST(positional_with_default_shows_it)
 {
     static const char *const units[] = {"s", "ms"};
-    clargs_command_t *root = create_root();
-    clargs_type_t *unit = create_choice(units, 2);
+    argx_command_t *root = create_root();
+    argx_type_t *unit = create_choice(units, 2);
 
-    add_positional(root, "file", clargs_type_string(), CLARGS_ARITY_REQUIRED, "File to read");
-    NAOS_REQUIRE_TRUE(clargs_positional_set_default(
-                          add_positional(root, "count", clargs_type_int(), CLARGS_ARITY_OPTIONAL,
+    add_positional(root, "file", argx_type_string(), ARGX_ARITY_REQUIRED, "File to read");
+    NAOS_REQUIRE_TRUE(argx_positional_set_default(
+                          add_positional(root, "count", argx_type_int(), ARGX_ARITY_OPTIONAL,
                                          "How often"),
-                          "1") == CLARGS_ERROR_NONE);
-    NAOS_REQUIRE_TRUE(clargs_positional_set_default(
-                          add_positional(root, "unit", unit, CLARGS_ARITY_OPTIONAL, "Time unit"),
-                          "ms") == CLARGS_ERROR_NONE);
+                          "1") == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_positional_set_default(
+                          add_positional(root, "unit", unit, ARGX_ARITY_OPTIONAL, "Time unit"),
+                          "ms") == ARGX_ERROR_NONE);
     validate(root);
 
     check_help(root,
@@ -895,17 +895,17 @@ NAOS_TEST(positional_with_default_shows_it)
 NAOS_TEST(annotations_alone_are_the_description)
 {
     static const char *const sizes[] = {"s", "l"};
-    clargs_command_t *root = create_root();
-    clargs_type_t *size = create_choice(sizes, 2);
+    argx_command_t *root = create_root();
+    argx_type_t *size = create_choice(sizes, 2);
 
-    set_option_default(add_value_option(root, 'n', NULL, clargs_type_int(), NULL, NULL), "3");
-    set_option_required(add_value_option(root, 'k', NULL, clargs_type_string(), "KEY", ""));
+    set_option_default(add_value_option(root, 'n', NULL, argx_type_int(), NULL, NULL), "3");
+    set_option_required(add_value_option(root, 'k', NULL, argx_type_string(), "KEY", ""));
     add_value(root, 's', NULL, size, "SIZE", "\n");
     add_negatable_initial(root, '\0', "wrap", true, NULL);
     add_flag(root, 'q', NULL, NULL);
-    NAOS_REQUIRE_TRUE(clargs_positional_set_default(
-                          add_positional(root, "size", size, CLARGS_ARITY_OPTIONAL, NULL), "l") ==
-                      CLARGS_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_positional_set_default(
+                          add_positional(root, "size", size, ARGX_ARITY_OPTIONAL, NULL), "l") ==
+                      ARGX_ERROR_NONE);
     validate(root);
 
     check_help(root,
@@ -930,7 +930,7 @@ NAOS_TEST(annotations_alone_are_the_description)
  */
 NAOS_TEST(negatable_flag_shows_default_on_only)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     add_negatable_initial(root, 'c', "color", true, "Use colors");
     add_negatable_initial(root, '\0', "pager", false, "Page the output");
@@ -956,16 +956,16 @@ NAOS_TEST(negatable_flag_shows_default_on_only)
 NAOS_TEST(annotations_after_final_newline_start_on_the_next_line)
 {
     static const char *const formats[] = {"text", "json"};
-    clargs_command_t *root = create_root();
-    clargs_type_t *format = create_choice(formats, 2);
+    argx_command_t *root = create_root();
+    argx_type_t *format = create_choice(formats, 2);
 
     set_option_default(add_value_option(root, 'f', "format", format, "FMT", "Output format\n"),
                        "text");
     add_negatable_initial(root, '\0', "color", true, "Use colors\nif possible\n");
-    NAOS_REQUIRE_TRUE(clargs_positional_set_default(
-                          add_positional(root, "count", clargs_type_int(), CLARGS_ARITY_OPTIONAL,
+    NAOS_REQUIRE_TRUE(argx_positional_set_default(
+                          add_positional(root, "count", argx_type_int(), ARGX_ARITY_OPTIONAL,
                                          "How often\n"),
-                          "1") == CLARGS_ERROR_NONE);
+                          "1") == ARGX_ERROR_NONE);
     validate(root);
 
     check_help(root,
@@ -994,8 +994,8 @@ NAOS_TEST(annotations_after_final_newline_start_on_the_next_line)
 NAOS_TEST(long_annotations_are_wrapped_at_the_description_column)
 {
     static const char *const formats[] = {"text", "json", "yaml", "html", "markdown"};
-    clargs_command_t *root = create_root();
-    clargs_type_t *format = create_choice(formats, 5);
+    argx_command_t *root = create_root();
+    argx_type_t *format = create_choice(formats, 5);
 
     set_option_default(add_value_option(root, 'f', "format", format, "FMT",
                                         "Format of the report that is written"),
@@ -1025,13 +1025,13 @@ static const char *const memory_help =
     "  -t, --token <TOKEN>  Access token [required]\n"
     "  -j, --jobs <N>       Run N jobs at the same time [default: 4]\n";
 
-static clargs_command_t *create_memory_root(void)
+static argx_command_t *create_memory_root(void)
 {
-    clargs_command_t *root = create_root();
+    argx_command_t *root = create_root();
 
     set_option_required(
-        add_value_option(root, 't', "token", clargs_type_string(), "TOKEN", "Access token"));
-    set_option_default(add_value_option(root, 'j', "jobs", clargs_type_int(), "N",
+        add_value_option(root, 't', "token", argx_type_string(), "TOKEN", "Access token"));
+    set_option_default(add_value_option(root, 'j', "jobs", argx_type_int(), "N",
                                         "Run N jobs at the same time"),
                        "4");
     validate(root);
@@ -1046,38 +1046,38 @@ static clargs_command_t *create_memory_root(void)
  */
 NAOS_TEST(generation_leaves_nothing_allocated)
 {
-    clargs_command_t *root = create_memory_root();
-    size_t live = clargs_test_allocator_live();
-    size_t requests = clargs_test_allocator_requests();
+    argx_command_t *root = create_memory_root();
+    size_t live = argx_test_allocator_live();
+    size_t requests = argx_test_allocator_requests();
     sink_t sink;
 
     sink_init(&sink);
-    NAOS_CHECK_TRUE(clargs_help_write_usage(root, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
+    NAOS_CHECK_TRUE(argx_help_write_usage(root, NULL, sink_write, &sink) == ARGX_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), requests);
 
     check_help(root, memory_help);
-    NAOS_CHECK_TRUE(clargs_test_allocator_requests() > requests);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_TRUE(argx_test_allocator_requests() > requests);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 
-    clargs_command_destroy(root);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    argx_command_destroy(root);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
 /*
  * An allocation of the generation fails, the first one and a later one
- * that grows the cell text: the result is CLARGS_ERROR_OUT_OF_MEMORY,
+ * that grows the cell text: the result is ARGX_ERROR_OUT_OF_MEMORY,
  * nothing of the generation stays allocated, and what was written before
  * is the start of the help. The next generation succeeds.
  */
 NAOS_TEST(generation_out_of_memory_frees_the_cell_text)
 {
-    clargs_command_t *root = create_memory_root();
-    size_t live = clargs_test_allocator_live();
+    argx_command_t *root = create_memory_root();
+    size_t live = argx_test_allocator_live();
     size_t step;
 
     for (step = 1; step <= 3; ++step)
@@ -1085,18 +1085,18 @@ NAOS_TEST(generation_out_of_memory_frees_the_cell_text)
         sink_t sink;
 
         sink_init(&sink);
-        clargs_test_allocator_fail_at(clargs_test_allocator_requests() + step);
+        argx_test_allocator_fail_at(argx_test_allocator_requests() + step);
 
-        NAOS_CHECK_TRUE(clargs_help_write(root, NULL, sink_write, &sink) ==
-                        CLARGS_ERROR_OUT_OF_MEMORY);
-        clargs_test_allocator_fail_at(0);
+        NAOS_CHECK_TRUE(argx_help_write(root, NULL, sink_write, &sink) ==
+                        ARGX_ERROR_OUT_OF_MEMORY);
+        argx_test_allocator_fail_at(0);
 
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), live);
+        NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
         NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
         NAOS_CHECK_TRUE(sink.length < strlen(memory_help));
         NAOS_CHECK_MEM_EQ(sink.text, sink.length, memory_help, sink.length);
-        NAOS_CHECK_TRUE(clargs_command_is_validated(root));
+        NAOS_CHECK_TRUE(argx_command_is_validated(root));
     }
 
     check_help(root, memory_help);

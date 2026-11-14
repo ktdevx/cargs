@@ -2,7 +2,7 @@
 
 ## Introduction
 
-CLArgs（ライブラリ名 `clargs`）を GitHub で OSS としてリリースできるようにする。今のリポジトリには、タグ、GitHub Release、CHANGELOG、バージョンを上げる手順、プレリリースを出す方法のどれもない。利用者は `main` を取り込むしかなく、どの版で何が変わったかを知る手段がない。また、CI はすべてのブランチへの push と PR の両方で動くので PR のブランチでは同じテストが 2 回走り、文書だけの変更でも 3 OS × 静的/動的のビルドがすべて走る。
+ArgX（ライブラリ名 `argx`）を GitHub で OSS としてリリースできるようにする。今のリポジトリには、タグ、GitHub Release、CHANGELOG、バージョンを上げる手順、プレリリースを出す方法のどれもない。利用者は `main` を取り込むしかなく、どの版で何が変わったかを知る手段がない。また、CI はすべてのブランチへの push と PR の両方で動くので PR のブランチでは同じテストが 2 回走り、文書だけの変更でも 3 OS × 静的/動的のビルドがすべて走る。
 
 このスペックは、リリースを半自動にする。メンテナーが手動起動のワークフローにバージョンを渡すとリリース PR ができ、それをマージするとタグと GitHub Release ができる。プレリリースも同じ流れで出す。バージョンは Semantic Versioning 2.0.0、変更履歴は Keep a Changelog 1.1.0 の形式とする。あわせて、CI の起動タイミングを見直す。
 
@@ -10,7 +10,7 @@ CLArgs（ライブラリ名 `clargs`）を GitHub で OSS としてリリース�
 
 - **メンテナー**: リリースを出し、リポジトリの設定を管理する人。
 - **コントリビューター**: PR で変更を出す人。利用者に見える変更を CHANGELOG に記録する。
-- **ライブラリ利用者**: CLArgs を取り込む人。リリースタグ、Release のノート、CHANGELOG、バージョンの規則を読む。
+- **ライブラリ利用者**: ArgX を取り込む人。リリースタグ、Release のノート、CHANGELOG、バージョンの規則を読む。
 
 背景と判断の経緯は同じディレクトリの `brief.md` と、`.kiro/steering/roadmap.md` の「Phase 2: OSS としての公開」を参照。
 
@@ -38,17 +38,17 @@ CLArgs（ライブラリ名 `clargs`）を GitHub で OSS としてリリース�
   - english-docs は、README と CONTRIBUTING から、このスペックが置く CHANGELOG、リリース手順書、バージョンの規則の文書へリンクする。それらの中身は書かない。`docs/conventions.md` の「バージョンについての注意」は、このスペックが内容を更新し、english-docs が英語にする。
   - 既存の PR テンプレートは「利用者に見える変更は CHANGELOG の `Unreleased` に項目を足す」ことを求めている。このスペックの記録の規則はこれと食い違わない。
   - 既存の SECURITY.md は「最新の 0.x のリリースだけを支援し、プレリリースは支援しない」としている。このスペックのバージョンの規則はこれと食い違わない。
-  - build-foundation が決めた「`include/clargs/version.h` がバージョンの唯一の出どころ」「`find_package` の互換判定（メジャーが 0 の間は同じマイナー、1 以上では同じメジャー）」「`clargs_version()` と `CLARGS_VERSION_NUMBER` の意味」は変えない。
+  - build-foundation が決めた「`include/argx/version.h` がバージョンの唯一の出どころ」「`find_package` の互換判定（メジャーが 0 の間は同じマイナー、1 以上では同じメジャー）」「`argx_version()` と `ARGX_VERSION_NUMBER` の意味」は変えない。
 
 ## Requirements
 
 ### Requirement 1: バージョンの運用規則の文書
 
-**Objective:** As a ライブラリ利用者またはコントリビューター, I want CLArgs がバージョン番号をどう上げるかを英語の文書で読めること, so that 版を上げたときに何が壊れうるかを判断できる
+**Objective:** As a ライブラリ利用者またはコントリビューター, I want ArgX がバージョン番号をどう上げるかを英語の文書で読めること, so that 版を上げたときに何が壊れうるかを判断できる
 
 #### Acceptance Criteria
 
-1. The バージョン方針の文書 shall CLArgs が Semantic Versioning 2.0.0 に従い、タグを `v<バージョン>`（例 `v0.2.0`、`v0.2.0-rc.1`）の形で付けることを英語で説明する。
+1. The バージョン方針の文書 shall ArgX が Semantic Versioning 2.0.0 に従い、タグを `v<バージョン>`（例 `v0.2.0`、`v0.2.0-rc.1`）の形で付けることを英語で説明する。
 2. The バージョン方針の文書 shall メジャーが 0 の間は、マイナーが上がると互換が切れうること、パッチの更新は互換を保つこと、メジャーが 1 以上になったら互換が切れうるのはメジャーの更新だけであることを説明する。
 3. The バージョン方針の文書 shall 破壊的変更とみなすものとして、公開 API（関数、型、マクロ）の削除や意味の変更、ソースの互換の喪失、動的ライブラリの ABI の互換の喪失、文書に書かれた挙動の変更を列挙する。
 4. The バージョン方針の文書 shall プレリリース（例 `-rc.1`）が正式版より前の試験用の版であり、互換と支援を約束しないことを説明する。
@@ -61,13 +61,13 @@ CLArgs（ライブラリ名 `clargs`）を GitHub で OSS としてリリース�
 
 #### Acceptance Criteria
 
-1. The バージョンヘッダ（`include/clargs/version.h`） shall メジャー、マイナー、パッチに加えて、プレリリースの識別子を持つ。正式版では識別子は空である。
-2. The CLArgs ビルド shall バージョンヘッダだけからバージョン（数字の部分とプレリリースの識別子）を読み、ほかのファイルに手で書かれたバージョンを使わない。
-3. When プレリリースの識別子が空でないバージョンで構成したとき, the CLArgs ビルド shall pkg-config のファイルのバージョンと、CMake のパッケージが知らせる完全なバージョンの文字列に、プレリリースの識別子を含める（例 `0.2.0-rc.1`）。
-4. When プレリリースの識別子が空のバージョンで構成したとき, the CLArgs ビルド shall pkg-config のファイルと CMake のパッケージに、今と同じ `<major>.<minor>.<patch>` の形のバージョンを示す。
-5. The CLArgs ビルド shall プレリリースの有無にかかわらず、`find_package` の互換判定と、動的ライブラリの ABI バージョン（SOVERSION）を数字の部分だけで決め、今の判定の規則を変えない。
-6. The clargs ライブラリ shall `clargs_version()` と `CLARGS_VERSION_NUMBER` の値の意味（`0x00MMmmpp` に詰めた数字の部分）を変えない。
-7. If バージョンヘッダのプレリリースの識別子が欠けている、重複している、または SemVer 2.0.0 のプレリリースの識別子として正しくない場合, then the CLArgs ビルド shall ヘッダのパスと問題のある箇所を示して構成を失敗させる。
+1. The バージョンヘッダ（`include/argx/version.h`） shall メジャー、マイナー、パッチに加えて、プレリリースの識別子を持つ。正式版では識別子は空である。
+2. The ArgX ビルド shall バージョンヘッダだけからバージョン（数字の部分とプレリリースの識別子）を読み、ほかのファイルに手で書かれたバージョンを使わない。
+3. When プレリリースの識別子が空でないバージョンで構成したとき, the ArgX ビルド shall pkg-config のファイルのバージョンと、CMake のパッケージが知らせる完全なバージョンの文字列に、プレリリースの識別子を含める（例 `0.2.0-rc.1`）。
+4. When プレリリースの識別子が空のバージョンで構成したとき, the ArgX ビルド shall pkg-config のファイルと CMake のパッケージに、今と同じ `<major>.<minor>.<patch>` の形のバージョンを示す。
+5. The ArgX ビルド shall プレリリースの有無にかかわらず、`find_package` の互換判定と、動的ライブラリの ABI バージョン（SOVERSION）を数字の部分だけで決め、今の判定の規則を変えない。
+6. The argx ライブラリ shall `argx_version()` と `ARGX_VERSION_NUMBER` の値の意味（`0x00MMmmpp` に詰めた数字の部分）を変えない。
+7. If バージョンヘッダのプレリリースの識別子が欠けている、重複している、または SemVer 2.0.0 のプレリリースの識別子として正しくない場合, then the ArgX ビルド shall ヘッダのパスと問題のある箇所を示して構成を失敗させる。
 8. While バージョンヘッダが正式版を表している間, the consumer check shall 今と同じ取り込み方法のそれぞれで合格する。
 
 ### Requirement 3: CHANGELOG と記録の規則

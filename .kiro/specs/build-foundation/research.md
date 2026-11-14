@@ -6,8 +6,8 @@
 - **Discovery Scope**: New Feature（グリーンフィールド。リポジトリにソースもビルド設定もない）
 - **Key Findings**:
   - Naos v0.4.0 はテストの実行ファイルをビルド直後（POST_BUILD）に `--naos-list` 付きで起動してテストを列挙する。POST_BUILD は追加した順に走るので、Windows で DLL を実行ファイルの隣へコピーする処理は、列挙の登録より前に追加する必要がある。`naos_add_executable()` では順序を制御できないため、`add_executable()` と `naos_discover_tests()` を使う。
-  - Naos はサブプロジェクトとして取り込むと常に静的ライブラリになり、自己テストもインストール規則も既定で無効になる。警告フラグを親から隔離する仕組みはないので、CLArgs 側は警告をターゲット単位で付ける。
-  - Visual Studio のようなマルチコンフィグのジェネレータでは、`ctest --test-dir build` に `-C` がないとテストが実行されない。要件 1.1（追加の引数なしで 3 コマンドが通る）を満たすには、構成が指定されないときの既定を CLArgs 側で与える必要がある。
+  - Naos はサブプロジェクトとして取り込むと常に静的ライブラリになり、自己テストもインストール規則も既定で無効になる。警告フラグを親から隔離する仕組みはないので、ArgX 側は警告をターゲット単位で付ける。
+  - Visual Studio のようなマルチコンフィグのジェネレータでは、`ctest --test-dir build` に `-C` がないとテストが実行されない。要件 1.1（追加の引数なしで 3 コマンドが通る）を満たすには、構成が指定されないときの既定を ArgX 側で与える必要がある。
 
 ## Research Log
 
@@ -38,7 +38,7 @@
 - **Sources Consulted**: CMake のドキュメント（`TARGET_RUNTIME_DLLS`、3.21 で追加）、Naos の `docs`。
 - **Findings**:
   - `$<TARGET_RUNTIME_DLLS:tgt>` は、ターゲットが実行時に必要とする DLL のパスを返す。
-  - 出力先を 1 つにまとめる方法（`CMAKE_RUNTIME_OUTPUT_DIRECTORY`）でも解決できるが、全体設定なので、CLArgs がほかのプロジェクトに組み込まれたときに親へ影響する。
+  - 出力先を 1 つにまとめる方法（`CMAKE_RUNTIME_OUTPUT_DIRECTORY`）でも解決できるが、全体設定なので、ArgX がほかのプロジェクトに組み込まれたときに親へ影響する。
 - **Implications**: テストの実行ファイルごとに、DLL を実行ファイルの隣へコピーする POST_BUILD を付ける。Windows で動的ライブラリをビルドするときだけ付ける。
 
 ### マルチコンフィグでの `ctest`
@@ -57,7 +57,7 @@
   - Windows では、関数は `__declspec(dllimport)` がなくても import ライブラリ経由でリンクできる。データ（変数）は `dllimport` がないとリンクできない。
   - 静的ライブラリの利用者に `dllimport` が付くと、リンクが失敗する。
   - CMake の `GenerateExportHeader` はヘッダをビルドディレクトリに生成する。ソースツリーをそのまま使う利用者（ほかのビルドシステムへの持ち込み）にはヘッダが足りなくなる。
-- **Implications**: マクロなしの状態を「静的」とし、動的のときだけ `CLARGS_SHARED` を定義する。定義は CMake のターゲットと `clargs.pc` が利用者へ伝える。公開するのは関数だけとし、変数を export しない規約にすれば、定義が伝わらない経路でもリンクは通る。ヘッダは手書きでソースツリーに置く。
+- **Implications**: マクロなしの状態を「静的」とし、動的のときだけ `ARGX_SHARED` を定義する。定義は CMake のターゲットと `argx.pc` が利用者へ伝える。公開するのは関数だけとし、変数を export しない規約にすれば、定義が伝わらない経路でもリンクは通る。ヘッダは手書きでソースツリーに置く。
 
 ### 配布物の再配置
 
@@ -65,7 +65,7 @@
 - **Findings**:
   - `configure_package_config_file()` と `install(EXPORT)` が生成するファイルは、インストール先からの相対パスで動く。
   - pkg-config と pkgconf はどちらも `${pcfiledir}`（`.pc` のあるディレクトリ）を展開する。`prefix` を `${pcfiledir}` からの相対で書けば、移動後も動く。
-- **Implications**: `clargs.pc` の `prefix` は `${pcfiledir}` からの相対パスにする。`CMAKE_INSTALL_LIBDIR` が絶対パスで指定された場合は相対にできないので、絶対パスを書く。
+- **Implications**: `argx.pc` の `prefix` は `${pcfiledir}` からの相対パスにする。`CMAKE_INSTALL_LIBDIR` が絶対パスで指定された場合は相対にできないので、絶対パスを書く。
 
 ## Architecture Pattern Evaluation
 
@@ -81,13 +81,13 @@
 
 - **Context**: 要件 3.1〜3.5。
 - **Alternatives Considered**:
-  1. `GenerateExportHeader` — CMake が生成する。静的のとき `CLARGS_STATIC_DEFINE` が要る。
-  2. 既定を `dllimport` にして、静的のとき `CLARGS_STATIC` を定義する。
-  3. 既定を属性なしにして、動的のとき `CLARGS_SHARED` を定義する。
-- **Selected Approach**: 3。`include/clargs/export.h` に手書きする。
+  1. `GenerateExportHeader` — CMake が生成する。静的のとき `ARGX_STATIC_DEFINE` が要る。
+  2. 既定を `dllimport` にして、静的のとき `ARGX_STATIC` を定義する。
+  3. 既定を属性なしにして、動的のとき `ARGX_SHARED` を定義する。
+- **Selected Approach**: 3。`include/argx/export.h` に手書きする。
 - **Rationale**: 定義が利用者へ伝わらない場合でも、静的はそのままリンクでき、動的も関数だけならリンクできる。壊れる組み合わせがない。ヘッダがソースツリーにそろう。
 - **Trade-offs**: 公開する変数を持てない。ロードマップの方針（不透明ハンドルと関数）と一致するので制約にならない。
-- **Follow-up**: Windows で、`CLARGS_SHARED` なしの利用者が DLL にリンクできることを利用側の確認で確かめる。
+- **Follow-up**: Windows で、`ARGX_SHARED` なしの利用者が DLL にリンクできることを利用側の確認で確かめる。
 
 ### Decision: 内部関数のテストは、同じソースから作る静的なテスト用ライブラリにリンクする
 
@@ -96,7 +96,7 @@
   1. OBJECT ライブラリを本体とテストで共有する — コンパイルは 1 回。ただし動的のときのオブジェクトは `dllexport` 付きで、テスト側の宣言と食い違う。
   2. テストのときだけ全シンボルを export する — 本番と違うものをテストすることになる。
   3. 動的のときだけ、同じソース一覧から静的なテスト用ライブラリをもう 1 つ作る。
-- **Selected Approach**: 3。ターゲット名は `clargs_internal`。静的のときは `clargs` 自体を指す。
+- **Selected Approach**: 3。ターゲット名は `argx_internal`。静的のときは `argx` 自体を指す。
 - **Rationale**: 本体の成果物に手を加えない。テスト側のリンク先がいつも同じ名前になる。
 - **Trade-offs**: 動的かつテスト有効のとき、ソースを 2 回コンパイルする。ライブラリが小さいので許容する。
 - **Follow-up**: なし。
@@ -107,10 +107,10 @@
 - **Alternatives Considered**:
   1. 種類ごとに 1 つの実行ファイル — `main` を持つファイルに全スイートを列挙する。
   2. テストのファイルごとに実行ファイルを作る — 各ファイルが `NAOS_MAIN` を持つ。
-- **Selected Approach**: 2。`clargs_add_test()` を 1 回呼ぶと 1 つの実行ファイルになる。
+- **Selected Approach**: 2。`argx_add_test()` を 1 回呼ぶと 1 つの実行ファイルになる。
 - **Rationale**: スイートを列挙する共有ファイルがなくなり、並行作業でぶつからない。足す手順が「ファイルを置いて 1 行書く」だけになる。
 - **Trade-offs**: リンクと列挙の回数が増える。
-- **Follow-up**: テストが増えてビルド時間が問題になったら、1 つの `clargs_add_test()` に複数のソースを渡してまとめる。
+- **Follow-up**: テストが増えてビルド時間が問題になったら、1 つの `argx_add_test()` に複数のソースを渡してまとめる。
 
 ### Decision: バージョンの互換性は、1.0 より前はマイナー一致、以後はメジャー一致
 
@@ -131,8 +131,8 @@
   1. 文字列を返す — 表示には便利だが、比較しにくい。
   2. 3 つの出力引数で返す — 呼び出しが長い。
   3. `(major << 16) | (minor << 8) | patch` を返す。
-- **Selected Approach**: 3。同じ式のマクロ `CLARGS_VERSION_NUMBER` をヘッダに置く。
-- **Rationale**: 「ヘッダとライブラリが合っているか」を `clargs_version() == CLARGS_VERSION_NUMBER` の 1 行で確かめられる。
+- **Selected Approach**: 3。同じ式のマクロ `ARGX_VERSION_NUMBER` をヘッダに置く。
+- **Rationale**: 「ヘッダとライブラリが合っているか」を `argx_version() == ARGX_VERSION_NUMBER` の 1 行で確かめられる。
 - **Trade-offs**: 各要素が 0〜255 に限られる。
 - **Follow-up**: 文字列が必要になったら、後続のスペックではなくこのスペックの改訂として足す。
 
@@ -141,7 +141,7 @@
 - **Context**: 要件 9.4 と 7.5。
 - **Selected Approach**: `tests/consumer/` に利用側のプロジェクトを 1 つ置き、変数で取り込み方法を切り替える。駆動は `cmake -P` のスクリプトにして、OS ごとのシェルの違いを避ける。インストール先を別の場所へ移してから取り込む。
 - **Rationale**: 4 つの方法で同じ `main.c` を使える。CI のワークフローに OS 別の手順を書かずに済む。
-- **Trade-offs**: pkg-config の確認は Linux と macOS だけにする。Windows の MSVC では pkg-config を使う経路が一般的でなく、ランナーに入っている保証もないため、`clargs.pc` が配置されることだけを確かめる。
+- **Trade-offs**: pkg-config の確認は Linux と macOS だけにする。Windows の MSVC では pkg-config を使う経路が一般的でなく、ランナーに入っている保証もないため、`argx.pc` が配置されることだけを確かめる。
 
 ## Synthesis Outcomes
 
@@ -154,7 +154,7 @@
 - マルチコンフィグでの `ctest` の既定構成が推定どおりに動かない — 実装の最初に Windows で確かめる。動かなければ要件 1.1 の Windows での手順を見直す必要があるので、設計へ戻す。
 - Naos v0.4.0 の既知の警告（#39、#40）でテストのビルドが止まる — 該当する使い方を規約で避ける。修正版がリリースされたらタグを上げる。
 - Naos は 1.0 より前で、マイナーが上がると互換が切れる — タグを 1 か所で固定し、上げるときは全テストを通してから変える。
-- テストを有効にすると、構成のときにネットワークが要る — README に `FETCHCONTENT_SOURCE_DIR_NAOS` と `CLARGS_BUILD_TESTS=OFF` を書く。
+- テストを有効にすると、構成のときにネットワークが要る — README に `FETCHCONTENT_SOURCE_DIR_NAOS` と `ARGX_BUILD_TESTS=OFF` を書く。
 - DLL を自分自身の場所へコピーする場合（親が出力先をまとめているとき）の挙動 — 実装時に確かめる。
 
 ## References

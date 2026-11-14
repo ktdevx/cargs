@@ -1,4 +1,4 @@
-# ClargsChangelog.cmake - reads and updates CHANGELOG.md, which follows Keep a
+# ArgXChangelog.cmake - reads and updates CHANGELOG.md, which follows Keep a
 # Changelog 1.1.0 (https://keepachangelog.com/en/1.1.0/).
 #
 # The release scripts include this module and run with "cmake -P". It needs
@@ -19,7 +19,7 @@
 #   - The first line is "# Changelog".
 #   - "## [Unreleased]" appears exactly once and is the first "## " heading.
 #   - Every other "## " heading is "## [<version>] - <YYYY-MM-DD>", where
-#     <version> is valid for ClargsSemver.cmake. No version appears twice, and
+#     <version> is valid for ArgXSemver.cmake. No version appears twice, and
 #     each is lower, by SemVer 2.0.0 precedence, than the one above it.
 #   - In a body, a "### " heading is one of the categories of Keep a Changelog:
 #     Added, Changed, Deprecated, Removed, Fixed or Security. An entry is a
@@ -36,7 +36,7 @@
 # before the next "## " heading or the first link definition, without the
 # blank lines at its start and at its end.
 #
-#   clargs_changelog_parse(<text> <prefix>)
+#   argx_changelog_parse(<text> <prefix>)
 #
 # Checks <text> against the accepted form and sets, in the scope of the caller:
 #
@@ -51,7 +51,7 @@
 # When the text is not valid, <prefix>_VERSIONS and
 # <prefix>_UNRELEASED_ENTRIES are "".
 #
-#   clargs_changelog_promote(<text> <version> <date> <repo-url> <out-var>)
+#   argx_changelog_promote(<text> <version> <date> <repo-url> <out-var>)
 #
 # Sets <out-var> to <text> with the body of [Unreleased] moved to a new section
 # "## [<version>] - <date>" right below "## [Unreleased]", which is left empty,
@@ -71,7 +71,7 @@
 # <version> is already listed, or <version> is not higher than the newest
 # version listed (the result would not be valid).
 #
-#   clargs_changelog_notes(<text> <version> <repo-url> <out-var>)
+#   argx_changelog_notes(<text> <version> <repo-url> <out-var>)
 #
 # Sets <out-var> to the body of the section of <version>, without its heading
 # and without a line ending at its end. The lines keep the line endings of the
@@ -90,7 +90,7 @@
 
 include_guard(GLOBAL)
 
-include("${CMAKE_CURRENT_LIST_DIR}/ClargsSemver.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/ArgXSemver.cmake")
 
 # The functions keep the policies in effect here, whatever the caller has set
 # (a "cmake -P" script may have set none).
@@ -101,33 +101,33 @@ cmake_policy(VERSION 3.21)
 # and backslashes change how CMake splits a list, so they are replaced by
 # control characters while the text is a list, and put back line by line.
 # Sets the codes in the scope of the calling function.
-macro(_clargs_changelog_codes)
-    string(ASCII 1 _clargs_changelog_semicolon)
-    string(ASCII 2 _clargs_changelog_open)
-    string(ASCII 3 _clargs_changelog_close)
-    string(ASCII 4 _clargs_changelog_backslash)
+macro(_argx_changelog_codes)
+    string(ASCII 1 _argx_changelog_semicolon)
+    string(ASCII 2 _argx_changelog_open)
+    string(ASCII 3 _argx_changelog_close)
+    string(ASCII 4 _argx_changelog_backslash)
 endmacro()
 
 # Puts back the characters that the list of lines holds as codes.
-macro(_clargs_changelog_decode var)
-    string(REPLACE "${_clargs_changelog_semicolon}" ";" ${var} "${${var}}")
-    string(REPLACE "${_clargs_changelog_open}" "[" ${var} "${${var}}")
-    string(REPLACE "${_clargs_changelog_close}" "]" ${var} "${${var}}")
-    string(REPLACE "${_clargs_changelog_backslash}" "\\" ${var} "${${var}}")
+macro(_argx_changelog_decode var)
+    string(REPLACE "${_argx_changelog_semicolon}" ";" ${var} "${${var}}")
+    string(REPLACE "${_argx_changelog_open}" "[" ${var} "${${var}}")
+    string(REPLACE "${_argx_changelog_close}" "]" ${var} "${${var}}")
+    string(REPLACE "${_argx_changelog_backslash}" "\\" ${var} "${${var}}")
 endmacro()
 
 # Sets <out-var> to the line at <index> of the list <lines>, as in the text
 # (with its carriage return, if any).
-function(_clargs_changelog_raw_line lines index out_var)
-    _clargs_changelog_codes()
+function(_argx_changelog_raw_line lines index out_var)
+    _argx_changelog_codes()
     list(GET lines ${index} line)
-    _clargs_changelog_decode(line)
+    _argx_changelog_decode(line)
     set(${out_var} "${line}" PARENT_SCOPE)
 endfunction()
 
 # Sets <out-var> to the line at <index> without its carriage return.
-function(_clargs_changelog_line lines index out_var)
-    _clargs_changelog_raw_line("${lines}" ${index} line)
+function(_argx_changelog_line lines index out_var)
+    _argx_changelog_raw_line("${lines}" ${index} line)
     string(REGEX REPLACE "\r$" "" line "${line}")
     set(${out_var} "${line}" PARENT_SCOPE)
 endfunction()
@@ -135,18 +135,18 @@ endfunction()
 # Narrows the lines from <first-var> to <last-var> (both indexes, inclusive) so
 # that they neither start nor end with a blank line. The range is empty when
 # <first-var> ends up greater than <last-var>.
-function(_clargs_changelog_trim lines first_var last_var)
+function(_argx_changelog_trim lines first_var last_var)
     set(first ${${first_var}})
     set(last ${${last_var}})
     while(first LESS_EQUAL last)
-        _clargs_changelog_line("${lines}" ${first} line)
+        _argx_changelog_line("${lines}" ${first} line)
         if(NOT line MATCHES "^[ \t]*$")
             break()
         endif()
         math(EXPR first "${first} + 1")
     endwhile()
     while(last GREATER_EQUAL first)
-        _clargs_changelog_line("${lines}" ${last} line)
+        _argx_changelog_line("${lines}" ${last} line)
         if(NOT line MATCHES "^[ \t]*$")
             break()
         endif()
@@ -156,7 +156,7 @@ function(_clargs_changelog_trim lines first_var last_var)
     set(${last_var} ${last} PARENT_SCOPE)
 endfunction()
 
-# Checks the text and sets, besides the variables of clargs_changelog_parse
+# Checks the text and sets, besides the variables of argx_changelog_parse
 # (which are set whether or not the text is valid):
 #
 #   <prefix>_NL                    The line ending of added lines.
@@ -168,12 +168,12 @@ endfunction()
 #   <prefix>_VERSION_LINES         The index of the heading of each version.
 #   <prefix>_LINKS_LINE            The index of the first link definition.
 #   <prefix>_UNRELEASED_LINK_LINE  The index of the "[Unreleased]: " line.
-function(_clargs_changelog_scan text prefix)
-    _clargs_changelog_codes()
+function(_argx_changelog_scan text prefix)
+    _argx_changelog_codes()
     set(problem "")
 
     foreach(code IN ITEMS semicolon open close backslash)
-        string(FIND "${text}" "${_clargs_changelog_${code}}" pos)
+        string(FIND "${text}" "${_argx_changelog_${code}}" pos)
         if(NOT pos EQUAL -1)
             set(problem "the text holds a control character (U+0001 to U+0004).")
         endif()
@@ -186,10 +186,10 @@ function(_clargs_changelog_scan text prefix)
     endif()
 
     set(lines "${text}")
-    string(REPLACE "\\" "${_clargs_changelog_backslash}" lines "${lines}")
-    string(REPLACE ";" "${_clargs_changelog_semicolon}" lines "${lines}")
-    string(REPLACE "[" "${_clargs_changelog_open}" lines "${lines}")
-    string(REPLACE "]" "${_clargs_changelog_close}" lines "${lines}")
+    string(REPLACE "\\" "${_argx_changelog_backslash}" lines "${lines}")
+    string(REPLACE ";" "${_argx_changelog_semicolon}" lines "${lines}")
+    string(REPLACE "[" "${_argx_changelog_open}" lines "${lines}")
+    string(REPLACE "]" "${_argx_changelog_close}" lines "${lines}")
     string(REPLACE "\n" ";" lines "${lines}")
     list(LENGTH lines count)
 
@@ -212,7 +212,7 @@ function(_clargs_changelog_scan text prefix)
             if(NOT problem STREQUAL "")
                 break()
             endif()
-            _clargs_changelog_line("${lines}" ${index} line)
+            _argx_changelog_line("${lines}" ${index} line)
             math(EXPR number "${index} + 1")
             set(where "line ${number}: ")
             set(is_link FALSE)
@@ -265,7 +265,7 @@ link definitions belong at the end.")
 not \"${line}\".")
                 elseif(line MATCHES "^## \\[([^]]*)\\] - [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$")
                     set(version "${CMAKE_MATCH_1}")
-                    clargs_semver_parse("${version}" v)
+                    argx_semver_parse("${version}" v)
                     if(NOT v_VALID)
                         set(problem "${where}${v_ERROR}")
                     elseif(version IN_LIST versions)
@@ -273,7 +273,7 @@ not \"${line}\".")
                     else()
                         if(NOT versions STREQUAL "")
                             list(GET versions -1 above)
-                            clargs_semver_compare("${above}" "${version}" order)
+                            argx_semver_compare("${above}" "${version}" order)
                             if(NOT order EQUAL 1)
                                 set(problem "${where}the version ${version} is not lower than \
 ${above}, the version above it; versions must be listed newest first.")
@@ -333,7 +333,7 @@ there are ${unreleased_links}.")
 endfunction()
 
 # Drops a slash at the end of the URL in <var>; stops when the URL is empty.
-function(_clargs_changelog_repo_url var what)
+function(_argx_changelog_repo_url var what)
     set(url "${${var}}")
     string(REGEX REPLACE "/$" "" url "${url}")
     if(url STREQUAL "")
@@ -343,17 +343,17 @@ pass https://github.com/<owner>/<repo>.")
     set(${var} "${url}" PARENT_SCOPE)
 endfunction()
 
-function(clargs_changelog_parse text prefix)
-    _clargs_changelog_scan("${text}" scan)
+function(argx_changelog_parse text prefix)
+    _argx_changelog_scan("${text}" scan)
     foreach(field IN ITEMS VALID ERROR VERSIONS UNRELEASED_ENTRIES)
         set(${prefix}_${field} "${scan_${field}}" PARENT_SCOPE)
     endforeach()
 endfunction()
 
-function(clargs_changelog_promote text version date repo_url out_var)
+function(argx_changelog_promote text version date repo_url out_var)
     set(what "cannot move [Unreleased] to the version ${version}")
-    _clargs_changelog_repo_url(repo_url "${what}")
-    clargs_semver_parse("${version}" v)
+    _argx_changelog_repo_url(repo_url "${what}")
+    argx_semver_parse("${version}" v)
     if(NOT v_VALID)
         message(FATAL_ERROR "error: ${what}: ${v_ERROR}")
     endif()
@@ -361,7 +361,7 @@ function(clargs_changelog_promote text version date repo_url out_var)
         message(FATAL_ERROR "error: ${what}: the date \"${date}\" is not of the form YYYY-MM-DD.")
     endif()
 
-    _clargs_changelog_scan("${text}" scan)
+    _argx_changelog_scan("${text}" scan)
     if(NOT scan_VALID)
         message(FATAL_ERROR "error: ${what}: the changelog is not valid: ${scan_ERROR}")
     endif()
@@ -375,7 +375,7 @@ add the changes of the release under it first.")
             message(FATAL_ERROR "error: ${what}: the version ${version} is already listed.")
         endif()
         list(GET scan_VERSIONS 0 previous)
-        clargs_semver_compare("${version}" "${previous}" order)
+        argx_semver_compare("${version}" "${previous}" order)
         if(NOT order EQUAL 1)
             message(FATAL_ERROR "error: ${what}: the version ${version} is not higher than \
 ${previous}, the newest version in the changelog.")
@@ -393,7 +393,7 @@ ${previous}, the newest version in the changelog.")
     math(EXPR body_first "${unreleased} + 1")
     math(EXPR body_last "${body_end} - 1")
     # The body holds an entry, so it is not empty once trimmed.
-    _clargs_changelog_trim("${lines}" body_first body_last)
+    _argx_changelog_trim("${lines}" body_first body_last)
 
     set(unreleased_link "[Unreleased]: ${repo_url}/compare/v${version}...HEAD")
     if(previous STREQUAL "")
@@ -405,7 +405,7 @@ ${previous}, the newest version in the changelog.")
     set(result "")
     math(EXPR last "${scan_COUNT} - 1")
     foreach(index RANGE ${last})
-        _clargs_changelog_raw_line("${lines}" ${index} raw)
+        _argx_changelog_raw_line("${lines}" ${index} raw)
         # Every element but the last ended with "\n" in the text.
         set(ending "\n")
         if(index EQUAL last)
@@ -434,10 +434,10 @@ ${previous}, the newest version in the changelog.")
     set(${out_var} "${result}" PARENT_SCOPE)
 endfunction()
 
-function(clargs_changelog_notes text version repo_url out_var)
+function(argx_changelog_notes text version repo_url out_var)
     set(what "cannot take the notes of the version ${version} out of the changelog")
-    _clargs_changelog_repo_url(repo_url "${what}")
-    _clargs_changelog_scan("${text}" scan)
+    _argx_changelog_repo_url(repo_url "${what}")
+    _argx_changelog_scan("${text}" scan)
     if(NOT scan_VALID)
         message(FATAL_ERROR "error: ${what}: the changelog is not valid: ${scan_ERROR}")
     endif()
@@ -458,12 +458,12 @@ ${version}.")
     endif()
     math(EXPR body_first "${heading} + 1")
     math(EXPR body_last "${body_end} - 1")
-    _clargs_changelog_trim("${lines}" body_first body_last)
+    _argx_changelog_trim("${lines}" body_first body_last)
 
     set(notes "")
     if(body_first LESS_EQUAL body_last)
         foreach(index RANGE ${body_first} ${body_last})
-            _clargs_changelog_line("${lines}" ${index} line)
+            _argx_changelog_line("${lines}" ${index} line)
             if(index GREATER body_first)
                 string(APPEND notes "${nl}")
             endif()
@@ -472,13 +472,13 @@ ${version}.")
     endif()
 
     # The pre-releases of the same core right below a release.
-    clargs_semver_parse("${version}" v)
+    argx_semver_parse("${version}" v)
     set(references "")
     if(v_PRERELEASE STREQUAL "")
         set(index ${next})
         while(index LESS version_count)
             list(GET scan_VERSIONS ${index} below)
-            clargs_semver_parse("${below}" b)
+            argx_semver_parse("${below}" b)
             if(b_PRERELEASE STREQUAL "" OR NOT b_CORE STREQUAL v_CORE)
                 break()
             endif()

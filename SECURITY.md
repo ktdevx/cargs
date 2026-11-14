@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-CLArgs is in its `0.x` series. Security fixes are made on `main` and shipped in
+ArgX is in its `0.x` series. Security fixes are made on `main` and shipped in
 the next release of the latest minor version. Older minor versions do not
 receive fixes; upgrade to the latest release to get them.
 
@@ -29,7 +29,7 @@ You can also open the form directly:
 
 Please include as much of the following as you can:
 
-- The CLArgs version or commit you tested.
+- The ArgX version or commit you tested.
 - The platform, compiler, and whether the library was built as static or shared.
 - The kind of issue (for example, out-of-bounds read, use after free, integer
   overflow) and the affected function or file.

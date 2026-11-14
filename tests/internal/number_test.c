@@ -13,7 +13,7 @@
  * locale are shared by all the tests of this executable. Every test that
  * changes one of them puts it back before it ends.
  */
-#include <clargs/clargs.h>
+#include <argx/argx.h>
 
 #include "number.h"
 
@@ -49,8 +49,8 @@
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 }
 
 /* text is an integer and its value is expected. */
@@ -58,7 +58,7 @@ static void check_int(const char *text, int64_t expected)
 {
     int64_t value = INT_SENTINEL;
 
-    NAOS_CHECK_INT_EQ(clargs_number_parse_int(text, &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_int(text, &value), ARGX_ERROR_NONE);
     NAOS_CHECK_INT_EQ(value, expected);
 }
 
@@ -67,7 +67,7 @@ static void check_int_invalid(const char *text)
 {
     int64_t value = INT_SENTINEL;
 
-    NAOS_CHECK_INT_EQ(clargs_number_parse_int(text, &value), CLARGS_ERROR_INVALID_VALUE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_int(text, &value), ARGX_ERROR_INVALID_VALUE);
     NAOS_CHECK_INT_EQ(value, INT_SENTINEL);
 }
 
@@ -76,7 +76,7 @@ static void check_float(const char *text, double expected)
 {
     double value = FLOAT_SENTINEL;
 
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &value), ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(value == expected);
 }
 
@@ -88,7 +88,7 @@ static void check_float_invalid(const char *text)
 {
     double value = FLOAT_SENTINEL;
 
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_INVALID_VALUE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &value), ARGX_ERROR_INVALID_VALUE);
     NAOS_CHECK_TRUE(value == FLOAT_SENTINEL);
 }
 
@@ -221,16 +221,16 @@ NAOS_TEST(int_allocates_nothing)
     text[LONG_LENGTH - 1] = '9';
     text[LONG_LENGTH] = '\0';
 
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
     check_int("123", 123);
     check_int(text, 9);
     check_int_invalid("9223372036854775808");
     text[0] = '1';
     check_int_invalid(text);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -274,17 +274,17 @@ NAOS_TEST(float_accepts_exponent_notation)
     check_float("1e007", 1e7);
     check_float("0e999", 0.0);
 
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float("-1.5e-3", &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float("-1.5e-3", &value), ARGX_ERROR_NONE);
     NAOS_CHECK_DOUBLE_NEAR(value, -1.5e-3, 1e-15);
 
     /* Near the largest finite value. */
     value = FLOAT_SENTINEL;
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float("1.7976931348623157e308", &value),
-        CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float("1.7976931348623157e308", &value),
+        ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(value == DBL_MAX);
     value = FLOAT_SENTINEL;
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float("-1.7976931348623157e308", &value),
-        CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float("-1.7976931348623157e308", &value),
+        ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(value == -DBL_MAX);
 }
 
@@ -296,12 +296,12 @@ NAOS_TEST(float_accepts_underflow)
 {
     double value = FLOAT_SENTINEL;
 
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float("1e-400", &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float("1e-400", &value), ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(value >= 0.0);
     NAOS_CHECK_TRUE(value < DBL_MIN);
 
     value = FLOAT_SENTINEL;
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float("-1e-400", &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float("-1e-400", &value), ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(value <= 0.0);
     NAOS_CHECK_TRUE(value > -DBL_MIN);
 }
@@ -425,15 +425,15 @@ NAOS_TEST(float_rejects_white_space)
 /* A short input is copied into an array of the function: no request. */
 NAOS_TEST(float_short_input_allocates_nothing)
 {
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
     check_float("1.5", 1.5);
     check_float("-2.5e-1", -0.25);
     check_float_invalid("1e400");
     check_float_invalid("1,5");
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -448,24 +448,24 @@ NAOS_TEST(float_long_input_is_copied_and_freed)
 
     fill_long_fraction(text);
 
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &value), ARGX_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
     NAOS_CHECK_DOUBLE_NEAR(value, 1.0, 1e-9);
 
     /* Without a '.': 1 and LONG_LENGTH - 1 zeros, in the finite range. */
     memset(text, '0', LONG_LENGTH);
     text[0] = '1';
     value = FLOAT_SENTINEL;
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 2);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &value), ARGX_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 2);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
     NAOS_CHECK_TRUE(value > 1e298);
     NAOS_CHECK_TRUE(value < 1e300);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -482,13 +482,13 @@ NAOS_TEST(float_long_input_out_of_range_frees_the_copy)
     text[LONG_LENGTH - 3] = 'e';
     text[LONG_LENGTH] = '\0';
 
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
     check_float_invalid(text);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -502,7 +502,7 @@ NAOS_TEST(float_long_invalid_input_allocates_nothing)
 
     fill_long_fraction(text);
 
-    clargs_test_allocator_install();
+    argx_test_allocator_install();
 
     text[LONG_LENGTH - 1] = 'x';
     check_float_invalid(text);
@@ -514,9 +514,9 @@ NAOS_TEST(float_long_invalid_input_allocates_nothing)
     text[0] = '1';
     text[LONG_LENGTH / 2] = ',';
     check_float_invalid(text);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -531,22 +531,22 @@ NAOS_TEST(float_long_input_allocation_failure)
 
     fill_long_fraction(text);
 
-    clargs_test_allocator_install();
-    clargs_test_allocator_fail_at(1);
+    argx_test_allocator_install();
+    argx_test_allocator_fail_at(1);
 
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &value), ARGX_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_TRUE(value == FLOAT_SENTINEL);
     /* The request that failed is the only one. */
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_violations(), 0);
 
     /* The same input converts once the allocation succeeds again. */
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 2);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &value), ARGX_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 2);
     NAOS_CHECK_DOUBLE_NEAR(value, 1.0, 1e-9);
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -564,33 +564,33 @@ static void check_errno_stays(int expected)
     double float_value = 0.0;
 
     errno = expected;
-    (void)clargs_number_parse_int("42", &int_value);
+    (void)argx_number_parse_int("42", &int_value);
     NAOS_CHECK_INT_EQ(errno, expected);
     errno = expected;
-    (void)clargs_number_parse_int("abc", &int_value);
+    (void)argx_number_parse_int("abc", &int_value);
     NAOS_CHECK_INT_EQ(errno, expected);
     errno = expected;
-    (void)clargs_number_parse_int("9223372036854775808", &int_value);
+    (void)argx_number_parse_int("9223372036854775808", &int_value);
     NAOS_CHECK_INT_EQ(errno, expected);
 
     errno = expected;
-    (void)clargs_number_parse_float("1.5", &float_value);
+    (void)argx_number_parse_float("1.5", &float_value);
     NAOS_CHECK_INT_EQ(errno, expected);
     errno = expected;
-    (void)clargs_number_parse_float("abc", &float_value);
+    (void)argx_number_parse_float("abc", &float_value);
     NAOS_CHECK_INT_EQ(errno, expected);
     errno = expected;
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float("1e400", &float_value),
-        CLARGS_ERROR_INVALID_VALUE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float("1e400", &float_value),
+        ARGX_ERROR_INVALID_VALUE);
     NAOS_CHECK_INT_EQ(errno, expected);
     errno = expected;
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float("1e-400", &float_value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float("1e-400", &float_value), ARGX_ERROR_NONE);
     NAOS_CHECK_INT_EQ(errno, expected);
 
     /* A long input: the copy comes from the allocator. */
     fill_long_fraction(text);
     errno = expected;
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &float_value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &float_value), ARGX_ERROR_NONE);
     NAOS_CHECK_INT_EQ(errno, expected);
 }
 
@@ -618,15 +618,15 @@ NAOS_TEST(errno_is_unchanged_by_an_allocation_failure)
 
     fill_long_fraction(text);
 
-    clargs_test_allocator_install();
-    clargs_test_allocator_fail_at(1);
+    argx_test_allocator_install();
+    argx_test_allocator_fail_at(1);
 
     errno = EDOM;
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &value), ARGX_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_INT_EQ(errno, EDOM);
     errno = saved;
 
-    clargs_test_allocator_uninstall();
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -663,7 +663,7 @@ static void check_point_only(void)
     check_float_invalid("1e400");
 
     fill_long_fraction(text);
-    NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(argx_number_parse_float(text, &value), ARGX_ERROR_NONE);
     NAOS_CHECK_TRUE(value > (1.0 - 1e-9));
     NAOS_CHECK_TRUE(value < (1.0 + 1e-9));
     text[1] = ',';
