@@ -198,8 +198,8 @@ The library's memory belongs to the allocator that is set. Your `free` does not 
 - A public function that can fail at run time returns `argx_error_t`, and returns its result through an output argument. Only `ARGX_ERROR_NONE` means success.
 - A function that cannot fail at run time (`destroy`, simple getters, `argx_set_allocator()`) returns its value directly, or returns nothing. Breaking a precondition does not count as a failure.
 - On failure, an output that receives a created object or string becomes `NULL`. Other outputs are not changed.
-  - The exception is when a parsing function (`argx_parse`, `argx_parse_wide`) returns a parse error. A result is written to the output, and you destroy it ([Schemas, argv and results](#schemas-argv-and-results)). A function that is an exception states in its comment what happens to the output for each return value.
-  - The other exception is when a function that generates help into a buffer (`argx_help_format`) fails to allocate. Your buffer becomes an empty string, and the length output becomes 0 ([Help](#help)).
+  - The exception is when a parsing function (`argx_parse`, `argx_parse_wide`) returns a parse error. A result is written to the output, and you destroy it ([Parsing](parse.md#entry-points)). A function that is an exception states in its comment what happens to the output for each return value.
+  - The other exception is when a function that generates help into a buffer (`argx_help_format`) fails to allocate. Your buffer becomes an empty string, and the length output becomes 0 ([Help and Usage](help.md#on-failure)).
 - On failure, all memory allocated during that call is freed before the function returns.
 - When a function that changes an existing object fails, the object keeps the same content as before the call. A function that cannot do this at least keeps the object in a state where it can be used and destroyed, and states the remaining differences in its comment.
 
@@ -212,36 +212,15 @@ From your side, a failure never leaves more to clean up. After a failed `create`
 - You synchronize calls on the same object made at the same time.
 - Call `argx_set_allocator()` while no other thread is calling the library ([rule 5](#5-allocator)).
 
-## Schemas, argv and results
+## Where the rules are applied
 
-The following table applies the rules to common questions about schemas, argv, results, and the lifetime of value types, including the result that parsing (`argx_parse`, `argx_parse_wide`) gives you.
+How these rules apply to each kind of object, with the details, is in the reference for it:
 
-| Question | How the rules apply |
+| Objects | Where |
 | --- | --- |
-| Does the schema duplicate strings? | Yes (the default of [rule 2](#2-strings-you-pass)) |
-| Does the result duplicate the strings of argv? | Yes (the default of [rule 2](#2-strings-you-pass)). The result keeps a duplicate of every string of argv. For a wide-character argv, it keeps them converted to UTF-8. Once the parse call returns, you may change or free both the argv array and its strings. Strings you read from the result stay valid until the result is destroyed ([rule 3](#3-strings-and-objects-the-library-returns)) |
-| May a result outlive its schema? | No. A result refers to the schema and the value types, so destroy the result first ([rule 3](#3-strings-and-objects-the-library-returns)). The order of destruction is result, schema, value types |
-| May I change the schema while a result exists? | No. A result refers to the commands, options and positionals of the schema. While even one result of that schema is left, do not add definition elements to the schema, do not set attributes, and do not destroy the schema or the value types. To change it, destroy all results first. The library does not detect this mistake |
-| What happens to the output on a parse error? | A result is written. On a parse error (`ARGX_ERROR_INVALID_COMMAND_LINE`), a result is written to `*out`, and you destroy it with `argx_result_destroy`. You read the kind of error, the message, and what was read up to the error from that result. This is an exception to "on failure, the output becomes `NULL`" of [rule 7](#7-how-failures-are-returned), and the comment of the function says so. On a memory allocation failure (`ARGX_ERROR_OUT_OF_MEMORY`), as rule 7 says, `*out` is `NULL`, and no memory allocated for that parse and no converted value is left |
-| Does the schema duplicate value types? How long must a value type stay valid? | No. The schema borrows value types. Value types you create (choices, user-defined) are owned by you, and you keep them valid until every schema that uses them has been destroyed. Destroy the schema first and the value type after it ([rule 3](#3-strings-and-objects-the-library-returns)). Destroying a schema does not destroy the value types ([rule 6](#6-whoever-allocates-frees)). The user data that a user-defined value type borrows must stay valid until the value type is destroyed. The built-in value types (string, integer, floating-point) belong to the library, and you do not destroy them. The details are in [Schemas](schema.md#borrowed-value-types-and-the-order-of-destruction) |
-
-No function borrows (the exception of rule 2) in parsing. The details are in [Parsing](parse.md#lifetime-rules).
-
-## Help
-
-The rules apply to generating the help and the usage line (`argx_help_write`, `argx_help_write_usage`, `argx_help_format`, `argx_help_format_usage`) and to the help options (`argx_help_options_t`).
-
-| Question | How the rules apply |
-| --- | --- |
-| Who creates and who destroys the help options? | You create them with `argx_help_options_create` and destroy them with `argx_help_options_destroy` ([rule 1](#1-creation-and-destruction)). The help options do not belong to a schema. Destroying the schema does not destroy the help options. You may destroy either one first. `argx_help_options_destroy(NULL)` does nothing ([rule 4](#4-null)) |
-| Do the generating functions return something you must free? | No. The text is passed to your write function or written to your buffer. No function returns a string allocated by the library ([rule 6](#6-whoever-allocates-frees)). Memory allocated for generation is all freed before the function returns, on success and on failure ([rule 7](#7-how-failures-are-returned)) |
-| How long are the strings passed to the write function valid? | Only during that call (the "shorter period" of [rule 3](#3-strings-and-objects-the-library-returns)). The strings are not terminated. To use one later, duplicate it inside the write function. Do not free or change them |
-| How long does generation use what you pass? | Only during the call. The schema and the help options are only borrowed and are not changed. The write function, the data passed to the write function, and the buffer are not used after the call returns either. Nothing is duplicated and kept |
-| May I change the schema during generation? | No. During a generating call, do not change or destroy the schema or the value types it uses. Do not change or destroy the schema passed to generation from inside the write function. The library does not detect this mistake |
-| What happens to the output on failure? | Text already passed to the write function cannot be taken back. What was passed before the failure stays at your destination. When `argx_help_format` fails to allocate, if the buffer size is not 0, the buffer becomes an empty string and the length output becomes 0. This is an exception to "other outputs are not changed" of [rule 7](#7-how-failures-are-returned), and the comment of the function says so. When `argx_help_options_create` fails, `*out` is `NULL`, as rule 7 says |
-| May I generate from several threads at the same time? | Yes ([rule 8](#8-threads)). Generation keeps no state across calls. A schema and help options that are not being changed can be passed to generation from several threads at the same time. While a function that sets or destroys the help options is running, other threads must not use those help options |
-
-No function borrows (the exception of rule 2) in help. The details are in [Help and Usage](help.md#lifetime-rules).
+| Schemas and value types, and the order of destruction | [Rules common to all definitions](schema.md#rules-common-to-all-definitions), [Borrowed value types and the order of destruction](schema.md#borrowed-value-types-and-the-order-of-destruction) |
+| Results, argv and parse errors | [Entry points](parse.md#entry-points), [Lifetime rules](parse.md#lifetime-rules) of Parsing |
+| Help options, write functions and buffers | [On failure](help.md#on-failure), [Lifetime rules](help.md#lifetime-rules) of Help and Usage |
 
 ## Allocator and error functions
 

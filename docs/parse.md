@@ -2,15 +2,7 @@
 
 Parsing reads argv with a validated schema and gives you a result, from which you read the values. This document covers parsing, reading the result, parse errors and destroying the result, and the command-line syntax that the users of your program can write. Parsing prints nothing, does not end the process, and does not read environment variables.
 
-Defining and validating a schema is in [Schemas](schema.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/parse.h`. This document is a reference. How a program parses, checks `--help`, prints parse errors and reads the values, step by step, is in the [Guide](guide.md), which follows the complete program [examples/pack.c](../examples/pack.c).
-
-## Overview
-
-- `argx_parse` and `argx_parse_wide` read argv with the root of a validated schema and write a result ([Entry points](#entry-points)).
-- A result is written also when the command line has a parse error. Only on an allocation failure is there no result ([Entry points](#entry-points), [Parse errors](#parse-errors)).
-- Values are read from the result with the handles of the schema ([Reading the result](#reading-the-result)).
-- The library does not treat `--help` specially ([`--help`](#--help)).
-- A result borrows the schema: it is destroyed before the schema, and the schema is not changed while it exists ([Lifetime rules](#lifetime-rules)).
+This document is a reference; how a program uses these functions is in the [Guide](guide.md). Defining a schema is in [Schemas](schema.md), the help in [Help and Usage](help.md), the rules for memory in [Ownership and Lifetime](ownership.md), and the description and preconditions of each function in the comments of `include/argx/parse.h`.
 
 ## Entry points
 
@@ -33,7 +25,7 @@ argx_error_t argx_parse_wide(const argx_command_t *root, int argc, wchar_t *cons
 - When the conversion function of a value type returns `ARGX_ERROR_OUT_OF_MEMORY`, it is also treated as an allocation failure.
 - `argc` and `argv` go in as `main` received them, with no conversion or cast.
 - `argv[0]` is the program name, and it is not parsed. If `argc` is 0 or 1, the command line is parsed as one in which nothing was given. `argv[argc]` is not read.
-- `root` must be the root of a validated schema. Passing a schema that has not been validated, or a subcommand, breaks a [precondition](#preconditions); no error code is returned for it.
+- `root` is the root of a validated schema ([Preconditions](#preconditions)).
 - Parsing does not change the schema, the value types, the argv array or the argv strings. No state is kept between calls, so the same schema and the same argv always give the same result. While the schema is not changed, several threads can parse with it at the same time.
 - Elements are read once each, from the first to the last. Parsing stops at the first element that does not match the schema.
 
@@ -76,7 +68,7 @@ What the reading functions return, for each state of an option or positional. In
 
 - Reading an option or positional of a command that was not selected is neither a failure nor a broken precondition. It reads as in the last row.
 - In a result with a parse error, the second row does not occur ([The result of a parse error](#the-result-of-a-parse-error)).
-- Values may be added to the enumeration of sources, `argx_source_t`, in later versions. When you branch on it with `switch`, write a `default` label.
+- Values may be added to the enumeration of sources, `argx_source_t`, in later versions.
 
 ## Parse errors
 
@@ -105,7 +97,7 @@ The kind is the `argx_parse_error_kind_t` that `argx_result_error_kind` returns,
 - For an option that was not written (a missing required option, a default value), `<name>` is `--<long name>` if the option has a long name, and `-<short name>` if it does not.
 - The `<name>` of a positional is its name in the schema. `<type>` is the name of the value type (`argx_type_name`).
 - `<value>` is the element itself for an unknown subcommand and an unexpected positional, and the value string for a value that failed to convert. For `INVALID_ENCODING`, it is the element in UTF-8, with each unit that cannot be converted replaced by U+FFFD.
-- Values may be added to the enumeration of kinds in later versions. When you branch on it with `switch`, write a `default` label.
+- Values may be added to the enumeration of kinds in later versions, as to `argx_source_t`. When you branch on either with `switch`, write a `default` label.
 - `argx_error_message(ARGX_ERROR_INVALID_COMMAND_LINE)` is only `"invalid command line"`. Read the message of each kind from the result. `ARGX_ERROR_INVALID_VALUE`, which the conversion function of a value type returns, is never returned by parsing.
 
 ### Parse error details
@@ -153,7 +145,7 @@ Anything more, such as adding the usage line, pointing at the offending element 
 
 ## `--help`
 
-The library does not treat `--help` specially. `--help` is a flag that is defined in the schema like any other option, and it is read from the result with `argx_result_flag`. Parsing neither generates nor prints the help; generating it is in [Help and Usage](help.md). How [examples/pack.c](../examples/pack.c) reads `--help` and prints the help is in the [Guide](guide.md#4-parse-argv-and-check---help-first).
+The library does not treat `--help` specially. `--help` is a flag that is defined in the schema like any other option, and it is read from the result with `argx_result_flag`. Parsing neither generates nor prints the help; generating it is in [Help and Usage](help.md).
 
 - An option is recognized only while its command is the current command ([Subcommands](#subcommands)). With `--help` defined only on the root, `pack --help` and `pack --help create` are accepted, but `pack create --help` is an unknown option, because `create` has no `--help`.
 - A result with a parse error holds what was read before the error ([The result of a parse error](#the-result-of-a-parse-error)). `pack create --help` does not give `--output`, a required option of `create`, so `argx_parse` returns a parse error for a missing required option; `--help` was read before that error was found, so it reads as given.
@@ -308,7 +300,7 @@ When parsing has read the last element without a parse error, two steps are done
 | The argv array and strings | You | They need to be valid only during the call to `argx_parse` |
 | The schema and the value types it uses | You | Do not change or destroy them until all of their results have been destroyed |
 
-- **Destroy the result before the schema.** A result borrows the schema and the value types: destroying it cleans up the values it holds with the release functions of the value types. The order of destruction is: the result, the schema, the value types, and then your data that the value types borrowed ([Schemas](schema.md#borrowed-value-types-and-the-order-of-destruction)).
+- **Destroy the result before the schema.** A result borrows the schema and the value types: destroying it cleans up the values it holds with the release functions of the value types. The order of destruction is in [Schemas](schema.md#borrowed-value-types-and-the-order-of-destruction).
 - **Do not change the schema while a result exists.** While even one result is left, do not add options, positionals or subcommands to the schema, or set attributes.
 - **You may change or free argv after parsing.** The result holds copies of all the strings of argv, and refers to neither the argv array nor its strings after `argx_parse` returns.
 - **Strings and values read from the result are valid until the result is destroyed.** To use one after that, copy it first.
@@ -320,7 +312,7 @@ When parsing has read the last element without a parse error, two steps are done
 
 ## Preconditions
 
-Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The preconditions of each function are also written in the comments of the public header `include/argx/parse.h`, under `Preconditions:`.
+Breaking a precondition is a programming error: no error code is returned ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)).
 
 What every function has in common:
 

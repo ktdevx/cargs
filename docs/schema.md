@@ -2,15 +2,7 @@
 
 A schema describes, with function calls, which command lines your program accepts. It is a tree of commands, and each command has options and positionals. Options with a value and positionals each have a value type, which says how their input strings are converted. This document covers defining, validating, reading and destroying a schema.
 
-A schema knows nothing about argv. Parsing argv with a validated schema is in [Parsing](parse.md), and generating the help and the usage line is in [Help and Usage](help.md). The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public headers `include/argx/schema.h` and `include/argx/type.h`. This document is a reference. How a program puts these functions together, step by step, is in the [Guide](guide.md), which follows the complete program [examples/pack.c](../examples/pack.c).
-
-## Overview
-
-- A schema is a tree of commands, created with `argx_command_create` (the root) and `argx_command_add_subcommand`. Options and positionals are added to a command; each add function writes a handle, with which their attributes are set ([Commands](#commands), [Options](#options), [Positionals](#positionals)).
-- The string, integer and float value types are built in. Choice value types and user-defined value types are created and destroyed by the user ([Value types](#value-types)).
-- Only a schema whose root has passed `argx_command_validate` can be passed to parsing and help generation ([Validation](#validation)).
-- `argx_command_destroy` on the root frees the whole tree. It does not destroy the value types ([Borrowed value types and the order of destruction](#borrowed-value-types-and-the-order-of-destruction)).
-- Every function that can fail returns an `argx_error_t`, which is `ARGX_ERROR_NONE` on success ([Definition errors](#definition-errors)).
+A schema knows nothing about argv. This document is a reference; how a program uses these functions is in the [Guide](guide.md). Parsing argv is in [Parsing](parse.md), the help in [Help and Usage](help.md), the rules for memory in [Ownership and Lifetime](ownership.md), and the description and preconditions of each function in the comments of `include/argx/schema.h` and `include/argx/type.h`.
 
 ## Commands
 
@@ -222,7 +214,7 @@ bool argx_command_is_validated(const argx_command_t *command);
 - Each of the three output parameters can be omitted by passing `NULL`. An output parameter that is not `NULL` is always written on every call.
 - The handles written are ones in the tree. They stay valid until the root is destroyed, and you do not free them.
 - Validation does not change the definition. Whatever it returns, the commands, options, positionals and their attributes are as they were before the call. A failed validation can be repeated after the cause is fixed, and after `ARGX_ERROR_OUT_OF_MEMORY`, once enough memory is available.
-- The handles can be read with the functions in [Reading a schema](#reading-a-schema). How [examples/pack.c](../examples/pack.c) reports which definition a failure points to is in the [Guide](guide.md#3-validate-the-schema).
+- The handles can be read with the functions in [Reading a schema](#reading-a-schema).
 
 ### The validation state
 
@@ -392,7 +384,7 @@ Lifetime and threads:
 
 ## Preconditions
 
-The preconditions of each function are written in the comments of the public headers, under `Preconditions:`. What they have in common is:
+Breaking a precondition is a programming error: no error code is returned ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The preconditions of each function are in the comments of the public headers, under `Preconditions:`. What they have in common is:
 
 - Pointer arguments are not `NULL`, unless the comment says they "may be `NULL`". The arguments that may be `NULL` are:
   - the argument of a destroy function;
@@ -406,5 +398,3 @@ The preconditions of each function are written in the comments of the public hea
 - An enumeration argument (the `arity` of `argx_command_add_positional`) is one of the defined constants.
 - What you pass to `argx_command_destroy` and `argx_command_validate` is the root. Do not pass a subcommand.
 - Handles have not been destroyed. A value type has not been destroyed before the schemas that use it.
-
-Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)).

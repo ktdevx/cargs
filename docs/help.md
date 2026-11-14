@@ -2,7 +2,7 @@
 
 The library generates the help of a command, or only its usage line, from a validated schema. You choose where the text goes: a write function of your own, or a buffer. This document covers the generating functions, the rules that decide the text, the help options that control the layout, the output, and the limits.
 
-Defining and validating a schema is in [Schemas](schema.md), and parsing argv is in [Parsing](parse.md). Generation only reads the schema; it needs no parse result. The rules for who owns memory are in [Ownership and Lifetime](ownership.md). The detailed description and the preconditions of each function are in the comments of the public header `include/argx/help.h`. This document is a reference. How a program defines `--help` and prints the help and parse errors, step by step, is in the [Guide](guide.md), which follows the complete program [examples/pack.c](../examples/pack.c).
+Generation only reads the schema; it needs no parse result. This document is a reference; how a program uses these functions is in the [Guide](guide.md). Defining a schema is in [Schemas](schema.md), parsing in [Parsing](parse.md), the rules for memory in [Ownership and Lifetime](ownership.md), and the description and preconditions of each function in the comments of `include/argx/help.h`.
 
 ## Overview
 
@@ -39,16 +39,15 @@ argx_error_t argx_help_format_usage(const argx_command_t *command,
 
 - `command` may be the root or a subcommand at any depth. Its schema must be validated ([Preconditions](#preconditions)).
 - `options` are the help options. `NULL` means every setting has its default value ([Help options](#help-options)).
-- **The text is deterministic.** The same command and help options always give the same bytes, however many times you generate and in any environment. The text depends on neither the locale, environment variables nor the terminal.
 - The functions that format into a buffer produce the same bytes as the functions that pass the text to a write function.
 - The usage line that `argx_help_write_usage` generates is the same text as the first line of the help, for the same command and help options.
 - Generation changes neither the schema nor the help options, and returns nothing for you to free.
-- The library prints nothing by itself and adds no `--help` option. Which command to generate for, and where to write the text, is up to the program; how [examples/pack.c](../examples/pack.c) prints the help for `--help` and the usage line with a parse error is in the [Guide](guide.md#5-print-the-help-or-the-parse-error).
+- The library prints nothing by itself and adds no `--help` option.
 - Return values, and what is left on failure, are in [On failure](#on-failure).
 
 ## Text layout rules
 
-The text follows from the schema and the help options by the rules below and nothing else, so tests can compare it with an expected string exactly.
+The text follows from the schema and the help options by the rules below and nothing else: the same command and help options always give the same bytes, whatever the locale, the environment variables or the terminal. Tests can compare it with an expected string exactly.
 
 The rules describe a schema whose names, value names, default values and choices have no leading or trailing blanks and no newlines, and whose descriptions do not start with a newline or a line of blanks. Other schemas are covered in [Descriptions](#descriptions) and [Limits](#limits).
 
@@ -108,7 +107,6 @@ The help consists of these parts, in this order:
 - A list is its name on a line of its own, followed by its items in the order they were defined.
 - A list shows only what is defined on the command itself: not the options of the parent, not what belongs to subcommands, and no option that is not in the schema.
 - A command cannot have both positionals and subcommands ([Schemas](schema.md#commands)), so a help has at most two lists: `Commands:` and `Options:`, or `Arguments:` and `Options:`.
-- A description of only blanks and newlines counts as not set.
 
 The help of a command `tool` with no description, options, positionals or subcommands is the usage line alone:
 
@@ -567,7 +565,6 @@ Two failures can happen at run time, a write failure and an allocation failure. 
 - Generating the usage line alone allocates nothing, so `argx_help_write_usage` and `argx_help_format_usage` never return `ARGX_ERROR_OUT_OF_MEMORY`, and `argx_help_format_usage` cannot fail.
 - `argx_help_format` never returns `ARGX_ERROR_WRITE_FAILED`.
 - A failure changes neither the schema nor the help options, and all memory of the generation is freed before the function returns. You can generate again with the same schema and help options.
-- To leave no partial text at the destination, format into a buffer with `argx_help_format`, check that it succeeded, then write the buffer out.
 - A `NULL` argument, or a schema that is not validated, is not a failure but a programming error ([Preconditions](#preconditions)).
 
 ## Lifetime rules
@@ -579,14 +576,14 @@ Two failures can happen at run time, a write failure and an allocation failure. 
 | Buffer (`buffer`) | You | Only during the call of the generation. The library does not refer to it afterwards |
 | The schema and the value types it uses | You | Must not be changed or destroyed during the call of the generation |
 
-- The generating functions borrow the schema and the help options only during the call. They change neither and keep no reference after returning.
+- The generating functions borrow the schema and the help options only during the call. They change neither, and after returning they keep no reference to them, to the write function, to its `user_data` or to the buffer.
 - Nothing that the generating functions return is for you to free. No function returns a string allocated by the library.
 - Memory for a generation, and the help options object, come from the allocator set for the library (`argx_set_allocator`). Generation frees its memory before returning. Do not set the allocator again while a help options object exists ([Ownership and Lifetime](ownership.md#5-allocator)).
 - While the schema and the help options are not being changed, several threads may generate with them at once. Give each call its own buffer. Whether your write function can be called concurrently is up to it.
 
 ## Preconditions
 
-Breaking a precondition is a programming error, and no error code is returned. Preconditions that can be checked are checked with `assert`: in the Debug configuration a broken one aborts the process, and in the Release configuration it is undefined behavior ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)). The comments of `include/argx/help.h` list them under `Preconditions:` too.
+Breaking a precondition is a programming error: no error code is returned ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)).
 
 | Function | Checked with `assert` | Not checked |
 | --- | --- | --- |
