@@ -4,13 +4,6 @@ All notable changes to this project are documented in this file.
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning 2.0.0](https://semver.org/).
-How version numbers are chosen, and what counts as a breaking change, is
-described in [the versioning policy](docs/versioning.md).
-
-Every pull request with a change visible to users adds an entry under
-`Unreleased`, in the matching category (Added, Changed, Deprecated, Removed,
-Fixed or Security). A release moves the entries under `Unreleased` into the
-section of the new version.
 
 ## [Unreleased]
 

@@ -92,7 +92,7 @@ When a change affects behavior or the API, update the documentation in the same 
 
 ## Recording changes
 
-Record every change that is visible to users under `Unreleased` in [CHANGELOG.md](CHANGELOG.md), in the same pull request as the change. Write the entry as described at the top of CHANGELOG.md.
+Record every change that is visible to users under `Unreleased` in [CHANGELOG.md](CHANGELOG.md), in the same pull request as the change. Put the entry in the matching category: Added, Changed, Deprecated, Removed, Fixed or Security. The changelog follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/). A release moves the entries under `Unreleased` into the section of the new version, as described in [Keeping the changelog](docs/releasing.md#keeping-the-changelog).
 
 ## Releases
 
