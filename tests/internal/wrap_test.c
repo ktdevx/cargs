@@ -41,12 +41,12 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0)
+    if ((text == NULL) || (length == 0))
     {
         ++sink->empty_calls;
         return true;
     }
-    if (length > SINK_SIZE - sink->length)
+    if (length > (SINK_SIZE - sink->length))
     {
         return false;
     }
@@ -262,7 +262,7 @@ NAOS_TEST(empty_text_writes_nothing)
     static const char *const texts[] = { "", "\n", "\n\n\n" };
     size_t i;
 
-    for (i = 0; i < sizeof texts / sizeof texts[0]; ++i)
+    for (i = 0; i < (sizeof texts / sizeof texts[0]); ++i)
     {
         sink_t sink;
         clargs_out_t out;

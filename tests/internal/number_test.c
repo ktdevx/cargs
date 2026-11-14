@@ -664,8 +664,8 @@ static void check_point_only(void)
 
     fill_long_fraction(text);
     NAOS_CHECK_INT_EQ(clargs_number_parse_float(text, &value), CLARGS_ERROR_NONE);
-    NAOS_CHECK_TRUE(value > 1.0 - 1e-9);
-    NAOS_CHECK_TRUE(value < 1.0 + 1e-9);
+    NAOS_CHECK_TRUE(value > (1.0 - 1e-9));
+    NAOS_CHECK_TRUE(value < (1.0 + 1e-9));
     text[1] = ',';
     check_float_invalid(text);
 }
@@ -701,7 +701,7 @@ NAOS_TEST(float_in_a_locale_with_a_comma)
 
     /* setlocale returns a string that a later call may overwrite. */
     current = setlocale(LC_NUMERIC, NULL);
-    if (current != NULL && strlen(current) < sizeof original)
+    if ((current != NULL) && (strlen(current) < sizeof original))
     {
         memcpy(original, current, strlen(current) + 1);
     }
@@ -709,7 +709,7 @@ NAOS_TEST(float_in_a_locale_with_a_comma)
     /* Before the switch. */
     check_point_only();
 
-    for (i = 0; i < sizeof candidates / sizeof candidates[0] && !switched; ++i)
+    for (i = 0; (i < (sizeof candidates / sizeof candidates[0])) && !switched; ++i)
     {
         if (setlocale(LC_NUMERIC, candidates[i]) != NULL)
         {

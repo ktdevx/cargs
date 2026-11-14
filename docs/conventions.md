@@ -562,7 +562,7 @@ else
 
 ### Parentheses in expressions
 
-The library code (`include/`, `src/`) makes operator precedence explicit, in the style of MISRA C:2012 Rule 12.1. When an operand of a binary operator or of the conditional operator `?:` is itself a binary or conditional expression, put it in parentheses, unless both operators have the same precedence. This applies inside `assert` too.
+All C code (`include/`, `src/`, `tests/`) makes operator precedence explicit, in the style of MISRA C:2012 Rule 12.1. When an operand of a binary operator or of the conditional operator `?:` is itself a binary or conditional expression, put it in parentheses, unless both operators have the same precedence. This applies inside `assert`, the test assertion macros and macro definitions too.
 
 - No parentheses are needed for operands that are primary or postfix expressions (variables, constants, function calls, `a[i]`, `p->m`), unary expressions (`!x`, `*p`, casts, `sizeof`), or operators of the same precedence (`a + b + c`, `x && y && z`).
 - Do not put the whole right-hand side of an assignment, or the whole expression of a `return`, in parentheses.

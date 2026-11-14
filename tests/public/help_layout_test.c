@@ -94,16 +94,16 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0)
+    if ((text == NULL) || (length == 0))
     {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    if ((sink->fail_at != 0) && (sink->calls >= sink->fail_at))
     {
         return false;
     }
-    if (length > sink->size - sink->length)
+    if (length > (sink->size - sink->length))
     {
         return false;
     }
@@ -269,7 +269,7 @@ static bool has_blank_at_line_end(const char *text, size_t length)
 
     for (index = 0; index < length; ++index)
     {
-        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n'))
+        if ((text[index] == ' ') && (((index + 1) == length) || (text[index + 1] == '\n')))
         {
             return true;
         }
@@ -1731,9 +1731,9 @@ NAOS_TEST(blanks_of_the_trailing_run_are_ignored)
     size_t build;
     size_t index;
 
-    for (build = 0; build < sizeof builds / sizeof builds[0]; ++build)
+    for (build = 0; build < (sizeof builds / sizeof builds[0]); ++build)
     {
-        for (index = 0; index < sizeof descriptions / sizeof descriptions[0]; ++index)
+        for (index = 0; index < (sizeof descriptions / sizeof descriptions[0]); ++index)
         {
             check_same_text(builds[build], descriptions[index][0], descriptions[index][1]);
         }

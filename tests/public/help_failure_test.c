@@ -53,7 +53,7 @@
 #define GUARD_SIZE ((size_t)16)
 
 /* The size of the area that holds the guard bytes and the array. */
-#define AREA_SIZE (SINK_SIZE + 2 * GUARD_SIZE)
+#define AREA_SIZE (SINK_SIZE + (2 * GUARD_SIZE))
 
 /*
  * The byte that fills the area before a call. No text of this file has
@@ -291,12 +291,12 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0)
+    if ((text == NULL) || (length == 0))
     {
         ++sink->empty_calls;
         return true;
     }
-    if (length > SINK_SIZE - sink->length)
+    if (length > (SINK_SIZE - sink->length))
     {
         return false;
     }
@@ -326,7 +326,7 @@ static void put(picture_t *picture, const char *text)
 {
     size_t length = strlen(text);
 
-    if (length > PICTURE_SIZE - picture->length)
+    if (length > (PICTURE_SIZE - picture->length))
     {
         picture->overflow = true;
         return;
@@ -379,7 +379,7 @@ static void put_count(picture_t *picture, const char *label, size_t count)
         --at;
         digits[at] = (char)('0' + (int)(count % 10));
         count /= 10;
-    } while (count != 0 && at != 0);
+    } while ((count != 0) && (at != 0));
 
     put(picture, label);
     put(picture, digits + at);
@@ -738,12 +738,12 @@ static void fixture_start(fixture_t *fixture)
      * The settings change the text: a text that is as before proves that
      * the help options are as before.
      */
-    NAOS_CHECK_TRUE(fixture->cases[0].length != fixture->cases[1].length ||
-                    memcmp(fixture->cases[0].text, fixture->cases[1].text,
-                           fixture->cases[0].length) != 0);
-    NAOS_CHECK_TRUE(fixture->cases[2].length != fixture->cases[3].length ||
-                    memcmp(fixture->cases[2].text, fixture->cases[3].text,
-                           fixture->cases[2].length) != 0);
+    NAOS_CHECK_TRUE((fixture->cases[0].length != fixture->cases[1].length) ||
+                    (memcmp(fixture->cases[0].text, fixture->cases[1].text,
+                           fixture->cases[0].length) != 0));
+    NAOS_CHECK_TRUE((fixture->cases[2].length != fixture->cases[3].length) ||
+                    (memcmp(fixture->cases[2].text, fixture->cases[3].text,
+                           fixture->cases[2].length) != 0));
 
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 }
@@ -838,15 +838,15 @@ static void check_format_failure(const help_case_t *item, size_t nth, format_cal
     size_t requests = clargs_test_allocator_requests();
     clargs_error_t error;
 
-    NAOS_REQUIRE_TRUE(call.size <= AREA_SIZE - 2 * GUARD_SIZE);
-    NAOS_REQUIRE_TRUE(!call.null_buffer || call.size == 0);
+    NAOS_REQUIRE_TRUE(call.size <= (AREA_SIZE - (2 * GUARD_SIZE)));
+    NAOS_REQUIRE_TRUE(!call.null_buffer || (call.size == 0));
 
     memset(area, SENTINEL, sizeof area);
     memset(want, SENTINEL, sizeof want);
 
     clargs_test_allocator_fail_at(requests + nth);
     error = clargs_help_format(item->command, item->options,
-                               call.null_buffer ? NULL : area + GUARD_SIZE, call.size,
+                               call.null_buffer ? NULL : (area + GUARD_SIZE), call.size,
                                call.with_length ? &length : NULL);
     clargs_test_allocator_fail_at(0);
 
@@ -984,8 +984,8 @@ NAOS_TEST(formatting_a_help_fails_cleanly_at_every_allocation_point)
         const help_case_t *item = &fixture.cases[index];
         size_t n;
 
-        NAOS_REQUIRE_TRUE(item->length + 1 <= AREA_SIZE - 2 * GUARD_SIZE);
-        NAOS_REQUIRE_TRUE(item->length / 2 > 20);
+        NAOS_REQUIRE_TRUE((item->length + 1) <= (AREA_SIZE - (2 * GUARD_SIZE)));
+        NAOS_REQUIRE_TRUE((item->length / 2) > 20);
 
         /*
          * The requests of a generation were counted by fixture_start(): the

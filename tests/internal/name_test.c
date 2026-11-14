@@ -18,7 +18,7 @@ NAOS_TEST(short_accepts_letters)
     const char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     size_t i;
 
-    for (i = 0; i < sizeof letters - 1; ++i)
+    for (i = 0; i < (sizeof letters - 1); ++i)
     {
         NAOS_CHECK_TRUE(clargs_name_is_short(letters[i]));
     }
@@ -31,7 +31,7 @@ NAOS_TEST(short_accepts_digits)
     const char digits[] = "0123456789";
     size_t i;
 
-    for (i = 0; i < sizeof digits - 1; ++i)
+    for (i = 0; i < (sizeof digits - 1); ++i)
     {
         NAOS_CHECK_TRUE(clargs_name_is_short(digits[i]));
     }

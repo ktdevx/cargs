@@ -61,7 +61,7 @@ NAOS_TEST(succeeds_when_no_failure_is_set)
 
     for (i = 0; i < 8; ++i)
     {
-        blocks[i] = (i % 2 == 0) ? allocator.malloc_fn(16) : allocator.calloc_fn(4, 4);
+        blocks[i] = ((i % 2) == 0) ? allocator.malloc_fn(16) : allocator.calloc_fn(4, 4);
         NAOS_CHECK_TRUE(blocks[i] != NULL);
     }
     for (i = 0; i < 8; ++i)

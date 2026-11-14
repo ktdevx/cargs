@@ -852,7 +852,7 @@ static clargs_error_t picky_convert(const char *text, void *value, void *context
 {
     const picky_t *picky = context;
 
-    if (picky->rejected != NULL && strcmp(text, picky->rejected) == 0)
+    if ((picky->rejected != NULL) && (strcmp(text, picky->rejected) == 0))
     {
         return CLARGS_ERROR_INVALID_VALUE;
     }
@@ -1224,7 +1224,7 @@ NAOS_TEST(a_result_without_a_parse_error_reads_as_no_error)
     results[1] = parse_ok(fixture.root, ARGC(nothing), nothing);
     results[2] = parse_ok(fixture.root, 0, NULL);
 
-    for (index = 0; index < sizeof(results) / sizeof(results[0]); index++)
+    for (index = 0; index < (sizeof(results) / sizeof(results[0])); index++)
     {
         const clargs_result_t *result = results[index];
 
@@ -1288,7 +1288,7 @@ NAOS_TEST(the_strings_of_an_error_stay_valid_after_argv_was_overwritten)
     memset(source, '#', sizeof(source) - 1);
     memset(jobs, '#', sizeof(jobs) - 1);
     memset(extra, '#', sizeof(extra) - 1);
-    for (index = 0; index < sizeof(argv) / sizeof(argv[0]); index++)
+    for (index = 0; index < (sizeof(argv) / sizeof(argv[0])); index++)
     {
         argv[index] = NULL;
     }

@@ -743,7 +743,7 @@ static clargs_error_t picky_convert(const char *text, void *value, void *context
 {
     const picky_t *picky = context;
 
-    if (picky->reject && strcmp(text, "bad") == 0)
+    if (picky->reject && (strcmp(text, "bad") == 0))
     {
         return CLARGS_ERROR_INVALID_VALUE;
     }
@@ -894,7 +894,7 @@ static clargs_error_t word_convert(const char *text, void *value, void *context)
     word_t word;
 
     keep_text(log->last_text, sizeof(log->last_text), text);
-    if (log->failure != CLARGS_ERROR_NONE && strcmp(text, "bad") == 0)
+    if ((log->failure != CLARGS_ERROR_NONE) && (strcmp(text, "bad") == 0))
     {
         return log->failure;
     }

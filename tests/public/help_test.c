@@ -60,16 +60,16 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0)
+    if ((text == NULL) || (length == 0))
     {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    if ((sink->fail_at != 0) && (sink->calls >= sink->fail_at))
     {
         return false;
     }
-    if (length > SINK_SIZE - sink->length)
+    if (length > (SINK_SIZE - sink->length))
     {
         return false;
     }
@@ -240,7 +240,7 @@ static bool has_blank_at_line_end(const char *text, size_t length)
 
     for (index = 0; index < length; ++index)
     {
-        if (text[index] == ' ' && (index + 1 == length || text[index + 1] == '\n'))
+        if ((text[index] == ' ') && (((index + 1) == length) || (text[index + 1] == '\n')))
         {
             return true;
         }
@@ -259,7 +259,7 @@ static size_t count_empty_lines(const char *text, size_t length)
 
     for (index = 0; index < length; ++index)
     {
-        if (text[index] == '\n' && (index == 0 || text[index - 1] == '\n'))
+        if ((text[index] == '\n') && ((index == 0) || (text[index - 1] == '\n')))
         {
             ++count;
         }

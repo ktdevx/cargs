@@ -106,7 +106,7 @@ static clargs_error_t word_convert(const char *text, void *value, void *context)
     word_log_t *log = context;
     word_t word;
 
-    if (log->reject && strcmp(text, "bad") == 0)
+    if (log->reject && (strcmp(text, "bad") == 0))
     {
         return CLARGS_ERROR_INVALID_VALUE;
     }
@@ -511,7 +511,7 @@ static void fail_every_request(const parse_case_t *parse_case)
         made = clargs_test_allocator_requests() - before;
         clargs_test_allocator_fail_at(0);
 
-        if (error != CLARGS_ERROR_OUT_OF_MEMORY && made < n)
+        if ((error != CLARGS_ERROR_OUT_OF_MEMORY) && (made < n))
         {
             size_t expected = 0;
 
@@ -603,7 +603,7 @@ static void check_full(const fixture_t *fixture, const clargs_result_t *result, 
     check_option_word(result, fixture->tag, "c", CLARGS_SOURCE_COMMAND_LINE);
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, fixture->ratio), CLARGS_SOURCE_COMMAND_LINE);
     NAOS_REQUIRE_TRUE(clargs_result_option_float(result, fixture->ratio, &ratio));
-    NAOS_CHECK_TRUE(ratio > 0.1234 && ratio < 0.1235);
+    NAOS_CHECK_TRUE((ratio > 0.1234) && (ratio < 0.1235));
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, fixture->mode), CLARGS_SOURCE_DEFAULT);
     NAOS_REQUIRE_TRUE(clargs_result_option_choice(result, fixture->mode, &mode));
     NAOS_CHECK_UINT_EQ(mode, 0);

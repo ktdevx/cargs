@@ -157,9 +157,9 @@ NAOS_TEST(copies_a_long_string)
     char *copy;
     size_t i;
 
-    for (i = 0; i < sizeof original - 1; ++i)
+    for (i = 0; i < (sizeof original - 1); ++i)
     {
-        original[i] = (char)('a' + i % 26);
+        original[i] = (char)('a' + (i % 26));
     }
     original[sizeof original - 1] = '\0';
 

@@ -156,7 +156,7 @@ NAOS_TEST(string_conversion_writes_the_pointer_to_the_input)
     };
     size_t index;
 
-    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index)
+    for (index = 0; index < (sizeof(inputs) / sizeof(inputs[0])); ++index)
     {
         const char *value = NULL;
         clargs_error_t error = clargs_type_convert(clargs_type_string(), inputs[index], &value);
@@ -208,7 +208,7 @@ NAOS_TEST(int_conversion_fails)
     };
     size_t index;
 
-    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index)
+    for (index = 0; index < (sizeof(inputs) / sizeof(inputs[0])); ++index)
     {
         int64_t value = 0;
 
@@ -247,7 +247,7 @@ NAOS_TEST(float_conversion_fails)
     };
     size_t index;
 
-    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index)
+    for (index = 0; index < (sizeof(inputs) / sizeof(inputs[0])); ++index)
     {
         double value = 0.0;
 
@@ -365,7 +365,7 @@ NAOS_TEST(choice_conversion_fails_without_an_exact_match)
     NAOS_REQUIRE_TRUE(clargs_type_create_choice(choices, 3, &type) == CLARGS_ERROR_NONE);
     requests = clargs_test_allocator_requests();
 
-    for (position = 0; position < sizeof(inputs) / sizeof(inputs[0]); ++position)
+    for (position = 0; position < (sizeof(inputs) / sizeof(inputs[0])); ++position)
     {
         size_t index = 0;
 
@@ -780,7 +780,7 @@ NAOS_TEST(custom_name_can_be_any_string_that_is_not_empty)
     probe_init(&probe, CLARGS_ERROR_NONE);
     clargs_test_allocator_install();
 
-    for (index = 0; index < sizeof(names) / sizeof(names[0]); ++index)
+    for (index = 0; index < (sizeof(names) / sizeof(names[0])); ++index)
     {
         clargs_type_t *type = NULL;
 
@@ -902,7 +902,7 @@ NAOS_TEST(custom_conversion_returns_what_the_function_returns)
     NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
                                          &type) == CLARGS_ERROR_NONE);
 
-    for (index = 0; index < sizeof(results) / sizeof(results[0]); ++index)
+    for (index = 0; index < (sizeof(results) / sizeof(results[0])); ++index)
     {
         int value = -1;
 
@@ -939,12 +939,12 @@ NAOS_TEST(custom_cleanup_is_called_once_for_each_successful_conversion)
     NAOS_REQUIRE_TRUE(clargs_type_create("length", sizeof(int), probe_convert, probe_release, &probe,
                                          &type) == CLARGS_ERROR_NONE);
 
-    for (index = 0; index < sizeof(inputs) / sizeof(inputs[0]); ++index)
+    for (index = 0; index < (sizeof(inputs) / sizeof(inputs[0])); ++index)
     {
         int value = -1;
         clargs_error_t error;
 
-        probe.result = strcmp(inputs[index], "bad") == 0 ? CLARGS_ERROR_INVALID_VALUE : CLARGS_ERROR_NONE;
+        probe.result = (strcmp(inputs[index], "bad") == 0) ? CLARGS_ERROR_INVALID_VALUE : CLARGS_ERROR_NONE;
         error = clargs_type_convert(type, inputs[index], &value);
 
         /* The conversion itself cleans nothing up. */

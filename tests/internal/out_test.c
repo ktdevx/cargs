@@ -44,16 +44,16 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0)
+    if ((text == NULL) || (length == 0))
     {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    if ((sink->fail_at != 0) && (sink->calls >= sink->fail_at))
     {
         return false;
     }
-    if (length > SINK_SIZE - sink->length)
+    if (length > (SINK_SIZE - sink->length))
     {
         return false;
     }
@@ -295,7 +295,7 @@ NAOS_TEST(many_spaces_are_all_written)
     static const size_t counts[] = { 1, 31, 32, 33, 64, 65, 100 };
     size_t i;
 
-    for (i = 0; i < sizeof counts / sizeof counts[0]; ++i)
+    for (i = 0; i < (sizeof counts / sizeof counts[0]); ++i)
     {
         char expected[SINK_SIZE];
         sink_t sink;

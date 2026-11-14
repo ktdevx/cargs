@@ -92,16 +92,16 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     sink_t *sink = user_data;
 
     ++sink->calls;
-    if (text == NULL || length == 0)
+    if ((text == NULL) || (length == 0))
     {
         ++sink->empty_calls;
         return true;
     }
-    if (sink->fail_at != 0 && sink->calls >= sink->fail_at)
+    if ((sink->fail_at != 0) && (sink->calls >= sink->fail_at))
     {
         return false;
     }
-    if (length > sizeof sink->text - sink->length)
+    if (length > (sizeof sink->text - sink->length))
     {
         return false;
     }
@@ -293,7 +293,7 @@ static void collect(text_kind_t kind, const clargs_command_t *command,
     NAOS_REQUIRE_TRUE(write_text(kind, command, options, sink_write, sink) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(sink->calls > 0);
     NAOS_REQUIRE_TRUE(sink->length > 0);
-    NAOS_REQUIRE_TRUE(sink->length < AREA_SIZE - 2 * GUARD_SIZE);
+    NAOS_REQUIRE_TRUE(sink->length < (AREA_SIZE - (2 * GUARD_SIZE)));
     NAOS_REQUIRE_TRUE(memchr(sink->text, SENTINEL, sink->length) == NULL);
 }
 
@@ -326,20 +326,20 @@ static void check_format(text_kind_t kind, const clargs_command_t *command,
     size_t live = clargs_test_allocator_live();
     clargs_error_t error;
 
-    NAOS_REQUIRE_TRUE(call.size <= AREA_SIZE - 2 * GUARD_SIZE);
-    NAOS_REQUIRE_TRUE(!call.null_buffer || call.size == 0);
+    NAOS_REQUIRE_TRUE(call.size <= (AREA_SIZE - (2 * GUARD_SIZE)));
+    NAOS_REQUIRE_TRUE(!call.null_buffer || (call.size == 0));
 
     memset(area, SENTINEL, sizeof area);
     memset(want, SENTINEL, sizeof want);
     if (call.size != 0)
     {
-        size_t written = text_length < call.size - 1 ? text_length : call.size - 1;
+        size_t written = (text_length < (call.size - 1)) ? text_length : (call.size - 1);
 
         memcpy(want + GUARD_SIZE, text, written);
         want[GUARD_SIZE + written] = '\0';
     }
 
-    error = format_text(kind, command, options, call.null_buffer ? NULL : area + GUARD_SIZE,
+    error = format_text(kind, command, options, call.null_buffer ? NULL : (area + GUARD_SIZE),
                         call.size, call.with_length ? &length : NULL);
 
     NAOS_CHECK_TRUE(error == CLARGS_ERROR_NONE);
@@ -699,7 +699,7 @@ NAOS_TEST(two_calls_get_the_whole_text)
 
     for (kind = TEXT_HELP; kind <= TEXT_USAGE; ++kind)
     {
-        const char *expected = kind == TEXT_HELP ? narrow_help : narrow_usage;
+        const char *expected = (kind == TEXT_HELP) ? narrow_help : narrow_usage;
         char buffer[SINK_SIZE];
         size_t length = LENGTH_UNSET;
         size_t second = LENGTH_UNSET;
@@ -708,14 +708,14 @@ NAOS_TEST(two_calls_get_the_whole_text)
         NAOS_CHECK_TRUE(format_text((text_kind_t)kind, root, narrow, NULL, 0, &length) ==
                         CLARGS_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(length, strlen(expected));
-        NAOS_REQUIRE_TRUE(length + 1 <= sizeof buffer);
+        NAOS_REQUIRE_TRUE((length + 1) <= sizeof buffer);
 
         /* The second call, with the length + 1 bytes, gets all of it. */
         memset(buffer, SENTINEL, sizeof buffer);
         NAOS_CHECK_TRUE(format_text((text_kind_t)kind, root, narrow, buffer, length + 1, &second) ==
                         CLARGS_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(second, length);
-        NAOS_CHECK_TRUE(second < length + 1);
+        NAOS_CHECK_TRUE(second < (length + 1));
         NAOS_CHECK_TRUE(buffer[length] == '\0');
         NAOS_CHECK_MEM_EQ(buffer, strlen(buffer), expected, strlen(expected));
     }
@@ -779,14 +779,14 @@ static void check_out_of_memory(const clargs_command_t *command,
     size_t live = clargs_test_allocator_live();
     clargs_error_t error;
 
-    NAOS_REQUIRE_TRUE(call.size <= AREA_SIZE - 2 * GUARD_SIZE);
-    NAOS_REQUIRE_TRUE(!call.null_buffer || call.size == 0);
+    NAOS_REQUIRE_TRUE(call.size <= (AREA_SIZE - (2 * GUARD_SIZE)));
+    NAOS_REQUIRE_TRUE(!call.null_buffer || (call.size == 0));
 
     memset(area, SENTINEL, sizeof area);
     memset(want, SENTINEL, sizeof want);
 
     clargs_test_allocator_fail_at(clargs_test_allocator_requests() + 1);
-    error = clargs_help_format(command, options, call.null_buffer ? NULL : area + GUARD_SIZE,
+    error = clargs_help_format(command, options, call.null_buffer ? NULL : (area + GUARD_SIZE),
                                call.size, call.with_length ? &length : NULL);
     clargs_test_allocator_fail_at(0);
 

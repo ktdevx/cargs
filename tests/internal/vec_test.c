@@ -118,7 +118,7 @@ static void check_empty(const clargs_vec_t *vec, size_t item_size)
  */
 static int int_value(size_t index)
 {
-    return (int)index * 7 - 3;
+    return ((int)index * 7) - 3;
 }
 
 /*
@@ -365,7 +365,7 @@ NAOS_TEST(at_returns_the_address_of_the_item)
     {
         int *item = clargs_vec_at(&vec, i);
 
-        NAOS_CHECK_TRUE((char *)item == (char *)vec.items + i * sizeof(int));
+        NAOS_CHECK_TRUE((char *)item == ((char *)vec.items + (i * sizeof(int))));
         NAOS_CHECK_INT_EQ(*item, int_value(i));
     }
 
@@ -378,7 +378,7 @@ NAOS_TEST(at_returns_the_address_of_the_item)
         for (i = 0; i < vec.count; ++i)
         {
             item = clargs_vec_at(&vec, i);
-            NAOS_CHECK_INT_EQ(*item, i == 5 ? 12345 : int_value(i));
+            NAOS_CHECK_INT_EQ(*item, (i == 5) ? 12345 : int_value(i));
         }
     }
 
@@ -462,7 +462,7 @@ NAOS_TEST(holds_structs)
         const sample_t *item = clargs_vec_at(&vec, i);
 
         NAOS_CHECK_INT_EQ(item->tag, 'A' + (int)(i % 26));
-        NAOS_CHECK_TRUE(item->number == (double)i * 0.5);
+        NAOS_CHECK_TRUE(item->number == ((double)i * 0.5));
         NAOS_CHECK_INT_EQ(item->small, 1000 + (int)i);
         NAOS_CHECK_TRUE(item->name == names[i % 3]);
     }
@@ -791,8 +791,8 @@ NAOS_TEST(fails_at_every_allocation_point)
         clargs_vec_init(&vec, sizeof(int));
         error = push_ints_up_to(&vec, total);
 
-        if (error == CLARGS_ERROR_NONE
-            && clargs_test_allocator_requests() < n)
+        if ((error == CLARGS_ERROR_NONE)
+            && (clargs_test_allocator_requests() < n))
         {
             /*
              * The operation ended before the request to fail was reached:
@@ -824,7 +824,7 @@ NAOS_TEST(fails_at_every_allocation_point)
         NAOS_CHECK_UINT_EQ(vec.item_size, sizeof(int));
         NAOS_CHECK_TRUE((items == NULL) == (count == 0));
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(),
-            count == 0 ? 0 : 1);
+            (count == 0) ? 0 : 1);
         check_ints(&vec);
 
         /* A push that fails again changes nothing either. */
@@ -901,11 +901,11 @@ NAOS_TEST(overflow_of_the_first_allocation)
      * The largest item size whose first allocation overflows by one
      * byte only.
      */
-    vec.item_size = SIZE_MAX / 4 + 1;
+    vec.item_size = (SIZE_MAX / 4) + 1;
     NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
         CLARGS_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
-    check_empty(&vec, SIZE_MAX / 4 + 1);
+    check_empty(&vec, (SIZE_MAX / 4) + 1);
 
     clargs_test_allocator_uninstall();
     check_clean();
@@ -914,7 +914,7 @@ NAOS_TEST(overflow_of_the_first_allocation)
 /* Twice the capacity does not fit in a size_t. */
 NAOS_TEST(overflow_of_the_doubled_capacity)
 {
-    const size_t full = SIZE_MAX / 2 + 1;
+    const size_t full = (SIZE_MAX / 2) + 1;
     clargs_vec_t vec;
     int item = 1;
 
@@ -959,7 +959,7 @@ NAOS_TEST(overflow_of_the_doubled_capacity)
 NAOS_TEST(overflow_of_the_doubled_capacity_to_a_small_number)
 {
     /* Twice this is 4, modulo SIZE_MAX + 1. */
-    const size_t full = SIZE_MAX / 2 + 3;
+    const size_t full = (SIZE_MAX / 2) + 3;
     clargs_vec_t vec;
     int item = 1;
 
@@ -1068,7 +1068,7 @@ NAOS_TEST(overflow_of_the_size_in_bytes)
         unsigned char bytes[8];
     } eight_t;
     /* Twice this is SIZE_MAX / 4 + 1 items of 8 bytes at the least. */
-    const size_t full = SIZE_MAX / 8 + 1;
+    const size_t full = (SIZE_MAX / 8) + 1;
     clargs_vec_t vec;
     eight_t item = { { 0 } };
 

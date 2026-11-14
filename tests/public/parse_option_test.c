@@ -1445,7 +1445,7 @@ NAOS_TEST(a_negative_number_is_not_a_bundle_of_a_command_that_has_no_digit_as_a_
     clargs_result_destroy(result);
 
     /* The letters after the digit are not read as options. */
-    for (at = 0; at < sizeof(more) / sizeof(more[0]); at++)
+    for (at = 0; at < (sizeof(more) / sizeof(more[0])); at++)
     {
         char *one[2];
 

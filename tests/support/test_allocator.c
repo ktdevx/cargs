@@ -15,7 +15,7 @@ static size_t violation_count;
 static int count_request(void)
 {
     ++request_count;
-    return fail_request != 0 && request_count == fail_request;
+    return (fail_request != 0) && (request_count == fail_request);
 }
 
 static void *test_malloc(size_t size)
@@ -45,7 +45,7 @@ static void *test_realloc(void *ptr, size_t size)
 {
     int fail = count_request();
 
-    if (ptr == NULL || size == 0)
+    if ((ptr == NULL) || (size == 0))
     {
         ++violation_count;
         return NULL;
@@ -64,7 +64,7 @@ static void *test_calloc(size_t count, size_t size)
     int fail = count_request();
     void *ptr;
 
-    if (count == 0 || size == 0)
+    if ((count == 0) || (size == 0))
     {
         ++violation_count;
         return NULL;

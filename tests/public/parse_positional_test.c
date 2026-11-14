@@ -174,7 +174,7 @@ static void check_count(const clargs_result_t *result, const clargs_positional_t
 {
     NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional), count);
     NAOS_CHECK_INT_EQ(clargs_result_positional_source(result, positional),
-                      count == 0 ? CLARGS_SOURCE_NONE : CLARGS_SOURCE_COMMAND_LINE);
+                      (count == 0) ? CLARGS_SOURCE_NONE : CLARGS_SOURCE_COMMAND_LINE);
 }
 
 /* Checks that the value at index of positional, a string, is expected. */

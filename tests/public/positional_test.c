@@ -346,7 +346,7 @@ NAOS_TEST(a_positional_can_be_added_without_an_output)
         NAOS_CHECK_INT_EQ(clargs_command_add_positional(root, names[index], clargs_type_int(),
                                                         all_arities[index], NULL),
                           CLARGS_ERROR_NONE);
-        NAOS_REQUIRE_TRUE(clargs_command_positional_count(root) == index + 1);
+        NAOS_REQUIRE_TRUE(clargs_command_positional_count(root) == (index + 1));
         check_positional(clargs_command_positional_at(root, index), root, names[index], all_arities[index],
                          clargs_type_int());
     }
@@ -816,7 +816,7 @@ NAOS_TEST(a_default_value_on_another_arity_is_an_inconsistent_definition)
     static const char *const names[] = { "required", "zero-or-more", "one-or-more" };
     size_t index;
 
-    for (index = 0; index < sizeof(others) / sizeof(others[0]); ++index)
+    for (index = 0; index < (sizeof(others) / sizeof(others[0])); ++index)
     {
         clargs_command_t *root = create_root();
         clargs_positional_t *positional = add(root, names[index], others[index]);
@@ -989,7 +989,7 @@ static clargs_command_t *build_root_with(size_t existing, clargs_positional_t **
     size_t index;
 
     *last = NULL;
-    NAOS_REQUIRE_TRUE(existing <= sizeof(names) / sizeof(names[0]));
+    NAOS_REQUIRE_TRUE(existing <= (sizeof(names) / sizeof(names[0])));
     NAOS_REQUIRE_TRUE(clargs_command_create("app", &root) == CLARGS_ERROR_NONE);
     for (index = 0; index < existing; ++index)
     {
@@ -1021,7 +1021,7 @@ static void check_built_root(const clargs_command_t *root, size_t existing)
         const clargs_positional_t *old = clargs_command_positional_at(root, index);
 
         check_positional(old, root, names[index], all_arities[index % ARITY_COUNT], clargs_type_string());
-        check_attributes(old, index == 0 ? "The first." : NULL, index == 1 ? "second" : NULL);
+        check_attributes(old, (index == 0) ? "The first." : NULL, (index == 1) ? "second" : NULL);
     }
 }
 
@@ -1058,7 +1058,7 @@ static size_t fail_each_allocation_of_an_addition(clargs_arity_t arity, size_t e
 
         error = clargs_command_add_positional(root, "new", clargs_type_int(), arity, &positional);
 
-        if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < requests + n)
+        if ((error == CLARGS_ERROR_NONE) && (clargs_test_allocator_requests() < (requests + n)))
         {
             /* Every allocation point has been passed. */
             NAOS_CHECK_TRUE(positional != NULL);
@@ -1084,7 +1084,7 @@ static size_t fail_each_allocation_of_an_addition(clargs_arity_t arity, size_t e
         clargs_test_allocator_fail_at(0);
         NAOS_CHECK_INT_EQ(clargs_command_add_positional(root, "new", clargs_type_int(), arity, &positional),
                           CLARGS_ERROR_NONE);
-        NAOS_REQUIRE_TRUE(clargs_command_positional_count(root) == existing + 1);
+        NAOS_REQUIRE_TRUE(clargs_command_positional_count(root) == (existing + 1));
         NAOS_CHECK_TRUE(clargs_command_positional_at(root, existing) == positional);
         check_positional(positional, root, "new", arity, clargs_type_int());
         check_attributes(positional, NULL, NULL);
@@ -1153,7 +1153,7 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
         for (was_set = 0; was_set < 2; ++was_set)
         {
             const text_attribute_t attribute = attributes[index];
-            const char *const old = was_set != 0 ? "old value" : NULL;
+            const char *const old = (was_set != 0) ? "old value" : NULL;
             clargs_command_t *root = NULL;
             clargs_positional_t *positional;
             size_t requests;
@@ -1208,7 +1208,7 @@ NAOS_TEST(a_failed_set_of_a_string_keeps_the_value_it_had)
             clargs_test_allocator_fail_at(0);
             NAOS_CHECK_INT_EQ(set_text(attribute, positional, "a new and longer value"), CLARGS_ERROR_NONE);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 2);
-            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), old != NULL ? live : live + 1);
+            NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), (old != NULL) ? live : (live + 1));
             check_text(get_text(attribute, positional), "a new and longer value");
 
             clargs_command_destroy(root);
