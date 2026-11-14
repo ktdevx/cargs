@@ -434,8 +434,8 @@ clargs_error_t clargs_result_push_command(clargs_result_t *result, const clargs_
     assert(result != NULL);
     assert(command != NULL);
     assert((result->frames.count > 0) || (command == result->root));
-    assert((result->frames.count == 0)
-           || (clargs_command_parent(command) == frame_at(result, result->frames.count - 1)->command));
+    assert((result->frames.count == 0) ||
+           (clargs_command_parent(command) == frame_at(result, result->frames.count - 1)->command));
 
     error = init_frame(&frame, command);
     if (error != CLARGS_ERROR_NONE)
@@ -562,8 +562,8 @@ bool clargs_result_flag(const clargs_result_t *result, const clargs_option_t *op
     assert(result != NULL);
     assert(option != NULL);
     assert(root_of(clargs_option_command(option)) == result->root);
-    assert((clargs_option_kind(option) == CLARGS_OPTION_FLAG)
-           || (clargs_option_kind(option) == CLARGS_OPTION_NEGATABLE));
+    assert((clargs_option_kind(option) == CLARGS_OPTION_FLAG) ||
+           (clargs_option_kind(option) == CLARGS_OPTION_NEGATABLE));
 
     slot = find_option_slot(result, option);
     if (slot == NULL)
@@ -718,9 +718,9 @@ static clargs_error_t record_error(clargs_result_t *result, const clargs_result_
          * The value type is that of the option or the positional that the
          * value is for.
          */
-        parts.type_name = clargs_type_name((failure->positional != NULL)
-                                               ? clargs_positional_type(failure->positional)
-                                               : clargs_option_type(failure->option));
+        parts.type_name = clargs_type_name((failure->positional != NULL) ?
+                                           clargs_positional_type(failure->positional) :
+                                           clargs_option_type(failure->option));
     }
 
     error = clargs_message_build(&parts, &message);
@@ -753,8 +753,8 @@ clargs_error_t clargs_result_fail(clargs_result_t *result, const clargs_result_f
     assert(failure->command != NULL);
     assert(result->error == CLARGS_ERROR_NONE);
     assert((failure->where.source != CLARGS_SOURCE_COMMAND_LINE) || (failure->where.index < result->arg_count));
-    assert((failure->kind != CLARGS_PARSE_ERROR_INVALID_VALUE) || (failure->option != NULL)
-           || (failure->positional != NULL));
+    assert((failure->kind != CLARGS_PARSE_ERROR_INVALID_VALUE) || (failure->option != NULL) ||
+           (failure->positional != NULL));
 
     return record_error(result, failure);
 }

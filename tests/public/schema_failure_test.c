@@ -768,32 +768,32 @@ static bool build_tree(sweep_t *sweep, tree_t *tree)
     }
     root = sweep->root;
 
-    return add_option(sweep, root, CLARGS_OPTION_FLAG, 'v', "verbose", NULL, &tree->verbose)
-        && add_option(sweep, root, CLARGS_OPTION_NEGATABLE, '\0', "color", NULL, &tree->color)
-        && add_subcommand(sweep, root, "build", &tree->build)
-        && add_option(sweep, root, CLARGS_OPTION_COUNT, 'q', "quiet", NULL, &tree->quiet)
-        && add_option(sweep, root, CLARGS_OPTION_VALUE, 'o', "output", clargs_type_string(),
-                      &tree->output)
-        && add_subcommand(sweep, root, "run", &tree->run)
-        && add_option(sweep, root, CLARGS_OPTION_VALUE, '\0', "ratio", clargs_type_float(),
-                      &tree->ratio)
-        && add_option(sweep, root, CLARGS_OPTION_VALUE, 'm', "mode", sweep->choice, &tree->mode)
-        && add_option(sweep, root, CLARGS_OPTION_VALUE, 'p', NULL, sweep->custom, &tree->port)
-        && add_subcommand(sweep, root, "test", NULL)
-        && add_subcommand(sweep, root, "bench", NULL)
-        && add_subcommand(sweep, root, "clean", NULL)
-        && add_option(sweep, tree->build, CLARGS_OPTION_VALUE, 'j', "jobs", clargs_type_int(),
-                      &tree->jobs)
-        && add_positional(sweep, tree->build, "source", clargs_type_string(),
-                          CLARGS_ARITY_REQUIRED, NULL)
-        && add_positional(sweep, tree->build, "level", clargs_type_int(), CLARGS_ARITY_REQUIRED,
-                          NULL)
-        && add_positional(sweep, tree->build, "first", sweep->choice, CLARGS_ARITY_REQUIRED, NULL)
-        && add_positional(sweep, tree->build, "second", sweep->custom, CLARGS_ARITY_REQUIRED, NULL)
-        && add_positional(sweep, tree->build, "target", clargs_type_string(),
-                          CLARGS_ARITY_OPTIONAL, &tree->target)
-        && add_option(sweep, tree->run, CLARGS_OPTION_FLAG, 'v', "verbose", NULL, NULL)
-        && add_positional(sweep, tree->run, "args", clargs_type_string(),
+    return add_option(sweep, root, CLARGS_OPTION_FLAG, 'v', "verbose", NULL, &tree->verbose) &&
+           add_option(sweep, root, CLARGS_OPTION_NEGATABLE, '\0', "color", NULL, &tree->color) &&
+           add_subcommand(sweep, root, "build", &tree->build) &&
+           add_option(sweep, root, CLARGS_OPTION_COUNT, 'q', "quiet", NULL, &tree->quiet) &&
+           add_option(sweep, root, CLARGS_OPTION_VALUE, 'o', "output", clargs_type_string(),
+                      &tree->output) &&
+           add_subcommand(sweep, root, "run", &tree->run) &&
+           add_option(sweep, root, CLARGS_OPTION_VALUE, '\0', "ratio", clargs_type_float(),
+                      &tree->ratio) &&
+           add_option(sweep, root, CLARGS_OPTION_VALUE, 'm', "mode", sweep->choice, &tree->mode) &&
+           add_option(sweep, root, CLARGS_OPTION_VALUE, 'p', NULL, sweep->custom, &tree->port) &&
+           add_subcommand(sweep, root, "test", NULL) &&
+           add_subcommand(sweep, root, "bench", NULL) &&
+           add_subcommand(sweep, root, "clean", NULL) &&
+           add_option(sweep, tree->build, CLARGS_OPTION_VALUE, 'j', "jobs", clargs_type_int(),
+                      &tree->jobs) &&
+           add_positional(sweep, tree->build, "source", clargs_type_string(),
+                          CLARGS_ARITY_REQUIRED, NULL) &&
+           add_positional(sweep, tree->build, "level", clargs_type_int(), CLARGS_ARITY_REQUIRED,
+                          NULL) &&
+           add_positional(sweep, tree->build, "first", sweep->choice, CLARGS_ARITY_REQUIRED, NULL) &&
+           add_positional(sweep, tree->build, "second", sweep->custom, CLARGS_ARITY_REQUIRED, NULL) &&
+           add_positional(sweep, tree->build, "target", clargs_type_string(),
+                          CLARGS_ARITY_OPTIONAL, &tree->target) &&
+           add_option(sweep, tree->run, CLARGS_OPTION_FLAG, 'v', "verbose", NULL, NULL) &&
+           add_positional(sweep, tree->run, "args", clargs_type_string(),
                           CLARGS_ARITY_ZERO_OR_MORE, NULL);
 }
 
@@ -805,38 +805,38 @@ static bool build_tree(sweep_t *sweep, tree_t *tree)
  */
 static bool set_attributes(sweep_t *sweep, const tree_t *tree)
 {
-    return set_command_text(sweep, sweep->root, "An application.")
-        && set_command_text(sweep, sweep->root, "The application, described again.")
-        && set_command_text(sweep, tree->build, "Builds.")
-        && set_command_text(sweep, tree->build, "")
-        && set_option_text(sweep, OPTION_DESCRIPTION, tree->verbose, "Says more.")
-        && set_option_text(sweep, OPTION_DESCRIPTION, tree->verbose, "Says a lot more than before.")
-        && set_option_text(sweep, OPTION_DESCRIPTION, tree->color, "Colors the output.")
-        && set_option_text(sweep, OPTION_DESCRIPTION, tree->color, "Colors.")
-        && set_option_bool(sweep, OPTION_INITIAL, tree->color, true)
-        && set_option_bool(sweep, OPTION_INITIAL, tree->color, false)
-        && set_option_text(sweep, OPTION_DESCRIPTION, tree->quiet, "Says less.")
-        && set_option_text(sweep, OPTION_DESCRIPTION, tree->quiet, "Says less, each time it is given.")
-        && set_option_text(sweep, OPTION_DESCRIPTION, tree->output, "Where the output goes.")
-        && set_option_text(sweep, OPTION_DESCRIPTION, tree->output, "The file of the output.")
-        && set_option_text(sweep, OPTION_VALUE_NAME, tree->output, "FILE")
-        && set_option_text(sweep, OPTION_VALUE_NAME, tree->output, "PATH")
-        && set_option_bool(sweep, OPTION_REQUIRED, tree->output, true)
-        && set_option_bool(sweep, OPTION_REQUIRED, tree->output, false)
-        && set_option_text(sweep, OPTION_DEFAULT, tree->output, "out.txt")
-        && set_option_text(sweep, OPTION_DEFAULT, tree->output, "a.out")
-        && set_option_text(sweep, OPTION_DEFAULT, tree->ratio, "0.5")
-        && set_option_text(sweep, OPTION_DEFAULT, tree->ratio, LONG_FLOAT)
-        && set_option_text(sweep, OPTION_DEFAULT, tree->mode, "fast")
-        && set_option_text(sweep, OPTION_DEFAULT, tree->mode, "exact")
-        && set_option_text(sweep, OPTION_DEFAULT, tree->port, "80")
-        && set_option_text(sweep, OPTION_DEFAULT, tree->port, "8080")
-        && set_option_text(sweep, OPTION_DEFAULT, tree->jobs, "1")
-        && set_option_text(sweep, OPTION_DEFAULT, tree->jobs, "-4")
-        && set_positional_text(sweep, POSITIONAL_DESCRIPTION, tree->target, "What to build.")
-        && set_positional_text(sweep, POSITIONAL_DESCRIPTION, tree->target, "The target to build.")
-        && set_positional_text(sweep, POSITIONAL_DEFAULT, tree->target, "all")
-        && set_positional_text(sweep, POSITIONAL_DEFAULT, tree->target, "everything");
+    return set_command_text(sweep, sweep->root, "An application.") &&
+           set_command_text(sweep, sweep->root, "The application, described again.") &&
+           set_command_text(sweep, tree->build, "Builds.") &&
+           set_command_text(sweep, tree->build, "") &&
+           set_option_text(sweep, OPTION_DESCRIPTION, tree->verbose, "Says more.") &&
+           set_option_text(sweep, OPTION_DESCRIPTION, tree->verbose, "Says a lot more than before.") &&
+           set_option_text(sweep, OPTION_DESCRIPTION, tree->color, "Colors the output.") &&
+           set_option_text(sweep, OPTION_DESCRIPTION, tree->color, "Colors.") &&
+           set_option_bool(sweep, OPTION_INITIAL, tree->color, true) &&
+           set_option_bool(sweep, OPTION_INITIAL, tree->color, false) &&
+           set_option_text(sweep, OPTION_DESCRIPTION, tree->quiet, "Says less.") &&
+           set_option_text(sweep, OPTION_DESCRIPTION, tree->quiet, "Says less, each time it is given.") &&
+           set_option_text(sweep, OPTION_DESCRIPTION, tree->output, "Where the output goes.") &&
+           set_option_text(sweep, OPTION_DESCRIPTION, tree->output, "The file of the output.") &&
+           set_option_text(sweep, OPTION_VALUE_NAME, tree->output, "FILE") &&
+           set_option_text(sweep, OPTION_VALUE_NAME, tree->output, "PATH") &&
+           set_option_bool(sweep, OPTION_REQUIRED, tree->output, true) &&
+           set_option_bool(sweep, OPTION_REQUIRED, tree->output, false) &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->output, "out.txt") &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->output, "a.out") &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->ratio, "0.5") &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->ratio, LONG_FLOAT) &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->mode, "fast") &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->mode, "exact") &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->port, "80") &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->port, "8080") &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->jobs, "1") &&
+           set_option_text(sweep, OPTION_DEFAULT, tree->jobs, "-4") &&
+           set_positional_text(sweep, POSITIONAL_DESCRIPTION, tree->target, "What to build.") &&
+           set_positional_text(sweep, POSITIONAL_DESCRIPTION, tree->target, "The target to build.") &&
+           set_positional_text(sweep, POSITIONAL_DEFAULT, tree->target, "all") &&
+           set_positional_text(sweep, POSITIONAL_DEFAULT, tree->target, "everything");
 }
 
 /*
