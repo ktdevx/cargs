@@ -21,16 +21,20 @@
 #include <stdint.h>
 #include <string.h>
 
-/* The end of every test that allocates: the test allocator has no live
- * block and saw no violation of the allocator contract. */
+/*
+ * The end of every test that allocates: the test allocator has no live
+ * block and saw no violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
 }
 
-/* Converts text with a choice value type. On success, *index is the index
- * of the choice that matched, and the value has been released. */
+/*
+ * Converts text with a choice value type. On success, *index is the index
+ * of the choice that matched, and the value has been released.
+ */
 static clargs_error_t convert_choice(const clargs_type_t *type, const char *text, size_t *index)
 {
     clargs_error_t error = clargs_type_convert(type, text, index);
@@ -41,9 +45,11 @@ static clargs_error_t convert_choice(const clargs_type_t *type, const char *text
     return error;
 }
 
-/* A built-in value type as the pointer to a modifiable object that
+/*
+ * A built-in value type as the pointer to a modifiable object that
  * clargs_type_destroy() takes. The conversion goes through a union, so
- * that no cast drops the const. */
+ * that no cast drops the const.
+ */
 static clargs_type_t *as_destroyable(const clargs_type_t *type)
 {
     union {
@@ -55,8 +61,10 @@ static clargs_type_t *as_destroyable(const clargs_type_t *type)
     return pointer.as_modifiable;
 }
 
-/* Converts text with the integer value type. On success, *value is the
- * integer, and the value has been released. */
+/*
+ * Converts text with the integer value type. On success, *value is the
+ * integer, and the value has been released.
+ */
 static clargs_error_t convert_int(const char *text, int64_t *value)
 {
     clargs_error_t error = clargs_type_convert(clargs_type_int(), text, value);
@@ -67,8 +75,10 @@ static clargs_error_t convert_int(const char *text, int64_t *value)
     return error;
 }
 
-/* Converts text with the floating-point value type. On success, *value is
- * the number, and the value has been released. */
+/*
+ * Converts text with the floating-point value type. On success, *value is
+ * the number, and the value has been released.
+ */
 static clargs_error_t convert_float(const char *text, double *value)
 {
     clargs_error_t error = clargs_type_convert(clargs_type_float(), text, value);
@@ -239,9 +249,11 @@ NAOS_TEST(float_conversion_fails)
     }
 }
 
-/* The caller of a conversion needs no knowledge of the kind: an area of
+/*
+ * The caller of a conversion needs no knowledge of the kind: an area of
  * clargs_type_value_size() bytes that is aligned for any type is enough for
- * every value type. */
+ * every value type.
+ */
 NAOS_TEST(conversion_is_requested_the_same_way_for_every_type)
 {
     typedef union any_value {
@@ -325,8 +337,10 @@ NAOS_TEST(choice_conversion_writes_the_index_of_the_match)
     check_clean();
 }
 
-/* Only an input that is exactly one of the choices is taken. A conversion
- * allocates nothing. */
+/*
+ * Only an input that is exactly one of the choices is taken. A conversion
+ * allocates nothing.
+ */
 NAOS_TEST(choice_conversion_fails_without_an_exact_match)
 {
     static const char *const choices[] = { "red", "green", "blue" };
@@ -375,8 +389,10 @@ NAOS_TEST(choices_are_case_sensitive)
     check_clean();
 }
 
-/* The empty string can be a choice; then, and only then, the empty input
- * is taken. */
+/*
+ * The empty string can be a choice; then, and only then, the empty input
+ * is taken.
+ */
 NAOS_TEST(the_empty_string_can_be_a_choice)
 {
     static const char *const choices[] = { "auto", "" };
@@ -442,8 +458,10 @@ NAOS_TEST(a_type_that_is_not_a_choice_has_no_choices)
     NAOS_CHECK_UINT_EQ(clargs_type_choice_count(clargs_type_float()), 0);
 }
 
-/* The value type keeps copies: neither the array nor the strings that were
- * passed are used after the creation. */
+/*
+ * The value type keeps copies: neither the array nor the strings that were
+ * passed are used after the creation.
+ */
 NAOS_TEST(choices_are_copied)
 {
     char first[] = "red";
@@ -481,8 +499,10 @@ NAOS_TEST(choices_are_copied)
     check_clean();
 }
 
-/* An empty list creates nothing. The array is not read then, so it may be
- * NULL. */
+/*
+ * An empty list creates nothing. The array is not read then, so it may be
+ * NULL.
+ */
 NAOS_TEST(an_empty_list_is_an_invalid_definition)
 {
     static const char *const choices[] = { "red" };
@@ -502,8 +522,10 @@ NAOS_TEST(an_empty_list_is_an_invalid_definition)
     check_clean();
 }
 
-/* A string that is in the list twice creates nothing, wherever the two
- * are. */
+/*
+ * A string that is in the list twice creates nothing, wherever the two
+ * are.
+ */
 NAOS_TEST(a_duplicate_is_an_invalid_definition)
 {
     static const char *const adjacent[] = { "red", "red" };
@@ -544,8 +566,10 @@ NAOS_TEST(a_duplicate_is_an_invalid_definition)
     check_clean();
 }
 
-/* When an allocation of the creation fails, whichever it is, nothing stays
- * allocated, the output is NULL, and the error is the allocation failure. */
+/*
+ * When an allocation of the creation fails, whichever it is, nothing stays
+ * allocated, the output is NULL, and the error is the allocation failure.
+ */
 NAOS_TEST(choice_creation_frees_everything_when_an_allocation_fails)
 {
     static const char *const choices[] = { "red", "green", "blue" };
@@ -585,8 +609,10 @@ NAOS_TEST(choice_creation_frees_everything_when_an_allocation_fails)
 
 /* ---- User-defined value types ------------------------------------------ */
 
-/* The user data of the test value type. The conversion and the cleanup
- * function write what they were called with here. */
+/*
+ * The user data of the test value type. The conversion and the cleanup
+ * function write what they were called with here.
+ */
 typedef struct probe {
     clargs_error_t result;  /* what the conversion function returns */
     size_t convert_calls;
@@ -606,8 +632,10 @@ static void probe_init(probe_t *probe, clargs_error_t result)
     probe->last_released = NULL;
 }
 
-/* The conversion function of the test value type. The value is an int: the
- * length of the input. */
+/*
+ * The conversion function of the test value type. The value is an int: the
+ * length of the input.
+ */
 static clargs_error_t probe_convert(const char *text, void *value, void *context)
 {
     probe_t *probe = (probe_t *)context;
@@ -699,8 +727,10 @@ NAOS_TEST(custom_value_size_is_the_one_given)
     check_clean();
 }
 
-/* The value type keeps a copy of the name: the string that was passed is
- * not used after the creation. */
+/*
+ * The value type keeps a copy of the name: the string that was passed is
+ * not used after the creation.
+ */
 NAOS_TEST(custom_name_is_copied)
 {
     char name[] = "port";
@@ -722,8 +752,10 @@ NAOS_TEST(custom_name_is_copied)
     check_clean();
 }
 
-/* A name is any string that is not empty; it does not follow the rules of
- * the names of options. */
+/*
+ * A name is any string that is not empty; it does not follow the rules of
+ * the names of options.
+ */
 NAOS_TEST(custom_name_can_be_any_string_that_is_not_empty)
 {
     static const char *const names[] = { "p", "port number", "-x", "caf\xc3\xa9", "string", "choice" };
@@ -767,8 +799,10 @@ NAOS_TEST(an_empty_name_is_an_invalid_name)
     check_clean();
 }
 
-/* The conversion function gets the input, the area and the user data as
- * they were passed. A conversion allocates nothing by itself. */
+/*
+ * The conversion function gets the input, the area and the user data as
+ * they were passed. A conversion allocates nothing by itself.
+ */
 NAOS_TEST(custom_conversion_passes_the_input_and_the_user_data)
 {
     const char *input = "hello";
@@ -833,8 +867,10 @@ NAOS_TEST(custom_user_data_can_be_null)
     check_clean();
 }
 
-/* What the conversion function returns is what the conversion returns,
- * whatever the code is. */
+/*
+ * What the conversion function returns is what the conversion returns,
+ * whatever the code is.
+ */
 NAOS_TEST(custom_conversion_returns_what_the_function_returns)
 {
     static const clargs_error_t results[] = {
@@ -867,9 +903,11 @@ NAOS_TEST(custom_conversion_returns_what_the_function_returns)
     check_clean();
 }
 
-/* The cleanup function is called once for each release that is requested,
+/*
+ * The cleanup function is called once for each release that is requested,
  * which is once for each conversion that succeeded. Neither a conversion,
- * whether it succeeds or fails, nor the destruction calls it. */
+ * whether it succeeds or fails, nor the destruction calls it.
+ */
 NAOS_TEST(custom_cleanup_is_called_once_for_each_successful_conversion)
 {
     static const char *const inputs[] = { "a", "bad", "bb", "bad", "bad", "ccc", "dddd" };
@@ -911,8 +949,10 @@ NAOS_TEST(custom_cleanup_is_called_once_for_each_successful_conversion)
     check_clean();
 }
 
-/* A value type without a cleanup function can be asked to release a value;
- * the request does nothing. */
+/*
+ * A value type without a cleanup function can be asked to release a value;
+ * the request does nothing.
+ */
 NAOS_TEST(custom_release_without_a_cleanup_function_does_nothing)
 {
     probe_t probe;
@@ -935,8 +975,10 @@ NAOS_TEST(custom_release_without_a_cleanup_function_does_nothing)
     check_clean();
 }
 
-/* A user-defined value type is used with the same calls as the built-in
- * ones: the caller needs the kind only to read the value. */
+/*
+ * A user-defined value type is used with the same calls as the built-in
+ * ones: the caller needs the kind only to read the value.
+ */
 NAOS_TEST(custom_and_builtin_types_are_used_the_same_way)
 {
     typedef union any_value {
@@ -998,8 +1040,10 @@ NAOS_TEST(custom_and_builtin_types_are_used_the_same_way)
     check_clean();
 }
 
-/* Two value types made from the same functions are separate: each passes
- * its own user data. */
+/*
+ * Two value types made from the same functions are separate: each passes
+ * its own user data.
+ */
 NAOS_TEST(custom_types_keep_their_own_user_data)
 {
     probe_t first_probe;
@@ -1037,8 +1081,10 @@ NAOS_TEST(custom_types_keep_their_own_user_data)
     check_clean();
 }
 
-/* When an allocation of the creation fails, whichever it is, nothing stays
- * allocated, the output is NULL, and the error is the allocation failure. */
+/*
+ * When an allocation of the creation fails, whichever it is, nothing stays
+ * allocated, the output is NULL, and the error is the allocation failure.
+ */
 NAOS_TEST(custom_creation_frees_everything_when_an_allocation_fails)
 {
     probe_t probe;
@@ -1103,8 +1149,10 @@ NAOS_TEST(destroy_frees_everything)
     check_clean();
 }
 
-/* The destruction of a user-defined value type frees every block of the
- * creation, the copy of the name included. */
+/*
+ * The destruction of a user-defined value type frees every block of the
+ * creation, the copy of the name included.
+ */
 NAOS_TEST(destroy_frees_everything_of_a_custom_type)
 {
     probe_t probe;
@@ -1134,8 +1182,10 @@ NAOS_TEST(destroy_does_nothing_for_null)
     check_clean();
 }
 
-/* A built-in value type is not freed and stays as it is. A free of it
- * would be seen by the test allocator as a live count that wraps around. */
+/*
+ * A built-in value type is not freed and stays as it is. A free of it
+ * would be seen by the test allocator as a live count that wraps around.
+ */
 NAOS_TEST(destroy_does_nothing_for_the_builtin_types)
 {
     int64_t value = 0;

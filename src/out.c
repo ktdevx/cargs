@@ -9,14 +9,18 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The blanks that are passed to the write function in one call. More
- * blanks than these take several calls. */
+/*
+ * The blanks that are passed to the write function in one call. More
+ * blanks than these take several calls.
+ */
 #define CLARGS_OUT_BLANKS "                                "
 #define CLARGS_OUT_BLANKS_LENGTH (sizeof CLARGS_OUT_BLANKS - 1)
 
-/* Passes the length bytes of text to the write function, unless there is
+/*
+ * Passes the length bytes of text to the write function, unless there is
  * none or it has failed before, and remembers a failure. This is the only
- * place that calls the write function. length is not 0. */
+ * place that calls the write function. length is not 0.
+ */
 static void out_write(clargs_out_t *out, const char *text, size_t length)
 {
     assert(length != 0);
@@ -29,8 +33,10 @@ static void out_write(clargs_out_t *out, const char *text, size_t length)
     }
 }
 
-/* Writes the blanks that are remembered and forgets them. The column
- * counts them already. */
+/*
+ * Writes the blanks that are remembered and forgets them. The column
+ * counts them already.
+ */
 static void out_flush_blanks(clargs_out_t *out)
 {
     size_t rest = out->pending;

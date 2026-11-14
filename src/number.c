@@ -14,17 +14,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* The size of the array that holds the copy of a short floating-point
- * input. A longer copy comes from the allocator. */
+/*
+ * The size of the array that holds the copy of a short floating-point
+ * input. A longer copy comes from the allocator.
+ */
 #define SHORT_COPY_SIZE 64
 
-/* The size of the array that holds the decimal point of the locale and its
+/*
+ * The size of the array that holds the decimal point of the locale and its
  * terminator. A decimal point is one character, which may take several
- * bytes. */
+ * bytes.
+ */
 #define DECIMAL_POINT_SIZE 16
 
-/* An ASCII digit. The comparison is with the ASCII range, not with
- * <ctype.h>, which follows the locale. */
+/*
+ * An ASCII digit. The comparison is with the ASCII range, not with
+ * <ctype.h>, which follows the locale.
+ */
 static bool is_digit(char c)
 {
     return c >= '0' && c <= '9';
@@ -49,11 +55,13 @@ clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
         return CLARGS_ERROR_INVALID_VALUE;
     }
 
-    /* The value is built as a negative number: the negative range has one
+    /*
+     * The value is built as a negative number: the negative range has one
      * value more than the positive one, so INT64_MIN is built like any
      * other value. Before each step, the check tells whether
      * value * 10 - digit would still be INT64_MIN or more. The division
-     * rounds towards 0, which is upwards here: exactly the bound. */
+     * rounds towards 0, which is upwards here: exactly the bound.
+     */
     value = 0;
     for (; *p != '\0'; ++p) {
         int digit;
@@ -155,8 +163,10 @@ static size_t decimal_point(char *buffer)
         return 1;
     }
 
-    /* written is less than DECIMAL_POINT_SIZE + 2, so the decimal point and
-     * its terminator fit. */
+    /*
+     * written is less than DECIMAL_POINT_SIZE + 2, so the decimal point and
+     * its terminator fit.
+     */
     length = (size_t)written - 2;
     memcpy(buffer, formatted + 1, length);
     buffer[length] = '\0';
@@ -187,10 +197,12 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
     /* snprintf and strtod may write errno. */
     saved_errno = errno;
 
-    /* strtod reads the decimal point of the current locale, so it gets a
+    /*
+     * strtod reads the decimal point of the current locale, so it gets a
      * copy of the input with that in the place of the '.'. The length does
      * not overflow: the input is an object that exists, and the decimal
-     * point adds a few bytes at most. */
+     * point adds a few bytes at most.
+     */
     point_length = decimal_point(point_text);
     copy_length = point < length ? length - 1 + point_length : length;
     if (copy_length < sizeof short_copy) {
@@ -218,9 +230,11 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
     }
     errno = saved_errno;
 
-    /* strtod read the whole copy, unless the locale changed between the
+    /*
+     * strtod read the whole copy, unless the locale changed between the
      * two calls above. A value beyond the finite range comes back as an
-     * infinity (HUGE_VAL, with either sign). */
+     * infinity (HUGE_VAL, with either sign).
+     */
     if (!complete || value > DBL_MAX || value < -DBL_MAX) {
         return CLARGS_ERROR_INVALID_VALUE;
     }

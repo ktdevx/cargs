@@ -252,16 +252,20 @@ clargs_error_t clargs_result_create_wide(const clargs_command_t *root, int argc,
     return finish_result(result, error, (size_t)argc, out);
 }
 
-/* Cleans up the value of type in the area value, and frees the area. This
- * is the one place that releases a value. */
+/*
+ * Cleans up the value of type in the area value, and frees the area. This
+ * is the one place that releases a value.
+ */
 static void destroy_value(const clargs_type_t *type, void *value)
 {
     clargs_type_release(type, value);
     clargs_free(value);
 }
 
-/* Cleans up every value that the slots of frame hold, once, and frees the
- * slots. */
+/*
+ * Cleans up every value that the slots of frame hold, once, and frees the
+ * slots.
+ */
 static void destroy_frame(clargs_result_frame_t *frame)
 {
     size_t i;
@@ -415,8 +419,10 @@ clargs_error_t clargs_result_push_command(clargs_result_t *result, const clargs_
 
 /* ---- The slots of the options ------------------------------------------- */
 
-/* Returns the root of the schema of command: the command that has no
- * parent, reached from command through the parents. */
+/*
+ * Returns the root of the schema of command: the command that has no
+ * parent, reached from command through the parents.
+ */
 static const clargs_command_t *root_of(const clargs_command_t *command)
 {
     const clargs_command_t *parent = clargs_command_parent(command);
@@ -520,8 +526,10 @@ bool clargs_result_flag(const clargs_result_t *result, const clargs_option_t *op
 
     slot = find_option_slot(result, option);
     if (slot == NULL) {
-        /* Not given: false for a flag, the initial state for a negatable
-         * flag. */
+        /*
+         * Not given: false for a flag, the initial state for a negatable
+         * flag.
+         */
         return clargs_option_initial(option);
     }
     return slot->on;
@@ -654,8 +662,10 @@ static clargs_error_t record_error(clargs_result_t *result, const clargs_result_
     parts.value = failure->value;
     parts.type_name = NULL;
     if (failure->kind == CLARGS_PARSE_ERROR_INVALID_VALUE) {
-        /* The value type is that of the option or the positional that the
-         * value is for. */
+        /*
+         * The value type is that of the option or the positional that the
+         * value is for.
+         */
         parts.type_name = clargs_type_name(failure->positional != NULL
                                                ? clargs_positional_type(failure->positional)
                                                : clargs_option_type(failure->option));
@@ -741,8 +751,10 @@ clargs_error_t clargs_result_record_option_value(clargs_result_t *result, const 
     slot = find_option_slot(result, option);
     assert(slot != NULL);
 
-    /* The new value is converted before the old one is touched: when the
-     * conversion fails, the old value stays. */
+    /*
+     * The new value is converted before the old one is touched: when the
+     * conversion fails, the old value stays.
+     */
     type = clargs_option_type(option);
     error = convert_value(type, text, &value);
     if (error != CLARGS_ERROR_NONE) {
@@ -790,8 +802,10 @@ clargs_error_t clargs_result_record_positional_value(clargs_result_t *result,
     return CLARGS_ERROR_NONE;
 }
 
-/* Takes back the default values in the slots of frame: see
- * clargs_result_discard_defaults(). */
+/*
+ * Takes back the default values in the slots of frame: see
+ * clargs_result_discard_defaults().
+ */
 static void discard_frame_defaults(clargs_result_frame_t *frame)
 {
     size_t i;
@@ -800,8 +814,10 @@ static void discard_frame_defaults(clargs_result_frame_t *frame)
     for (i = 0; i < frame->option_count; ++i) {
         clargs_option_slot_t *slot = &frame->options[i];
 
-        /* A flag, a count and a negatable flag that were not given have
-         * the source of a default value too, but never a value. */
+        /*
+         * A flag, a count and a negatable flag that were not given have
+         * the source of a default value too, but never a value.
+         */
         if (slot->source != CLARGS_SOURCE_DEFAULT || slot->value == NULL) {
             continue;
         }
@@ -839,8 +855,10 @@ void clargs_result_discard_defaults(clargs_result_t *result)
     }
 }
 
-/* Returns the area of the value of option in result, or NULL when option
- * has no value or its command is not a selected command of result. */
+/*
+ * Returns the area of the value of option in result, or NULL when option
+ * has no value or its command is not a selected command of result.
+ */
 static const void *option_value(const clargs_result_t *result, const clargs_option_t *option)
 {
     const clargs_option_slot_t *slot = find_option_slot(result, option);
@@ -969,9 +987,11 @@ clargs_source_t clargs_result_positional_source(const clargs_result_t *result,
     return slot->source;
 }
 
-/* Returns the area of the value of positional at index in result, or NULL
+/*
+ * Returns the area of the value of positional at index in result, or NULL
  * when there is no value at index or the command of positional is not a
- * selected command of result. */
+ * selected command of result.
+ */
 static const void *positional_value(const clargs_result_t *result, const clargs_positional_t *positional,
                                     size_t index)
 {
@@ -1103,8 +1123,10 @@ const clargs_command_t *clargs_result_command(const clargs_result_t *result)
 
 /* ---- The information of the parse error --------------------------------- */
 
-/* The fields below have the values of "none" until record_error() writes
- * them, so a result without a parse error needs no case of its own. */
+/*
+ * The fields below have the values of "none" until record_error() writes
+ * them, so a result without a parse error needs no case of its own.
+ */
 
 clargs_parse_error_kind_t clargs_result_error_kind(const clargs_result_t *result)
 {

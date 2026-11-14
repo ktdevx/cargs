@@ -30,8 +30,10 @@
 #include <stdint.h>
 #include <string.h>
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -73,9 +75,11 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name)
     return sub;
 }
 
-/* Adds one option of each kind to command: -f/--flag, -c/--color (a
+/*
+ * Adds one option of each kind to command: -f/--flag, -c/--color (a
  * negatable flag that starts on), -v/--verbose (a count) and -o/--out (a
- * string). All of them must succeed. */
+ * string). All of them must succeed.
+ */
 static void add_four_options(clargs_command_t *command)
 {
     clargs_option_t *option = NULL;
@@ -88,8 +92,10 @@ static void add_four_options(clargs_command_t *command)
                       == CLARGS_ERROR_NONE);
 }
 
-/* Adds a required positional "input" and a positional "rest" that takes
- * any number of arguments to command. Both must succeed. */
+/*
+ * Adds a required positional "input" and a positional "rest" that takes
+ * any number of arguments to command. Both must succeed.
+ */
 static void add_two_positionals(clargs_command_t *command)
 {
     clargs_positional_t *positional = NULL;
@@ -112,9 +118,11 @@ static clargs_result_t *create_result(const clargs_command_t *root, int argc, ch
     return result;
 }
 
-/* Creates a result of root from the two arguments "app" and "--name=value".
+/*
+ * Creates a result of root from the two arguments "app" and "--name=value".
  * A value of the tests that is on the command line is in the argument 1;
- * see on_command_line(). */
+ * see on_command_line().
+ */
 static clargs_result_t *create_result_of_two(const clargs_command_t *root)
 {
     char a0[] = "app";
@@ -126,8 +134,10 @@ static clargs_result_t *create_result_of_two(const clargs_command_t *root)
     return create_result(root, 2, argv);
 }
 
-/* The number of requests that the creation of a result of root from argc
- * and argv takes. The result is destroyed again. */
+/*
+ * The number of requests that the creation of a result of root from argc
+ * and argv takes. The result is destroyed again.
+ */
 static size_t requests_of_create(const clargs_command_t *root, int argc, char *const *argv)
 {
     size_t before = clargs_test_allocator_requests();
@@ -351,8 +361,10 @@ NAOS_TEST(copy_does_not_change_when_the_arguments_change)
 
 NAOS_TEST(bytes_are_copied_as_they_are)
 {
-    /* Bytes that are not UTF-8, a control character and a byte with the
-     * highest bit set at the start and at the end. */
+    /*
+     * Bytes that are not UTF-8, a control character and a byte with the
+     * highest bit set at the start and at the end.
+     */
     char a0[] = { '\xff', 'a', '\x80', '\0' };
     char a1[] = { '\xc3', '\x28', '\t', '\x01', '\xfe', '\0' };
     char a2[] = { '\xe3', '\x81', '\x82', '\0' };
@@ -437,8 +449,10 @@ NAOS_TEST(many_nested_commands_are_kept)
     destroy_root(root);
 }
 
-/* The number of requests that pushing command, a subcommand of the root of
- * result, takes. */
+/*
+ * The number of requests that pushing command, a subcommand of the root of
+ * result, takes.
+ */
 static size_t requests_of_push(clargs_result_t *result, const clargs_command_t *command)
 {
     size_t before = clargs_test_allocator_requests();
@@ -461,9 +475,11 @@ NAOS_TEST(slots_are_allocated_only_for_what_a_command_has)
     add_four_options(both);
     add_two_positionals(both);
 
-    /* Each result has two selected commands, so the array of the selected
+    /*
+     * Each result has two selected commands, so the array of the selected
      * commands does not grow at the push: the requests are those of the
-     * slots. */
+     * slots.
+     */
     result = create_result(root, 0, NULL);
     NAOS_CHECK_UINT_EQ(requests_of_push(result, bare), 0);
     clargs_result_destroy(result);
@@ -529,8 +545,10 @@ NAOS_TEST(slots_start_as_not_given)
     NAOS_CHECK_FALSE(clargs_result_flag(result, plain));
     NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(root, VERBOSE)), 0);
 
-    /* What a flag, a negatable flag and a count have when they are not
-     * given comes from the schema; an option with a value has no value. */
+    /*
+     * What a flag, a negatable flag and a count have when they are not
+     * given comes from the schema; an option with a value has no value.
+     */
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, FLAG)), CLARGS_SOURCE_DEFAULT);
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, COLOR)), CLARGS_SOURCE_DEFAULT);
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, plain), CLARGS_SOURCE_DEFAULT);
@@ -650,8 +668,10 @@ NAOS_TEST(negatable_flag_has_the_last_recorded_state)
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, COLOR)),
                       CLARGS_SOURCE_COMMAND_LINE);
 
-    /* --plain starts off. The state that is recorded may be the initial
-     * one: the source still tells that it was given. */
+    /*
+     * --plain starts off. The state that is recorded may be the initial
+     * one: the source still tells that it was given.
+     */
     clargs_result_record_state(result, plain, false);
     NAOS_CHECK_FALSE(clargs_result_flag(result, plain));
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, plain), CLARGS_SOURCE_COMMAND_LINE);
@@ -728,8 +748,10 @@ NAOS_TEST(options_of_a_command_that_is_not_selected_read_as_not_given)
     add_four_options(other);
     result = create_result(root, 0, NULL);
 
-    /* Only the root is selected: the options of its subcommand, of the
-     * subcommand of that, and of the other subcommand have no source. */
+    /*
+     * Only the root is selected: the options of its subcommand, of the
+     * subcommand of that, and of the other subcommand have no source.
+     */
     NAOS_CHECK_FALSE(clargs_result_flag(result, option_of(remote, FLAG)));
     NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(remote, COLOR)));
     NAOS_CHECK_UINT_EQ(clargs_result_count(result, option_of(remote, VERBOSE)), 0);
@@ -741,9 +763,11 @@ NAOS_TEST(options_of_a_command_that_is_not_selected_read_as_not_given)
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(add, VERBOSE)), CLARGS_SOURCE_NONE);
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(other, COLOR)), CLARGS_SOURCE_NONE);
 
-    /* Once a command is selected, its options have slots. What is recorded
+    /*
+     * Once a command is selected, its options have slots. What is recorded
      * for the same names of the selected commands does not show in the
-     * commands that are not selected. */
+     * commands that are not selected.
+     */
     NAOS_REQUIRE_TRUE(clargs_result_push_command(result, remote) == CLARGS_ERROR_NONE);
     clargs_result_record_flag(result, option_of(root, FLAG));
     clargs_result_record_flag(result, option_of(remote, FLAG));
@@ -862,9 +886,11 @@ NAOS_TEST(fails_at_every_allocation_point)
     size_t i;
     size_t n;
 
-    /* Every command has options, so every step allocates slots. The last
+    /*
+     * Every command has options, so every step allocates slots. The last
      * command has positionals too (a command with subcommands has none),
-     * so the last push allocates both arrays of slots. */
+     * so the last push allocates both arrays of slots.
+     */
     clargs_test_allocator_install();
     root = new_root();
     commands[0] = root;
@@ -882,17 +908,21 @@ NAOS_TEST(fails_at_every_allocation_point)
         clargs_error_t error;
         size_t pushed;
 
-        /* The schema was allocated before the reset, so the count of live
+        /*
+         * The schema was allocated before the reset, so the count of live
          * blocks is that of the result alone from here on; the schema is
-         * destroyed after the last reset below. */
+         * destroyed after the last reset below.
+         */
         clargs_test_allocator_install();
         clargs_test_allocator_fail_at(n);
 
         error = create_and_push(commands, COUNT, &result, &pushed);
 
         if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < n) {
-            /* The operation ended before the request to fail was reached:
-             * every allocation point has been passed. */
+            /*
+             * The operation ended before the request to fail was reached:
+             * every allocation point has been passed.
+             */
             NAOS_CHECK_UINT_EQ(clargs_result_command_count(result), COUNT);
             NAOS_CHECK_TRUE(clargs_result_command(result) == commands[COUNT - 1]);
             clargs_result_destroy(result);
@@ -908,8 +938,10 @@ NAOS_TEST(fails_at_every_allocation_point)
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n);
 
         if (result == NULL) {
-            /* The creation failed: there is no result, and nothing of it
-             * is left. */
+            /*
+             * The creation failed: there is no result, and nothing of it
+             * is left.
+             */
             ++failures_of_create;
             NAOS_CHECK_UINT_EQ(pushed, 0);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -948,20 +980,24 @@ NAOS_TEST(fails_at_every_allocation_point)
         clargs_test_allocator_uninstall();
     }
 
-    /* The loop ended because the operation succeeded, after failures of
+    /*
+     * The loop ended because the operation succeeded, after failures of
      * the creation (the result, the copy of the arguments, the slots of
      * the options and the array of the selected commands) and of pushes
      * (the slots of the options of each command, the slots of the
-     * positionals of the last, and the growth of the array). */
+     * positionals of the last, and the growth of the array).
+     */
     NAOS_CHECK_TRUE(completed);
     NAOS_CHECK_UINT_EQ(failures_of_create, 4);
     NAOS_CHECK_UINT_EQ(failures_of_push, (COUNT - 1) + 1 + 1);
     NAOS_CHECK_UINT_EQ(failures, failures_of_create + failures_of_push);
 
-    /* The schema is untouched. It was allocated by the test allocator, so
+    /*
+     * The schema is untouched. It was allocated by the test allocator, so
      * it is destroyed with the test allocator set; the reset of the loop
      * forgot its blocks, so the count of live blocks is not checked
-     * after this. */
+     * after this.
+     */
     NAOS_CHECK_TRUE(live_of_schema > 0);
     NAOS_CHECK_UINT_EQ(clargs_command_option_count(commands[COUNT - 1]), 4);
     clargs_command_destroy(root);
@@ -971,9 +1007,11 @@ NAOS_TEST(fails_at_every_allocation_point)
 
 /* ---- Values ------------------------------------------------------------- */
 
-/* The value of the user-defined value type of these tests. It is larger
+/*
+ * The value of the user-defined value type of these tests. It is larger
  * than a pointer, so the area of a value has to have the size that the
- * value type tells. */
+ * value type tells.
+ */
 typedef struct custom_value {
     const char *text; /* The input string itself. */
     size_t length;    /* Its length. */
@@ -989,8 +1027,10 @@ typedef struct custom_counts {
     const char *last_released; /* The input of the value that was cleaned up last. */
 } custom_counts_t;
 
-/* Takes every input but those that start with '!' (not valid), '#' (out of
- * memory) and '?' (a code that a conversion function should not return). */
+/*
+ * Takes every input but those that start with '!' (not valid), '#' (out of
+ * memory) and '?' (a code that a conversion function should not return).
+ */
 static clargs_error_t custom_convert(const char *text, void *value, void *context)
 {
     custom_counts_t *counts = (custom_counts_t *)context;
@@ -1027,8 +1067,10 @@ static void custom_release(void *value, void *context)
     counts->last_released = custom->text;
 }
 
-/* The value types that the tests of the values create, and the counts of
- * the user-defined one. */
+/*
+ * The value types that the tests of the values create, and the counts of
+ * the user-defined one.
+ */
 typedef struct value_types {
     clargs_type_t *choice; /* "red", "green", "blue" */
     clargs_type_t *custom;
@@ -1056,13 +1098,17 @@ static void destroy_types(value_types_t *types)
     clargs_type_destroy(types->custom);
 }
 
-/* The options that add_value_options() adds, and the positionals that
- * add_value_positionals() adds, by their index in the command. */
+/*
+ * The options that add_value_options() adds, and the positionals that
+ * add_value_positionals() adds, by their index in the command.
+ */
 enum { V_TEXT = 0, V_NUM = 1, V_RATIO = 2, V_MODE = 3, V_ITEM = 4 };
 
-/* Adds one option with a value of each value type to command: --text (a
+/*
+ * Adds one option with a value of each value type to command: --text (a
  * string), --num (an integer), --ratio (a float), --mode (a choice) and
- * --item (the user-defined value type). All of them must succeed. */
+ * --item (the user-defined value type). All of them must succeed.
+ */
 static void add_value_options(clargs_command_t *command, const value_types_t *types)
 {
     clargs_option_t *option = NULL;
@@ -1079,9 +1125,11 @@ static void add_value_options(clargs_command_t *command, const value_types_t *ty
                       == CLARGS_ERROR_NONE);
 }
 
-/* Adds one positional of each value type to command, in the order of
+/*
+ * Adds one positional of each value type to command, in the order of
  * add_value_options(). The first four are required; the last, of the
- * user-defined value type, takes any number of arguments. */
+ * user-defined value type, takes any number of arguments.
+ */
 static void add_value_positionals(clargs_command_t *command, const value_types_t *types)
 {
     clargs_positional_t *positional = NULL;
@@ -1109,8 +1157,10 @@ static const clargs_positional_t *positional_of(const clargs_command_t *command,
     return clargs_command_positional_at(command, index);
 }
 
-/* Where a value of the tests is: on the command line, in the argument 1,
- * written as "--name". */
+/*
+ * Where a value of the tests is: on the command line, in the argument 1,
+ * written as "--name".
+ */
 static clargs_result_where_t on_command_line(void)
 {
     clargs_result_where_t where;
@@ -1134,8 +1184,10 @@ static clargs_result_where_t in_default(void)
     return where;
 }
 
-/* Records text, from the command line, as the value of the option of
- * command at index, and returns what the record returns. */
+/*
+ * Records text, from the command line, as the value of the option of
+ * command at index, and returns what the record returns.
+ */
 static clargs_error_t record_option(clargs_result_t *result, const clargs_command_t *command,
                                     size_t index, const char *text)
 {
@@ -1174,8 +1226,10 @@ NAOS_TEST(option_values_of_every_value_type_are_read)
     add_value_options(root, &types);
     result = create_result(root, 2, argv);
 
-    /* The text is passed to the value type as it is: the value of a string
-     * is the pointer that was recorded, into the copy of the arguments. */
+    /*
+     * The text is passed to the value type as it is: the value of a string
+     * is the pointer that was recorded, into the copy of the arguments.
+     */
     NAOS_CHECK_INT_EQ(record_option(result, root, V_TEXT, clargs_result_arg(result, 1)),
                       CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(record_option(result, root, V_NUM, "-42"), CLARGS_ERROR_NONE);
@@ -1207,8 +1261,10 @@ NAOS_TEST(option_values_of_every_value_type_are_read)
     NAOS_REQUIRE_TRUE(area != NULL);
     NAOS_CHECK_UINT_EQ(*(const size_t *)area, mode);
 
-    /* The user-defined value type is used like the built-in ones: its
-     * value is read from the area. */
+    /*
+     * The user-defined value type is used like the built-in ones: its
+     * value is read from the area.
+     */
     item = (const custom_value_t *)clargs_result_option_value(result, option_of(root, V_ITEM));
     NAOS_REQUIRE_TRUE(item != NULL);
     NAOS_CHECK_STR_EQ(item->text, " an item ");
@@ -1278,8 +1334,10 @@ NAOS_TEST(option_value_takes_one_allocation)
     check_clean();
 }
 
-/* Checks that the options with a value of command read as "no value" in
- * result, with the outputs left as they were. */
+/*
+ * Checks that the options with a value of command read as "no value" in
+ * result, with the outputs left as they were.
+ */
 static void check_options_have_no_value(const clargs_result_t *result, const clargs_command_t *command)
 {
     const char *text = "untouched";
@@ -1363,17 +1421,21 @@ NAOS_TEST(values_that_were_not_recorded_read_as_no_value)
     check_positionals_have_no_value(result, other, 0);
     check_positionals_have_no_value(result, other, 5);
 
-    /* What is recorded for the selected command does not show in the
-     * command that is not selected, which has the same names. */
+    /*
+     * What is recorded for the selected command does not show in the
+     * command that is not selected, which has the same names.
+     */
     NAOS_CHECK_INT_EQ(record_option(result, sub, V_NUM, "1"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(record_positional(result, sub, V_NUM, "2"), CLARGS_ERROR_NONE);
     check_options_have_no_value(result, root);
     check_options_have_no_value(result, other);
     check_positionals_have_no_value(result, other, 0);
 
-    /* Asking is not an error of the result, and it allocates nothing: the
+    /*
+     * Asking is not an error of the result, and it allocates nothing: the
      * requests are the two areas and the array of the values of the
-     * positional. */
+     * positional.
+     */
     NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 3);
     NAOS_CHECK_UINT_EQ(types.counts.converts, 0);
@@ -1432,8 +1494,10 @@ NAOS_TEST(second_value_of_an_option_replaces_the_first)
     NAOS_CHECK_TRUE(clargs_result_option_int(result, option_of(root, V_NUM), &num));
     NAOS_CHECK_TRUE(num == 2);
 
-    /* A default value replaces nothing by itself, but the source is that
-     * of the last record. */
+    /*
+     * A default value replaces nothing by itself, but the source is that
+     * of the last record.
+     */
     {
         clargs_result_where_t where = in_default();
 
@@ -1460,14 +1524,18 @@ NAOS_TEST(second_value_of_an_option_replaces_the_first)
 
 NAOS_TEST(failed_conversion_keeps_the_value_of_an_option)
 {
-    /* What the conversion function returns, and what the record returns.
+    /*
+     * What the conversion function returns, and what the record returns.
      * Every result of this test has one conversion that fails: a parse
-     * error is recorded once for a result at most. */
+     * error is recorded once for a result at most.
+     */
     const char *const inputs[3] = { "!invalid", "#memory", "?other" };
     const clargs_error_t expected[3] = { CLARGS_ERROR_INVALID_COMMAND_LINE, CLARGS_ERROR_OUT_OF_MEMORY,
                                          CLARGS_ERROR_INVALID_COMMAND_LINE };
-    /* Whether the failure is recorded as a parse error, whose message is
-     * one block more: 1 or 0. */
+    /*
+     * Whether the failure is recorded as a parse error, whose message is
+     * one block more: 1 or 0.
+     */
     const size_t recorded[3] = { 1, 0, 1 };
     value_types_t types;
     clargs_command_t *root = create_root();
@@ -1494,8 +1562,10 @@ NAOS_TEST(failed_conversion_keeps_the_value_of_an_option)
         clargs_result_destroy(result);
         NAOS_CHECK_UINT_EQ(types.counts.releases, releases);
 
-        /* With a value: it stays, and it is not cleaned up before the
-         * destruction. A value that failed is never cleaned up. */
+        /*
+         * With a value: it stays, and it is not cleaned up before the
+         * destruction. A value that failed is never cleaned up.
+         */
         result = create_result_of_two(root);
         {
             clargs_result_where_t where = in_default();
@@ -1654,8 +1724,10 @@ NAOS_TEST(positional_values_are_kept_in_their_order)
     add_value_positionals(root, &types);
     result = create_result_of_two(root);
 
-    /* A value is added after those that are there; none is replaced or
-     * cleaned up, also when the array of the values grows. */
+    /*
+     * A value is added after those that are there; none is replaced or
+     * cleaned up, also when the array of the values grows.
+     */
     for (i = 0; i < COUNT; ++i) {
         NAOS_CHECK_INT_EQ(record_positional(result, root, V_ITEM, inputs[i]), CLARGS_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional_of(root, V_ITEM)), i + 1);
@@ -1684,9 +1756,11 @@ NAOS_TEST(positional_values_are_kept_in_their_order)
     NAOS_CHECK_INT_EQ(clargs_result_positional_source(result, positional_of(root, V_TEXT)),
                       CLARGS_SOURCE_NONE);
 
-    /* A conversion that fails adds nothing, and what is there stays. The
+    /*
+     * A conversion that fails adds nothing, and what is there stays. The
      * one that is not a lack of memory is the last record of the result:
-     * it leaves the parse error, whose message is the one block more. */
+     * it leaves the parse error, whose message is the one block more.
+     */
     {
         size_t live = clargs_test_allocator_live();
 
@@ -1733,8 +1807,10 @@ NAOS_TEST(positional_default_value_has_the_source_default)
     NAOS_CHECK_TRUE(clargs_result_positional_int(result, positional_of(root, V_NUM), 0, &num));
     NAOS_CHECK_TRUE(num == 10);
 
-    /* A positional whose first value fails has none, and no source. This
-     * is the one conversion of the result that fails, and its last record. */
+    /*
+     * A positional whose first value fails has none, and no source. This
+     * is the one conversion of the result that fails, and its last record.
+     */
     NAOS_CHECK_INT_EQ(clargs_result_record_positional_value(result, positional_of(root, V_RATIO), "",
                                                             &where),
                       CLARGS_ERROR_INVALID_COMMAND_LINE);
@@ -1770,12 +1846,14 @@ NAOS_TEST(destroy_releases_every_value_once)
     NAOS_REQUIRE_TRUE(clargs_result_push_command(result, sub) == CLARGS_ERROR_NONE);
     NAOS_REQUIRE_TRUE(clargs_result_push_command(result, leaf) == CLARGS_ERROR_NONE);
 
-    /* Values of the user-defined value type in every selected command:
+    /*
+     * Values of the user-defined value type in every selected command:
      * replaced ones, failed ones and several of one positional, with
      * values of the built-in value types between them. A lack of memory
      * records nothing, so the result goes on; the conversion that fails
      * for another reason records the parse error, once for a result, and
-     * is the last record. */
+     * is the last record.
+     */
     NAOS_CHECK_INT_EQ(record_option(result, root, V_ITEM, "a"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(record_option(result, root, V_ITEM, "b"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(record_option(result, root, V_TEXT, "text"), CLARGS_ERROR_NONE);
@@ -1798,8 +1876,10 @@ NAOS_TEST(destroy_releases_every_value_once)
 
     clargs_result_destroy(result);
 
-    /* One cleanup for each conversion that succeeded, and none for one
-     * that failed; all the areas are freed, and nothing of the schema. */
+    /*
+     * One cleanup for each conversion that succeeded, and none for one
+     * that failed; all the areas are freed, and nothing of the schema.
+     */
     NAOS_CHECK_UINT_EQ(types.counts.releases, types.counts.successes);
     NAOS_CHECK_UINT_EQ(types.counts.converts, 12);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live_of_schema);
@@ -1819,10 +1899,12 @@ typedef struct value_step {
     const char *text; /* The input. */
 } value_step_t;
 
-/* The steps of record_values(): values of options, one of them replaced
+/*
+ * The steps of record_values(): values of options, one of them replaced
  * twice, and values of positionals, six of them of one positional, so that
  * the array of its values grows twice. ITEM_STEPS of the steps are of the
- * user-defined value type. */
+ * user-defined value type.
+ */
 enum { VALUE_STEPS = 13, ITEM_STEPS = 9 };
 
 static const value_step_t value_steps[VALUE_STEPS] = {
@@ -1870,8 +1952,10 @@ static clargs_error_t record_values(clargs_result_t *result, const clargs_comman
     return CLARGS_ERROR_NONE;
 }
 
-/* Checks that result holds what the first done steps of value_steps
- * recorded in command, and nothing of the steps after them. */
+/*
+ * Checks that result holds what the first done steps of value_steps
+ * recorded in command, and nothing of the steps after them.
+ */
 static void check_recorded_values(const clargs_result_t *result, const clargs_command_t *command,
                                   size_t done)
 {
@@ -1944,10 +2028,12 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
         size_t live;
         size_t first;
 
-        /* The schema was allocated before the reset, so the count of live
+        /*
+         * The schema was allocated before the reset, so the count of live
          * blocks is that of the result alone from here on. The result is
          * created before the request to fail is set: the failures of its
-         * creation have their own test. */
+         * creation have their own test.
+         */
         clargs_test_allocator_install();
         memset(&types.counts, 0, sizeof(types.counts));
         result = create_result(root, 0, NULL);
@@ -1958,8 +2044,10 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
         error = record_values(result, sub, &done, &live);
 
         if (error == CLARGS_ERROR_NONE && clargs_test_allocator_requests() < first + n) {
-            /* The operation ended before the request to fail was reached:
-             * every allocation point has been passed. */
+            /*
+             * The operation ended before the request to fail was reached:
+             * every allocation point has been passed.
+             */
             NAOS_CHECK_UINT_EQ(done, VALUE_STEPS);
             check_recorded_values(result, sub, VALUE_STEPS);
             clargs_result_destroy(result);
@@ -1977,10 +2065,12 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), first + n);
         NAOS_REQUIRE_TRUE(done < VALUE_STEPS);
 
-        /* The step that failed left nothing behind and changed nothing:
+        /*
+         * The step that failed left nothing behind and changed nothing:
          * the values of the steps before it are there, and a value that
          * the step would have replaced is still the old one. A value that
-         * was converted and then not kept is cleaned up at once. */
+         * was converted and then not kept is cleaned up at once.
+         */
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
         check_recorded_values(result, sub, done);
         NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
@@ -1996,8 +2086,10 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
         }
         check_recorded_values(result, sub, done + 1);
 
-        /* A result that is not complete can be destroyed, and every value
-         * is cleaned up once. */
+        /*
+         * A result that is not complete can be destroyed, and every value
+         * is cleaned up once.
+         */
         clargs_result_destroy(result);
         NAOS_CHECK_UINT_EQ(types.counts.releases, types.counts.successes);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -2005,16 +2097,20 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
         clargs_test_allocator_uninstall();
     }
 
-    /* The loop ended because the operation succeeded, after one failure
+    /*
+     * The loop ended because the operation succeeded, after one failure
      * for the area of each value, one for the array of the values of the
      * positional with one value and two for the growth of the array of the
-     * positional with six. */
+     * positional with six.
+     */
     NAOS_CHECK_TRUE(completed);
     NAOS_CHECK_UINT_EQ(failures, VALUE_STEPS + 3);
 
-    /* The schema was allocated by the test allocator, so it is destroyed
+    /*
+     * The schema was allocated by the test allocator, so it is destroyed
      * with the test allocator set; the reset of the loop forgot its
-     * blocks, so the count of live blocks is not checked after this. */
+     * blocks, so the count of live blocks is not checked after this.
+     */
     clargs_command_destroy(root);
     destroy_types(&types);
     clargs_test_allocator_uninstall();
@@ -2023,8 +2119,10 @@ NAOS_TEST(recording_values_fails_at_every_allocation_point)
 
 /* ---- The parse error ---------------------------------------------------- */
 
-/* Checks that result has no parse error: every function that reads the
- * information of one returns "none". */
+/*
+ * Checks that result has no parse error: every function that reads the
+ * information of one returns "none".
+ */
 static void check_no_error(const clargs_result_t *result)
 {
     NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_NONE);
@@ -2057,8 +2155,10 @@ NAOS_TEST(result_without_an_error_has_no_error_information)
     result = create_result_of_two(root);
     check_no_error(result);
 
-    /* A result that was recorded into with success, as one of a command
-     * line that matches the schema is. */
+    /*
+     * A result that was recorded into with success, as one of a command
+     * line that matches the schema is.
+     */
     NAOS_REQUIRE_TRUE(clargs_result_push_command(result, sub) == CLARGS_ERROR_NONE);
     clargs_result_record_flag(result, option_of(root, FLAG));
     clargs_result_record_count(result, option_of(root, VERBOSE));
@@ -2082,8 +2182,10 @@ NAOS_TEST(result_without_an_error_has_no_error_information)
 /* What the value of a case of failure_cases is. */
 enum { VALUE_NONE, VALUE_ARGUMENT, VALUE_AFTER_EQUALS };
 
-/* What the definition of a case of failure_cases is: none, the option
- * --out or --flag of the selected subcommand, or its positional "input". */
+/*
+ * What the definition of a case of failure_cases is: none, the option
+ * --out or --flag of the selected subcommand, or its positional "input".
+ */
 enum { ELEMENT_NONE, ELEMENT_OUT, ELEMENT_FLAG, ELEMENT_INPUT };
 
 /* One parse error to record, and the message that it has. */
@@ -2100,8 +2202,10 @@ typedef struct failure_case {
     const char *message;
 } failure_case_t;
 
-/* The arguments are "app", "sub", "-vx", "--flag=1" and "extra". A name
- * may be longer than its length: it is a part of an argument. */
+/*
+ * The arguments are "app", "sub", "-vx", "--flag=1" and "extra". A name
+ * may be longer than its length: it is a part of an argument.
+ */
 enum { FAILURE_CASES = 10 };
 
 static const failure_case_t failure_cases[FAILURE_CASES] = {
@@ -2195,8 +2299,10 @@ NAOS_TEST(recorded_error_is_read_back)
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 1);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live + 1);
 
-        /* What was recorded is read as it is. What the error does not have
-         * reads as "none". */
+        /*
+         * What was recorded is read as it is. What the error does not have
+         * reads as "none".
+         */
         NAOS_CHECK_INT_EQ(clargs_result_error(result), CLARGS_ERROR_INVALID_COMMAND_LINE);
         NAOS_CHECK_INT_EQ(clargs_result_error_kind(result), c->kind);
         NAOS_CHECK_INT_EQ(clargs_result_error_source(result), c->source);
@@ -2271,9 +2377,11 @@ NAOS_TEST(recorded_error_does_not_depend_on_the_strings_of_the_caller)
     destroy_root(root);
 }
 
-/* Checks the parse error of a value that its value type did not take:
+/*
+ * Checks the parse error of a value that its value type did not take:
  * text, at where, for option or positional (the other is NULL) of command,
- * with the message message. */
+ * with the message message.
+ */
 static void check_invalid_value(const clargs_result_t *result, const clargs_result_where_t *where,
                                 const char *text, const clargs_command_t *command,
                                 const clargs_option_t *option, const clargs_positional_t *positional,
@@ -2299,9 +2407,11 @@ static void check_invalid_value(const clargs_result_t *result, const clargs_resu
 
 NAOS_TEST(failed_conversion_of_an_option_is_recorded_as_an_invalid_value)
 {
-    /* The inputs, the option of each and the message. The user-defined
+    /*
+     * The inputs, the option of each and the message. The user-defined
      * value type returns CLARGS_ERROR_INVALID_VALUE for "!bad" and another
-     * code, which is neither success nor a lack of memory, for "?other". */
+     * code, which is neither success nor a lack of memory, for "?other".
+     */
     enum { CASES = 4 };
     const char *const inputs[CASES] = { "!bad", "?other", "12x", "Red" };
     const size_t options[CASES] = { V_ITEM, V_ITEM, V_NUM, V_MODE };
@@ -2332,8 +2442,10 @@ NAOS_TEST(failed_conversion_of_an_option_is_recorded_as_an_invalid_value)
                                                             &where),
                           CLARGS_ERROR_INVALID_COMMAND_LINE);
 
-        /* The command is the one of the option, the area of the value is
-         * freed and the message is the one block more. */
+        /*
+         * The command is the one of the option, the area of the value is
+         * freed and the message is the one block more.
+         */
         check_invalid_value(result, &where, inputs[i], sub, option_of(sub, options[i]), NULL, messages[i]);
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live + 1);
         NAOS_CHECK_TRUE(clargs_result_option_value(result, option_of(sub, options[i])) == NULL);
@@ -2343,10 +2455,12 @@ NAOS_TEST(failed_conversion_of_an_option_is_recorded_as_an_invalid_value)
     NAOS_CHECK_UINT_EQ(types.counts.converts, 2);
     NAOS_CHECK_UINT_EQ(types.counts.releases, 0);
 
-    /* An option with a value in a bundle: the letter is recorded, and the
+    /*
+     * An option with a value in a bundle: the letter is recorded, and the
      * name of the message is the one that was written. The option is one
      * of the root, so the command of the error is the root, whatever the
-     * last selected command is. */
+     * last selected command is.
+     */
     result = create_result_of_two(root);
     NAOS_REQUIRE_TRUE(clargs_result_push_command(result, sub) == CLARGS_ERROR_NONE);
     where = on_command_line();
@@ -2426,8 +2540,10 @@ NAOS_TEST(failed_conversion_of_a_default_value_has_no_argument)
     clargs_command_t *root = create_root();
     clargs_result_t *result;
     clargs_result_where_t where;
-    /* The result gives back the pointer it was given: each text is one
-     * object, not two string literals that a compiler may keep apart. */
+    /*
+     * The result gives back the pointer it was given: each text is one
+     * object, not two string literals that a compiler may keep apart.
+     */
     const char *const item = "!default";
     const char *const number = "ten";
 
@@ -2495,8 +2611,10 @@ NAOS_TEST(lack_of_memory_of_a_value_type_is_not_recorded)
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
     NAOS_CHECK_UINT_EQ(types.counts.converts, 3);
 
-    /* Nothing was recorded, so the parse error of the result is still to
-     * come. */
+    /*
+     * Nothing was recorded, so the parse error of the result is still to
+     * come.
+     */
     NAOS_CHECK_INT_EQ(record_option(result, root, V_ITEM, "!bad"), CLARGS_ERROR_INVALID_COMMAND_LINE);
     NAOS_CHECK_INT_EQ(clargs_result_error_kind(result), CLARGS_PARSE_ERROR_INVALID_VALUE);
     NAOS_CHECK_STR_EQ(clargs_result_error_value(result), "!bad");
@@ -2548,8 +2666,10 @@ NAOS_TEST(discard_defaults_takes_back_the_default_values)
     result = create_result_of_two(root);
     NAOS_REQUIRE_TRUE(clargs_result_push_command(result, sub) == CLARGS_ERROR_NONE);
 
-    /* Flags, a negatable flag and a count: one of each is given, and
-     * --color is not; its source is "default" too. */
+    /*
+     * Flags, a negatable flag and a count: one of each is given, and
+     * --color is not; its source is "default" too.
+     */
     clargs_result_record_flag(result, option_of(root, FLAG));
     clargs_result_record_count(result, option_of(root, VERBOSE));
     clargs_result_record_count(result, option_of(root, VERBOSE));
@@ -2562,8 +2682,10 @@ NAOS_TEST(discard_defaults_takes_back_the_default_values)
     NAOS_CHECK_INT_EQ(record_positional(result, sub, V_ITEM, "p1"), CLARGS_ERROR_NONE);
     live_before = clargs_test_allocator_live();
 
-    /* Default values, in both selected commands: three of options and two
-     * of positionals. Two of them are of the user-defined value type. */
+    /*
+     * Default values, in both selected commands: three of options and two
+     * of positionals. Two of them are of the user-defined value type.
+     */
     NAOS_CHECK_INT_EQ(default_option(result, root, OUT, "out.txt"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(default_option(result, sub, V_TEXT, "text"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(default_option(result, sub, V_MODE, "green"), CLARGS_ERROR_NONE);
@@ -2578,8 +2700,10 @@ NAOS_TEST(discard_defaults_takes_back_the_default_values)
     requests = clargs_test_allocator_requests();
     clargs_result_discard_defaults(result);
 
-    /* The default values are gone: the options and the positionals have
-     * no value and no source, and all their memory is freed. */
+    /*
+     * The default values are gone: the options and the positionals have
+     * no value and no source, and all their memory is freed.
+     */
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live_before);
     text = "untouched";
@@ -2599,8 +2723,10 @@ NAOS_TEST(discard_defaults_takes_back_the_default_values)
     NAOS_CHECK_INT_EQ(clargs_result_positional_source(result, positional_of(sub, V_MODE)),
                       CLARGS_SOURCE_NONE);
 
-    /* The values of the command line are as they were, and none of them
-     * was cleaned up. */
+    /*
+     * The values of the command line are as they were, and none of them
+     * was cleaned up.
+     */
     NAOS_CHECK_UINT_EQ(types.counts.releases, 0);
     NAOS_CHECK_TRUE(clargs_result_option_int(result, option_of(sub, V_NUM), &num));
     NAOS_CHECK_TRUE(num == 5);
@@ -2618,8 +2744,10 @@ NAOS_TEST(discard_defaults_takes_back_the_default_values)
     NAOS_CHECK_INT_EQ(clargs_result_positional_source(result, positional_of(sub, V_ITEM)),
                       CLARGS_SOURCE_COMMAND_LINE);
 
-    /* Flags, counts and negatable flags are not touched: what was not
-     * given keeps the source "default". */
+    /*
+     * Flags, counts and negatable flags are not touched: what was not
+     * given keeps the source "default".
+     */
     NAOS_CHECK_TRUE(clargs_result_flag(result, option_of(root, FLAG)));
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, option_of(root, FLAG)),
                       CLARGS_SOURCE_COMMAND_LINE);
@@ -2659,9 +2787,11 @@ NAOS_TEST(discard_defaults_releases_each_default_value_once)
     result = create_result_of_two(root);
     NAOS_REQUIRE_TRUE(clargs_result_push_command(result, sub) == CLARGS_ERROR_NONE);
 
-    /* Values of the user-defined value type: one of the command line and
+    /*
+     * Values of the user-defined value type: one of the command line and
      * three default values, in the options of both selected commands and
-     * in a positional. */
+     * in a positional.
+     */
     NAOS_CHECK_INT_EQ(record_option(result, root, V_ITEM, "given"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(default_option(result, sub, V_ITEM, "default of the option"), CLARGS_ERROR_NONE);
     NAOS_CHECK_INT_EQ(default_positional(result, sub, V_ITEM, "default of the positional"),
@@ -2692,8 +2822,10 @@ NAOS_TEST(discard_defaults_releases_each_default_value_once)
     NAOS_CHECK_STR_EQ(types.counts.last_released, "again");
     NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional_of(sub, V_ITEM)), 2);
 
-    /* The destruction cleans up what is left, once: the values that were
-     * taken back are not cleaned up again. */
+    /*
+     * The destruction cleans up what is left, once: the values that were
+     * taken back are not cleaned up again.
+     */
     clargs_result_destroy(result);
     NAOS_CHECK_UINT_EQ(types.counts.successes, 6);
     NAOS_CHECK_UINT_EQ(types.counts.releases, 6);
@@ -2737,8 +2869,10 @@ NAOS_TEST(discard_defaults_of_a_result_without_one_does_nothing)
 
 /* ---- The message -------------------------------------------------------- */
 
-/* A parse error of the tests of the message: an option that root does not
- * have, in the argument 1. */
+/*
+ * A parse error of the tests of the message: an option that root does not
+ * have, in the argument 1.
+ */
 static clargs_result_failure_t unknown_option(const clargs_command_t *root)
 {
     clargs_result_failure_t failure;
@@ -2792,8 +2926,10 @@ NAOS_TEST(failed_allocation_of_the_message_records_nothing)
     clargs_test_allocator_fail_at(requests + 1);
     NAOS_CHECK_INT_EQ(clargs_result_fail(result, &failure), CLARGS_ERROR_OUT_OF_MEMORY);
 
-    /* The lack of memory is not a parse error: the result has none, and
-     * nothing is left allocated. */
+    /*
+     * The lack of memory is not a parse error: the result has none, and
+     * nothing is left allocated.
+     */
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 1);
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
     check_no_error(result);
@@ -2844,8 +2980,10 @@ NAOS_TEST(failed_allocation_of_the_message_of_a_value_records_nothing)
     NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional_of(root, V_ITEM)), 1);
     NAOS_CHECK_UINT_EQ(types.counts.releases, 0);
 
-    /* The result is still usable: the same value is now recorded as the
-     * parse error. */
+    /*
+     * The result is still usable: the same value is now recorded as the
+     * parse error.
+     */
     NAOS_CHECK_INT_EQ(record_positional(result, root, V_ITEM, "?bad"), CLARGS_ERROR_INVALID_COMMAND_LINE);
     NAOS_CHECK_INT_EQ(clargs_result_error_kind(result), CLARGS_PARSE_ERROR_INVALID_VALUE);
     NAOS_CHECK_STR_EQ(clargs_result_error_message(result),

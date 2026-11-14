@@ -47,8 +47,10 @@ static void free_option(clargs_option_t *option)
     clargs_free(option);
 }
 
-/* Frees a positional and its strings. The value type is borrowed and
- * stays. */
+/*
+ * Frees a positional and its strings. The value type is borrowed and
+ * stays.
+ */
 static void free_positional(clargs_positional_t *positional)
 {
     clargs_free(positional->name);
@@ -57,8 +59,10 @@ static void free_positional(clargs_positional_t *positional)
     clargs_free(positional);
 }
 
-/* Frees command and everything below it. The depth of the recursion is the
- * depth of the tree. */
+/*
+ * Frees command and everything below it. The depth of the recursion is the
+ * depth of the tree.
+ */
 static void free_command(clargs_command_t *command)
 {
     size_t index;
@@ -81,9 +85,11 @@ static void free_command(clargs_command_t *command)
     clargs_free(command);
 }
 
-/* Allocates an empty command with a copy of name and the parent parent
+/*
+ * Allocates an empty command with a copy of name and the parent parent
  * (NULL for a root). It is not put in the array of the parent. Returns
- * NULL, with nothing left allocated, when an allocation fails. */
+ * NULL, with nothing left allocated, when an allocation fails.
+ */
 static clargs_command_t *new_command(const char *name, clargs_command_t *parent)
 {
     clargs_command_t *command = (clargs_command_t *)clargs_malloc(sizeof(*command));
@@ -190,8 +196,10 @@ clargs_error_t clargs_command_add_subcommand(clargs_command_t *command, const ch
         *out = NULL;
     }
 
-    /* The checks come before every allocation, so a wrong definition
-     * touches nothing. */
+    /*
+     * The checks come before every allocation, so a wrong definition
+     * touches nothing.
+     */
     if (!clargs_name_is_subcommand(name)) {
         return CLARGS_ERROR_INVALID_NAME;
     }
@@ -207,8 +215,10 @@ clargs_error_t clargs_command_add_subcommand(clargs_command_t *command, const ch
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
-    /* The tree is changed last: a push that fails leaves the array as it
-     * was. */
+    /*
+     * The tree is changed last: a push that fails leaves the array as it
+     * was.
+     */
     if (clargs_vec_push(&command->subcommands, &subcommand) != CLARGS_ERROR_NONE) {
         free_command(subcommand);
         return CLARGS_ERROR_OUT_OF_MEMORY;
@@ -314,8 +324,10 @@ const clargs_option_t *clargs_command_find_short(const clargs_command_t *command
 
     assert(command != NULL);
 
-    /* '\0' is how an option without a short name is stored; it is not a
-     * name. */
+    /*
+     * '\0' is how an option without a short name is stored; it is not a
+     * name.
+     */
     if (name == '\0') {
         return NULL;
     }

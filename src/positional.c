@@ -13,8 +13,10 @@
 #include <stddef.h>
 #include <string.h>
 
-/* Whether command has a positional with the name name. The whole name is
- * compared, byte by byte. */
+/*
+ * Whether command has a positional with the name name. The whole name is
+ * compared, byte by byte.
+ */
 static bool name_is_in_use(const clargs_command_t *command, const char *name)
 {
     size_t count = clargs_command_positional_count(command);
@@ -28,9 +30,11 @@ static bool name_is_in_use(const clargs_command_t *command, const char *name)
     return false;
 }
 
-/* Allocates a positional of command with a copy of its name. It is not put
+/*
+ * Allocates a positional of command with a copy of its name. It is not put
  * in the array of the command. Returns NULL, with nothing left allocated,
- * when an allocation fails. */
+ * when an allocation fails.
+ */
 static clargs_positional_t *new_positional(clargs_command_t *command, const char *name,
                                            const clargs_type_t *type, clargs_arity_t arity)
 {
@@ -55,8 +59,10 @@ static clargs_positional_t *new_positional(clargs_command_t *command, const char
     return positional;
 }
 
-/* Frees a positional that new_positional() returned and that is in no
- * array: it has no string but its name. */
+/*
+ * Frees a positional that new_positional() returned and that is in no
+ * array: it has no string but its name.
+ */
 static void free_new_positional(clargs_positional_t *positional)
 {
     clargs_free(positional->name);
@@ -81,8 +87,10 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
         *out = NULL;
     }
 
-    /* The checks come before every allocation, so a wrong definition
-     * touches nothing. Their order is part of the contract. */
+    /*
+     * The checks come before every allocation, so a wrong definition
+     * touches nothing. Their order is part of the contract.
+     */
     if (name[0] == '\0') {
         return CLARGS_ERROR_INVALID_NAME;
     }
@@ -98,8 +106,10 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
-    /* The tree is changed last: a push that fails leaves the array as it
-     * was. */
+    /*
+     * The tree is changed last: a push that fails leaves the array as it
+     * was.
+     */
     if (clargs_vec_push(&command->positionals, &positional) != CLARGS_ERROR_NONE) {
         free_new_positional(positional);
         return CLARGS_ERROR_OUT_OF_MEMORY;
@@ -115,8 +125,10 @@ clargs_error_t clargs_command_add_positional(clargs_command_t *command, const ch
 
 /* ---- Attributes --------------------------------------------------------- */
 
-/* Sets an attribute that is a string: *slot, a member of positional, gets a
- * copy of text. */
+/*
+ * Sets an attribute that is a string: *slot, a member of positional, gets a
+ * copy of text.
+ */
 static clargs_error_t set_string(clargs_positional_t *positional, char **slot, const char *text)
 {
     clargs_error_t error = clargs_schema_replace_string(slot, text);
@@ -142,8 +154,10 @@ clargs_error_t clargs_positional_set_default(clargs_positional_t *positional, co
     assert(positional != NULL);
     assert(value != NULL);
 
-    /* The check of the arity comes before the allocation, so a set on
-     * another arity touches nothing. */
+    /*
+     * The check of the arity comes before the allocation, so a set on
+     * another arity touches nothing.
+     */
     if (positional->arity != CLARGS_ARITY_OPTIONAL) {
         return CLARGS_ERROR_INVALID_DEFINITION;
     }

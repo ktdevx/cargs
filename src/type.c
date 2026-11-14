@@ -13,8 +13,10 @@
 #include <stdint.h>
 #include <string.h>
 
-/* The conversion function of the string type. Every input is taken, and the
- * value is the pointer to the input itself. */
+/*
+ * The conversion function of the string type. Every input is taken, and the
+ * value is the pointer to the input itself.
+ */
 static clargs_error_t convert_string(const char *text, void *value, void *context)
 {
     (void)context;
@@ -39,8 +41,10 @@ static clargs_error_t convert_float(const char *text, void *value, void *context
     return clargs_number_parse_float(text, (double *)value);
 }
 
-/* The conversion function of a choice type. context is the value type
- * itself. The value is the index of the choice that is exactly text. */
+/*
+ * The conversion function of a choice type. context is the value type
+ * itself. The value is the index of the choice that is exactly text.
+ */
 static clargs_error_t convert_choice(const char *text, void *value, void *context)
 {
     const clargs_type_t *type = (const clargs_type_t *)context;
@@ -55,8 +59,10 @@ static clargs_error_t convert_choice(const char *text, void *value, void *contex
     return CLARGS_ERROR_INVALID_VALUE;
 }
 
-/* Returns true when a string is in the count strings of choices more than
- * once. */
+/*
+ * Returns true when a string is in the count strings of choices more than
+ * once.
+ */
 static bool has_duplicate(const char *const *choices, size_t count)
 {
     size_t first;
@@ -148,8 +154,10 @@ clargs_error_t clargs_type_create_choice(const char *const *choices, size_t coun
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
 
-    /* choice_count is the number of the copies made so far, so that a
-     * failure frees exactly those. */
+    /*
+     * choice_count is the number of the copies made so far, so that a
+     * failure frees exactly those.
+     */
     for (index = 0; index < count; ++index) {
         type->choices[index] = clargs_strdup(choices[index]);
         if (type->choices[index] == NULL) {

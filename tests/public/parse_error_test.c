@@ -36,8 +36,10 @@
 /* The number of arguments of an argv array. */
 #define ARGC(argv) ((int)(sizeof(argv) / sizeof((argv)[0])))
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -97,8 +99,10 @@ static clargs_option_t *add_negatable(clargs_command_t *command, char short_name
     return option;
 }
 
-/* Adds an option that takes a value to command. default_value may be
- * NULL: the option has no default value then. */
+/*
+ * Adds an option that takes a value to command. default_value may be
+ * NULL: the option has no default value then.
+ */
 static clargs_option_t *add_value(clargs_command_t *command, char short_name, const char *long_name,
                                   const clargs_type_t *type, const char *default_value)
 {
@@ -123,8 +127,10 @@ static clargs_option_t *add_required(clargs_command_t *command, char short_name,
     return option;
 }
 
-/* Adds a positional to command. default_value may be NULL: the positional
- * has no default value then. */
+/*
+ * Adds a positional to command. default_value may be NULL: the positional
+ * has no default value then.
+ */
 static clargs_positional_t *add_positional(clargs_command_t *command, const char *name,
                                            const clargs_type_t *type, clargs_arity_t arity,
                                            const char *default_value)
@@ -155,8 +161,10 @@ static void destroy_root(clargs_command_t *root)
 
 /* ---- What a parse error is expected to be -------------------------------- */
 
-/* Every field of a parse error. A string that is NULL is expected to read
- * as NULL. */
+/*
+ * Every field of a parse error. A string that is NULL is expected to read
+ * as NULL.
+ */
 typedef struct expected {
     clargs_parse_error_kind_t kind;
     const char *argument;
@@ -208,8 +216,10 @@ static expected_t off_command_line(clargs_parse_error_kind_t kind, clargs_source
     return expected;
 }
 
-/* Checks that text is expected: NULL, or a string with the same
- * characters. */
+/*
+ * Checks that text is expected: NULL, or a string with the same
+ * characters.
+ */
 static void check_text(const char *text, const char *expected)
 {
     if (expected == NULL) {
@@ -236,8 +246,10 @@ static void check_error(const clargs_result_t *result, const expected_t *expecte
     check_text(clargs_result_error_message(result), expected->message);
 }
 
-/* Parses argv, which must have the parse error expected, and checks every
- * field of the error. Returns the result, which the caller destroys. */
+/*
+ * Parses argv, which must have the parse error expected, and checks every
+ * field of the error. Returns the result, which the caller destroys.
+ */
 static clargs_result_t *parse_error(const clargs_command_t *root, int argc, char *const *argv,
                                     const expected_t *expected)
 {
@@ -256,8 +268,10 @@ static void expect_error(const clargs_command_t *root, int argc, char *const *ar
     clargs_result_destroy(parse_error(root, argc, argv, expected));
 }
 
-/* Parses argv, which must match the schema. Returns the result, which the
- * caller destroys. */
+/*
+ * Parses argv, which must match the schema. Returns the result, which the
+ * caller destroys.
+ */
 static clargs_result_t *parse_ok(const clargs_command_t *root, int argc, char *const *argv)
 {
     clargs_result_t *result = NULL;
@@ -344,8 +358,10 @@ NAOS_TEST(an_unknown_option_has_its_argument_and_no_value)
 
     set_up(&fixture);
 
-    /* A long option: the argument is the whole of it, the name of the
-     * message ends before the '='. */
+    /*
+     * A long option: the argument is the whole of it, the name of the
+     * message ends before the '='.
+     */
     {
         char *argv[] = { "tool", "-v", "run", "--bogus=1", "main.c" };
 
@@ -353,8 +369,10 @@ NAOS_TEST(an_unknown_option_has_its_argument_and_no_value)
                                    "unknown option '--bogus'");
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* An option of the parent is unknown after the name of the subcommand:
-     * the command of the error is the current command. */
+    /*
+     * An option of the parent is unknown after the name of the subcommand:
+     * the command of the error is the current command.
+     */
     {
         char *argv[] = { "tool", "run", "main.c", "--verbose" };
 
@@ -362,8 +380,10 @@ NAOS_TEST(an_unknown_option_has_its_argument_and_no_value)
                                    "unknown option '--verbose'");
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* A letter of a bundle: the argument is the whole bundle, and the
-     * letter is told apart. */
+    /*
+     * A letter of a bundle: the argument is the whole bundle, and the
+     * letter is told apart.
+     */
     {
         char *argv[] = { "tool", "-v", "run", "-fqx", "main.c" };
 
@@ -488,8 +508,10 @@ NAOS_TEST(an_unexpected_value_has_what_follows_the_equals_sign_and_the_option)
         expected.option = fixture.cache;
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* A negatable flag, by its negated name: the message has the name as
-     * it was written. */
+    /*
+     * A negatable flag, by its negated name: the message has the name as
+     * it was written.
+     */
     {
         char *argv[] = { "tool", "-v", "-d", "--no-color=never", "run" };
 
@@ -499,8 +521,10 @@ NAOS_TEST(an_unexpected_value_has_what_follows_the_equals_sign_and_the_option)
         expected.option = fixture.color;
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* An empty value is a value: the empty string, not NULL. Everything
-     * after the first '=' is the value. */
+    /*
+     * An empty value is a value: the empty string, not NULL. Everything
+     * after the first '=' is the value.
+     */
     {
         char *argv[] = { "tool", "run", "--force=", "main.c" };
 
@@ -561,8 +585,10 @@ NAOS_TEST(an_invalid_value_of_an_option_has_the_argument_that_holds_the_value)
         expected.short_name = 'n';
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* -n value: the argument and the index are those of the value; the
-     * letter is still told. */
+    /*
+     * -n value: the argument and the index are those of the value; the
+     * letter is still told.
+     */
     {
         char *argv[] = { "tool", "-v", "-n", "x", "run" };
 
@@ -573,8 +599,10 @@ NAOS_TEST(an_invalid_value_of_an_option_has_the_argument_that_holds_the_value)
         expected.short_name = 'n';
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* The option that ends a bundle of several, with the value in the
-     * bundle and in the next argument. */
+    /*
+     * The option that ends a bundle of several, with the value in the
+     * bundle and in the next argument.
+     */
     {
         char *argv[] = { "tool", "run", "-fqj1.5", "main.c" };
 
@@ -664,8 +692,10 @@ NAOS_TEST(an_unexpected_positional_has_its_argument_as_its_value)
         expected.value = "now";
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* After the terminator, in a command that has subcommands: the name of
-     * a subcommand is not a name there. */
+    /*
+     * After the terminator, in a command that has subcommands: the name of
+     * a subcommand is not a name there.
+     */
     {
         char *argv[] = { "tool", "-v", "--", "run", "main.c" };
 
@@ -732,8 +762,10 @@ NAOS_TEST(a_missing_option_has_no_position_and_the_option)
 
     set_up_required(&fixture);
 
-    /* An option with a long name is named by it, also when it has a short
-     * name. */
+    /*
+     * An option with a long name is named by it, also when it has a short
+     * name.
+     */
     {
         char *argv[] = { "tool", "-t", "secret", "push", "-a", "x", "origin" };
 
@@ -751,8 +783,10 @@ NAOS_TEST(a_missing_option_has_no_position_and_the_option)
         expected.option = fixture.area;
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* The command is that of the option, not the command that the command
-     * line ends in. */
+    /*
+     * The command is that of the option, not the command that the command
+     * line ends in.
+     */
     {
         char *argv[] = { "tool", "pull", "a.txt" };
 
@@ -796,9 +830,11 @@ NAOS_TEST(a_missing_positional_has_no_position_and_the_positional)
 
 /* ---- A default value that its value type does not take ------------------- */
 
-/* A value type that takes every text but the one it is told to reject. Its
+/*
+ * A value type that takes every text but the one it is told to reject. Its
  * value is the text. The validation of a schema converts the default values
- * with it; a text is rejected only afterwards. */
+ * with it; a text is rejected only afterwards.
+ */
 typedef struct picky {
     const char *rejected; /* NULL: every text is taken. */
 } picky_t;
@@ -837,8 +873,10 @@ NAOS_TEST(an_invalid_default_value_has_the_default_as_its_value_and_no_argument)
 
     clargs_result_destroy(parse_ok(root, ARGC(argv), argv));
 
-    /* An option. The command is that of the option, not the command that
-     * the command line ends in. */
+    /*
+     * An option. The command is that of the option, not the command that
+     * the command line ends in.
+     */
     picky.rejected = "bad-mode";
     expected = off_command_line(CLARGS_PARSE_ERROR_INVALID_VALUE, CLARGS_SOURCE_DEFAULT, root,
                                 "invalid default value 'bad-mode' for option '--mode' (expected word)");
@@ -903,8 +941,10 @@ NAOS_TEST(of_two_errors_the_one_that_is_earlier_on_the_command_line_is_reported)
         expected.short_name = 'x';
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* An error on the command line comes before something required that
-     * is missing: SRC of run was not given. */
+    /*
+     * An error on the command line comes before something required that
+     * is missing: SRC of run was not given.
+     */
     {
         char *argv[] = { "tool", "run", "-f", "--quiet=1" };
 
@@ -925,8 +965,10 @@ NAOS_TEST(of_several_missing_things_the_first_of_the_nearest_command_is_reported
 
     set_up_required(&fixture);
 
-    /* Everything is missing: the option of the root comes first, although
-     * it was added last. */
+    /*
+     * Everything is missing: the option of the root comes first, although
+     * it was added last.
+     */
     {
         char *argv[] = { "tool", "push" };
 
@@ -935,8 +977,10 @@ NAOS_TEST(of_several_missing_things_the_first_of_the_nearest_command_is_reported
         expected.option = fixture.token;
         expect_error(fixture.root, ARGC(argv), argv, &expected);
     }
-    /* In one command, the options come before the positionals, although
-     * REMOTE was added first; of the options, the one added first. */
+    /*
+     * In one command, the options come before the positionals, although
+     * REMOTE was added first; of the options, the one added first.
+     */
     {
         char *argv[] = { "tool", "-tsecret", "push" };
 
@@ -1020,8 +1064,10 @@ NAOS_TEST(a_result_with_a_parse_error_holds_what_was_read_before_the_error)
     NAOS_REQUIRE_TRUE(clargs_result_positional_int(result, fixture.count, 0, &number));
     NAOS_CHECK_TRUE(number == 7);
 
-    /* What stands after the error was not read: --quiet was given twice,
-     * and --name not at all. */
+    /*
+     * What stands after the error was not read: --quiet was given twice,
+     * and --name not at all.
+     */
     NAOS_CHECK_UINT_EQ(clargs_result_count(result, fixture.quiet), 2);
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, fixture.name), CLARGS_SOURCE_NONE);
     NAOS_CHECK_TRUE(clargs_result_option_value(result, fixture.name) == NULL);
@@ -1075,8 +1121,10 @@ NAOS_TEST(help_of_a_subcommand_reads_as_given_when_something_required_is_missing
     destroy_root(fixture.root);
 }
 
-/* Checks what was not given on a command line that selected tool and run
- * and has a parse error. */
+/*
+ * Checks what was not given on a command line that selected tool and run
+ * and has a parse error.
+ */
 static void check_nothing_was_applied(const clargs_result_t *result, const fixture_t *fixture)
 {
     const char *text = "untouched";
@@ -1110,8 +1158,10 @@ static void check_nothing_was_applied(const clargs_result_t *result, const fixtu
     NAOS_CHECK_FALSE(clargs_result_flag(result, fixture->cache));
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, fixture->cache), CLARGS_SOURCE_DEFAULT);
 
-    /* A command that was not selected has nothing, as in a result without
-     * a parse error. */
+    /*
+     * A command that was not selected has nothing, as in a result without
+     * a parse error.
+     */
     NAOS_CHECK_FALSE(clargs_result_flag(result, fixture->all));
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, fixture->all), CLARGS_SOURCE_NONE);
     NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, fixture->remote_name), 0);

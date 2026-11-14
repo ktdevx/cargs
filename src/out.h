@@ -35,8 +35,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* The state of the output. The members are read and written by the
- * functions of this header only. */
+/*
+ * The state of the output. The members are read and written by the
+ * functions of this header only.
+ */
 typedef struct clargs_out {
     clargs_help_write_fn_t write_fn; /* NULL: only the columns are counted */
     void *user_data;                 /* passed on to write_fn as it is */
@@ -89,12 +91,16 @@ void clargs_out_pad_to(clargs_out_t *out, size_t column);
  */
 void clargs_out_newline(clargs_out_t *out);
 
-/* Returns the current column: the number of bytes written on this line
- * plus the number of blanks that are remembered. */
+/*
+ * Returns the current column: the number of bytes written on this line
+ * plus the number of blanks that are remembered.
+ */
 size_t clargs_out_column(const clargs_out_t *out);
 
-/* Returns true when the write function has reported a failure. Always
- * false without a write function. */
+/*
+ * Returns true when the write function has reported a failure. Always
+ * false without a write function.
+ */
 bool clargs_out_failed(const clargs_out_t *out);
 
 #endif /* CLARGS_OUT_H */

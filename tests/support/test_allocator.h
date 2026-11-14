@@ -38,34 +38,46 @@
 /* Returns the four functions of the test allocator. Changes no state. */
 clargs_allocator_t clargs_test_allocator_get(void);
 
-/* Resets like clargs_test_allocator_reset(), then sets the test allocator
- * as the allocator of the library. */
+/*
+ * Resets like clargs_test_allocator_reset(), then sets the test allocator
+ * as the allocator of the library.
+ */
 void clargs_test_allocator_install(void);
 
-/* Sets the library back to its default allocator. The counts stay as they
- * are, so they can be read afterwards. */
+/*
+ * Sets the library back to its default allocator. The counts stay as they
+ * are, so they can be read afterwards.
+ */
 void clargs_test_allocator_uninstall(void);
 
-/* Puts the counts of requests, live blocks and violations back to 0 and
+/*
+ * Puts the counts of requests, live blocks and violations back to 0 and
  * forgets the request to fail. If blocks are still live when it is called,
- * the count of live blocks is wrong from then on. */
+ * the count of live blocks is wrong from then on.
+ */
 void clargs_test_allocator_reset(void);
 
-/* Makes the request-th request after the last reset fail, counted from 1
+/*
+ * Makes the request-th request after the last reset fail, counted from 1
  * over malloc_fn, calloc_fn and realloc_fn together. Only that request
  * fails: it returns NULL, and a failed realloc_fn leaves its block valid
- * and unchanged. With 0, no request fails. */
+ * and unchanged. With 0, no request fails.
+ */
 void clargs_test_allocator_fail_at(size_t request);
 
 /* The number of requests since the last reset, the failed ones included. */
 size_t clargs_test_allocator_requests(void);
 
-/* The number of live blocks: up by one with an allocation that succeeds,
- * down by one with a free, unchanged by a reallocation. */
+/*
+ * The number of live blocks: up by one with an allocation that succeeds,
+ * down by one with a free, unchanged by a reallocation.
+ */
 size_t clargs_test_allocator_live(void);
 
-/* The number of violations of the allocator contract since the last
- * reset. */
+/*
+ * The number of violations of the allocator contract since the last
+ * reset.
+ */
 size_t clargs_test_allocator_violations(void);
 
 #endif /* CLARGS_TEST_ALLOCATOR_H */

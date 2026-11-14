@@ -29,9 +29,11 @@ void clargs_help_item_string(clargs_out_t *out, const char *text)
     }
 }
 
-/* Writes the display name of the value of option between "<" and ">": the
+/*
+ * Writes the display name of the value of option between "<" and ">": the
  * value name that was set, or else the name of the value type. option
- * takes a value. */
+ * takes a value.
+ */
 static void item_value_name(clargs_out_t *out, const clargs_option_t *option)
 {
     const char *name = clargs_option_value_name(option);
@@ -75,8 +77,10 @@ void clargs_help_item_option_heading(clargs_out_t *out, const clargs_option_t *o
     long_name = clargs_option_long_name(option);
     short_name = clargs_option_short_name(option);
 
-    /* The blanks belong to the heading: they are written with the text,
-     * not remembered, so they count for its width. */
+    /*
+     * The blanks belong to the heading: they are written with the text,
+     * not remembered, so they count for its width.
+     */
     if (short_name != '\0') {
         clargs_out_text(out, "-", 1);
         clargs_out_text(out, &short_name, 1);
@@ -157,8 +161,10 @@ void clargs_help_item_usage_option(clargs_out_t *out, const clargs_option_t *opt
         clargs_out_text(out, &short_name, 1);
     }
 
-    /* The blank belongs to the item: it is written with the text, not
-     * remembered as a blank between two items. */
+    /*
+     * The blank belongs to the item: it is written with the text, not
+     * remembered as a blank between two items.
+     */
     clargs_out_text(out, " ", 1);
     item_value_name(out, option);
 }
@@ -187,9 +193,11 @@ static clargs_error_t item_text_string(clargs_vec_t *text, const char *part)
     return clargs_help_item_text_append(text, part, strlen(part));
 }
 
-/* Starts an annotation at the end of text: appends the blank that
+/*
+ * Starts an annotation at the end of text: appends the blank that
  * separates it from what stands before, unless text is empty or ends with
- * a newline, and then opening, the start of the annotation. */
+ * a newline, and then opening, the start of the annotation.
+ */
 static clargs_error_t item_note_open(clargs_vec_t *text, const char *opening)
 {
     if (text->count != 0 && *(const char *)clargs_vec_at(text, text->count - 1) != '\n') {
@@ -202,8 +210,10 @@ static clargs_error_t item_note_open(clargs_vec_t *text, const char *opening)
     return item_text_string(text, opening);
 }
 
-/* Appends the annotation of the choices of type, "[choices: a, b, c]",
- * when type is of the kind with choices. */
+/*
+ * Appends the annotation of the choices of type, "[choices: a, b, c]",
+ * when type is of the kind with choices.
+ */
 static clargs_error_t item_choices_note(clargs_vec_t *text, const clargs_type_t *type)
 {
     clargs_error_t error;
@@ -238,8 +248,10 @@ static clargs_error_t item_choices_note(clargs_vec_t *text, const clargs_type_t 
     return error;
 }
 
-/* Appends the annotation of a default value, "[default: VALUE]", with the
- * string value as it is. */
+/*
+ * Appends the annotation of a default value, "[default: VALUE]", with the
+ * string value as it is.
+ */
 static clargs_error_t item_default_note(clargs_vec_t *text, const char *value)
 {
     clargs_error_t error = item_note_open(text, "[default: ");
@@ -253,8 +265,10 @@ static clargs_error_t item_default_note(clargs_vec_t *text, const char *value)
     return error;
 }
 
-/* Appends the annotations of an option with a value or of a positional:
- * the choices of type, then default_value when it is not NULL. */
+/*
+ * Appends the annotations of an option with a value or of a positional:
+ * the choices of type, then default_value when it is not NULL.
+ */
 static clargs_error_t item_value_notes(clargs_vec_t *text, const clargs_type_t *type,
                                        const char *default_value)
 {

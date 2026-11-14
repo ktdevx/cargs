@@ -24,12 +24,16 @@
 /* The size of the output of check_convert(): enough for every test. */
 #define OUT_SIZE ((size_t)64)
 
-/* A byte that the conversion never writes: it marks the bytes of the
- * output that were not written. */
+/*
+ * A byte that the conversion never writes: it marks the bytes of the
+ * output that were not written.
+ */
 #define UNTOUCHED '\x7E'
 
-/* The wide units of a code point above U+FFFF, for an initialiser: a pair
- * of surrogates in UTF-16, and one unit in UTF-32. */
+/*
+ * The wide units of a code point above U+FFFF, for an initialiser: a pair
+ * of surrogates in UTF-16, and one unit in UTF-32.
+ */
 #if WCHAR_MAX <= 0xFFFF
 #define U10000 (wchar_t)0xD800, (wchar_t)0xDC00
 #define U1F600 (wchar_t)0xD83D, (wchar_t)0xDE00
@@ -40,9 +44,11 @@
 #define U10FFFF (wchar_t)0x10FFFF
 #endif
 
-/* text converts to the expected_length bytes of expected, and is valid or
+/*
+ * text converts to the expected_length bytes of expected, and is valid or
  * not as expected. The two functions count the same number of bytes, the
- * output is terminated, and nothing is written after the terminator. */
+ * output is terminated, and nothing is written after the terminator.
+ */
 static void check_convert(const wchar_t *text, const char *expected, size_t expected_length, bool expected_valid)
 {
     char out[OUT_SIZE];
@@ -80,8 +86,10 @@ static void check_invalid(const wchar_t *text, const char *expected)
 
 /* ---- The boundaries of the lengths ------------------------------------ */
 
-/* An empty string is valid, has the length 0, and is written as the
- * terminator alone. */
+/*
+ * An empty string is valid, has the length 0, and is written as the
+ * terminator alone.
+ */
 NAOS_TEST(empty_string)
 {
     static const wchar_t text[] = { 0 };
@@ -113,8 +121,10 @@ NAOS_TEST(two_byte_boundaries)
     check_valid(last, "\xDF\xBF");
 }
 
-/* U+0800 to U+FFFF is three bytes. The code points next to the range of
- * the surrogates are valid. */
+/*
+ * U+0800 to U+FFFF is three bytes. The code points next to the range of
+ * the surrogates are valid.
+ */
 NAOS_TEST(three_byte_boundaries)
 {
     static const wchar_t first[] = { (wchar_t)0x800, 0 };
@@ -133,8 +143,10 @@ NAOS_TEST(three_byte_boundaries)
     check_valid(last, "\xEF\xBF\xBF");
 }
 
-/* U+10000 to U+10FFFF is four bytes. In UTF-16 each is a pair of
- * surrogates, which becomes one code point. */
+/*
+ * U+10000 to U+10FFFF is four bytes. In UTF-16 each is a pair of
+ * surrogates, which becomes one code point.
+ */
 NAOS_TEST(four_byte_boundaries)
 {
     static const wchar_t first[] = { U10000, 0 };
@@ -146,8 +158,10 @@ NAOS_TEST(four_byte_boundaries)
     check_valid(last, "\xF4\x8F\xBF\xBF");
 }
 
-/* A string with code points of every length: the lengths add up, and the
- * order is kept. */
+/*
+ * A string with code points of every length: the lengths add up, and the
+ * order is kept.
+ */
 NAOS_TEST(mixed_lengths)
 {
     static const wchar_t text[] = {
@@ -173,8 +187,10 @@ NAOS_TEST(valid_is_written_both_ways)
     NAOS_CHECK_FALSE(valid);
 }
 
-/* A surrogate alone cannot be converted in either encoding: it becomes
- * U+FFFD, and the characters around it are kept. */
+/*
+ * A surrogate alone cannot be converted in either encoding: it becomes
+ * U+FFFD, and the characters around it are kept.
+ */
 NAOS_TEST(lone_surrogate_is_replaced)
 {
     static const wchar_t high[] = { (wchar_t)0xD800, 0 };
@@ -194,12 +210,16 @@ NAOS_TEST(lone_surrogate_is_replaced)
     check_invalid(high_at_end, "a" REPLACEMENT);
 }
 
-/* Every unit that cannot be converted is replaced on its own, and one
- * valid character after them does not make the string valid again. */
+/*
+ * Every unit that cannot be converted is replaced on its own, and one
+ * valid character after them does not make the string valid again.
+ */
 NAOS_TEST(each_bad_unit_is_replaced)
 {
-    /* A low surrogate and then a high one: not a pair in UTF-16, and two
-     * values in the range of the surrogates in UTF-32. */
+    /*
+     * A low surrogate and then a high one: not a pair in UTF-16, and two
+     * values in the range of the surrogates in UTF-32.
+     */
     static const wchar_t reversed[] = { (wchar_t)0xDC00, (wchar_t)0xD800, (wchar_t)'x', 0 };
     static const wchar_t two_high[] = { (wchar_t)0xD800, (wchar_t)0xD800, (wchar_t)'x', 0 };
 
@@ -209,8 +229,10 @@ NAOS_TEST(each_bad_unit_is_replaced)
 
 #if WCHAR_MAX <= 0xFFFF
 
-/* UTF-16: only a high surrogate directly followed by a low one is a pair.
- * A high surrogate before a pair is replaced, and the pair is kept. */
+/*
+ * UTF-16: only a high surrogate directly followed by a low one is a pair.
+ * A high surrogate before a pair is replaced, and the pair is kept.
+ */
 NAOS_TEST(encoding_specific_bad_units)
 {
     static const wchar_t high_then_pair[] = { (wchar_t)0xD800, (wchar_t)0xD800, (wchar_t)0xDC00, 0 };
@@ -224,8 +246,10 @@ NAOS_TEST(encoding_specific_bad_units)
 
 #else
 
-/* UTF-32: a pair of surrogates is not a code point, and a value above
- * U+10FFFF or below 0 cannot be converted. */
+/*
+ * UTF-32: a pair of surrogates is not a code point, and a value above
+ * U+10FFFF or below 0 cannot be converted.
+ */
 NAOS_TEST(encoding_specific_bad_units)
 {
     static const wchar_t pair[] = { (wchar_t)0xD800, (wchar_t)0xDC00, 0 };

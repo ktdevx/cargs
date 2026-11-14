@@ -25,8 +25,10 @@ NAOS_TEST(classify_single_hyphen_is_plain)
     NAOS_CHECK_TRUE(clargs_lex_classify("-") == CLARGS_LEX_PLAIN);
 }
 
-/* An argument that does not start with '-' is not an option, wherever
- * else it has a '-' or a '='. */
+/*
+ * An argument that does not start with '-' is not an option, wherever
+ * else it has a '-' or a '='.
+ */
 NAOS_TEST(classify_without_leading_hyphen_is_plain)
 {
     NAOS_CHECK_TRUE(clargs_lex_classify("x") == CLARGS_LEX_PLAIN);
@@ -46,8 +48,10 @@ NAOS_TEST(classify_double_hyphen_is_terminator)
     NAOS_CHECK_TRUE(clargs_lex_classify("--") == CLARGS_LEX_TERMINATOR);
 }
 
-/* "--" and one character or more is a long option, whatever the
- * characters are: a third '-', a '=' and a byte outside ASCII too. */
+/*
+ * "--" and one character or more is a long option, whatever the
+ * characters are: a third '-', a '=' and a byte outside ASCII too.
+ */
 NAOS_TEST(classify_double_hyphen_and_more_is_long)
 {
     NAOS_CHECK_TRUE(clargs_lex_classify("--x") == CLARGS_LEX_LONG);
@@ -61,9 +65,11 @@ NAOS_TEST(classify_double_hyphen_and_more_is_long)
     NAOS_CHECK_TRUE(clargs_lex_classify("--\xC3\xA9") == CLARGS_LEX_LONG);
 }
 
-/* '-' and a character that is not '-' is a cluster of short options. The
+/*
+ * '-' and a character that is not '-' is a cluster of short options. The
  * classification does not look at the schema: the forms of a negative
- * number are clusters too. */
+ * number are clusters too.
+ */
 NAOS_TEST(classify_hyphen_and_other_is_short)
 {
     NAOS_CHECK_TRUE(clargs_lex_classify("-x") == CLARGS_LEX_SHORT);
@@ -136,9 +142,11 @@ NAOS_TEST(negative_number_rejects_other_shapes)
     NAOS_CHECK_FALSE(clargs_lex_is_negative_number("+1"));
 }
 
-/* A character that is not a digit right after the '-'. The characters
+/*
+ * A character that is not a digit right after the '-'. The characters
  * next to the range of the digits, and bytes outside ASCII, are not
- * digits. */
+ * digits.
+ */
 NAOS_TEST(negative_number_rejects_hyphen_and_non_digit)
 {
     NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-x"));
@@ -154,8 +162,10 @@ NAOS_TEST(negative_number_rejects_hyphen_and_non_digit)
     NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-.\xB5"));
 }
 
-/* Every argument with the form of a negative number is classified as a
- * cluster of short options. */
+/*
+ * Every argument with the form of a negative number is classified as a
+ * cluster of short options.
+ */
 NAOS_TEST(negative_number_is_classified_as_short)
 {
     const char *const args[] = { "-1", "-.5", "-1x", "-0", "-9.25", "-.0e1" };
@@ -278,8 +288,10 @@ NAOS_TEST(split_long_with_empty_name)
     NAOS_CHECK_STR_EQ(value, "x");
 }
 
-/* The value is not looked at: a value that starts with '=' or '-', and
- * bytes outside ASCII in the name and in the value, are kept as written. */
+/*
+ * The value is not looked at: a value that starts with '=' or '-', and
+ * bytes outside ASCII in the name and in the value, are kept as written.
+ */
 NAOS_TEST(split_long_keeps_the_bytes)
 {
     const char *arg = "--n\xC3\xA9=-\xC3\xA9 ";

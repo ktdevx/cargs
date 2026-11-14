@@ -45,9 +45,11 @@
 /* The number of arguments of an argv array. */
 #define ARGC(argv) ((int)(sizeof(argv) / sizeof((argv)[0])))
 
-/* A number with more characters than the conversion of the built-in
+/*
+ * A number with more characters than the conversion of the built-in
  * floating-point type copies without an allocation of its own: a
- * conversion that can itself run out of memory. */
+ * conversion that can itself run out of memory.
+ */
 #define LONG_FLOAT "0." "1234567890" "1234567890" "1234567890" "1234567890" \
                    "1234567890" "1234567890" "1234567890"
 
@@ -65,8 +67,10 @@
 /* The most allocation requests that a parse is given to fail in. */
 #define REQUEST_LIMIT 1000
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -75,16 +79,20 @@ static void check_clean(void)
 
 /* ---- The user-defined value type ---------------------------------------- */
 
-/* The value of the user-defined value type "word": the text that the
- * conversion was given, not a copy of it, and the length of the text. */
+/*
+ * The value of the user-defined value type "word": the text that the
+ * conversion was given, not a copy of it, and the length of the text.
+ */
 typedef struct word {
     const char *text;
     size_t length;
 } word_t;
 
-/* The user data of the value type "word". It counts the conversions that
+/*
+ * The user data of the value type "word". It counts the conversions that
  * succeeded and the cleanups, and tells whether the text "bad" is
- * rejected. */
+ * rejected.
+ */
 typedef struct word_log {
     size_t converted;
     size_t released;
@@ -198,8 +206,10 @@ static clargs_option_t *add_negatable(clargs_command_t *command, char short_name
     return option;
 }
 
-/* Adds an option that takes a value to command. default_value may be
- * NULL: the option has no default value then. */
+/*
+ * Adds an option that takes a value to command. default_value may be
+ * NULL: the option has no default value then.
+ */
 static clargs_option_t *add_value(clargs_command_t *command, char short_name, const char *long_name,
                                   const clargs_type_t *type, const char *default_value)
 {
@@ -214,8 +224,10 @@ static clargs_option_t *add_value(clargs_command_t *command, char short_name, co
     return option;
 }
 
-/* Adds a positional to command. default_value may be NULL: the positional
- * has no default value then. */
+/*
+ * Adds a positional to command. default_value may be NULL: the positional
+ * has no default value then.
+ */
 static clargs_positional_t *add_positional(clargs_command_t *command, const char *name,
                                            const clargs_type_t *type, clargs_arity_t arity,
                                            const char *default_value)
@@ -231,8 +243,10 @@ static clargs_positional_t *add_positional(clargs_command_t *command, const char
     return positional;
 }
 
-/* Creates the value types and the schema, and validates it. The test
- * allocator is installed, and no request is set to fail. */
+/*
+ * Creates the value types and the schema, and validates it. The test
+ * allocator is installed, and no request is set to fail.
+ */
 static void set_up(fixture_t *fixture)
 {
     const char *const colors[] = { "red", "green", "blue" };
@@ -282,15 +296,19 @@ static void set_up(fixture_t *fixture)
     NAOS_CHECK_UINT_EQ(fixture->log.released, fixture->log.converted);
 }
 
-/* The number of values of the value type "word" that were converted and
- * not cleaned up yet. */
+/*
+ * The number of values of the value type "word" that were converted and
+ * not cleaned up yet.
+ */
 static size_t words_held(const fixture_t *fixture)
 {
     return fixture->log.converted - fixture->log.released;
 }
 
-/* Destroys the schema and the value types: they can still be destroyed,
- * and nothing stays allocated. */
+/*
+ * Destroys the schema and the value types: they can still be destroyed,
+ * and nothing stays allocated.
+ */
 static void tear_down(fixture_t *fixture)
 {
     clargs_command_destroy(fixture->root);
@@ -344,8 +362,10 @@ static void check_option_int(const clargs_result_t *result, const clargs_option_
     NAOS_CHECK_TRUE(value == expected);
 }
 
-/* Checks the selected commands of result: count of them, the last of which
- * is last. */
+/*
+ * Checks the selected commands of result: count of them, the last of which
+ * is last.
+ */
 static void check_commands(const clargs_result_t *result, const fixture_t *fixture, size_t count,
                            const clargs_command_t *last)
 {
@@ -373,12 +393,16 @@ static void check_success(const clargs_result_t *result)
 
 /* ---- Failing every request of a parse ----------------------------------- */
 
-/* What a parse that completed must have given. held is set to the number
- * of values of the value type "word" that the result must hold. */
+/*
+ * What a parse that completed must have given. held is set to the number
+ * of values of the value type "word" that the result must hold.
+ */
 typedef void (*check_fn_t)(const fixture_t *fixture, const clargs_result_t *result, size_t *held);
 
-/* One parse: a command line for one of the two entries, what the parse
- * returns when no request fails, and the check of its result. */
+/*
+ * One parse: a command line for one of the two entries, what the parse
+ * returns when no request fails, and the check of its result.
+ */
 typedef struct parse_case {
     int argc;
     char *const *argv;          /* NULL: the parse goes through the wide entry */
@@ -398,9 +422,11 @@ static clargs_error_t run_parse(const fixture_t *fixture, const parse_case_t *pa
     return clargs_parse_wide(fixture->root, parse_case->argc, parse_case->wide_argv, out);
 }
 
-/* The parse of parse_case with no request to fail: it returns what it is
+/*
+ * The parse of parse_case with no request to fail: it returns what it is
  * expected to, and gives the result that is expected. The result is
- * destroyed, and its values are cleaned up with it. */
+ * destroyed, and its values are cleaned up with it.
+ */
 static void check_parse_completes(const fixture_t *fixture, const parse_case_t *parse_case, size_t live)
 {
     const size_t held_before = words_held(fixture);
@@ -418,8 +444,10 @@ static void check_parse_completes(const fixture_t *fixture, const parse_case_t *
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
 }
 
-/* Checks other, the result of the parse of "tool" alone that was made
- * before the parse that failed: it is as it was. */
+/*
+ * Checks other, the result of the parse of "tool" alone that was made
+ * before the parse that failed: it is as it was.
+ */
 static void check_other(const fixture_t *fixture, const clargs_result_t *other)
 {
     check_success(other);
@@ -463,8 +491,10 @@ static void fail_every_request(const parse_case_t *parse_case)
         live = clargs_test_allocator_live();
         held = words_held(&fixture);
 
-        /* The operation: only its requests count. The place of the result
-         * holds a pointer that is not NULL. */
+        /*
+         * The operation: only its requests count. The place of the result
+         * holds a pointer that is not NULL.
+         */
         result = other;
         before = clargs_test_allocator_requests();
         clargs_test_allocator_fail_at(before + n);
@@ -475,8 +505,10 @@ static void fail_every_request(const parse_case_t *parse_case)
         if (error != CLARGS_ERROR_OUT_OF_MEMORY && made < n) {
             size_t expected = 0;
 
-            /* The parse ended before the request to fail was reached: every
-             * allocation point has failed once, n - 1 of them. */
+            /*
+             * The parse ended before the request to fail was reached: every
+             * allocation point has failed once, n - 1 of them.
+             */
             NAOS_CHECK_UINT_EQ(made, n - 1);
             NAOS_CHECK_TRUE(made >= parse_case->least);
             NAOS_CHECK_INT_EQ(error, parse_case->outcome);
@@ -495,20 +527,26 @@ static void fail_every_request(const parse_case_t *parse_case)
             break;
         }
 
-        /* The n-th request failed, the parse stopped there and reported
-         * it, and it wrote NULL to the place of the result. */
+        /*
+         * The n-th request failed, the parse stopped there and reported
+         * it, and it wrote NULL to the place of the result.
+         */
         NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_UINT_EQ(made, n);
         NAOS_CHECK_TRUE(result == NULL);
 
-        /* Nothing of the parse stays allocated, and every value that it
-         * converted was cleaned up. */
+        /*
+         * Nothing of the parse stays allocated, and every value that it
+         * converted was cleaned up.
+         */
         NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
         NAOS_CHECK_UINT_EQ(words_held(&fixture), held);
 
-        /* What the failure must leave unchanged: the result of the earlier
+        /*
+         * What the failure must leave unchanged: the result of the earlier
          * parse, and the schema, with which the same parse now does what
-         * it does when no request fails. */
+         * it does when no request fails.
+         */
         check_other(&fixture, other);
         check_parse_completes(&fixture, parse_case, live);
 
@@ -589,16 +627,20 @@ NAOS_TEST(a_parse_that_succeeds_fails_at_every_allocation_point)
     parse_case.reject = false;
     parse_case.outcome = CLARGS_ERROR_NONE;
     parse_case.check_fn = check_full;
-    /* The result, its arguments, three selected commands with their
-     * options, the values, and the copy of the long number. */
+    /*
+     * The result, its arguments, three selected commands with their
+     * options, the values, and the copy of the long number.
+     */
     parse_case.least = 20;
     fail_every_request(&parse_case);
 }
 
 /* ---- Operation 2: parses that end in a parse error ---------------------- */
 
-/* What was read before each of the errors: the name, a tag that was
- * replaced, NAME and one of URL. */
+/*
+ * What was read before each of the errors: the name, a tag that was
+ * replaced, NAME and one of URL.
+ */
 static void check_read_before_error(const fixture_t *fixture, const clargs_result_t *result)
 {
     check_commands(result, fixture, 3, fixture->add);
@@ -644,8 +686,10 @@ static void check_missing_positional(const fixture_t *fixture, const clargs_resu
     *held = 1;
 }
 
-/* The default values that were applied before the one that failed are
- * taken back: the result holds no value. */
+/*
+ * The default values that were applied before the one that failed are
+ * taken back: the result holds no value.
+ */
 static void check_invalid_default(const fixture_t *fixture, const clargs_result_t *result, size_t *held)
 {
     check_error(result, CLARGS_PARSE_ERROR_INVALID_VALUE,
@@ -664,9 +708,11 @@ static void check_invalid_default(const fixture_t *fixture, const clargs_result_
 
 NAOS_TEST(a_parse_that_ends_in_a_parse_error_fails_at_every_allocation_point)
 {
-    /* An error of the scan, an error of a conversion, an error of the
+    /*
+     * An error of the scan, an error of a conversion, an error of the
      * check of what is required, and an error of a default value. The
-     * message is the last allocation of each. */
+     * message is the last allocation of each.
+     */
     char *unknown[] = { "tool", "-v", "remote", "--name", "x",  "add",     "--tag",
                         "a",    "--tag", "b",   "one",    "u1", "--bogus", "u2" };
     char *invalid[] = { "tool", "-v", "remote", "--name", "x",  "add", "--tag",
@@ -682,8 +728,10 @@ NAOS_TEST(a_parse_that_ends_in_a_parse_error_fails_at_every_allocation_point)
     parse_case.argc = ARGC(unknown);
     parse_case.argv = unknown;
     parse_case.check_fn = check_unknown_option;
-    /* The result, its arguments, three selected commands, five values, the
-     * values of URL, and the message. */
+    /*
+     * The result, its arguments, three selected commands, five values, the
+     * values of URL, and the message.
+     */
     parse_case.least = 12;
     fail_every_request(&parse_case);
 
@@ -696,16 +744,20 @@ NAOS_TEST(a_parse_that_ends_in_a_parse_error_fails_at_every_allocation_point)
     parse_case.argc = ARGC(missing);
     parse_case.argv = missing;
     parse_case.check_fn = check_missing_positional;
-    /* The result, its arguments, three selected commands, two values, and
-     * the message. */
+    /*
+     * The result, its arguments, three selected commands, two values, and
+     * the message.
+     */
     parse_case.least = 7;
     fail_every_request(&parse_case);
 
     parse_case.argc = ARGC(fallback);
     parse_case.argv = fallback;
     parse_case.check_fn = check_invalid_default;
-    /* The result, its arguments, two selected commands, three default
-     * values, and the message. */
+    /*
+     * The result, its arguments, two selected commands, three default
+     * values, and the message.
+     */
     parse_case.least = 8;
     fail_every_request(&parse_case);
 }
@@ -738,8 +790,10 @@ NAOS_TEST(a_parse_that_applies_default_values_fails_at_every_allocation_point)
     parse_case.reject = false;
     parse_case.outcome = CLARGS_ERROR_NONE;
     parse_case.check_fn = check_defaults;
-    /* The result, its arguments, two selected commands, and five default
-     * values, one of them in the array of the values of DIR. */
+    /*
+     * The result, its arguments, two selected commands, and five default
+     * values, one of them in the array of the values of DIR.
+     */
     parse_case.least = 9;
     fail_every_request(&parse_case);
 }
@@ -762,8 +816,10 @@ static void check_wide(const fixture_t *fixture, const clargs_result_t *result, 
     *held = 5;
 }
 
-/* The argument that cannot be converted is the fifth of the command line;
- * what was read before it stays. */
+/*
+ * The argument that cannot be converted is the fifth of the command line;
+ * what was read before it stays.
+ */
 static void check_wide_invalid(const fixture_t *fixture, const clargs_result_t *result, size_t *held)
 {
     check_error(result, CLARGS_PARSE_ERROR_INVALID_ENCODING,
@@ -782,9 +838,11 @@ NAOS_TEST(a_parse_of_wide_arguments_fails_at_every_allocation_point)
     wchar_t bad[4];
     parse_case_t parse_case;
 
-    /* A surrogate that is not part of a pair where a wide string is
+    /*
+     * A surrogate that is not part of a pair where a wide string is
      * UTF-16, and a value of the range of the surrogates where it is
-     * UTF-32: it cannot be converted in either. */
+     * UTF-32: it cannot be converted in either.
+     */
     bad[0] = L'a';
     bad[1] = (wchar_t)0xD800;
     bad[2] = L'b';
@@ -798,8 +856,10 @@ NAOS_TEST(a_parse_of_wide_arguments_fails_at_every_allocation_point)
     parse_case.wide_argv = argv;
     parse_case.outcome = CLARGS_ERROR_NONE;
     parse_case.check_fn = check_wide;
-    /* The result, its arguments, three selected commands, and the
-     * values. */
+    /*
+     * The result, its arguments, three selected commands, and the
+     * values.
+     */
     parse_case.least = 12;
     fail_every_request(&parse_case);
 

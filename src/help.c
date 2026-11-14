@@ -11,8 +11,10 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The state of one generation. It lives on the stack of the public
- * function, for the one call. */
+/*
+ * The state of one generation. It lives on the stack of the public
+ * function, for the one call.
+ */
 typedef struct help_context {
     const clargs_command_t *command; /* the command the text is about */
     size_t width;                    /* the width in columns; 0 means no limit */
@@ -20,13 +22,18 @@ typedef struct help_context {
     size_t max_column;               /* the last column at which the descriptions may start */
     size_t column;                   /* the description column; set before the lists are written */
     clargs_out_t out;                /* where the text goes */
-    clargs_vec_t text;               /* the cell text of one item, as bytes; used again for the
-                                      * next item, freed before the generation returns */
+    /*
+     * the cell text of one item, as bytes; used again for the
+     * next item, freed before the generation returns
+     */
+    clargs_vec_t text;
 } help_context_t;
 
-/* Starts a generation for command: takes the settings from options, or
+/*
+ * Starts a generation for command: takes the settings from options, or
  * their default values when options is NULL, and starts the output. The
- * cell text is empty; nothing is allocated. */
+ * cell text is empty; nothing is allocated.
+ */
 static void help_context_init(help_context_t *context, const clargs_command_t *command,
                               const clargs_help_options_t *options, clargs_help_write_fn_t write_fn,
                               void *user_data)
@@ -46,16 +53,20 @@ static void help_context_init(help_context_t *context, const clargs_command_t *c
     clargs_vec_init(&context->text, 1);
 }
 
-/* The result of a generation in which no allocation failed: whether the
- * write function has reported a failure. */
+/*
+ * The result of a generation in which no allocation failed: whether the
+ * write function has reported a failure.
+ */
 static clargs_error_t help_context_result(const help_context_t *context)
 {
     return clargs_out_failed(&context->out) ? CLARGS_ERROR_WRITE_FAILED : CLARGS_ERROR_NONE;
 }
 
-/* Writes the path of command: the names of the commands from the root down
+/*
+ * Writes the path of command: the names of the commands from the root down
  * to command, separated by one blank each. Nothing is allocated: for each
- * level, from the root down, the parents are walked again from command. */
+ * level, from the root down, the parents are walked again from command.
+ */
 static void help_write_path(clargs_out_t *out, const clargs_command_t *command)
 {
     const clargs_command_t *ancestor;
@@ -82,8 +93,10 @@ static void help_write_path(clargs_out_t *out, const clargs_command_t *command)
     }
 }
 
-/* Returns whether command has an option that is not required: one that
- * takes no value, or one with a value that need not be given. */
+/*
+ * Returns whether command has an option that is not required: one that
+ * takes no value, or one with a value that need not be given.
+ */
 static bool help_has_optional_option(const clargs_command_t *command)
 {
     size_t count = clargs_command_option_count(command);
@@ -97,8 +110,10 @@ static bool help_has_optional_option(const clargs_command_t *command)
     return false;
 }
 
-/* The blanks that start each line of the usage line after the first: the
- * width of "Usage: ". */
+/*
+ * The blanks that start each line of the usage line after the first: the
+ * width of "Usage: ".
+ */
 #define HELP_USAGE_INDENT ((size_t)7)
 
 /* The kinds of the items of the usage line that follow the path. */
@@ -116,8 +131,10 @@ typedef struct help_usage_item {
     const clargs_positional_t *positional; /* for HELP_USAGE_POSITIONAL */
 } help_usage_item_t;
 
-/* Writes item to out: the one place that knows the text of an item, for
- * the output and for the measuring. */
+/*
+ * Writes item to out: the one place that knows the text of an item, for
+ * the output and for the measuring.
+ */
 static void help_usage_item_write(clargs_out_t *out, const help_usage_item_t *item)
 {
     switch (item->kind) {
@@ -136,16 +153,20 @@ static void help_usage_item_write(clargs_out_t *out, const help_usage_item_t *it
     }
 }
 
-/* Returns a + b, or the greatest value of a size_t when the sum would be
- * greater than it. */
+/*
+ * Returns a + b, or the greatest value of a size_t when the sum would be
+ * greater than it.
+ */
 static size_t help_add(size_t a, size_t b)
 {
     return b > (size_t)-1 - a ? (size_t)-1 : a + b;
 }
 
-/* A write function that keeps nothing: it adds length to the size_t that
+/*
+ * A write function that keeps nothing: it adds length to the size_t that
  * user_data points to. The sum stops at the greatest value of a size_t
- * instead of wrapping around. */
+ * instead of wrapping around.
+ */
 static bool help_count_write(void *user_data, const char *text, size_t length)
 {
     size_t *total = user_data;
@@ -172,8 +193,10 @@ static void help_counter_init(clargs_out_t *counter, size_t *width)
     clargs_out_init(counter, help_count_write, width);
 }
 
-/* Returns the width of item: the number of all its bytes. The item is
- * written once to an output that only counts; see help_counter_init(). */
+/*
+ * Returns the width of item: the number of all its bytes. The item is
+ * written once to an output that only counts; see help_counter_init().
+ */
 static size_t help_usage_item_width(const help_usage_item_t *item)
 {
     size_t width;
@@ -202,9 +225,11 @@ static void help_usage_separate(help_context_t *context, const help_usage_item_t
     if (context->width != 0) {
         size_t item_width = help_usage_item_width(item);
 
-        /* "column + 1 + item_width > width", written without a sum that
+        /*
+         * "column + 1 + item_width > width", written without a sum that
          * could wrap around: the subtraction is done only when item_width
-         * is less than the width. */
+         * is less than the width.
+         */
         if (item_width >= context->width ||
             clargs_out_column(out) >= context->width - item_width) {
             clargs_out_newline(out);
@@ -216,8 +241,10 @@ static void help_usage_separate(help_context_t *context, const help_usage_item_t
     clargs_out_spaces(out, 1);
 }
 
-/* Writes item, an item of the usage line after the first, behind what
- * separates it from the item before. */
+/*
+ * Writes item, an item of the usage line after the first, behind what
+ * separates it from the item before.
+ */
 static void help_usage_add(help_context_t *context, const help_usage_item_t *item)
 {
     help_usage_separate(context, item);
@@ -239,9 +266,11 @@ static void help_write_usage_line(help_context_t *context)
     size_t count;
     size_t index;
 
-    /* The first item: nothing separates it from anything, and it is not
+    /*
+     * The first item: nothing separates it from anything, and it is not
      * measured. The blank is part of it: it is written even when the name
-     * of the root starts with a newline. */
+     * of the root starts with a newline.
+     */
     clargs_out_text(out, "Usage: ", 7);
     help_write_path(out, command);
 
@@ -303,8 +332,10 @@ typedef enum help_heading_kind {
     HELP_HEADING_OPTION      /* an item of "Options:" */
 } help_heading_kind_t;
 
-/* The heading of one item of a list: what stands on the left of its
- * description. */
+/*
+ * The heading of one item of a list: what stands on the left of its
+ * description.
+ */
 typedef struct help_heading {
     help_heading_kind_t kind;
     const clargs_command_t *subcommand;    /* for HELP_HEADING_SUBCOMMAND */
@@ -312,9 +343,11 @@ typedef struct help_heading {
     const clargs_option_t *option;         /* for HELP_HEADING_OPTION */
 } help_heading_t;
 
-/* Writes heading to out: the one place that knows the text of a heading,
+/*
+ * Writes heading to out: the one place that knows the text of a heading,
  * for the output and for the measuring. The heading of a subcommand is its
- * name. */
+ * name.
+ */
 static void help_heading_write(clargs_out_t *out, const help_heading_t *heading)
 {
     switch (heading->kind) {
@@ -330,8 +363,10 @@ static void help_heading_write(clargs_out_t *out, const help_heading_t *heading)
     }
 }
 
-/* Returns the width of heading: the number of all its bytes. The heading
- * is written once to an output that only counts; see help_counter_init(). */
+/*
+ * Returns the width of heading: the number of all its bytes. The heading
+ * is written once to an output that only counts; see help_counter_init().
+ */
 static size_t help_heading_width(const help_heading_t *heading)
 {
     size_t width;
@@ -378,12 +413,14 @@ static help_heading_t help_option_heading(const clargs_command_t *command, size_
     return heading;
 }
 
-/* Returns "the indent + width + 2": the first column at which a
+/*
+ * Returns "the indent + width + 2": the first column at which a
  * description can start on the line of a heading of that width.
  *
  * A width is the length of strings in memory and the indent is at most
  * CLARGS_HELP_SETTING_MAX, so the sum is not expected to go beyond a
- * size_t; help_add() keeps it defined if it ever does. */
+ * size_t; help_add() keeps it defined if it ever does.
+ */
 static size_t help_heading_reach(const help_context_t *context, size_t width)
 {
     return help_add(help_add(context->indent, width), 2);
@@ -454,10 +491,12 @@ static size_t help_description_column(const help_context_t *context)
     return column > limit ? limit : column;
 }
 
-/* Returns whether the length bytes of text hold nothing to show: no byte
+/*
+ * Returns whether the length bytes of text hold nothing to show: no byte
  * other than blanks and newlines. A description of which that is true
  * counts as not set; this is the one place that decides it, for the
- * description of the command and for those of the items. */
+ * description of the command and for those of the items.
+ */
 static bool help_is_blank(const char *text, size_t length)
 {
     size_t index;
@@ -503,10 +542,12 @@ static size_t help_whole_length(const char *text, size_t *newlines)
     return length;
 }
 
-/* Returns the length of the part of text before its first newline: the
+/*
+ * Returns the length of the part of text before its first newline: the
  * length of the description of a subcommand in a list. Returns 0 when text
  * is NULL or that part holds nothing but blanks, whatever follows the
- * newline: 0 means that there is no description to write. */
+ * newline: 0 means that there is no description to write.
+ */
 static size_t help_first_line_length(const char *text)
 {
     const char *end;
@@ -521,9 +562,11 @@ static size_t help_first_line_length(const char *text)
     return help_is_blank(text, length) ? 0 : length;
 }
 
-/* Writes the description of the command of context, when it has one that
+/*
+ * Writes the description of the command of context, when it has one that
  * holds more than blanks and newlines: an empty line, then the text up to
- * its trailing run, from the start of the line, broken at the width. */
+ * its trailing run, from the start of the line, broken at the width.
+ */
 static void help_write_description(help_context_t *context)
 {
     clargs_out_t *out = &context->out;
@@ -577,11 +620,13 @@ static void help_write_item(help_context_t *context, const help_heading_t *headi
             clargs_out_newline(out);
         }
 
-        /* clargs_wrap_write() needs the output to stand at the description
+        /*
+         * clargs_wrap_write() needs the output to stand at the description
          * column or to the left of it. On the line of the heading the
          * output stands at "the indent + the width of the heading" at
          * most, less after a newline inside a name, and that is to the
-         * left of the column by 2 or more; on a new line it stands at 0. */
+         * left of the column by 2 or more; on a new line it stands at 0.
+         */
         assert(clargs_out_column(out) <= context->column);
         clargs_wrap_write(out, text, length, context->column, context->width);
     }
@@ -616,9 +661,11 @@ static clargs_error_t help_cell_start(help_context_t *context, const char *descr
     return error;
 }
 
-/* Writes one item of a list with the cell text as its description; see
+/*
+ * Writes one item of a list with the cell text as its description; see
  * help_write_item(). The newlines at the end of the cell text are not
- * written. An empty cell text gives a line with the heading only. */
+ * written. An empty cell text gives a line with the heading only.
+ */
 static void help_write_cell_item(help_context_t *context, const help_heading_t *heading)
 {
     size_t length = context->text.count;
@@ -627,9 +674,11 @@ static void help_write_cell_item(help_context_t *context, const help_heading_t *
     help_write_item(context, heading, text, length);
 }
 
-/* Writes the list of the subcommands of the command of context, when it
+/*
+ * Writes the list of the subcommands of the command of context, when it
  * has one: the subcommands of the command itself, in the order in which
- * they were added, each with the first line of its description. */
+ * they were added, each with the first line of its description.
+ */
 static void help_write_commands(help_context_t *context)
 {
     const clargs_command_t *command = context->command;
@@ -649,12 +698,14 @@ static void help_write_commands(help_context_t *context)
     }
 }
 
-/* Writes the list of the positionals of the command of context, when it
+/*
+ * Writes the list of the positionals of the command of context, when it
  * has one: in the order in which they were added, each with its whole
  * description and, behind it, its annotations.
  *
  * Returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation for the cell text
- * fails; the list ends before the item that it was for. */
+ * fails; the list ends before the item that it was for.
+ */
 static clargs_error_t help_write_arguments(help_context_t *context)
 {
     const clargs_command_t *command = context->command;
@@ -682,14 +733,16 @@ static clargs_error_t help_write_arguments(help_context_t *context)
     return CLARGS_ERROR_NONE;
 }
 
-/* Writes the list of the options of the command of context, when it has
+/*
+ * Writes the list of the options of the command of context, when it has
  * one: the options of the command itself, not those of its parent or of
  * its subcommands, in the order in which they were added, each with its
  * whole description and, behind it, its annotations. Nothing is listed
  * that the schema does not have.
  *
  * Returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation for the cell text
- * fails; the list ends before the item that it was for. */
+ * fails; the list ends before the item that it was for.
+ */
 static clargs_error_t help_write_options(help_context_t *context)
 {
     const clargs_command_t *command = context->command;
@@ -740,9 +793,11 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
         error = help_write_options(&context);
     }
 
-    /* The cell text is the only memory of a generation. An allocation and
+    /*
+     * The cell text is the only memory of a generation. An allocation and
      * the write function never both fail: the first failure ends the
-     * lists. */
+     * lists.
+     */
     clargs_vec_destroy(&context.text);
     if (error != CLARGS_ERROR_NONE) {
         return error;
@@ -752,20 +807,24 @@ clargs_error_t clargs_help_write(const clargs_command_t *command,
 
 /* ---- The buffer ---------------------------------------------------------- */
 
-/* The array of the caller that a text is put into, and how much of the
+/*
+ * The array of the caller that a text is put into, and how much of the
  * text has come. It lives on the stack of the public function, for the one
- * call. */
+ * call.
+ */
 typedef struct help_buffer {
     char *buffer;  /* the array; may be NULL when size is 0 */
     size_t size;   /* the number of bytes of the array */
     size_t length; /* the bytes of the text so far, also those that did not fit */
 } help_buffer_t;
 
-/* The write function of the buffer functions: copies what fits of the part
+/*
+ * The write function of the buffer functions: copies what fits of the part
  * into the array, in front of the place of the '\0', and counts all of it.
  * It never reports a failure, so the generation runs to its end and the
  * count becomes the length of the whole text. The count stops at the
- * greatest value of a size_t instead of wrapping around. */
+ * greatest value of a size_t instead of wrapping around.
+ */
 static bool help_buffer_write(void *user_data, const char *text, size_t length)
 {
     help_buffer_t *target = user_data;
@@ -780,10 +839,12 @@ static bool help_buffer_write(void *user_data, const char *text, size_t length)
     return true;
 }
 
-/* Ends a generation into target, which returned error: after a failure the
+/*
+ * Ends a generation into target, which returned error: after a failure the
  * text counts as empty. The array, when it has a byte, gets its '\0'
  * behind the part of the text that it holds, and *length, when length is
- * not NULL, the length of the whole text. Returns error. */
+ * not NULL, the length of the whole text. Returns error.
+ */
 static clargs_error_t help_buffer_finish(help_buffer_t *target, clargs_error_t error,
                                          size_t *length)
 {

@@ -112,8 +112,10 @@ static clargs_error_t define_common_options(clargs_command_t *root)
         return error;
     }
 
-    /* A negatable flag without a short name: --color and --no-color. It is
-     * on when neither is given. */
+    /*
+     * A negatable flag without a short name: --color and --no-color. It is
+     * on when neither is given.
+     */
     if (failed(&error, clargs_command_add_negatable(root, '\0', "color", &option)) ||
         failed(&error, clargs_option_set_description(option, "Color the output.")) ||
         failed(&error, clargs_option_set_initial(option, true))) {
@@ -146,8 +148,10 @@ static clargs_error_t define_create(clargs_command_t *root, const clargs_type_t 
         return error;
     }
 
-    /* The built-in value type integer, with a default value. A default
-     * value is a string, written as on a command line. */
+    /*
+     * The built-in value type integer, with a default value. A default
+     * value is a string, written as on a command line.
+     */
     if (failed(&error, clargs_command_add_value(create, 'l', "level", clargs_type_int(),
                                                 &option)) ||
         failed(&error, clargs_option_set_description(option, "The compression level.")) ||
@@ -270,8 +274,10 @@ int main(void)
         failed(&error, define_common_options(root)) ||
         failed(&error, define_create(root, format, size)) ||
         failed(&error, define_list(root))) {
-        /* An addition or a set failed. The schema is as it was before the
-         * call that failed, and it can still be destroyed. */
+        /*
+         * An addition or a set failed. The schema is as it was before the
+         * call that failed, and it can still be destroyed.
+         */
         fprintf(stderr, "pack: cannot define the command line: %s\n",
                 clargs_error_message(error));
     } else if (failed(&error, clargs_command_validate(root, &faulty_command, &faulty_option,
@@ -282,8 +288,10 @@ int main(void)
         status = EXIT_SUCCESS;
     }
 
-    /* The schema first, then the value types it borrowed. Destroying NULL
-     * does nothing, so this is also right after a failure. */
+    /*
+     * The schema first, then the value types it borrowed. Destroying NULL
+     * does nothing, so this is also right after a failure.
+     */
     clargs_command_destroy(root);
     clargs_type_destroy(size);
     clargs_type_destroy(format);

@@ -50,8 +50,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* The result of a parse: what a command line was read into. The contents
- * are not public. */
+/*
+ * The result of a parse: what a command line was read into. The contents
+ * are not public.
+ */
 typedef struct clargs_result clargs_result_t;
 
 /*

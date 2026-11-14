@@ -37,8 +37,10 @@
 /* The number of arguments of an argv array. */
 #define ARGC(argv) ((int)(sizeof(argv) / sizeof((argv)[0])))
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -81,8 +83,10 @@ static void destroy_root(clargs_command_t *root)
     check_clean();
 }
 
-/* Parses argv, which must match the schema. Returns the result, which the
- * caller destroys. */
+/*
+ * Parses argv, which must match the schema. Returns the result, which the
+ * caller destroys.
+ */
 static clargs_result_t *parse_ok(const clargs_command_t *root, int argc, char *const *argv)
 {
     clargs_result_t *result = NULL;
@@ -95,9 +99,11 @@ static clargs_result_t *parse_ok(const clargs_command_t *root, int argc, char *c
     return result;
 }
 
-/* Parses argv, which must have a parse error of the kind, at the argument
+/*
+ * Parses argv, which must have a parse error of the kind, at the argument
  * with the index, whose value is that argument, found while command was
- * the current command, with the message. Returns the result. */
+ * the current command, with the message. Returns the result.
+ */
 static clargs_result_t *parse_bad_in(const clargs_command_t *root, int argc, char *const *argv,
                                      clargs_parse_error_kind_t kind, size_t index,
                                      const clargs_command_t *command, const char *message)
@@ -122,17 +128,21 @@ static clargs_result_t *parse_bad_in(const clargs_command_t *root, int argc, cha
     return result;
 }
 
-/* The same, for an error that was found while the root was the current
- * command. */
+/*
+ * The same, for an error that was found while the root was the current
+ * command.
+ */
 static clargs_result_t *parse_bad(const clargs_command_t *root, int argc, char *const *argv,
                                   clargs_parse_error_kind_t kind, size_t index, const char *message)
 {
     return parse_bad_in(root, argc, argv, kind, index, root, message);
 }
 
-/* Parses argv, which must have an option that command, the current command
+/*
+ * Parses argv, which must have an option that command, the current command
  * at the argument with the index, does not have, with the message. Returns
- * the result. */
+ * the result.
+ */
 static clargs_result_t *parse_unknown_option(const clargs_command_t *root, int argc, char *const *argv,
                                              size_t index, const clargs_command_t *command,
                                              const char *message)
@@ -156,8 +166,10 @@ static clargs_result_t *parse_unknown_option(const clargs_command_t *root, int a
     return result;
 }
 
-/* Checks that positional has count values, given on the command line when
- * count is not 0 and none otherwise. */
+/*
+ * Checks that positional has count values, given on the command line when
+ * count is not 0 and none otherwise.
+ */
 static void check_count(const clargs_result_t *result, const clargs_positional_t *positional, size_t count)
 {
     NAOS_CHECK_UINT_EQ(clargs_result_positional_count(result, positional), count);
@@ -201,8 +213,10 @@ static void set_up_copy(copy_fixture_t *fixture)
     validate(root);
 }
 
-/* Checks that result holds "a" for SRC, "b" for DST, "c" and "d" for REST,
- * --verbose and --out=x. */
+/*
+ * Checks that result holds "a" for SRC, "b" for DST, "c" and "d" for REST,
+ * --verbose and --out=x.
+ */
 static void check_copy_abcd(const clargs_result_t *result, const copy_fixture_t *fixture)
 {
     const char *text = NULL;
@@ -759,8 +773,10 @@ static void set_up_tool(tool_fixture_t *fixture)
     validate(root);
 }
 
-/* Checks that what result holds for the options and the positionals of
- * "tool remote add" is what a command that was not selected reads as. */
+/*
+ * Checks that what result holds for the options and the positionals of
+ * "tool remote add" is what a command that was not selected reads as.
+ */
 static void check_add_not_selected(const clargs_result_t *result, const tool_fixture_t *fixture)
 {
     const char *text = "unchanged";
@@ -1098,8 +1114,10 @@ NAOS_TEST(a_name_that_is_not_a_subcommand_of_the_current_command_is_a_parse_erro
     NAOS_CHECK_UINT_EQ(clargs_result_count(result, fixture.remote_verbose), 1);
     clargs_result_destroy(result);
 
-    /* The same name is a subcommand one level down. Its positional is
-     * required, so it is given. */
+    /*
+     * The same name is a subcommand one level down. Its positional is
+     * required, so it is given.
+     */
     result = parse_ok(fixture.root, ARGC(deeper), deeper);
     NAOS_CHECK_TRUE(clargs_result_command(result) == fixture.add);
     clargs_result_destroy(result);
@@ -1135,8 +1153,10 @@ NAOS_TEST(the_name_of_a_subcommand_is_compared_as_a_whole_and_with_its_case)
     result = parse_bad_in(fixture.root, ARGC(dash), dash, CLARGS_PARSE_ERROR_UNKNOWN_SUBCOMMAND, 2,
                           fixture.remote, "unknown command '-'");
     clargs_result_destroy(result);
-    /* The form of a negative number is not an option of a command that has
-     * no digit as a short name: it is a name, of no subcommand. */
+    /*
+     * The form of a negative number is not an option of a command that has
+     * no digit as a short name: it is a name, of no subcommand.
+     */
     result = parse_bad(fixture.root, ARGC(negative), negative, CLARGS_PARSE_ERROR_UNKNOWN_SUBCOMMAND, 1,
                        "unknown command '-1'");
     clargs_result_destroy(result);
@@ -1210,8 +1230,10 @@ NAOS_TEST(the_values_are_copies_and_a_second_parse_gives_the_same_result)
 
 /* ---- A lack of memory --------------------------------------------------- */
 
-/* Parses argv once for each allocation of the parse, with that allocation
- * failing, and then once with none failing, which must return expected. */
+/*
+ * Parses argv once for each allocation of the parse, with that allocation
+ * failing, and then once with none failing, which must return expected.
+ */
 static void check_every_allocation_failing(const clargs_command_t *root, int argc, char *const *argv,
                                            clargs_error_t expected)
 {
@@ -1233,8 +1255,10 @@ static void check_every_allocation_failing(const clargs_command_t *root, int arg
             NAOS_CHECK_INT_EQ(clargs_result_error(result), expected);
             clargs_result_destroy(result);
             NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), live);
-            /* The copy of the arguments, the frame, the slots, and one
-             * allocation at least for what the positionals are given. */
+            /*
+             * The copy of the arguments, the frame, the slots, and one
+             * allocation at least for what the positionals are given.
+             */
             NAOS_CHECK_TRUE(nth > 4);
             return;
         }

@@ -50,8 +50,10 @@ static void sink_init(sink_t *sink)
     memset(sink, 0, sizeof *sink);
 }
 
-/* Appends the part to the sink. The call number fail_at takes nothing and
- * reports a failure, and so would every later call. */
+/*
+ * Appends the part to the sink. The call number fail_at takes nothing and
+ * reports a failure, and so would every later call.
+ */
 static bool sink_write(void *user_data, const char *text, size_t length)
 {
     sink_t *sink = user_data;
@@ -73,8 +75,10 @@ static bool sink_write(void *user_data, const char *text, size_t length)
     return true;
 }
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -106,8 +110,10 @@ static void describe(clargs_command_t *command, const char *description)
     NAOS_REQUIRE_TRUE(clargs_command_set_description(command, description) == CLARGS_ERROR_NONE);
 }
 
-/* Adds a subcommand that must succeed, and returns it. description is its
- * description, or NULL to set none. */
+/*
+ * Adds a subcommand that must succeed, and returns it. description is its
+ * description, or NULL to set none.
+ */
 static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
                                  const char *description)
 {
@@ -121,8 +127,10 @@ static clargs_command_t *add_sub(clargs_command_t *command, const char *name,
     return sub;
 }
 
-/* Adds a positional of strings that must succeed. description is its
- * description, or NULL to set none. */
+/*
+ * Adds a positional of strings that must succeed. description is its
+ * description, or NULL to set none.
+ */
 static void add_positional(clargs_command_t *command, const char *name, clargs_arity_t arity,
                            const char *description)
 {
@@ -137,9 +145,11 @@ static void add_positional(clargs_command_t *command, const char *name, clargs_a
     }
 }
 
-/* Adds a flag that must succeed. short_name is '\0' and long_name is NULL
+/*
+ * Adds a flag that must succeed. short_name is '\0' and long_name is NULL
  * for a name that the option does not have; description is its
- * description, or NULL to set none. */
+ * description, or NULL to set none.
+ */
 static void add_flag(clargs_command_t *command, char short_name, const char *long_name,
                      const char *description)
 {
@@ -153,8 +163,10 @@ static void add_flag(clargs_command_t *command, char short_name, const char *lon
     }
 }
 
-/* Adds a count that must succeed, with the names and the description as
- * for add_flag(). */
+/*
+ * Adds a count that must succeed, with the names and the description as
+ * for add_flag().
+ */
 static void add_count(clargs_command_t *command, char short_name, const char *long_name,
                       const char *description)
 {
@@ -168,9 +180,11 @@ static void add_count(clargs_command_t *command, char short_name, const char *lo
     }
 }
 
-/* Adds an option with a value of strings that must succeed, with the
+/*
+ * Adds an option with a value of strings that must succeed, with the
  * display name value_name. The option is not required and has no default
- * value. */
+ * value.
+ */
 static void add_value(clargs_command_t *command, char short_name, const char *long_name,
                       const char *value_name, const char *description)
 {
@@ -192,8 +206,10 @@ static void validate(clargs_command_t *root)
     NAOS_REQUIRE_TRUE(clargs_command_is_validated(root));
 }
 
-/* Creates help options with the width and the indent given; the maximum
- * column keeps its default value. */
+/*
+ * Creates help options with the width and the indent given; the maximum
+ * column keeps its default value.
+ */
 static clargs_help_options_t *create_options(size_t width, size_t indent)
 {
     clargs_help_options_t *options = NULL;
@@ -205,8 +221,10 @@ static clargs_help_options_t *create_options(size_t width, size_t indent)
     return options;
 }
 
-/* Returns whether a line of the length bytes of text ends with a blank: a
- * blank before a newline, or at the end of the text. */
+/*
+ * Returns whether a line of the length bytes of text ends with a blank: a
+ * blank before a newline, or at the end of the text.
+ */
 static bool has_blank_at_line_end(const char *text, size_t length)
 {
     size_t index;
@@ -219,8 +237,10 @@ static bool has_blank_at_line_end(const char *text, size_t length)
     return false;
 }
 
-/* Returns the number of the empty lines of the length bytes of text: the
- * newlines at the start of the text or right behind another newline. */
+/*
+ * Returns the number of the empty lines of the length bytes of text: the
+ * newlines at the start of the text or right behind another newline.
+ */
 static size_t count_empty_lines(const char *text, size_t length)
 {
     size_t count = 0;
@@ -234,9 +254,11 @@ static size_t count_empty_lines(const char *text, size_t length)
     return count;
 }
 
-/* Checks the shape of a help text: no line ends with a blank, there is no
+/*
+ * Checks the shape of a help text: no line ends with a blank, there is no
  * '\r', the text ends with one "\n", and it neither starts nor ends with
- * an empty line. */
+ * an empty line.
+ */
 static void check_shape(const char *text, size_t length)
 {
     NAOS_CHECK_TRUE(!has_blank_at_line_end(text, length));
@@ -283,9 +305,11 @@ static void check_help(const clargs_command_t *command, const char *expected)
 
 /* ---- Whole texts --------------------------------------------------------- */
 
-/* A root with a description and subcommands: the usage line, the
+/*
+ * A root with a description and subcommands: the usage line, the
  * description, and the list of the subcommands with its title, each part
- * behind one empty line. */
+ * behind one empty line.
+ */
 NAOS_TEST(root_with_description_and_subcommands)
 {
     clargs_command_t *root = create_root();
@@ -309,9 +333,11 @@ NAOS_TEST(root_with_description_and_subcommands)
     destroy_root(root);
 }
 
-/* A subcommand of the second level with positionals: the usage line has
+/*
+ * A subcommand of the second level with positionals: the usage line has
  * the path from the root, and the list is the one of the positionals, with
- * the heading of each arity. */
+ * the heading of each arity.
+ */
 NAOS_TEST(second_level_subcommand_with_positionals)
 {
     clargs_command_t *root = create_root();
@@ -334,8 +360,10 @@ NAOS_TEST(second_level_subcommand_with_positionals)
                "  [url]      Address of the remote\n"
                "  [tags]...  Tags to set\n");
 
-    /* The command between the two: its own description and its own
-     * subcommand. */
+    /*
+     * The command between the two: its own description and its own
+     * subcommand.
+     */
     check_help(remote,
                "Usage: tool remote [COMMAND]\n"
                "\n"
@@ -349,8 +377,10 @@ NAOS_TEST(second_level_subcommand_with_positionals)
 
 /* ---- The parts that are left out ------------------------------------------ */
 
-/* A command without a description: the first list follows the usage line
- * behind one empty line. */
+/*
+ * A command without a description: the first list follows the usage line
+ * behind one empty line.
+ */
 NAOS_TEST(command_without_description)
 {
     static const char expected[] = "Usage: tool [COMMAND]\n"
@@ -395,9 +425,11 @@ NAOS_TEST(command_with_description_only)
     destroy_root(root);
 }
 
-/* One empty line stands between two parts, and none at the start or at the
+/*
+ * One empty line stands between two parts, and none at the start or at the
  * end: two with the description and a list, one with a list only, none
- * with the usage line only. */
+ * with the usage line only.
+ */
 NAOS_TEST(parts_are_separated_by_one_empty_line)
 {
     clargs_command_t *root = create_root();
@@ -436,8 +468,10 @@ NAOS_TEST(parts_are_separated_by_one_empty_line)
     NAOS_REQUIRE_TRUE(clargs_help_write(stop, NULL, sink_write, &sink) == CLARGS_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(count_empty_lines(sink.text, sink.length), 2);
 
-    /* The description of a subcommand in the list of its parent is the
-     * description of the command in its own help. */
+    /*
+     * The description of a subcommand in the list of its parent is the
+     * description of the command in its own help.
+     */
     check_help(run,
                "Usage: tool run [x]\n"
                "\n"
@@ -472,8 +506,10 @@ NAOS_TEST(parts_are_separated_by_one_empty_line)
 
 /* ---- The items ------------------------------------------------------------ */
 
-/* The items of a list stand in the order in which they were added, not in
- * the order of their names. */
+/*
+ * The items of a list stand in the order in which they were added, not in
+ * the order of their names.
+ */
 NAOS_TEST(items_come_in_definition_order)
 {
     clargs_command_t *root = create_root();
@@ -505,9 +541,11 @@ NAOS_TEST(items_come_in_definition_order)
     destroy_root(root);
 }
 
-/* Only the subcommands of the command itself are listed: not those of its
+/*
+ * Only the subcommands of the command itself are listed: not those of its
  * subcommands and not the positionals of one; the headings of those also
- * do not count for the description column. */
+ * do not count for the description column.
+ */
 NAOS_TEST(grandchildren_are_not_listed)
 {
     clargs_command_t *root = create_root();
@@ -528,8 +566,10 @@ NAOS_TEST(grandchildren_are_not_listed)
     destroy_root(root);
 }
 
-/* The description of a subcommand in the list ends before its first
- * newline. In the help of the subcommand itself it is whole. */
+/*
+ * The description of a subcommand in the list ends before its first
+ * newline. In the help of the subcommand itself it is whole.
+ */
 NAOS_TEST(subcommand_description_is_cut_at_first_newline)
 {
     clargs_command_t *root = create_root();
@@ -555,8 +595,10 @@ NAOS_TEST(subcommand_description_is_cut_at_first_newline)
     destroy_root(root);
 }
 
-/* The description of a positional is written whole: after a newline in it
- * the text goes on at the description column. */
+/*
+ * The description of a positional is written whole: after a newline in it
+ * the text goes on at the description column.
+ */
 NAOS_TEST(positional_description_is_written_whole)
 {
     clargs_command_t *root = create_root();
@@ -576,9 +618,11 @@ NAOS_TEST(positional_description_is_written_whole)
     destroy_root(root);
 }
 
-/* A description that is the empty string, or that is empty without the
+/*
+ * A description that is the empty string, or that is empty without the
  * newlines at its end, is treated as not set: no empty paragraph for the
- * command, and a line with the heading only for an item. */
+ * command, and a line with the heading only for an item.
+ */
 NAOS_TEST(empty_description_is_not_written)
 {
     clargs_command_t *root = create_root();
@@ -628,8 +672,10 @@ NAOS_TEST(empty_description_is_not_written)
     destroy_root(root);
 }
 
-/* An item without a description is a line with its heading only; its
- * heading still counts for the description column of the others. */
+/*
+ * An item without a description is a line with its heading only; its
+ * heading still counts for the description column of the others.
+ */
 NAOS_TEST(item_without_description_is_heading_only)
 {
     clargs_command_t *root = create_root();
@@ -661,9 +707,11 @@ NAOS_TEST(item_without_description_is_heading_only)
     destroy_root(root);
 }
 
-/* The newlines at the end of the description of a command are not written:
+/*
+ * The newlines at the end of the description of a command are not written:
  * the next part follows behind one empty line. The newlines inside it
- * are kept. */
+ * are kept.
+ */
 NAOS_TEST(command_description_keeps_inner_newlines_and_drops_trailing_ones)
 {
     clargs_command_t *root = create_root();
@@ -686,10 +734,12 @@ NAOS_TEST(command_description_keeps_inner_newlines_and_drops_trailing_ones)
     destroy_root(root);
 }
 
-/* The width of a heading is the number of all its bytes, also when the
+/*
+ * The width of a heading is the number of all its bytes, also when the
  * name holds a newline: "<a\nb>" counts as 5 columns, not as the 2 of
  * "b>", so the description column is 2 + 5 + 2 and not the 2 + 4 + 2 that
- * "<in>" alone would give. The strings are written as they are. */
+ * "<in>" alone would give. The strings are written as they are.
+ */
 NAOS_TEST(heading_with_newline_inside_counts_all_its_bytes)
 {
     clargs_command_t *root = create_root();
@@ -710,9 +760,11 @@ NAOS_TEST(heading_with_newline_inside_counts_all_its_bytes)
 
 /* ---- The settings --------------------------------------------------------- */
 
-/* Without help options the width is 80: the description of the command is
+/*
+ * Without help options the width is 80: the description of the command is
  * broken there, and so is the description of an item, which goes on at
- * the description column. */
+ * the description column.
+ */
 NAOS_TEST(descriptions_wrap_at_default_width)
 {
     clargs_command_t *root = create_root();
@@ -736,9 +788,11 @@ NAOS_TEST(descriptions_wrap_at_default_width)
     destroy_root(root);
 }
 
-/* The width and the indent of the help options are used: the descriptions
+/*
+ * The width and the indent of the help options are used: the descriptions
  * are broken at the width, the items start behind the indent, and the
- * description column follows from the indent. */
+ * description column follows from the indent.
+ */
 NAOS_TEST(width_and_indent_of_options_are_used)
 {
     clargs_command_t *root = create_root();
@@ -848,9 +902,11 @@ NAOS_TEST(null_options_are_the_default_options)
 
 /* ---- The usage line -------------------------------------------------------- */
 
-/* Checks that the text of clargs_help_write_usage() for command and
+/*
+ * Checks that the text of clargs_help_write_usage() for command and
  * options is the start of the text of clargs_help_write(), and that the
- * help goes on behind it. */
+ * help goes on behind it.
+ */
 static void check_usage_is_head(const clargs_command_t *command,
                                 const clargs_help_options_t *options)
 {
@@ -871,8 +927,10 @@ static void check_usage_is_head(const clargs_command_t *command,
     NAOS_CHECK_TRUE(help.text[usage.length] == '\n');
 }
 
-/* The text of the usage line alone is the start of the help, with the
- * same help options: on one line, and broken into several. */
+/*
+ * The text of the usage line alone is the start of the help, with the
+ * same help options: on one line, and broken into several.
+ */
 NAOS_TEST(usage_alone_is_the_head_of_the_help)
 {
     clargs_command_t *root = create_root();
@@ -890,8 +948,10 @@ NAOS_TEST(usage_alone_is_the_head_of_the_help)
     check_usage_is_head(root, options);
     check_usage_is_head(remote, options);
 
-    /* With the width 30 the usage line of the subcommand has two lines.
-     * The column is 2 + 9 + 2 = 13, at most half the width. */
+    /*
+     * With the width 30 the usage line of the subcommand has two lines.
+     * The column is 2 + 9 + 2 = 13, at most half the width.
+     */
     check_help_with(remote, options,
                     "Usage: tool remote <name>\n"
                     "       [url] [tags]...\n"
@@ -910,8 +970,10 @@ NAOS_TEST(usage_alone_is_the_head_of_the_help)
 
 /* ---- Repeating, and the schema --------------------------------------------- */
 
-/* What the reading functions give for the schema of
- * same_input_gives_same_text_and_schema_is_unchanged. */
+/*
+ * What the reading functions give for the schema of
+ * same_input_gives_same_text_and_schema_is_unchanged.
+ */
 typedef struct snapshot {
     bool validated;
     const char *root_name;
@@ -961,9 +1023,11 @@ static snapshot_t take_snapshot(const clargs_command_t *root)
     return snapshot;
 }
 
-/* Checks that the reading functions give for root what they gave for
+/*
+ * Checks that the reading functions give for root what they gave for
  * before: the same objects, the same strings at the same places with the
- * same bytes. */
+ * same bytes.
+ */
 static void check_snapshot(const clargs_command_t *root, const snapshot_t *before)
 {
     snapshot_t after = take_snapshot(root);
@@ -995,9 +1059,11 @@ static void check_snapshot(const clargs_command_t *root, const snapshot_t *befor
     NAOS_CHECK_TRUE(after.positional_type == before->positional_type);
 }
 
-/* Two generations with the same input give the same bytes, and a
+/*
+ * Two generations with the same input give the same bytes, and a
  * generation changes nothing of the schema: the reading functions give the
- * same before and after, and the schema is still validated. */
+ * same before and after, and the schema is still validated.
+ */
 NAOS_TEST(same_input_gives_same_text_and_schema_is_unchanged)
 {
     static const char expected[] = "Usage: tool [COMMAND]\n"
@@ -1051,9 +1117,11 @@ NAOS_TEST(same_input_gives_same_text_and_schema_is_unchanged)
 
 /* ---- The write function fails ---------------------------------------------- */
 
-/* Whichever call of the write function fails: the generation returns
+/*
+ * Whichever call of the write function fails: the generation returns
  * CLARGS_ERROR_WRITE_FAILED, the write function is not called again, and
- * what it took before is the start of the text. */
+ * what it took before is the start of the text.
+ */
 NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
 {
     static const char expected[] = "Usage: tool [COMMAND]\n"
@@ -1107,9 +1175,11 @@ NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
 
 /* ---- The list of the options ---------------------------------------------- */
 
-/* A root with a description, subcommands and options: the usage line, the
+/*
+ * A root with a description, subcommands and options: the usage line, the
  * description, "Commands:" and "Options:", in this order, each part behind
- * one empty line. The descriptions of both lists start at one column. */
+ * one empty line. The descriptions of both lists start at one column.
+ */
 NAOS_TEST(root_with_description_subcommands_and_options)
 {
     clargs_command_t *root = create_root();
@@ -1139,9 +1209,11 @@ NAOS_TEST(root_with_description_subcommands_and_options)
     destroy_root(root);
 }
 
-/* A subcommand of the second level with positionals and options: the path
+/*
+ * A subcommand of the second level with positionals and options: the path
  * from the root in the usage line, the description, "Arguments:" and
- * "Options:", in this order. */
+ * "Options:", in this order.
+ */
 NAOS_TEST(second_level_subcommand_with_positionals_and_options)
 {
     clargs_command_t *root = create_root();
@@ -1171,8 +1243,10 @@ NAOS_TEST(second_level_subcommand_with_positionals_and_options)
     destroy_root(root);
 }
 
-/* A command with options only: "Options:" is the only list, behind one
- * empty line, with and without a description of the command. */
+/*
+ * A command with options only: "Options:" is the only list, behind one
+ * empty line, with and without a description of the command.
+ */
 NAOS_TEST(command_with_options_only)
 {
     clargs_command_t *root = create_root();
@@ -1206,10 +1280,12 @@ NAOS_TEST(command_with_options_only)
     destroy_root(root);
 }
 
-/* Only the options of the command itself are listed: not those of its
+/*
+ * Only the options of the command itself are listed: not those of its
  * parent, not those of its subcommands. The description column follows
  * from the headings of the command itself as well: 17 for the root, 20 for
- * "run" and 15 for "fast". */
+ * "run" and 15 for "fast".
+ */
 NAOS_TEST(options_of_other_commands_are_not_listed)
 {
     clargs_command_t *root = create_root();
@@ -1252,8 +1328,10 @@ NAOS_TEST(options_of_other_commands_are_not_listed)
     destroy_root(root);
 }
 
-/* The options stand in the order in which they were added, whatever their
- * names and kinds are. */
+/*
+ * The options stand in the order in which they were added, whatever their
+ * names and kinds are.
+ */
 NAOS_TEST(options_come_in_definition_order)
 {
     clargs_command_t *root = create_root();
@@ -1274,11 +1352,13 @@ NAOS_TEST(options_come_in_definition_order)
     destroy_root(root);
 }
 
-/* "Commands:" and "Options:" have one description column, from the widest
+/*
+ * "Commands:" and "Options:" have one description column, from the widest
  * heading of both: an option that is wider than every subcommand moves the
  * descriptions of the subcommands, to 2 + 22 + 2, and a subcommand that is
  * wider than every option moves the descriptions of the options, to
- * 2 + 19 + 2. */
+ * 2 + 19 + 2.
+ */
 NAOS_TEST(commands_and_options_share_the_description_column)
 {
     clargs_command_t *root = create_root();
@@ -1315,10 +1395,12 @@ NAOS_TEST(commands_and_options_share_the_description_column)
     destroy_root(root);
 }
 
-/* "Arguments:" and "Options:" have one description column as well: an
+/*
+ * "Arguments:" and "Options:" have one description column as well: an
  * option that is wider than every positional moves the descriptions of the
  * positionals, to 2 + 22 + 2, and a positional that is wider than every
- * option moves the descriptions of the options, to 2 + 25 + 2. */
+ * option moves the descriptions of the options, to 2 + 25 + 2.
+ */
 NAOS_TEST(arguments_and_options_share_the_description_column)
 {
     clargs_command_t *root = create_root();

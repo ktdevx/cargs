@@ -41,16 +41,20 @@
 #include <stddef.h>
 #include <string.h>
 
-/* A number with more characters than the conversion of the built-in
- * floating-point type copies without an allocation of its own. */
+/*
+ * A number with more characters than the conversion of the built-in
+ * floating-point type copies without an allocation of its own.
+ */
 #define LONG_FLOAT "0." "1234567890" "1234567890" "1234567890" "1234567890" \
                    "1234567890" "1234567890" "1234567890"
 
 /* The most allocation requests that an operation is given to fail in. */
 #define REQUEST_LIMIT 1000
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -59,9 +63,11 @@ static void check_clean(void)
 
 /* ---- The picture of the value types and the tree ------------------------- */
 
-/* Everything that can be read of the value types and of the tree, as one
+/*
+ * Everything that can be read of the value types and of the tree, as one
  * string. Two pictures are equal exactly when nothing that can be read has
- * changed. */
+ * changed.
+ */
 typedef struct picture {
     char text[16384];
     size_t length;
@@ -96,8 +102,10 @@ static void put_count(picture_t *picture, const char *label, size_t count)
     put(picture, digits + at);
 }
 
-/* A string that may not be set: an attribute, or a name that a kind of
- * option does not have. */
+/*
+ * A string that may not be set: an attribute, or a name that a kind of
+ * option does not have.
+ */
 static void put_text(picture_t *picture, const char *label, const char *text)
 {
     put(picture, label);
@@ -202,19 +210,25 @@ typedef struct sweep {
     size_t used;
     /* Whether a call of the operation has failed. The operation ends there. */
     bool failed;
-    /* Whether the tree is validated before every call, so that a call that
-     * fails is also seen to leave a validated tree validated. */
+    /*
+     * Whether the tree is validated before every call, so that a call that
+     * fails is also seen to leave a validated tree validated.
+     */
     bool validates;
 
-    /* What the operation and its preparation created; NULL for what does
-     * not exist. */
+    /*
+     * What the operation and its preparation created; NULL for what does
+     * not exist.
+     */
     clargs_type_t *choice;
     clargs_type_t *custom;
     clargs_command_t *root;
 
-    /* Handles of another tree and another value type. Every output holds
+    /*
+     * Handles of another tree and another value type. Every output holds
      * one of them before a call, so an output that a call does not write
-     * does not pass for NULL. */
+     * does not pass for NULL.
+     */
     clargs_command_t *other;
     clargs_option_t *other_option;
     clargs_positional_t *other_positional;
@@ -314,8 +328,10 @@ static void open_sweep(sweep_t *sweep)
                                          &sweep->other_type) == CLARGS_ERROR_NONE);
 }
 
-/* Ends a run: destroys what exists, the trees before the value types that
- * they borrow. Nothing is left and nothing was violated. */
+/*
+ * Ends a run: destroys what exists, the trees before the value types that
+ * they borrow. Nothing is left and nothing was violated.
+ */
 static void close_sweep(sweep_t *sweep)
 {
     clargs_command_destroy(sweep->root);
@@ -326,8 +342,10 @@ static void close_sweep(sweep_t *sweep)
     check_clean();
 }
 
-/* Makes the calls that follow the operation, with its nth request to fail;
- * 0 for none. */
+/*
+ * Makes the calls that follow the operation, with its nth request to fail;
+ * 0 for none.
+ */
 static void arm_sweep(sweep_t *sweep, size_t nth, bool validates)
 {
     sweep->nth = nth;
@@ -373,8 +391,10 @@ static bool end_call(sweep_t *sweep, clargs_error_t error, bool outputs_are_null
     }
     sweep->failed = true;
 
-    /* The request that was set to fail failed, it was the last one of the
-     * call, and the call reported it. */
+    /*
+     * The request that was set to fail failed, it was the last one of the
+     * call, and the call reported it.
+     */
     NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
     NAOS_CHECK_TRUE(sweep->nth != 0);
     NAOS_CHECK_UINT_EQ(sweep->used, sweep->nth);
@@ -394,8 +414,10 @@ static bool end_call(sweep_t *sweep, clargs_error_t error, bool outputs_are_null
 
 /* ---- The calls ----------------------------------------------------------- */
 
-/* Each makes one call of the public API between begin_call() and end_call()
- * and returns whether the call succeeded. */
+/*
+ * Each makes one call of the public API between begin_call() and end_call()
+ * and returns whether the call succeeded.
+ */
 
 static bool create_choice_type(sweep_t *sweep)
 {
@@ -461,8 +483,10 @@ static bool add_subcommand(sweep_t *sweep, clargs_command_t *command, const char
     return true;
 }
 
-/* type is the value type of an option that takes a value, and is not used
- * for another kind. */
+/*
+ * type is the value type of an option that takes a value, and is not used
+ * for another kind.
+ */
 static bool add_option(sweep_t *sweep, clargs_command_t *command, clargs_option_kind_t kind,
                        char short_name, const char *long_name, const clargs_type_t *type,
                        clargs_option_t **out)
@@ -660,11 +684,15 @@ static bool validate_tree(sweep_t *sweep)
 
 /* ---- The operations ------------------------------------------------------ */
 
-/* Each makes its calls in order, stops at the first one that fails, and
- * returns whether all of them succeeded. */
+/*
+ * Each makes its calls in order, stops at the first one that fails, and
+ * returns whether all of them succeeded.
+ */
 
-/* How many calls each operation makes that cannot succeed without a
- * request: the least number of requests that it must be seen to make. */
+/*
+ * How many calls each operation makes that cannot succeed without a
+ * request: the least number of requests that it must be seen to make.
+ */
 #define CREATE_TYPES_CALLS 2
 #define BUILD_TREE_CALLS 21
 #define SET_ATTRIBUTES_CALLS 28
@@ -856,8 +884,10 @@ static bool run_operation(sweep_t *sweep, operation_t operation, size_t nth, siz
     }
 }
 
-/* Makes the first, second, ... request of the operation fail, until the
- * operation completes without reaching the request to fail. */
+/*
+ * Makes the first, second, ... request of the operation fail, until the
+ * operation completes without reaching the request to fail.
+ */
 static void fail_every_allocation_of(operation_t operation)
 {
     static sweep_t sweep;
@@ -876,9 +906,11 @@ static void fail_every_allocation_of(operation_t operation)
         succeeded = run_operation(&sweep, operation, n, &least);
 
         if (succeeded && sweep.used < n) {
-            /* The operation ended before the request to fail was reached:
+            /*
+             * The operation ended before the request to fail was reached:
              * every allocation point has failed once. The operation is not
-             * one without requests. */
+             * one without requests.
+             */
             NAOS_CHECK_FALSE(sweep.failed);
             NAOS_CHECK_UINT_EQ(sweep.used, n - 1);
             NAOS_CHECK_TRUE(sweep.used >= least);
@@ -887,9 +919,11 @@ static void fail_every_allocation_of(operation_t operation)
             break;
         }
 
-        /* The nth request failed, and the call that made it reported it.
+        /*
+         * The nth request failed, and the call that made it reported it.
          * end_call() has checked the error code, the outputs, and that the
-         * value types and the tree are as they were before that call. */
+         * value types and the tree are as they were before that call.
+         */
         NAOS_CHECK_FALSE(succeeded);
         NAOS_CHECK_TRUE(sweep.failed);
         NAOS_CHECK_UINT_EQ(sweep.used, n);

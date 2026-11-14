@@ -40,10 +40,12 @@
 /* The bytes of U+FFFD, which replaces a unit that cannot be converted. */
 #define REPLACEMENT "\xEF\xBF\xBD"
 
-/* Characters of 2, 3 and 4 bytes in UTF-8: U+00E9, U+3042 and U+1F600. The
+/*
+ * Characters of 2, 3 and 4 bytes in UTF-8: U+00E9, U+3042 and U+1F600. The
  * wide ones are written as universal character names, which the compiler
  * turns into the units of its wchar_t: U+1F600 is a pair of surrogates
- * where wchar_t has 16 bits. */
+ * where wchar_t has 16 bits.
+ */
 #define W_2 L"\u00E9"
 #define W_3 L"\u3042"
 #define W_4 L"\U0001F600"
@@ -64,8 +66,10 @@ static const wchar_t bad_units[] = {
     (wchar_t)0xDFFF  /* the last low surrogate */
 };
 #else
-/* UTF-32: a value in the range of the surrogates, a value above U+10FFFF,
- * and a negative value (a large one where wchar_t has no sign). */
+/*
+ * UTF-32: a value in the range of the surrogates, a value above U+10FFFF,
+ * and a negative value (a large one where wchar_t has no sign).
+ */
 static const wchar_t bad_units[] = {
     (wchar_t)0xD800,
     (wchar_t)0xDFFF,
@@ -79,8 +83,10 @@ static const wchar_t bad_units[] = {
 /* One of them, for the tests that need only one. */
 #define BAD_UNIT (bad_units[0])
 
-/* The end of every test: the test allocator has no live block and saw no
- * violation of the allocator contract. */
+/*
+ * The end of every test: the test allocator has no live block and saw no
+ * violation of the allocator contract.
+ */
 static void check_clean(void)
 {
     NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
@@ -148,8 +154,10 @@ static void tear_down(fixture_t *fixture)
 
 /* ---- Parsing -------------------------------------------------------------- */
 
-/* Parses the wide argv, which must match the schema. Returns the result,
- * which the caller destroys. */
+/*
+ * Parses the wide argv, which must match the schema. Returns the result,
+ * which the caller destroys.
+ */
 static clargs_result_t *parse_wide_ok(const fixture_t *fixture, int argc, wchar_t *const *argv)
 {
     clargs_result_t *result = NULL;
@@ -160,8 +168,10 @@ static clargs_result_t *parse_wide_ok(const fixture_t *fixture, int argc, wchar_
     return result;
 }
 
-/* Checks that text is expected: NULL, or a string with the same
- * characters. */
+/*
+ * Checks that text is expected: NULL, or a string with the same
+ * characters.
+ */
 static void check_text(const char *text, const char *expected)
 {
     if (expected == NULL) {
@@ -325,8 +335,10 @@ static void check_invalid_encoding(const clargs_result_t *result, const char *ar
     check_text(clargs_result_error_message(result), message);
 }
 
-/* Parses the wide argv, which must have a parse error. Returns the result,
- * which the caller destroys. */
+/*
+ * Parses the wide argv, which must have a parse error. Returns the result,
+ * which the caller destroys.
+ */
 static clargs_result_t *parse_wide_error(const fixture_t *fixture, int argc, wchar_t *const *argv)
 {
     clargs_result_t *result = NULL;
@@ -337,8 +349,10 @@ static clargs_result_t *parse_wide_error(const fixture_t *fixture, int argc, wch
     return result;
 }
 
-/* Parses the wide argv, which must have the error of an argument that
- * cannot be converted, and checks every field of the error. */
+/*
+ * Parses the wide argv, which must have the error of an argument that
+ * cannot be converted, and checks every field of the error.
+ */
 static void expect_invalid_encoding(const fixture_t *fixture, int argc, wchar_t *const *argv,
                                     const char *argument, size_t index, const clargs_command_t *command,
                                     const char *message)
@@ -629,8 +643,10 @@ NAOS_TEST(every_unit_that_cannot_be_converted_is_a_parse_error)
         check_invalid_encoding(result, "a" REPLACEMENT "b", 4, fixture.run,
                                "invalid character encoding in argument 'a" REPLACEMENT "b'");
 
-        /* What was read before the error is in the result; the argument
-         * itself and what follows it are not, and no default value is. */
+        /*
+         * What was read before the error is in the result; the argument
+         * itself and what follows it are not, and no default value is.
+         */
         NAOS_REQUIRE_TRUE(clargs_result_command_count(result) == 2);
         NAOS_CHECK_TRUE(clargs_result_command(result) == fixture.run);
         NAOS_CHECK_TRUE(clargs_result_flag(result, fixture.verbose));
@@ -645,8 +661,10 @@ NAOS_TEST(every_unit_that_cannot_be_converted_is_a_parse_error)
 
 #if WCHAR_MAX <= 0xFFFF
 
-/* UTF-16: surrogates are converted only as a pair of a high and a low
- * one. */
+/*
+ * UTF-16: surrogates are converted only as a pair of a high and a low
+ * one.
+ */
 static void check_units_of_this_width(const fixture_t *fixture_in)
 {
     const fixture_t fixture = *fixture_in;
@@ -678,8 +696,10 @@ static void check_units_of_this_width(const fixture_t *fixture_in)
 
 #else
 
-/* UTF-32: the values next to the ones that cannot be converted are
- * characters, and a pair of surrogates is not one. */
+/*
+ * UTF-32: the values next to the ones that cannot be converted are
+ * characters, and a pair of surrogates is not one.
+ */
 static void check_units_of_this_width(const fixture_t *fixture_in)
 {
     const fixture_t fixture = *fixture_in;
@@ -696,8 +716,10 @@ static void check_units_of_this_width(const fixture_t *fixture_in)
     check_positional_string(result, fixture.file, 0, "\xED\x9F\xBF" "\xEE\x80\x80" "\xF4\x8F\xBF\xBF");
     clargs_result_destroy(result);
 
-    /* A pair of surrogates is not a character in UTF-32: each of the two
-     * cannot be converted. */
+    /*
+     * A pair of surrogates is not a character in UTF-32: each of the two
+     * cannot be converted.
+     */
     argv[2] = surrogates;
     expect_invalid_encoding(&fixture, ARGC(argv), argv, REPLACEMENT REPLACEMENT, 2, fixture.run,
                             "invalid character encoding in argument '" REPLACEMENT REPLACEMENT "'");
@@ -731,8 +753,10 @@ NAOS_TEST(an_option_with_a_unit_that_cannot_be_converted_is_not_looked_up)
 
     set_up(&fixture);
 
-    /* --name=x<bad>: the option is known, and it has no value all the
-     * same. */
+    /*
+     * --name=x<bad>: the option is known, and it has no value all the
+     * same.
+     */
     argv[2] = long_option;
     result = parse_wide_error(&fixture, ARGC(argv), argv);
     check_invalid_encoding(result, "--name=x" REPLACEMENT, 2, fixture.root,
@@ -741,8 +765,10 @@ NAOS_TEST(an_option_with_a_unit_that_cannot_be_converted_is_not_looked_up)
     NAOS_CHECK_UINT_EQ(clargs_result_count(result, fixture.debug), 1);
     clargs_result_destroy(result);
 
-    /* -vo<bad>: no letter of the bundle is read, and the error has no
-     * letter. */
+    /*
+     * -vo<bad>: no letter of the bundle is read, and the error has no
+     * letter.
+     */
     argv[2] = bundle;
     result = parse_wide_error(&fixture, ARGC(argv), argv);
     check_invalid_encoding(result, "-vo" REPLACEMENT, 2, fixture.root,
@@ -770,8 +796,10 @@ NAOS_TEST(an_argument_that_would_be_taken_as_a_value_is_checked_before_it_is_tak
 
     set_up(&fixture);
 
-    /* The error is that of the argument, not of the option: it has no
-     * option and no letter. */
+    /*
+     * The error is that of the argument, not of the option: it has no
+     * option and no letter.
+     */
     result = parse_wide_error(&fixture, ARGC(long_argv), long_argv);
     check_invalid_encoding(result, "x" REPLACEMENT, 2, fixture.root,
                            "invalid character encoding in argument 'x" REPLACEMENT "'");
@@ -786,8 +814,10 @@ NAOS_TEST(an_argument_that_would_be_taken_as_a_value_is_checked_before_it_is_tak
     NAOS_CHECK_INT_EQ(clargs_result_option_source(result, fixture.name), CLARGS_SOURCE_NONE);
     clargs_result_destroy(result);
 
-    /* The value type does not see the argument: the error is not that of
-     * a value that is no integer. */
+    /*
+     * The value type does not see the argument: the error is not that of
+     * a value that is no integer.
+     */
     expect_invalid_encoding(&fixture, ARGC(number_argv), number_argv, "x" REPLACEMENT, 2, fixture.root,
                             "invalid character encoding in argument 'x" REPLACEMENT "'");
 
@@ -953,8 +983,10 @@ NAOS_TEST(a_name_of_the_program_that_cannot_be_converted_is_ignored)
     check_positional_string(result, fixture.file, 0, U_2);
     clargs_result_destroy(result);
 
-    /* The first argument after the name of the program that cannot be
-     * converted is still found. */
+    /*
+     * The first argument after the name of the program that cannot be
+     * converted is still found.
+     */
     expect_invalid_encoding(&fixture, ARGC(invalid_argv), invalid_argv, "x" REPLACEMENT, 3, fixture.run,
                             "invalid character encoding in argument 'x" REPLACEMENT "'");
 
@@ -966,9 +998,11 @@ NAOS_TEST(a_name_of_the_program_that_cannot_be_converted_is_ignored)
 NAOS_TEST(bytes_that_are_not_utf8_are_a_value_as_they_are)
 {
     fixture_t fixture;
-    /* A byte that no UTF-8 has, a lead byte with no byte after it, a byte
+    /*
+     * A byte that no UTF-8 has, a lead byte with no byte after it, a byte
      * that continues nothing, a surrogate written as three bytes, and a
-     * form that is longer than it need be. */
+     * form that is longer than it need be.
+     */
     char *argv[] = { "tool",         "--name=\xFF\xFE", "-o", "\xC3", "run", "--tag", "\x80\xBF",
                      "\xED\xA0\x80", "\xC0\xAF.txt" };
     clargs_result_t *result = NULL;
