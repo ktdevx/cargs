@@ -56,7 +56,7 @@ These runs include the allocation check and, in the shared configuration, the ex
 
 ## Coding conventions
 
-Before you change the code, read [Development Conventions](docs/development/conventions.md). It describes the naming conventions, where files go, the implementation rules and the rules for writing tests. Follow it instead of choosing names or locations on your own. The steps for adding public functions, headers, sources, tests and error codes are in [Development Procedures](docs/development/procedures.md).
+To find where a change belongs, read [Architecture](docs/development/architecture.md). Before you change the code, read [Development Conventions](docs/development/conventions.md). It describes the naming conventions, where files go, the implementation rules and the rules for writing tests. Follow it instead of choosing names or locations on your own. The steps for adding public functions, headers, sources, tests and error codes are in [Development Procedures](docs/development/procedures.md).
 
 The rules for ownership, lifetime, `NULL`, allocators, failures and threads that every public function follows are in [Ownership and Lifetime](docs/references/ownership.md). How the library's own code applies them is described in [Applying the ownership rules](docs/development/conventions.md#applying-the-ownership-rules).
 
