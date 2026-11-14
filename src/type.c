@@ -137,7 +137,7 @@ clargs_error_t clargs_type_create_choice(const char *const *choices, size_t coun
     }
 
     /* The size of the array of the copies must not overflow. */
-    if (count > SIZE_MAX / sizeof(char *))
+    if (count > (SIZE_MAX / sizeof(char *)))
     {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
@@ -233,7 +233,7 @@ void clargs_type_destroy(clargs_type_t *type)
 {
     size_t index;
 
-    if (type == NULL || type->is_static)
+    if ((type == NULL) || type->is_static)
     {
         return;
     }

@@ -12,7 +12,7 @@
  */
 static bool is_digit(char c)
 {
-    return c >= '0' && c <= '9';
+    return (c >= '0') && (c <= '9');
 }
 
 clargs_lex_kind_t clargs_lex_classify(const char *arg)
@@ -36,7 +36,7 @@ clargs_lex_kind_t clargs_lex_classify(const char *arg)
     {
         return CLARGS_LEX_SHORT;
     }
-    return arg[2] == '\0' ? CLARGS_LEX_TERMINATOR : CLARGS_LEX_LONG;
+    return (arg[2] == '\0') ? CLARGS_LEX_TERMINATOR : CLARGS_LEX_LONG;
 }
 
 bool clargs_lex_is_negative_number(const char *arg)
@@ -55,7 +55,7 @@ bool clargs_lex_is_negative_number(const char *arg)
     {
         return true;
     }
-    return arg[1] == '.' && is_digit(arg[2]);
+    return (arg[1] == '.') && is_digit(arg[2]);
 }
 
 void clargs_lex_split_long(const char *arg, const char **name, size_t *name_length, const char **value)
@@ -68,11 +68,11 @@ void clargs_lex_split_long(const char *arg, const char **name, size_t *name_leng
     assert(value != NULL);
     assert(clargs_lex_classify(arg) == CLARGS_LEX_LONG);
 
-    for (p = arg + 2; *p != '\0' && *p != '='; ++p)
+    for (p = arg + 2; (*p != '\0') && (*p != '='); ++p)
     {
     }
 
     *name = arg + 2;
     *name_length = (size_t)(p - (arg + 2));
-    *value = *p == '=' ? p + 1 : NULL;
+    *value = (*p == '=') ? (p + 1) : NULL;
 }

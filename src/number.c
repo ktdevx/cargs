@@ -33,7 +33,7 @@
  */
 static bool is_digit(char c)
 {
-    return c >= '0' && c <= '9';
+    return (c >= '0') && (c <= '9');
 }
 
 clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
@@ -47,7 +47,7 @@ clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
 
     p = text;
     negative = false;
-    if (*p == '+' || *p == '-')
+    if ((*p == '+') || (*p == '-'))
     {
         negative = *p == '-';
         ++p;
@@ -74,11 +74,11 @@ clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
             return CLARGS_ERROR_INVALID_VALUE;
         }
         digit = *p - '0';
-        if (value < (INT64_MIN + digit) / 10)
+        if (value < ((INT64_MIN + digit) / 10))
         {
             return CLARGS_ERROR_INVALID_VALUE;
         }
-        value = value * 10 - digit;
+        value = (value * 10) - digit;
     }
 
     if (!negative)
@@ -109,7 +109,7 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
     const char *dot = NULL;
     bool has_digit = false;
 
-    if (*p == '+' || *p == '-')
+    if ((*p == '+') || (*p == '-'))
     {
         ++p;
     }
@@ -131,10 +131,10 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
     {
         return false;
     }
-    if (*p == 'e' || *p == 'E')
+    if ((*p == 'e') || (*p == 'E'))
     {
         ++p;
-        if (*p == '+' || *p == '-')
+        if ((*p == '+') || (*p == '-'))
         {
             ++p;
         }
@@ -153,7 +153,7 @@ static bool scan_float(const char *text, size_t *length, size_t *point)
     }
 
     *length = (size_t)(p - text);
-    *point = dot != NULL ? (size_t)(dot - text) : *length;
+    *point = (dot != NULL) ? (size_t)(dot - text) : *length;
     return true;
 }
 
@@ -173,8 +173,8 @@ static size_t decimal_point(char *buffer)
     size_t length;
 
     written = snprintf(formatted, sizeof formatted, "%.1f", 0.5);
-    if (written < 3 || (size_t)written >= sizeof formatted
-        || formatted[0] != '0' || formatted[written - 1] != '5')
+    if ((written < 3) || ((size_t)written >= sizeof formatted)
+        || (formatted[0] != '0') || (formatted[written - 1] != '5'))
     {
         buffer[0] = '.';
         buffer[1] = '\0';
@@ -223,7 +223,7 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
      * point adds a few bytes at most.
      */
     point_length = decimal_point(point_text);
-    copy_length = point < length ? length - 1 + point_length : length;
+    copy_length = (point < length) ? (length - 1 + point_length) : length;
     if (copy_length < sizeof short_copy)
     {
         copy = short_copy;
@@ -247,7 +247,7 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
     copy[copy_length] = '\0';
 
     value = strtod(copy, &end);
-    complete = end == copy + copy_length;
+    complete = end == (copy + copy_length);
 
     if (copy != short_copy)
     {
@@ -260,7 +260,7 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
      * two calls above. A value beyond the finite range comes back as an
      * infinity (HUGE_VAL, with either sign).
      */
-    if (!complete || value > DBL_MAX || value < -DBL_MAX)
+    if (!complete || (value > DBL_MAX) || (value < -DBL_MAX))
     {
         return CLARGS_ERROR_INVALID_VALUE;
     }

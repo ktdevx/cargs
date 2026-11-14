@@ -25,7 +25,7 @@ static void out_write(clargs_out_t *out, const char *text, size_t length)
 {
     assert(length != 0);
 
-    if (out->write_fn == NULL || out->failed)
+    if ((out->write_fn == NULL) || out->failed)
     {
         return;
     }
@@ -46,7 +46,7 @@ static void out_flush_blanks(clargs_out_t *out)
     out->pending = 0;
     while (rest != 0)
     {
-        size_t part = rest < CLARGS_OUT_BLANKS_LENGTH ? rest : CLARGS_OUT_BLANKS_LENGTH;
+        size_t part = (rest < CLARGS_OUT_BLANKS_LENGTH) ? rest : CLARGS_OUT_BLANKS_LENGTH;
 
         out_write(out, CLARGS_OUT_BLANKS, part);
         rest -= part;

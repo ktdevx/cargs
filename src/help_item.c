@@ -192,7 +192,7 @@ clargs_error_t clargs_help_item_text_append(clargs_vec_t *text, const char *part
 
     assert(text != NULL);
     assert(text->item_size == 1);
-    assert(part != NULL || length == 0);
+    assert((part != NULL) || (length == 0));
 
     for (index = 0; index < length; ++index)
     {
@@ -219,7 +219,7 @@ static clargs_error_t item_text_string(clargs_vec_t *text, const char *part)
  */
 static clargs_error_t item_note_open(clargs_vec_t *text, const char *opening)
 {
-    if (text->count != 0 && *(const char *)clargs_vec_at(text, text->count - 1) != '\n')
+    if ((text->count != 0) && (*(const char *)clargs_vec_at(text, text->count - 1) != '\n'))
     {
         clargs_error_t error = clargs_help_item_text_append(text, " ", 1);
 
@@ -256,7 +256,7 @@ static clargs_error_t item_choices_note(clargs_vec_t *text, const clargs_type_t 
 
     error = item_note_open(text, "[choices: ");
     count = clargs_type_choice_count(type);
-    for (index = 0; index < count && error == CLARGS_ERROR_NONE; ++index)
+    for (index = 0; (index < count) && (error == CLARGS_ERROR_NONE); ++index)
     {
         if (index != 0)
         {
@@ -302,7 +302,7 @@ static clargs_error_t item_value_notes(clargs_vec_t *text, const clargs_type_t *
 {
     clargs_error_t error = item_choices_note(text, type);
 
-    if (error == CLARGS_ERROR_NONE && default_value != NULL)
+    if ((error == CLARGS_ERROR_NONE) && (default_value != NULL))
     {
         error = item_default_note(text, default_value);
     }
@@ -321,7 +321,7 @@ clargs_error_t clargs_help_item_option_notes(clargs_vec_t *text, const clargs_op
     {
     case CLARGS_OPTION_VALUE:
         error = item_value_notes(text, clargs_option_type(option), clargs_option_default(option));
-        if (error == CLARGS_ERROR_NONE && clargs_option_is_required(option))
+        if ((error == CLARGS_ERROR_NONE) && clargs_option_is_required(option))
         {
             error = item_note_open(text, "[required]");
         }

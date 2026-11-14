@@ -126,7 +126,7 @@ static clargs_error_t record_option(clargs_result_t *result, scan_t *scan, const
     {
         if (value == NULL)
         {
-            if (scan->index + 1 >= scan->count)
+            if ((scan->index + 1) >= scan->count)
             {
                 return fail_at(result, scan, CLARGS_PARSE_ERROR_MISSING_VALUE, where, NULL, option);
             }
@@ -231,7 +231,7 @@ static clargs_error_t scan_bundle(clargs_result_t *result, scan_t *scan, const c
         }
         if (clargs_option_kind(option) == CLARGS_OPTION_VALUE)
         {
-            return record_option(result, scan, option, true, letter[1] != '\0' ? letter + 1 : NULL, &where);
+            return record_option(result, scan, option, true, (letter[1] != '\0') ? (letter + 1) : NULL, &where);
         }
         error = record_option(result, scan, option, true, NULL, &where);
         if (error != CLARGS_ERROR_NONE)
@@ -442,7 +442,7 @@ clargs_error_t clargs_parse(const clargs_command_t *root, int argc, char *const 
     assert(clargs_command_parent(root) == NULL);
     assert(clargs_command_is_validated(root));
     assert(argc >= 0);
-    assert(argc == 0 || argv != NULL);
+    assert((argc == 0) || (argv != NULL));
 
     error = clargs_result_create(root, argc, argv, &result);
     if (error != CLARGS_ERROR_NONE)
@@ -465,7 +465,7 @@ clargs_error_t clargs_parse_wide(const clargs_command_t *root, int argc, wchar_t
     assert(clargs_command_parent(root) == NULL);
     assert(clargs_command_is_validated(root));
     assert(argc >= 0);
-    assert(argc == 0 || argv != NULL);
+    assert((argc == 0) || (argv != NULL));
 
     /*
      * The arguments are converted to UTF-8 here. From here on the two

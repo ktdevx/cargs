@@ -33,7 +33,7 @@ static clargs_command_t *subcommand_at(const clargs_command_t *command, size_t i
 /* Whether the string name is exactly the length bytes at text. */
 static bool name_equals(const char *name, const char *text, size_t length)
 {
-    return strlen(name) == length && memcmp(name, text, length) == 0;
+    return (strlen(name) == length) && (memcmp(name, text, length) == 0);
 }
 
 /* Frees an option and its strings. The value type is borrowed and stays. */
@@ -374,9 +374,9 @@ const clargs_option_t *clargs_command_find_long(const clargs_command_t *command,
     for (index = 0; index < command->options.count; ++index)
     {
         const clargs_option_t *option = option_at(command, index);
-        bool is_long = option->long_name != NULL && name_equals(option->long_name, name, length);
+        bool is_long = (option->long_name != NULL) && name_equals(option->long_name, name, length);
 
-        if (is_long || (option->negated_name != NULL && name_equals(option->negated_name, name, length)))
+        if (is_long || ((option->negated_name != NULL) && name_equals(option->negated_name, name, length)))
         {
             if (negated != NULL)
             {

@@ -30,7 +30,7 @@ static clargs_error_t clargs_vec_grow(clargs_vec_t *vec)
     }
     else
     {
-        if (vec->capacity > CLARGS_VEC_SIZE_MAX / 2)
+        if (vec->capacity > (CLARGS_VEC_SIZE_MAX / 2))
         {
             return CLARGS_ERROR_OUT_OF_MEMORY;
         }
@@ -38,7 +38,7 @@ static clargs_error_t clargs_vec_grow(clargs_vec_t *vec)
     }
 
     /* clargs_realloc does not check the product. */
-    if (new_capacity > CLARGS_VEC_SIZE_MAX / vec->item_size)
+    if (new_capacity > (CLARGS_VEC_SIZE_MAX / vec->item_size))
     {
         return CLARGS_ERROR_OUT_OF_MEMORY;
     }
@@ -89,7 +89,7 @@ clargs_error_t clargs_vec_push(clargs_vec_t *vec, const void *item)
      * count < capacity now, so the product is less than the size of the
      * items and does not overflow.
      */
-    memcpy((char *)vec->items + vec->count * vec->item_size, item,
+    memcpy((char *)vec->items + (vec->count * vec->item_size), item,
         vec->item_size);
     ++vec->count;
     return CLARGS_ERROR_NONE;
@@ -100,7 +100,7 @@ void *clargs_vec_at(const clargs_vec_t *vec, size_t index)
     assert(vec != NULL);
     assert(index < vec->count);
 
-    return (char *)vec->items + index * vec->item_size;
+    return (char *)vec->items + (index * vec->item_size);
 }
 
 void clargs_vec_destroy(clargs_vec_t *vec)
