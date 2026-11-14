@@ -1,26 +1,26 @@
-# ClargsVersion.cmake - reads the CLArgs version from the public header.
+# ClineVersion.cmake - reads the CLine version from the public header.
 #
-# The public header include/clargs/version.h is the single source of the
+# The public header include/cline/version.h is the single source of the
 # version. This module reads it as text, so the build, the package files and
 # the library all use the same numbers.
 #
-#   clargs_read_version(<header-path> <out-var> [<prerelease-out-var>])
+#   cline_read_version(<header-path> <out-var> [<prerelease-out-var>])
 #
 # Sets <out-var> to "<major>.<minor>.<patch>", the numeric part of the
 # version, and <prerelease-out-var>, when given, to the pre-release
 # identifiers without the leading hyphen ("rc.1"), or to an empty string for a
 # release.
 #
-# <header-path> must contain each of CLARGS_VERSION_MAJOR, CLARGS_VERSION_MINOR
-# and CLARGS_VERSION_PATCH exactly once, on one line, in the form
+# <header-path> must contain each of CLINE_VERSION_MAJOR, CLINE_VERSION_MINOR
+# and CLINE_VERSION_PATCH exactly once, on one line, in the form
 #
-#   #define CLARGS_VERSION_<PART> <integer>
+#   #define CLINE_VERSION_<PART> <integer>
 #
 # where <integer> is a decimal literal in the range 0-255 without a sign, a
 # suffix or leading zeros (the compiler reads a leading zero as octal). It must
-# also contain CLARGS_VERSION_PRERELEASE exactly once, on one line, in the form
+# also contain CLINE_VERSION_PRERELEASE exactly once, on one line, in the form
 #
-#   #define CLARGS_VERSION_PRERELEASE "<identifiers>"
+#   #define CLINE_VERSION_PRERELEASE "<identifiers>"
 #
 # where <identifiers> is empty or SemVer 2.0.0 pre-release identifiers: one or
 # more identifiers separated by dots, each made of the characters [0-9A-Za-z-],
@@ -43,17 +43,17 @@ include_guard(GLOBAL)
 cmake_policy(PUSH)
 cmake_policy(VERSION 3.21)
 
-function(clargs_read_version header out_var)
+function(cline_read_version header out_var)
     if(NOT ARGC EQUAL 2 AND NOT ARGC EQUAL 3)
         message(FATAL_ERROR
-            "clargs_read_version: expected 2 or 3 arguments "
+            "cline_read_version: expected 2 or 3 arguments "
             "(<header-path> <out-var> [<prerelease-out-var>]), got ${ARGC}.")
     endif()
 
     get_filename_component(path "${header}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
     if(NOT EXISTS "${path}" OR IS_DIRECTORY "${path}")
         message(FATAL_ERROR
-            "clargs_read_version: cannot read the version from\n"
+            "cline_read_version: cannot read the version from\n"
             "  ${path}\n"
             "The file does not exist.")
     endif()
@@ -106,7 +106,7 @@ function(clargs_read_version header out_var)
     set(version "")
     set(prerelease "")
     foreach(part IN ITEMS MAJOR MINOR PATCH PRERELEASE)
-        set(macro "CLARGS_VERSION_${part}")
+        set(macro "CLINE_VERSION_${part}")
         set(line_regex "\n[ \t]*#[ \t]*define[ \t]+${macro}([ \t][^\n]*)?\n")
 
         string(REGEX MATCH "${line_regex}" line "${text}")
@@ -172,12 +172,12 @@ function(clargs_read_version header out_var)
 
     if(NOT problems STREQUAL "")
         message(FATAL_ERROR
-            "clargs_read_version: cannot read the version from\n"
+            "cline_read_version: cannot read the version from\n"
             "  ${path}\n"
             "${problems}"
             "Each macro must be on one line, in one of the forms\n"
-            "  #define CLARGS_VERSION_<PART> <integer>\n"
-            "  #define CLARGS_VERSION_PRERELEASE \"<identifiers>\"\n"
+            "  #define CLINE_VERSION_<PART> <integer>\n"
+            "  #define CLINE_VERSION_PRERELEASE \"<identifiers>\"\n"
             "where <integer> is in the range 0-255, in decimal, without leading zeros, "
             "and <identifiers> is empty for a release, or SemVer pre-release identifiers "
             "without the leading hyphen, such as \"rc.1\".")

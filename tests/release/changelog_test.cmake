@@ -1,4 +1,4 @@
-# Tests of tools/release/ClargsChangelog.cmake: parsing a changelog and
+# Tests of tools/release/ClineChangelog.cmake: parsing a changelog and
 # rejecting every form it does not accept, moving the body of [Unreleased] to
 # the section of a new version with the link definitions updated, and taking
 # the notes of a version out of its section.
@@ -8,13 +8,13 @@
 cmake_minimum_required(VERSION 3.21)
 
 include("${CMAKE_CURRENT_LIST_DIR}/ReleaseTestHelpers.cmake")
-include("${CLARGS_SOURCE_ROOT}/tools/release/ClargsChangelog.cmake")
+include("${CLINE_SOURCE_ROOT}/tools/release/ClineChangelog.cmake")
 
 set(repo "https://github.com/example/project")
 
 # Sets <out-var> to the bytes of tests/release/fixtures/<fixture>.
 function(read_fixture fixture out_var)
-    clargs_test_copy_fixture("${fixture}" path)
+    cline_test_copy_fixture("${fixture}" path)
     file(READ "${path}" text)
     set(${out_var} "${text}" PARENT_SCOPE)
 endfunction()
@@ -41,11 +41,11 @@ function(expect_parse_valid text what versions entries)
     foreach(field IN ITEMS VALID ERROR VERSIONS UNRELEASED_ENTRIES)
         set(c_${field} "stale")
     endforeach()
-    clargs_changelog_parse("${text}" c)
-    clargs_test_expect_equal("${c_VALID}" "TRUE" "${what}: valid")
-    clargs_test_expect_equal("${c_ERROR}" "" "${what}: no error")
-    clargs_test_expect_equal("${c_VERSIONS}" "${versions}" "${what}: the versions")
-    clargs_test_expect_equal("${c_UNRELEASED_ENTRIES}" "${entries}"
+    cline_changelog_parse("${text}" c)
+    cline_test_expect_equal("${c_VALID}" "TRUE" "${what}: valid")
+    cline_test_expect_equal("${c_ERROR}" "" "${what}: no error")
+    cline_test_expect_equal("${c_VERSIONS}" "${versions}" "${what}: the versions")
+    cline_test_expect_equal("${c_UNRELEASED_ENTRIES}" "${entries}"
         "${what}: the entries under [Unreleased]")
 endfunction()
 
@@ -87,17 +87,17 @@ function(expect_parse_invalid text what part)
     foreach(field IN ITEMS VALID ERROR VERSIONS UNRELEASED_ENTRIES)
         set(c_${field} "stale")
     endforeach()
-    clargs_changelog_parse("${text}" c)
-    clargs_test_expect_equal("${c_VALID}" "FALSE" "${what}: invalid")
-    clargs_test_expect_contains("${c_ERROR}" "${part}" "${what}: the reason")
-    clargs_test_expect_equal("${c_VERSIONS}" "" "${what}: no versions")
-    clargs_test_expect_equal("${c_UNRELEASED_ENTRIES}" "" "${what}: no entry count")
+    cline_changelog_parse("${text}" c)
+    cline_test_expect_equal("${c_VALID}" "FALSE" "${what}: invalid")
+    cline_test_expect_contains("${c_ERROR}" "${part}" "${what}: the reason")
+    cline_test_expect_equal("${c_VERSIONS}" "" "${what}: no versions")
+    cline_test_expect_equal("${c_UNRELEASED_ENTRIES}" "" "${what}: no entry count")
 endfunction()
 
 # Sets <out-var> to the history fixture with <old> replaced by <new>, after
 # checking that the fixture holds <old>.
 function(edit_history old new out_var)
-    clargs_test_expect_contains("${history_text}" "${old}" "the history fixture holds [${old}]")
+    cline_test_expect_contains("${history_text}" "${old}" "the history fixture holds [${old}]")
     string(REPLACE "${old}" "${new}" text "${history_text}")
     set(${out_var} "${text}" PARENT_SCOPE)
 endfunction()
@@ -189,57 +189,57 @@ expect_parse_invalid("${text}" "a link definition before [Unreleased]"
 to_crlf("${invalid_text}" invalid_crlf)
 expect_parse_invalid("${invalid_crlf}" "the invalid fixture with CRLF"
     "line 5: \"### Improved\" is not a category of Keep a Changelog")
-clargs_changelog_parse("${invalid_crlf}" c)
-clargs_test_expect_not_contains("${c_ERROR}" "\r" "the invalid fixture with CRLF: no carriage return")
+cline_changelog_parse("${invalid_crlf}" c)
+cline_test_expect_not_contains("${c_ERROR}" "\r" "the invalid fixture with CRLF: no carriage return")
 
 # --- Promoting [Unreleased] --------------------------------------------------
 
 # The first version links to its tag; [Unreleased] compares from it.
-clargs_changelog_promote("${first_text}" "0.1.0" "2026-11-13" "${repo}" result)
-clargs_test_expect_equal("${result}" "${first_expected}" "promote the first release: the whole text")
+cline_changelog_promote("${first_text}" "0.1.0" "2026-11-13" "${repo}" result)
+cline_test_expect_equal("${result}" "${first_expected}" "promote the first release: the whole text")
 
 # The second version compares from the version right below it.
-clargs_changelog_promote("${second_text}" "0.2.0-rc.1" "2026-12-01" "${repo}" result)
-clargs_test_expect_equal("${result}" "${second_expected}" "promote the second release: the whole text")
+cline_changelog_promote("${second_text}" "0.2.0-rc.1" "2026-12-01" "${repo}" result)
+cline_test_expect_equal("${result}" "${second_expected}" "promote the second release: the whole text")
 
 # A slash at the end of the repository URL is not doubled.
-clargs_changelog_promote("${second_text}" "0.2.0-rc.1" "2026-12-01" "${repo}/" result)
-clargs_test_expect_equal("${result}" "${second_expected}" "promote with a slash after the URL")
+cline_changelog_promote("${second_text}" "0.2.0-rc.1" "2026-12-01" "${repo}/" result)
+cline_test_expect_equal("${result}" "${second_expected}" "promote with a slash after the URL")
 
 # A third version is linked to the newest version of the file.
-clargs_changelog_promote("${history_text}" "1.0.1" "2027-04-01" "${repo}" result)
+cline_changelog_promote("${history_text}" "1.0.1" "2027-04-01" "${repo}" result)
 expect_parse_valid("${result}" "after promoting 1.0.1" "1.0.1;${history_versions}" 0)
-clargs_test_expect_contains("${result}"
+cline_test_expect_contains("${result}"
     "## [Unreleased]\n\n## [1.0.1] - 2027-04-01\n\n### Added\n\n- An entry that is not released yet.\n\n## [1.0.0] - 2027-03-01\n"
     "promote 1.0.1: the sections")
-clargs_test_expect_contains("${result}"
+cline_test_expect_contains("${result}"
     "\n[Unreleased]: ${repo}/compare/v1.0.1...HEAD\n[1.0.1]: ${repo}/compare/v1.0.0...v1.0.1\n[1.0.0]: "
     "promote 1.0.1: the links")
 
 # CRLF stays CRLF, with no LF alone, in the lines kept and the lines added.
 to_crlf("${first_expected}" first_expected_crlf)
-clargs_changelog_promote("${first_crlf}" "0.1.0" "2026-11-13" "${repo}" result)
-clargs_test_expect_equal("${result}" "${first_expected_crlf}" "promote with CRLF: the whole text")
+cline_changelog_promote("${first_crlf}" "0.1.0" "2026-11-13" "${repo}" result)
+cline_test_expect_equal("${result}" "${first_expected_crlf}" "promote with CRLF: the whole text")
 to_crlf("${second_text}" second_crlf)
 to_crlf("${second_expected}" second_expected_crlf)
-clargs_changelog_promote("${second_crlf}" "0.2.0-rc.1" "2026-12-01" "${repo}" result)
-clargs_test_expect_equal("${result}" "${second_expected_crlf}" "promote the second release with CRLF")
+cline_changelog_promote("${second_crlf}" "0.2.0-rc.1" "2026-12-01" "${repo}" result)
+cline_test_expect_equal("${result}" "${second_expected_crlf}" "promote the second release with CRLF")
 string(REPLACE "\r\n" "" lone "${result}")
-clargs_test_expect_not_contains("${lone}" "\n" "promote with CRLF: no LF alone")
+cline_test_expect_not_contains("${lone}" "\n" "promote with CRLF: no LF alone")
 
 # Without a final line ending, none is added.
 string(REGEX REPLACE "\n$" "" text "${second_text}")
 string(REGEX REPLACE "\n$" "" expected "${second_expected}")
-clargs_changelog_promote("${text}" "0.2.0-rc.1" "2026-12-01" "${repo}" result)
-clargs_test_expect_equal("${result}" "${expected}" "promote without a final newline")
+cline_changelog_promote("${text}" "0.2.0-rc.1" "2026-12-01" "${repo}" result)
+cline_test_expect_equal("${result}" "${expected}" "promote without a final newline")
 
 # --- Taking the notes out ----------------------------------------------------
 
 # Checks the notes of <version> in <text>.
 function(expect_notes text version expected)
     set(notes "stale")
-    clargs_changelog_notes("${text}" "${version}" "${repo}" notes)
-    clargs_test_expect_equal("${notes}" "${expected}" "notes of ${version}")
+    cline_changelog_notes("${text}" "${version}" "${repo}" notes)
+    cline_test_expect_equal("${notes}" "${expected}" "notes of ${version}")
 endfunction()
 
 # The body runs to the next heading, without the blank lines around it.
@@ -279,14 +279,14 @@ expect_notes("${history_crlf}" "0.2.0" "${notes_020_crlf}")
 # Each case runs the function in a child process, since a FATAL_ERROR would
 # stop this script. The text is passed in a file.
 
-set(driver "${CLARGS_TEST_WORK_DIR}/driver.cmake")
+set(driver "${CLINE_TEST_WORK_DIR}/driver.cmake")
 file(WRITE "${driver}" "
-include(\"${CLARGS_SOURCE_ROOT}/tools/release/ClargsChangelog.cmake\")
+include(\"${CLINE_SOURCE_ROOT}/tools/release/ClineChangelog.cmake\")
 file(READ \"\${TEXT_FILE}\" text)
 if(ACTION STREQUAL \"promote\")
-    clargs_changelog_promote(\"\${text}\" \"\${VERSION}\" \"\${DATE}\" \"\${REPO}\" result)
+    cline_changelog_promote(\"\${text}\" \"\${VERSION}\" \"\${DATE}\" \"\${REPO}\" result)
 else()
-    clargs_changelog_notes(\"\${text}\" \"\${VERSION}\" \"\${REPO}\" result)
+    cline_changelog_notes(\"\${text}\" \"\${VERSION}\" \"\${REPO}\" result)
 endif()
 message(\"done: [\${result}]\")
 ")
@@ -298,19 +298,19 @@ set(case_number 0)
 function(expect_rejected what text part)
     math(EXPR number "${case_number} + 1")
     set(case_number ${number} PARENT_SCOPE)
-    set(text_file "${CLARGS_TEST_WORK_DIR}/case-${number}.md")
+    set(text_file "${CLINE_TEST_WORK_DIR}/case-${number}.md")
     file(WRITE "${text_file}" "${text}")
-    clargs_test_run_script(run "${driver}" -D "TEXT_FILE=${text_file}" ${ARGN})
+    cline_test_run_script(run "${driver}" -D "TEXT_FILE=${text_file}" ${ARGN})
     set(outcome "failed")
     if(run_RESULT EQUAL 0)
         set(outcome "succeeded")
     endif()
-    clargs_test_expect_equal("${outcome}" "failed" "${what}: the outcome")
-    clargs_test_expect_not_contains("${run_OUTPUT}" "done: [" "${what}: no result")
-    clargs_test_expect_contains("${run_OUTPUT}" "error: " "${what}: an error")
+    cline_test_expect_equal("${outcome}" "failed" "${what}: the outcome")
+    cline_test_expect_not_contains("${run_OUTPUT}" "done: [" "${what}: no result")
+    cline_test_expect_contains("${run_OUTPUT}" "error: " "${what}: an error")
     # CMake wraps the text of an error into lines; join them again.
     string(REGEX REPLACE "[ \n]+" " " flat "${run_OUTPUT}")
-    clargs_test_expect_contains("${flat}" "${part}" "${what}: the reason")
+    cline_test_expect_contains("${flat}" "${part}" "${what}: the reason")
 endfunction()
 
 set(promote -D ACTION=promote -D DATE=2027-04-01 -D "REPO=${repo}")
@@ -343,14 +343,14 @@ expect_rejected("notes without a repository URL" "${history_text}"
     "the repository URL is empty" -D ACTION=notes -D VERSION=0.2.0)
 
 # The driver itself works, so the failures above come from the cases.
-set(text_file "${CLARGS_TEST_WORK_DIR}/driver-check.md")
+set(text_file "${CLINE_TEST_WORK_DIR}/driver-check.md")
 file(WRITE "${text_file}" "${first_text}")
-clargs_test_run_script(run "${driver}" -D "TEXT_FILE=${text_file}" ${promote} -D VERSION=0.1.0)
-clargs_test_expect_equal("${run_RESULT}" "0" "promote in a child: the exit code")
-clargs_test_expect_contains("${run_OUTPUT}" "done: [# Changelog" "promote in a child: the result")
+cline_test_run_script(run "${driver}" -D "TEXT_FILE=${text_file}" ${promote} -D VERSION=0.1.0)
+cline_test_expect_equal("${run_RESULT}" "0" "promote in a child: the exit code")
+cline_test_expect_contains("${run_OUTPUT}" "done: [# Changelog" "promote in a child: the result")
 file(WRITE "${text_file}" "${history_text}")
-clargs_test_run_script(run "${driver}" -D "TEXT_FILE=${text_file}" ${notes} -D VERSION=0.2.0)
-clargs_test_expect_equal("${run_RESULT}" "0" "notes in a child: the exit code")
-clargs_test_expect_contains("${run_OUTPUT}" "done: [### Fixed" "notes in a child: the result")
+cline_test_run_script(run "${driver}" -D "TEXT_FILE=${text_file}" ${notes} -D VERSION=0.2.0)
+cline_test_expect_equal("${run_RESULT}" "0" "notes in a child: the exit code")
+cline_test_expect_contains("${run_OUTPUT}" "done: [### Fixed" "notes in a child: the result")
 
-clargs_test_finish()
+cline_test_finish()

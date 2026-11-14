@@ -1,0 +1,22 @@
+# CLineConfig.cmake - the package file of CLine for find_package(CLine).
+#
+# Provides the target CLine::cline. Link to it and nothing else is needed:
+#
+#   find_package(CLine CONFIG REQUIRED)
+#   target_link_libraries(<your-target> PRIVATE CLine::cline)
+#
+# The same for a static and a shared CLine.
+
+@PACKAGE_INIT@
+
+# CLine_VERSION, set by find_package from CLineConfigVersion.cmake, is the
+# numeric part of the version, "<major>.<minor>.<patch>". The full version adds
+# the pre-release identifiers, such as "0.2.0-rc.1"; for a release it equals
+# CLine_VERSION and CLine_VERSION_PRERELEASE is empty.
+set(CLine_VERSION_FULL "@cline_version_full@")
+set(CLine_VERSION_PRERELEASE "@cline_version_prerelease@")
+
+include("${CMAKE_CURRENT_LIST_DIR}/CLineTargets.cmake")
+
+# CLine has no components: asking for one is an error.
+check_required_components(CLine)

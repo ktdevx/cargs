@@ -1,41 +1,41 @@
-# ClargsCheckExports.cmake - checks what the shared library exports.
+# ClineCheckExports.cmake - checks what the shared library exports.
 #
 # A script, run with "cmake -P". When the library is a shared library and the
 # tests are built, tests/CMakeLists.txt registers it with CTest under the name
-# clargs.exports. It also runs by hand:
+# cline.exports. It also runs by hand:
 #
-#   cmake -D CLARGS_LIBRARY=<shared library> [-D <variable>=<value>]...
-#         -P cmake/ClargsCheckExports.cmake
+#   cmake -D CLINE_LIBRARY=<shared library> [-D <variable>=<value>]...
+#         -P cmake/ClineCheckExports.cmake
 #
-#   CLARGS_LIBRARY      The shared library to check: the .so, the .dylib or
+#   CLINE_LIBRARY      The shared library to check: the .so, the .dylib or
 #                       the .dll (not the import library). Required.
-#   CLARGS_INCLUDE_DIR  The directory of the public headers. Default:
-#                       include/clargs of this source tree.
-#   CLARGS_FORMAT       ELF, MACHO or PE. Default: the format of the machine
+#   CLINE_INCLUDE_DIR  The directory of the public headers. Default:
+#                       include/cline of this source tree.
+#   CLINE_FORMAT       ELF, MACHO or PE. Default: the format of the machine
 #                       the script runs on (Windows: PE, macOS: MACHO,
 #                       otherwise ELF).
-#   CLARGS_TOOL         The program that lists the exported symbols: nm for
+#   CLINE_TOOL         The program that lists the exported symbols: nm for
 #                       ELF and MACHO, dumpbin for PE. Default: looked up on
 #                       the PATH.
 #
 # The rules:
 #
 #   - The expected names come from the public headers, all the *.h files of
-#     CLARGS_INCLUDE_DIR: every function declared with CLARGS_API. Nothing
+#     CLINE_INCLUDE_DIR: every function declared with CLINE_API. Nothing
 #     here lists the public functions by hand, so a new public function needs
 #     no change to this script.
 #   - The library exports exactly the expected names. A symbol that is
-#     exported but not declared with CLARGS_API in a public header fails the
-#     check, and so does a function that is declared with CLARGS_API but not
+#     exported but not declared with CLINE_API in a public header fails the
+#     check, and so does a function that is declared with CLINE_API but not
 #     exported.
-#   - Every expected name starts with "clargs_".
-#   - The public headers declare at least one function with CLARGS_API.
+#   - Every expected name starts with "cline_".
+#   - The public headers declare at least one function with CLINE_API.
 #     Finding none means that the headers or this script are broken.
 #
 # How a declaration is read: comments and preprocessor lines are dropped, and
-# the name is the last identifier between CLARGS_API and the first "(" after
-# it. So a public declaration is written in this order: CLARGS_API, the return
-# type, the function name, "(". CLARGS_API on anything else (a variable, a
+# the name is the last identifier between CLINE_API and the first "(" after
+# it. So a public declaration is written in this order: CLINE_API, the return
+# type, the function name, "(". CLINE_API on anything else (a variable, a
 # function that returns a function pointer without a typedef) fails the check.
 #
 # Ends with a FATAL_ERROR that names every symbol at fault, so the test fails.
@@ -44,14 +44,14 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Symbols that the linker or the C runtime puts into every ELF shared library
-# with some toolchains. They are not symbols of CLArgs.
-set(clargs_check_toolchain_symbols _init _fini __bss_start _edata _end)
+# with some toolchains. They are not symbols of CLine.
+set(cline_check_toolchain_symbols _init _fini __bss_start _edata _end)
 
-# clargs_check_strip_comments(<text> <out-var>)
+# cline_check_strip_comments(<text> <out-var>)
 #
 # Drops the C comments of <text>. A block comment becomes one blank, a line
 # comment ends before the end of its line.
-function(clargs_check_strip_comments rest out_var)
+function(cline_check_strip_comments rest out_var)
     set(text "")
     while(TRUE)
         string(FIND "${rest}" "/*" block_pos)
@@ -86,12 +86,12 @@ function(clargs_check_strip_comments rest out_var)
     set(${out_var} "${text}${rest}" PARENT_SCOPE)
 endfunction()
 
-# clargs_check_read_header(<header> <names-var> <problems-var>)
+# cline_check_read_header(<header> <names-var> <problems-var>)
 #
-# Appends the names of the functions that <header> declares with CLARGS_API
-# to <names-var>, and a line for each use of CLARGS_API that is not such a
+# Appends the names of the functions that <header> declares with CLINE_API
+# to <names-var>, and a line for each use of CLINE_API that is not such a
 # declaration to <problems-var>.
-function(clargs_check_read_header header names_var problems_var)
+function(cline_check_read_header header names_var problems_var)
     set(names "${${names_var}}")
     set(problems "${${problems_var}}")
 
@@ -101,19 +101,19 @@ function(clargs_check_read_header header names_var problems_var)
 
     # As the compiler does: join the continued lines, then drop the comments.
     string(REPLACE "\\\n" "" text "${text}")
-    clargs_check_strip_comments("${text}" text)
+    cline_check_strip_comments("${text}" text)
 
-    # Drop the preprocessor lines. The definitions of CLARGS_API itself are
+    # Drop the preprocessor lines. The definitions of CLINE_API itself are
     # among them.
     string(REGEX REPLACE "(^|\n)[ \t]*#[^\n]*" "\\1" text "${text}")
 
     while(TRUE)
-        string(FIND "${text}" "CLARGS_API" pos)
+        string(FIND "${text}" "CLINE_API" pos)
         if(pos EQUAL -1)
             break()
         endif()
 
-        # The character before and the text after this use of CLARGS_API.
+        # The character before and the text after this use of CLINE_API.
         set(before " ")
         if(pos GREATER 0)
             math(EXPR before_pos "${pos} - 1")
@@ -134,7 +134,7 @@ function(clargs_check_read_header header names_var problems_var)
             string(REGEX REPLACE "[ \t\n]+" " " what "${what}")
             string(STRIP "${what}" what)
             string(APPEND problems
-                "  ${header}: CLARGS_API marks \"${what}\", which is not the "
+                "  ${header}: CLINE_API marks \"${what}\", which is not the "
                 "declaration of a function.\n")
             continue()
         endif()
@@ -145,7 +145,7 @@ function(clargs_check_read_header header names_var problems_var)
             string(STRIP "${what}" what)
             string(APPEND problems
                 "  ${header}: cannot read the function name in "
-                "\"CLARGS_API ${what}(\". Write CLARGS_API, the return type, "
+                "\"CLINE_API ${what}(\". Write CLINE_API, the return type, "
                 "the function name and \"(\" in this order.\n")
             continue()
         endif()
@@ -156,15 +156,15 @@ function(clargs_check_read_header header names_var problems_var)
     set(${problems_var} "${problems}" PARENT_SCOPE)
 endfunction()
 
-# clargs_check_list_exports(<out-var>)
+# cline_check_list_exports(<out-var>)
 #
-# Sets <out-var> to the names that CLARGS_LIBRARY exports, as the C code
+# Sets <out-var> to the names that CLINE_LIBRARY exports, as the C code
 # spells them. Stops with a FATAL_ERROR if the tool fails or its output
 # cannot be read.
-function(clargs_check_list_exports out_var)
-    if(CLARGS_FORMAT STREQUAL "PE")
+function(cline_check_list_exports out_var)
+    if(CLINE_FORMAT STREQUAL "PE")
         set(arguments /NOLOGO /EXPORTS)
-    elseif(CLARGS_FORMAT STREQUAL "MACHO")
+    elseif(CLINE_FORMAT STREQUAL "MACHO")
         # The external symbols that the library defines.
         set(arguments -gU)
     else()
@@ -176,7 +176,7 @@ function(clargs_check_list_exports out_var)
     set(ENV{LC_ALL} C)
     set(ENV{VSLANG} 1033)
     execute_process(
-        COMMAND "${CLARGS_TOOL}" ${arguments} "${CLARGS_LIBRARY}"
+        COMMAND "${CLINE_TOOL}" ${arguments} "${CLINE_LIBRARY}"
         RESULT_VARIABLE result
         OUTPUT_VARIABLE output
         ERROR_VARIABLE errors
@@ -184,10 +184,10 @@ function(clargs_check_list_exports out_var)
     list(JOIN arguments " " arguments_text)
     if(NOT result STREQUAL "0")
         message(FATAL_ERROR
-            "clargs.exports: cannot list the exported symbols of\n"
-            "  ${CLARGS_LIBRARY}\n"
+            "cline.exports: cannot list the exported symbols of\n"
+            "  ${CLINE_LIBRARY}\n"
             "The command\n"
-            "  ${CLARGS_TOOL} ${arguments_text} <library>\n"
+            "  ${CLINE_TOOL} ${arguments_text} <library>\n"
             "failed (${result}):\n"
             "${output}${errors}")
     endif()
@@ -200,11 +200,11 @@ function(clargs_check_list_exports out_var)
     string(REPLACE "\n" ";" lines "${output}")
 
     set(names "")
-    if(CLARGS_FORMAT STREQUAL "PE")
+    if(CLINE_FORMAT STREQUAL "PE")
         # dumpbin prints one line for each export:
         #     ordinal hint RVA      name
-        #           1    0 00001000 clargs_version
-        #           1    0 00001000 clargs_version = @ILT+0(clargs_version)
+        #           1    0 00001000 cline_version
+        #           1    0 00001000 cline_version = @ILT+0(cline_version)
         # and, before them, "<count> number of names".
         set(hex "[0-9A-Fa-f]")
         set(rva "${hex}${hex}${hex}${hex}${hex}${hex}${hex}${hex}+")
@@ -219,8 +219,8 @@ function(clargs_check_list_exports out_var)
         list(LENGTH names found)
         if(NOT count STREQUAL "" AND NOT count EQUAL found)
             message(FATAL_ERROR
-                "clargs.exports: cannot read the output of\n"
-                "  ${CLARGS_TOOL} ${arguments_text} ${CLARGS_LIBRARY}\n"
+                "cline.exports: cannot read the output of\n"
+                "  ${CLINE_TOOL} ${arguments_text} ${CLINE_LIBRARY}\n"
                 "It announces ${count} exported names, and ${found} were read:\n"
                 "${output}")
         endif()
@@ -231,13 +231,13 @@ function(clargs_check_list_exports out_var)
                 continue()
             endif()
             set(name "${CMAKE_MATCH_1}")
-            if(CLARGS_FORMAT STREQUAL "MACHO")
+            if(CLINE_FORMAT STREQUAL "MACHO")
                 # The C name follows one underscore.
                 string(REGEX REPLACE "^_" "" name "${name}")
             else()
                 # A versioned symbol is "<name>@@<version>".
                 string(REGEX REPLACE "@.*$" "" name "${name}")
-                if(name IN_LIST clargs_check_toolchain_symbols)
+                if(name IN_LIST cline_check_toolchain_symbols)
                     continue()
                 endif()
             endif()
@@ -254,63 +254,63 @@ endfunction()
 # The arguments.
 # ---------------------------------------------------------------------------
 
-if(NOT DEFINED CLARGS_LIBRARY OR CLARGS_LIBRARY STREQUAL "")
+if(NOT DEFINED CLINE_LIBRARY OR CLINE_LIBRARY STREQUAL "")
     message(FATAL_ERROR
-        "clargs.exports: CLARGS_LIBRARY is not set. Usage:\n"
-        "  cmake -D CLARGS_LIBRARY=<shared library> -P ${CMAKE_CURRENT_LIST_FILE}")
+        "cline.exports: CLINE_LIBRARY is not set. Usage:\n"
+        "  cmake -D CLINE_LIBRARY=<shared library> -P ${CMAKE_CURRENT_LIST_FILE}")
 endif()
-get_filename_component(CLARGS_LIBRARY "${CLARGS_LIBRARY}" ABSOLUTE)
-if(NOT EXISTS "${CLARGS_LIBRARY}" OR IS_DIRECTORY "${CLARGS_LIBRARY}")
+get_filename_component(CLINE_LIBRARY "${CLINE_LIBRARY}" ABSOLUTE)
+if(NOT EXISTS "${CLINE_LIBRARY}" OR IS_DIRECTORY "${CLINE_LIBRARY}")
     message(FATAL_ERROR
-        "clargs.exports: the library to check does not exist:\n"
-        "  ${CLARGS_LIBRARY}\n"
+        "cline.exports: the library to check does not exist:\n"
+        "  ${CLINE_LIBRARY}\n"
         "Build the library first.")
 endif()
 
-if(NOT DEFINED CLARGS_INCLUDE_DIR OR CLARGS_INCLUDE_DIR STREQUAL "")
-    set(CLARGS_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/../include/clargs")
+if(NOT DEFINED CLINE_INCLUDE_DIR OR CLINE_INCLUDE_DIR STREQUAL "")
+    set(CLINE_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/../include/cline")
 endif()
-get_filename_component(CLARGS_INCLUDE_DIR "${CLARGS_INCLUDE_DIR}" ABSOLUTE)
-if(NOT IS_DIRECTORY "${CLARGS_INCLUDE_DIR}")
+get_filename_component(CLINE_INCLUDE_DIR "${CLINE_INCLUDE_DIR}" ABSOLUTE)
+if(NOT IS_DIRECTORY "${CLINE_INCLUDE_DIR}")
     message(FATAL_ERROR
-        "clargs.exports: the directory of the public headers does not exist:\n"
-        "  ${CLARGS_INCLUDE_DIR}")
+        "cline.exports: the directory of the public headers does not exist:\n"
+        "  ${CLINE_INCLUDE_DIR}")
 endif()
 
-if(NOT DEFINED CLARGS_FORMAT OR CLARGS_FORMAT STREQUAL "")
+if(NOT DEFINED CLINE_FORMAT OR CLINE_FORMAT STREQUAL "")
     if(CMAKE_HOST_WIN32)
-        set(CLARGS_FORMAT PE)
+        set(CLINE_FORMAT PE)
     elseif(CMAKE_HOST_APPLE)
-        set(CLARGS_FORMAT MACHO)
+        set(CLINE_FORMAT MACHO)
     else()
-        set(CLARGS_FORMAT ELF)
+        set(CLINE_FORMAT ELF)
     endif()
 endif()
-if(NOT CLARGS_FORMAT MATCHES "^(ELF|MACHO|PE)$")
+if(NOT CLINE_FORMAT MATCHES "^(ELF|MACHO|PE)$")
     message(FATAL_ERROR
-        "clargs.exports: CLARGS_FORMAT is \"${CLARGS_FORMAT}\". "
+        "cline.exports: CLINE_FORMAT is \"${CLINE_FORMAT}\". "
         "It must be ELF, MACHO or PE.")
 endif()
 
-if(CLARGS_FORMAT STREQUAL "PE")
-    set(clargs_check_tool_name dumpbin)
+if(CLINE_FORMAT STREQUAL "PE")
+    set(cline_check_tool_name dumpbin)
 else()
-    set(clargs_check_tool_name nm)
+    set(cline_check_tool_name nm)
 endif()
-if(NOT DEFINED CLARGS_TOOL OR CLARGS_TOOL STREQUAL "")
-    find_program(clargs_check_tool NAMES "${clargs_check_tool_name}" NO_CACHE)
-    if(NOT clargs_check_tool)
+if(NOT DEFINED CLINE_TOOL OR CLINE_TOOL STREQUAL "")
+    find_program(cline_check_tool NAMES "${cline_check_tool_name}" NO_CACHE)
+    if(NOT cline_check_tool)
         message(FATAL_ERROR
-            "clargs.exports: ${clargs_check_tool_name}, which lists the exported "
+            "cline.exports: ${cline_check_tool_name}, which lists the exported "
             "symbols, was not found on the PATH. Install it, or give its path "
-            "with -D CLARGS_TOOL=<path>.")
+            "with -D CLINE_TOOL=<path>.")
     endif()
-    set(CLARGS_TOOL "${clargs_check_tool}")
-elseif(NOT EXISTS "${CLARGS_TOOL}" OR IS_DIRECTORY "${CLARGS_TOOL}")
+    set(CLINE_TOOL "${cline_check_tool}")
+elseif(NOT EXISTS "${CLINE_TOOL}" OR IS_DIRECTORY "${CLINE_TOOL}")
     message(FATAL_ERROR
-        "clargs.exports: ${clargs_check_tool_name}, which lists the exported "
-        "symbols, was not found: CLARGS_TOOL is\n"
-        "  ${CLARGS_TOOL}\n"
+        "cline.exports: ${cline_check_tool_name}, which lists the exported "
+        "symbols, was not found: CLINE_TOOL is\n"
+        "  ${CLINE_TOOL}\n"
         "which does not exist.")
 endif()
 
@@ -318,34 +318,34 @@ endif()
 # The expected names, from the public headers.
 # ---------------------------------------------------------------------------
 
-file(GLOB_RECURSE clargs_check_headers LIST_DIRECTORIES false "${CLARGS_INCLUDE_DIR}/*.h")
-list(SORT clargs_check_headers)
-if(NOT clargs_check_headers)
+file(GLOB_RECURSE cline_check_headers LIST_DIRECTORIES false "${CLINE_INCLUDE_DIR}/*.h")
+list(SORT cline_check_headers)
+if(NOT cline_check_headers)
     message(FATAL_ERROR
-        "clargs.exports: no public header (*.h) was found in\n"
-        "  ${CLARGS_INCLUDE_DIR}")
+        "cline.exports: no public header (*.h) was found in\n"
+        "  ${CLINE_INCLUDE_DIR}")
 endif()
 
-set(clargs_check_expected "")
-set(clargs_check_problems "")
-foreach(clargs_check_header IN LISTS clargs_check_headers)
-    clargs_check_read_header("${clargs_check_header}"
-        clargs_check_expected clargs_check_problems)
+set(cline_check_expected "")
+set(cline_check_problems "")
+foreach(cline_check_header IN LISTS cline_check_headers)
+    cline_check_read_header("${cline_check_header}"
+        cline_check_expected cline_check_problems)
 endforeach()
-list(REMOVE_DUPLICATES clargs_check_expected)
-list(SORT clargs_check_expected)
+list(REMOVE_DUPLICATES cline_check_expected)
+list(SORT cline_check_expected)
 
-if(NOT clargs_check_expected AND clargs_check_problems STREQUAL "")
-    string(APPEND clargs_check_problems
-        "  The public headers declare no function with CLARGS_API. A public "
-        "function is declared as \"CLARGS_API <return type> clargs_<name>(...);\".\n")
+if(NOT cline_check_expected AND cline_check_problems STREQUAL "")
+    string(APPEND cline_check_problems
+        "  The public headers declare no function with CLINE_API. A public "
+        "function is declared as \"CLINE_API <return type> cline_<name>(...);\".\n")
 endif()
 
-foreach(clargs_check_name IN LISTS clargs_check_expected)
-    if(NOT clargs_check_name MATCHES "^clargs_")
-        string(APPEND clargs_check_problems
-            "  ${clargs_check_name}: declared with CLARGS_API, but the name does "
-            "not start with \"clargs_\".\n")
+foreach(cline_check_name IN LISTS cline_check_expected)
+    if(NOT cline_check_name MATCHES "^cline_")
+        string(APPEND cline_check_problems
+            "  ${cline_check_name}: declared with CLINE_API, but the name does "
+            "not start with \"cline_\".\n")
     endif()
 endforeach()
 
@@ -353,35 +353,35 @@ endforeach()
 # The exported names, and the comparison.
 # ---------------------------------------------------------------------------
 
-clargs_check_list_exports(clargs_check_exported)
+cline_check_list_exports(cline_check_exported)
 
-foreach(clargs_check_name IN LISTS clargs_check_exported)
-    if(NOT clargs_check_name IN_LIST clargs_check_expected)
-        string(APPEND clargs_check_problems
-            "  ${clargs_check_name}: exported by the library, but not declared "
-            "with CLARGS_API in a public header.\n")
+foreach(cline_check_name IN LISTS cline_check_exported)
+    if(NOT cline_check_name IN_LIST cline_check_expected)
+        string(APPEND cline_check_problems
+            "  ${cline_check_name}: exported by the library, but not declared "
+            "with CLINE_API in a public header.\n")
     endif()
 endforeach()
-foreach(clargs_check_name IN LISTS clargs_check_expected)
-    if(NOT clargs_check_name IN_LIST clargs_check_exported)
-        string(APPEND clargs_check_problems
-            "  ${clargs_check_name}: declared with CLARGS_API in a public "
+foreach(cline_check_name IN LISTS cline_check_expected)
+    if(NOT cline_check_name IN_LIST cline_check_exported)
+        string(APPEND cline_check_problems
+            "  ${cline_check_name}: declared with CLINE_API in a public "
             "header, but not exported by the library.\n")
     endif()
 endforeach()
 
-list(JOIN clargs_check_expected " " clargs_check_expected_text)
-list(JOIN clargs_check_exported " " clargs_check_exported_text)
-if(NOT clargs_check_problems STREQUAL "")
+list(JOIN cline_check_expected " " cline_check_expected_text)
+list(JOIN cline_check_exported " " cline_check_exported_text)
+if(NOT cline_check_problems STREQUAL "")
     message(FATAL_ERROR
-        "clargs.exports: the exported symbols do not follow the rules.\n"
-        "${clargs_check_problems}"
-        "Library:        ${CLARGS_LIBRARY}\n"
-        "Public headers: ${CLARGS_INCLUDE_DIR}\n"
-        "Declared with CLARGS_API: ${clargs_check_expected_text}\n"
-        "Exported:                 ${clargs_check_exported_text}")
+        "cline.exports: the exported symbols do not follow the rules.\n"
+        "${cline_check_problems}"
+        "Library:        ${CLINE_LIBRARY}\n"
+        "Public headers: ${CLINE_INCLUDE_DIR}\n"
+        "Declared with CLINE_API: ${cline_check_expected_text}\n"
+        "Exported:                 ${cline_check_exported_text}")
 endif()
 
 message(STATUS
-    "clargs.exports: ${CLARGS_LIBRARY} exports exactly the functions declared "
-    "with CLARGS_API: ${clargs_check_exported_text}")
+    "cline.exports: ${CLINE_LIBRARY} exports exactly the functions declared "
+    "with CLINE_API: ${cline_check_exported_text}")

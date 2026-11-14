@@ -1,5 +1,5 @@
 /*
- * CLArgs - the shape of an argument.
+ * CLine - the shape of an argument.
  */
 #include "lex.h"
 
@@ -15,7 +15,7 @@ static bool is_digit(char c)
     return (c >= '0') && (c <= '9');
 }
 
-clargs_lex_kind_t clargs_lex_classify(const char *arg)
+cline_lex_kind_t cline_lex_classify(const char *arg)
 {
     assert(arg != NULL);
 
@@ -25,21 +25,21 @@ clargs_lex_kind_t clargs_lex_classify(const char *arg)
      */
     if (arg[0] != '-')
     {
-        return CLARGS_LEX_PLAIN;
+        return CLINE_LEX_PLAIN;
     }
     /* "-" alone. */
     if (arg[1] == '\0')
     {
-        return CLARGS_LEX_PLAIN;
+        return CLINE_LEX_PLAIN;
     }
     if (arg[1] != '-')
     {
-        return CLARGS_LEX_SHORT;
+        return CLINE_LEX_SHORT;
     }
-    return (arg[2] == '\0') ? CLARGS_LEX_TERMINATOR : CLARGS_LEX_LONG;
+    return (arg[2] == '\0') ? CLINE_LEX_TERMINATOR : CLINE_LEX_LONG;
 }
 
-bool clargs_lex_is_negative_number(const char *arg)
+bool cline_lex_is_negative_number(const char *arg)
 {
     assert(arg != NULL);
 
@@ -58,7 +58,7 @@ bool clargs_lex_is_negative_number(const char *arg)
     return (arg[1] == '.') && is_digit(arg[2]);
 }
 
-void clargs_lex_split_long(const char *arg, const char **name, size_t *name_length, const char **value)
+void cline_lex_split_long(const char *arg, const char **name, size_t *name_length, const char **value)
 {
     const char *p;
 
@@ -66,7 +66,7 @@ void clargs_lex_split_long(const char *arg, const char **name, size_t *name_leng
     assert(name != NULL);
     assert(name_length != NULL);
     assert(value != NULL);
-    assert(clargs_lex_classify(arg) == CLARGS_LEX_LONG);
+    assert(cline_lex_classify(arg) == CLINE_LEX_LONG);
 
     for (p = arg + 2; (*p != '\0') && (*p != '='); ++p)
     {

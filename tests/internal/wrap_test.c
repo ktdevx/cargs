@@ -7,7 +7,7 @@
  * fixed size, and the tests compare the whole text with the string they
  * expect. No string that is expected has a blank at the end of a line.
  */
-#include <clargs/clargs.h>
+#include <cline/cline.h>
 
 #include "out.h"
 #include "wrap.h"
@@ -71,15 +71,15 @@ static void check_sink(const sink_t *sink, const char *expected)
 static void check_wrap(const char *text, size_t column, size_t width, const char *expected)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_wrap_write(&out, text, strlen(text), column, width);
+    cline_wrap_write(&out, text, strlen(text), column, width);
 
     check_sink(&sink, expected);
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
 }
 
 /* ---- The width ----------------------------------------------------------- */
@@ -196,16 +196,16 @@ NAOS_TEST(blanks_at_the_end_of_a_line_are_dropped)
 NAOS_TEST(blanks_at_the_end_of_the_text_are_dropped)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_wrap_write(&out, "a b  ", 5, 0, 80);
-    clargs_out_newline(&out);
-    clargs_wrap_write(&out, "   ", 3, 2, 80);
-    clargs_out_newline(&out);
-    clargs_out_string(&out, "next");
+    cline_wrap_write(&out, "a b  ", 5, 0, 80);
+    cline_out_newline(&out);
+    cline_wrap_write(&out, "   ", 3, 2, 80);
+    cline_out_newline(&out);
+    cline_out_string(&out, "next");
 
     check_sink(&sink, "a b\n\nnext");
 }
@@ -265,17 +265,17 @@ NAOS_TEST(empty_text_writes_nothing)
     for (i = 0; i < (sizeof texts / sizeof texts[0]); ++i)
     {
         sink_t sink;
-        clargs_out_t out;
+        cline_out_t out;
 
         sink_init(&sink);
-        clargs_out_init(&out, sink_write, &sink);
-        clargs_out_string(&out, "ab");
+        cline_out_init(&out, sink_write, &sink);
+        cline_out_string(&out, "ab");
 
-        clargs_wrap_write(&out, texts[i], strlen(texts[i]), 8, 20);
+        cline_wrap_write(&out, texts[i], strlen(texts[i]), 8, 20);
 
-        NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 2);
+        NAOS_CHECK_UINT_EQ(cline_out_column(&out), 2);
         NAOS_CHECK_UINT_EQ(sink.calls, 1);
-        clargs_out_string(&out, "c");
+        cline_out_string(&out, "c");
         check_sink(&sink, "abc");
     }
 }
@@ -284,14 +284,14 @@ NAOS_TEST(empty_text_writes_nothing)
 NAOS_TEST(null_text_of_length_zero)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_wrap_write(&out, NULL, 0, 4, 20);
+    cline_wrap_write(&out, NULL, 0, 4, 20);
 
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
     NAOS_CHECK_UINT_EQ(sink.calls, 0);
 }
 
@@ -304,15 +304,15 @@ NAOS_TEST(null_text_of_length_zero)
 NAOS_TEST(column_to_the_right_of_the_output)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_spaces(&out, 2);
-    clargs_out_string(&out, "-v");
-    clargs_wrap_write(&out, "one two three\nfour", 18, 8, 16);
-    clargs_out_newline(&out);
+    cline_out_spaces(&out, 2);
+    cline_out_string(&out, "-v");
+    cline_wrap_write(&out, "one two three\nfour", 18, 8, 16);
+    cline_out_newline(&out);
 
     check_sink(&sink, "  -v    one two\n"
                       "        three\n"
@@ -326,17 +326,17 @@ NAOS_TEST(column_to_the_right_of_the_output)
 NAOS_TEST(column_equal_to_the_output)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "name: ");
-    clargs_wrap_write(&out, "aa bb cc", 8, 6, 11);
+    cline_out_string(&out, "name: ");
+    cline_wrap_write(&out, "aa bb cc", 8, 6, 11);
 
     check_sink(&sink, "name: aa bb\n"
                       "      cc");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 8);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 8);
 }
 
 /* ---- The bytes ----------------------------------------------------------- */
@@ -362,12 +362,12 @@ NAOS_TEST(other_bytes_are_parts_of_a_word)
 NAOS_TEST(text_takes_only_its_length)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_wrap_write(&out, "abc def ghi", 7, 1, 5);
+    cline_wrap_write(&out, "abc def ghi", 7, 1, 5);
 
     check_sink(&sink, " abc\n def");
 }
@@ -378,14 +378,14 @@ NAOS_TEST(text_takes_only_its_length)
  */
 NAOS_TEST(counting_only_output)
 {
-    clargs_out_t out;
+    cline_out_t out;
 
-    clargs_out_init(&out, NULL, NULL);
+    cline_out_init(&out, NULL, NULL);
 
-    clargs_wrap_write(&out, "aaa bbb cc", 10, 4, 11);
+    cline_wrap_write(&out, "aaa bbb cc", 10, 4, 11);
 
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 6);
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 6);
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
 }
 
 /* ---- The registration ------------------------------------------------------ */

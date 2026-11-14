@@ -1,32 +1,32 @@
-# ClargsCheckAllocations.cmake - checks that the library sources do not use
+# ClineCheckAllocations.cmake - checks that the library sources do not use
 # the allocation functions of the C standard library directly.
 #
 # A script, run with "cmake -P". It needs no build and runs by hand:
 #
-#   cmake [-D CLARGS_SOURCE_DIR=<directory>] -P cmake/ClargsCheckAllocations.cmake
+#   cmake [-D CLINE_SOURCE_DIR=<directory>] -P cmake/ClineCheckAllocations.cmake
 #
-#   CLARGS_SOURCE_DIR  The directory of the library sources. Default: src of
+#   CLINE_SOURCE_DIR  The directory of the library sources. Default: src of
 #                      this source tree.
 #
 # The rules:
 #
-#   - The files checked are all the *.c and *.h files of CLARGS_SOURCE_DIR,
-#     its subdirectories included, except alloc.c in CLARGS_SOURCE_DIR itself.
+#   - The files checked are all the *.c and *.h files of CLINE_SOURCE_DIR,
+#     its subdirectories included, except alloc.c in CLINE_SOURCE_DIR itself.
 #     alloc.c holds the default allocator, the one place that may call the
 #     standard functions. Every other file, alloc_internal.h included, is
 #     checked.
 #   - None of these names appears as a whole identifier in a checked file:
 #     malloc, calloc, realloc, free, aligned_alloc, strdup, strndup, wcsdup,
-#     asprintf, vasprintf. Library code allocates with clargs_malloc,
-#     clargs_calloc, clargs_realloc and clargs_free instead, so that every
+#     asprintf, vasprintf. Library code allocates with cline_malloc,
+#     cline_calloc, cline_realloc and cline_free instead, so that every
 #     allocation goes through the allocator that the user has set.
 #   - Comments, string literals and character literals are not checked.
 #     Everything else is, preprocessor lines included.
 #   - There is at least one file to check. Finding none means that
-#     CLARGS_SOURCE_DIR or this script is wrong.
+#     CLINE_SOURCE_DIR or this script is wrong.
 #
 # How a file is read: the comments and the literals are blanked out, and the
-# words that are left are compared with the names above. So clargs_malloc,
+# words that are left are compared with the names above. So cline_malloc,
 # malloc_fn and freed are fine, and "free" fails wherever it stands: called,
 # or used as a value. A quote with no closing quote on its line (an
 # apostrophe in an #error line, say) does not start a literal, and the text
@@ -41,16 +41,16 @@
 cmake_minimum_required(VERSION 3.21)
 
 # The names that only alloc.c may use.
-set(clargs_check_forbidden_names
+set(cline_check_forbidden_names
     malloc calloc realloc free aligned_alloc
     strdup strndup wcsdup asprintf vasprintf)
 
-# clargs_check_blank_code(<text> <out-var>)
+# cline_check_blank_code(<text> <out-var>)
 #
 # Replaces each comment, string literal and character literal of the C code
 # <text> with a blank. The line breaks inside them are kept, so every line of
 # the result has the line number it has in <text>. <text> has "\n" line ends.
-function(clargs_check_blank_code rest out_var)
+function(cline_check_blank_code rest out_var)
     set(text "")
     while(TRUE)
         # The next place where a comment or a literal starts.
@@ -145,20 +145,20 @@ function(clargs_check_blank_code rest out_var)
     set(${out_var} "${text}${rest}" PARENT_SCOPE)
 endfunction()
 
-# clargs_check_read_source(<file> <name> <uses-var>)
+# cline_check_read_source(<file> <name> <uses-var>)
 #
 # Appends a line "  <name>:<line number>: <forbidden name>" to <uses-var> for
 # each use of a forbidden name in <file>.
-function(clargs_check_read_source file name uses_var)
+function(cline_check_read_source file name uses_var)
     set(uses "${${uses_var}}")
 
     file(READ "${file}" text)
     string(REPLACE "\r\n" "\n" text "${text}")
     string(REPLACE "\r" "\n" text "${text}")
-    clargs_check_blank_code("${text}" text)
+    cline_check_blank_code("${text}" text)
 
     # Most files hold none of the names at all.
-    list(JOIN clargs_check_forbidden_names "|" any_name)
+    list(JOIN cline_check_forbidden_names "|" any_name)
     if(NOT text MATCHES "${any_name}")
         return()
     endif()
@@ -174,11 +174,11 @@ function(clargs_check_read_source file name uses_var)
         if(NOT line MATCHES "${any_name}")
             continue()
         endif()
-        # A word is a whole identifier (or a number), so "clargs_malloc" and
+        # A word is a whole identifier (or a number), so "cline_malloc" and
         # "freed" are words of their own and are not in the list.
         string(REGEX MATCHALL "[A-Za-z0-9_]+" words "${line}")
         foreach(word IN LISTS words)
-            if(word IN_LIST clargs_check_forbidden_names)
+            if(word IN_LIST cline_check_forbidden_names)
                 string(APPEND uses "  ${name}:${line_number}: ${word}\n")
             endif()
         endforeach()
@@ -191,58 +191,58 @@ endfunction()
 # The arguments.
 # ---------------------------------------------------------------------------
 
-if(NOT DEFINED CLARGS_SOURCE_DIR OR CLARGS_SOURCE_DIR STREQUAL "")
-    set(CLARGS_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../src")
+if(NOT DEFINED CLINE_SOURCE_DIR OR CLINE_SOURCE_DIR STREQUAL "")
+    set(CLINE_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../src")
 endif()
-get_filename_component(CLARGS_SOURCE_DIR "${CLARGS_SOURCE_DIR}" ABSOLUTE)
-if(NOT IS_DIRECTORY "${CLARGS_SOURCE_DIR}")
+get_filename_component(CLINE_SOURCE_DIR "${CLINE_SOURCE_DIR}" ABSOLUTE)
+if(NOT IS_DIRECTORY "${CLINE_SOURCE_DIR}")
     message(FATAL_ERROR
-        "clargs.allocations: the directory of the library sources does not exist:\n"
-        "  ${CLARGS_SOURCE_DIR}")
+        "cline.allocations: the directory of the library sources does not exist:\n"
+        "  ${CLINE_SOURCE_DIR}")
 endif()
 
 # ---------------------------------------------------------------------------
 # The files to check.
 # ---------------------------------------------------------------------------
 
-file(GLOB_RECURSE clargs_check_sources
+file(GLOB_RECURSE cline_check_sources
     LIST_DIRECTORIES false
-    RELATIVE "${CLARGS_SOURCE_DIR}"
-    "${CLARGS_SOURCE_DIR}/*.c" "${CLARGS_SOURCE_DIR}/*.h")
-list(REMOVE_ITEM clargs_check_sources "alloc.c")
-list(SORT clargs_check_sources)
-list(LENGTH clargs_check_sources clargs_check_count)
-if(clargs_check_count EQUAL 0)
+    RELATIVE "${CLINE_SOURCE_DIR}"
+    "${CLINE_SOURCE_DIR}/*.c" "${CLINE_SOURCE_DIR}/*.h")
+list(REMOVE_ITEM cline_check_sources "alloc.c")
+list(SORT cline_check_sources)
+list(LENGTH cline_check_sources cline_check_count)
+if(cline_check_count EQUAL 0)
     message(FATAL_ERROR
-        "clargs.allocations: no file to check (*.c or *.h, other than alloc.c) "
+        "cline.allocations: no file to check (*.c or *.h, other than alloc.c) "
         "was found in\n"
-        "  ${CLARGS_SOURCE_DIR}")
+        "  ${CLINE_SOURCE_DIR}")
 endif()
 
 # ---------------------------------------------------------------------------
 # The check.
 # ---------------------------------------------------------------------------
 
-set(clargs_check_uses "")
-foreach(clargs_check_source IN LISTS clargs_check_sources)
-    clargs_check_read_source("${CLARGS_SOURCE_DIR}/${clargs_check_source}"
-        "${clargs_check_source}" clargs_check_uses)
+set(cline_check_uses "")
+foreach(cline_check_source IN LISTS cline_check_sources)
+    cline_check_read_source("${CLINE_SOURCE_DIR}/${cline_check_source}"
+        "${cline_check_source}" cline_check_uses)
 endforeach()
 
-if(NOT clargs_check_uses STREQUAL "")
-    list(JOIN clargs_check_forbidden_names " " clargs_check_names_text)
+if(NOT cline_check_uses STREQUAL "")
+    list(JOIN cline_check_forbidden_names " " cline_check_names_text)
     message(FATAL_ERROR
-        "clargs.allocations: the library sources use allocation functions of "
+        "cline.allocations: the library sources use allocation functions of "
         "the C standard library directly (file:line: name).\n"
-        "${clargs_check_uses}"
+        "${cline_check_uses}"
         "in\n"
-        "  ${CLARGS_SOURCE_DIR}\n"
-        "Only alloc.c may use these names: ${clargs_check_names_text}\n"
-        "Use clargs_malloc, clargs_calloc, clargs_realloc and clargs_free "
+        "  ${CLINE_SOURCE_DIR}\n"
+        "Only alloc.c may use these names: ${cline_check_names_text}\n"
+        "Use cline_malloc, cline_calloc, cline_realloc and cline_free "
         "instead.")
 endif()
 
 message(STATUS
-    "clargs.allocations: ${clargs_check_count} files checked in "
-    "${CLARGS_SOURCE_DIR}: none uses an allocation function of the C standard "
+    "cline.allocations: ${cline_check_count} files checked in "
+    "${CLINE_SOURCE_DIR}: none uses an allocation function of the C standard "
     "library directly.")

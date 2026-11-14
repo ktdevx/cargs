@@ -98,4 +98,4 @@ command-schema が、コマンド、オプション、位置引数、値型の�
   - 環境を読むための差し込み口は初版では公開しない。パーサーの中で `getenv` を呼ばない。
 - ワイド文字の入口を Windows 以外でも提供するかは設計で決める。
 - メッセージは英語のみ。
-- 公開名は `roadmap.md` の Naming に従う（ライブラリ名 `clargs`、ヘッダ `<clargs/clargs.h>`、接頭辞 `clargs_` / `CLARGS_`）。
+- 公開名は `roadmap.md` の Naming に従う（ライブラリ名 `cline`、ヘッダ `<cline/cline.h>`、接頭辞 `cline_` / `CLINE_`）。

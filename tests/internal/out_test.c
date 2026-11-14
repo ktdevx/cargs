@@ -9,7 +9,7 @@
  */
 #include "out.h"
 
-#include <clargs/clargs.h>
+#include <cline/cline.h>
 
 #include <naos/naos.h>
 
@@ -76,13 +76,13 @@ static void check_sink(const sink_t *sink, const char *expected)
 NAOS_TEST(init_starts_at_column_zero)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
     NAOS_CHECK_UINT_EQ(sink.calls, 0);
 }
 
@@ -93,18 +93,18 @@ NAOS_TEST(init_starts_at_column_zero)
 NAOS_TEST(text_advances_the_column)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_text(&out, "Usage:", 6);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 6);
-    clargs_out_string(&out, "app");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 9);
+    cline_out_text(&out, "Usage:", 6);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 6);
+    cline_out_string(&out, "app");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 9);
 
     check_sink(&sink, "Usage:app");
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
 }
 
 /*
@@ -114,14 +114,14 @@ NAOS_TEST(text_advances_the_column)
 NAOS_TEST(text_takes_only_its_length)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_text(&out, "abcdef", 3);
+    cline_out_text(&out, "abcdef", 3);
 
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 3);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 3);
     check_sink(&sink, "abc");
 }
 
@@ -133,15 +133,15 @@ NAOS_TEST(text_takes_only_its_length)
 NAOS_TEST(one_byte_is_one_column)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "\xE3\x81\x82");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 3);
-    clargs_out_string(&out, "\t\x01");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 5);
+    cline_out_string(&out, "\xE3\x81\x82");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 3);
+    cline_out_string(&out, "\t\x01");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 5);
 
     check_sink(&sink, "\xE3\x81\x82\t\x01");
 }
@@ -153,17 +153,17 @@ NAOS_TEST(one_byte_is_one_column)
 NAOS_TEST(empty_text_does_nothing)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_text(&out, "", 0);
-    clargs_out_text(&out, NULL, 0);
-    clargs_out_text(&out, "abc", 0);
-    clargs_out_string(&out, "");
+    cline_out_text(&out, "", 0);
+    cline_out_text(&out, NULL, 0);
+    cline_out_text(&out, "abc", 0);
+    cline_out_string(&out, "");
 
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
     NAOS_CHECK_UINT_EQ(sink.calls, 0);
 }
 
@@ -171,19 +171,19 @@ NAOS_TEST(empty_text_does_nothing)
 NAOS_TEST(newline_resets_the_column)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "first");
-    clargs_out_newline(&out);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
-    clargs_out_string(&out, "second");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 6);
-    clargs_out_newline(&out);
-    clargs_out_newline(&out);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
+    cline_out_string(&out, "first");
+    cline_out_newline(&out);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
+    cline_out_string(&out, "second");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 6);
+    cline_out_newline(&out);
+    cline_out_newline(&out);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
 
     check_sink(&sink, "first\nsecond\n\n");
 }
@@ -197,18 +197,18 @@ NAOS_TEST(newline_resets_the_column)
 NAOS_TEST(spaces_wait_for_the_next_text)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "a");
-    clargs_out_spaces(&out, 3);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 4);
+    cline_out_string(&out, "a");
+    cline_out_spaces(&out, 3);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 4);
     check_sink(&sink, "a");
 
-    clargs_out_string(&out, "b");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 5);
+    cline_out_string(&out, "b");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 5);
     check_sink(&sink, "a   b");
 }
 
@@ -219,19 +219,19 @@ NAOS_TEST(spaces_wait_for_the_next_text)
 NAOS_TEST(spaces_add_up)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_spaces(&out, 2);
-    clargs_out_spaces(&out, 0);
-    clargs_out_spaces(&out, 2);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 4);
+    cline_out_spaces(&out, 2);
+    cline_out_spaces(&out, 0);
+    cline_out_spaces(&out, 2);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 4);
     NAOS_CHECK_UINT_EQ(sink.calls, 0);
 
-    clargs_out_string(&out, "x");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 5);
+    cline_out_string(&out, "x");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 5);
     check_sink(&sink, "    x");
 }
 
@@ -242,18 +242,18 @@ NAOS_TEST(spaces_add_up)
 NAOS_TEST(empty_text_keeps_the_spaces_waiting)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "a");
-    clargs_out_spaces(&out, 2);
-    clargs_out_text(&out, "", 0);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 3);
+    cline_out_string(&out, "a");
+    cline_out_spaces(&out, 2);
+    cline_out_text(&out, "", 0);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 3);
     check_sink(&sink, "a");
 
-    clargs_out_newline(&out);
+    cline_out_newline(&out);
     check_sink(&sink, "a\n");
 }
 
@@ -265,23 +265,23 @@ NAOS_TEST(empty_text_keeps_the_spaces_waiting)
 NAOS_TEST(newline_drops_the_spaces)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "a");
-    clargs_out_spaces(&out, 4);
-    clargs_out_newline(&out);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
+    cline_out_string(&out, "a");
+    cline_out_spaces(&out, 4);
+    cline_out_newline(&out);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
 
-    clargs_out_spaces(&out, 8);
-    clargs_out_newline(&out);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
+    cline_out_spaces(&out, 8);
+    cline_out_newline(&out);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
 
-    clargs_out_string(&out, "b");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 1);
-    clargs_out_newline(&out);
+    cline_out_string(&out, "b");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 1);
+    cline_out_newline(&out);
 
     check_sink(&sink, "a\n\nb\n");
 }
@@ -299,19 +299,19 @@ NAOS_TEST(many_spaces_are_all_written)
     {
         char expected[SINK_SIZE];
         sink_t sink;
-        clargs_out_t out;
+        cline_out_t out;
 
         memset(expected, ' ', counts[i]);
         expected[counts[i]] = 'x';
         expected[counts[i] + 1] = '\0';
 
         sink_init(&sink);
-        clargs_out_init(&out, sink_write, &sink);
+        cline_out_init(&out, sink_write, &sink);
 
-        clargs_out_spaces(&out, counts[i]);
-        clargs_out_string(&out, "x");
+        cline_out_spaces(&out, counts[i]);
+        cline_out_string(&out, "x");
 
-        NAOS_CHECK_UINT_EQ(clargs_out_column(&out), counts[i] + 1);
+        NAOS_CHECK_UINT_EQ(cline_out_column(&out), counts[i] + 1);
         check_sink(&sink, expected);
     }
 }
@@ -322,17 +322,17 @@ NAOS_TEST(many_spaces_are_all_written)
 NAOS_TEST(pad_to_reaches_the_column)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "ab");
-    clargs_out_pad_to(&out, 6);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 6);
+    cline_out_string(&out, "ab");
+    cline_out_pad_to(&out, 6);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 6);
     check_sink(&sink, "ab");
 
-    clargs_out_string(&out, "c");
+    cline_out_string(&out, "c");
     check_sink(&sink, "ab    c");
 }
 
@@ -343,25 +343,25 @@ NAOS_TEST(pad_to_reaches_the_column)
 NAOS_TEST(pad_to_boundaries)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "abcd");
+    cline_out_string(&out, "abcd");
 
-    clargs_out_pad_to(&out, 0);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 4);
-    clargs_out_pad_to(&out, 3);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 4);
-    clargs_out_pad_to(&out, 4);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 4);
-    clargs_out_string(&out, "e");
+    cline_out_pad_to(&out, 0);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 4);
+    cline_out_pad_to(&out, 3);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 4);
+    cline_out_pad_to(&out, 4);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 4);
+    cline_out_string(&out, "e");
     check_sink(&sink, "abcde");
 
-    clargs_out_pad_to(&out, 6);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 6);
-    clargs_out_string(&out, "f");
+    cline_out_pad_to(&out, 6);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 6);
+    cline_out_string(&out, "f");
     check_sink(&sink, "abcde f");
 }
 
@@ -369,19 +369,19 @@ NAOS_TEST(pad_to_boundaries)
 NAOS_TEST(pad_to_counts_the_waiting_spaces)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_pad_to(&out, 2);
-    clargs_out_string(&out, "a");
-    clargs_out_spaces(&out, 2);
-    clargs_out_pad_to(&out, 5);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 5);
-    clargs_out_pad_to(&out, 8);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 8);
-    clargs_out_string(&out, "b");
+    cline_out_pad_to(&out, 2);
+    cline_out_string(&out, "a");
+    cline_out_spaces(&out, 2);
+    cline_out_pad_to(&out, 5);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 5);
+    cline_out_pad_to(&out, 8);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 8);
+    cline_out_string(&out, "b");
 
     check_sink(&sink, "  a     b");
 }
@@ -399,39 +399,39 @@ static bool expect_null_user_data(void *user_data, const char *text, size_t leng
 NAOS_TEST(user_data_is_passed_on)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
-    clargs_out_string(&out, "a");
+    cline_out_init(&out, sink_write, &sink);
+    cline_out_string(&out, "a");
     NAOS_CHECK_UINT_EQ(sink.calls, 1);
 
-    clargs_out_init(&out, expect_null_user_data, NULL);
-    clargs_out_string(&out, "a");
-    clargs_out_newline(&out);
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
+    cline_out_init(&out, expect_null_user_data, NULL);
+    cline_out_string(&out, "a");
+    cline_out_newline(&out);
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
 }
 
 /* No call has the length 0, whatever is written. */
 NAOS_TEST(no_call_is_empty)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_text(&out, "", 0);
-    clargs_out_spaces(&out, 0);
-    clargs_out_string(&out, "a");
-    clargs_out_spaces(&out, 0);
-    clargs_out_pad_to(&out, 1);
-    clargs_out_string(&out, "b");
-    clargs_out_spaces(&out, 32);
-    clargs_out_string(&out, "c");
-    clargs_out_spaces(&out, 64);
-    clargs_out_newline(&out);
-    clargs_out_newline(&out);
+    cline_out_text(&out, "", 0);
+    cline_out_spaces(&out, 0);
+    cline_out_string(&out, "a");
+    cline_out_spaces(&out, 0);
+    cline_out_pad_to(&out, 1);
+    cline_out_string(&out, "b");
+    cline_out_spaces(&out, 32);
+    cline_out_string(&out, "c");
+    cline_out_spaces(&out, 64);
+    cline_out_newline(&out);
+    cline_out_newline(&out);
 
     NAOS_CHECK_TRUE(sink.calls > 0);
     NAOS_CHECK_UINT_EQ(sink.empty_calls, 0);
@@ -445,33 +445,33 @@ NAOS_TEST(no_call_is_empty)
 NAOS_TEST(failure_stops_the_calls)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
     sink.fail_at = 2;
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "one");
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
-    clargs_out_string(&out, "two");
-    NAOS_CHECK_TRUE(clargs_out_failed(&out));
+    cline_out_string(&out, "one");
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
+    cline_out_string(&out, "two");
+    NAOS_CHECK_TRUE(cline_out_failed(&out));
     NAOS_CHECK_UINT_EQ(sink.calls, 2);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 6);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 6);
 
-    clargs_out_string(&out, "three");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 11);
-    clargs_out_spaces(&out, 2);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 13);
-    clargs_out_pad_to(&out, 20);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 20);
-    clargs_out_string(&out, "four");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 24);
-    clargs_out_newline(&out);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
-    clargs_out_string(&out, "five");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 4);
+    cline_out_string(&out, "three");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 11);
+    cline_out_spaces(&out, 2);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 13);
+    cline_out_pad_to(&out, 20);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 20);
+    cline_out_string(&out, "four");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 24);
+    cline_out_newline(&out);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
+    cline_out_string(&out, "five");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 4);
 
-    NAOS_CHECK_TRUE(clargs_out_failed(&out));
+    NAOS_CHECK_TRUE(cline_out_failed(&out));
     NAOS_CHECK_UINT_EQ(sink.calls, 2);
     check_sink(&sink, "one");
 }
@@ -480,26 +480,26 @@ NAOS_TEST(failure_stops_the_calls)
 NAOS_TEST(failure_of_first_call_and_of_newline)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
     sink.fail_at = 1;
-    clargs_out_init(&out, sink_write, &sink);
-    clargs_out_string(&out, "one");
-    clargs_out_newline(&out);
-    NAOS_CHECK_TRUE(clargs_out_failed(&out));
+    cline_out_init(&out, sink_write, &sink);
+    cline_out_string(&out, "one");
+    cline_out_newline(&out);
+    NAOS_CHECK_TRUE(cline_out_failed(&out));
     NAOS_CHECK_UINT_EQ(sink.calls, 1);
     NAOS_CHECK_UINT_EQ(sink.length, 0);
 
     sink_init(&sink);
     sink.fail_at = 2;
-    clargs_out_init(&out, sink_write, &sink);
-    clargs_out_string(&out, "one");
-    clargs_out_newline(&out);
-    NAOS_CHECK_TRUE(clargs_out_failed(&out));
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
-    clargs_out_string(&out, "two");
-    clargs_out_newline(&out);
+    cline_out_init(&out, sink_write, &sink);
+    cline_out_string(&out, "one");
+    cline_out_newline(&out);
+    NAOS_CHECK_TRUE(cline_out_failed(&out));
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
+    cline_out_string(&out, "two");
+    cline_out_newline(&out);
     NAOS_CHECK_UINT_EQ(sink.calls, 2);
     check_sink(&sink, "one");
 }
@@ -511,23 +511,23 @@ NAOS_TEST(failure_of_first_call_and_of_newline)
 NAOS_TEST(failure_while_writing_the_spaces)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
     sink.fail_at = 2;
-    clargs_out_init(&out, sink_write, &sink);
+    cline_out_init(&out, sink_write, &sink);
 
-    clargs_out_string(&out, "a");
-    clargs_out_spaces(&out, 100);
-    clargs_out_string(&out, "b");
+    cline_out_string(&out, "a");
+    cline_out_spaces(&out, 100);
+    cline_out_string(&out, "b");
 
-    NAOS_CHECK_TRUE(clargs_out_failed(&out));
+    NAOS_CHECK_TRUE(cline_out_failed(&out));
     NAOS_CHECK_UINT_EQ(sink.calls, 2);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 102);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 102);
     check_sink(&sink, "a");
 
-    clargs_out_string(&out, "c");
-    clargs_out_newline(&out);
+    cline_out_string(&out, "c");
+    cline_out_newline(&out);
     NAOS_CHECK_UINT_EQ(sink.calls, 2);
 }
 
@@ -535,20 +535,20 @@ NAOS_TEST(failure_while_writing_the_spaces)
 NAOS_TEST(init_forgets_everything)
 {
     sink_t sink;
-    clargs_out_t out;
+    cline_out_t out;
 
     sink_init(&sink);
     sink.fail_at = 1;
-    clargs_out_init(&out, sink_write, &sink);
-    clargs_out_string(&out, "one");
-    clargs_out_spaces(&out, 3);
-    NAOS_CHECK_TRUE(clargs_out_failed(&out));
+    cline_out_init(&out, sink_write, &sink);
+    cline_out_string(&out, "one");
+    cline_out_spaces(&out, 3);
+    NAOS_CHECK_TRUE(cline_out_failed(&out));
 
     sink_init(&sink);
-    clargs_out_init(&out, sink_write, &sink);
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
-    clargs_out_string(&out, "two");
+    cline_out_init(&out, sink_write, &sink);
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
+    cline_out_string(&out, "two");
     check_sink(&sink, "two");
 }
 
@@ -560,63 +560,63 @@ NAOS_TEST(init_forgets_everything)
  */
 NAOS_TEST(counting_only_advances_the_column)
 {
-    clargs_out_t out;
+    cline_out_t out;
 
-    clargs_out_init(&out, NULL, NULL);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
+    cline_out_init(&out, NULL, NULL);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
 
-    clargs_out_string(&out, "--output");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 8);
-    clargs_out_spaces(&out, 1);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 9);
-    clargs_out_text(&out, "<FILE>", 6);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 15);
-    clargs_out_pad_to(&out, 40);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 40);
-    clargs_out_pad_to(&out, 10);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 40);
-    clargs_out_text(&out, "", 0);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 40);
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
+    cline_out_string(&out, "--output");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 8);
+    cline_out_spaces(&out, 1);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 9);
+    cline_out_text(&out, "<FILE>", 6);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 15);
+    cline_out_pad_to(&out, 40);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 40);
+    cline_out_pad_to(&out, 10);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 40);
+    cline_out_text(&out, "", 0);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 40);
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
 
-    clargs_out_newline(&out);
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 0);
-    clargs_out_spaces(&out, 100);
-    clargs_out_string(&out, "x");
-    NAOS_CHECK_UINT_EQ(clargs_out_column(&out), 101);
-    NAOS_CHECK_FALSE(clargs_out_failed(&out));
+    cline_out_newline(&out);
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 0);
+    cline_out_spaces(&out, 100);
+    cline_out_string(&out, "x");
+    NAOS_CHECK_UINT_EQ(cline_out_column(&out), 101);
+    NAOS_CHECK_FALSE(cline_out_failed(&out));
 }
 
 /*
  * The same calls give the same columns with a write function and
  * without one.
  */
-static void write_sample(clargs_out_t *out, size_t *columns)
+static void write_sample(cline_out_t *out, size_t *columns)
 {
-    clargs_out_spaces(out, 2);
-    clargs_out_string(out, "-v, --verbose");
-    columns[0] = clargs_out_column(out);
-    clargs_out_pad_to(out, 20);
-    clargs_out_string(out, "Say more");
-    columns[1] = clargs_out_column(out);
-    clargs_out_spaces(out, 5);
-    columns[2] = clargs_out_column(out);
-    clargs_out_newline(out);
-    columns[3] = clargs_out_column(out);
+    cline_out_spaces(out, 2);
+    cline_out_string(out, "-v, --verbose");
+    columns[0] = cline_out_column(out);
+    cline_out_pad_to(out, 20);
+    cline_out_string(out, "Say more");
+    columns[1] = cline_out_column(out);
+    cline_out_spaces(out, 5);
+    columns[2] = cline_out_column(out);
+    cline_out_newline(out);
+    columns[3] = cline_out_column(out);
 }
 
 NAOS_TEST(counting_only_matches_writing)
 {
     sink_t sink;
-    clargs_out_t writing;
-    clargs_out_t counting;
+    cline_out_t writing;
+    cline_out_t counting;
     size_t written[4];
     size_t counted[4];
     size_t i;
 
     sink_init(&sink);
-    clargs_out_init(&writing, sink_write, &sink);
-    clargs_out_init(&counting, NULL, NULL);
+    cline_out_init(&writing, sink_write, &sink);
+    cline_out_init(&counting, NULL, NULL);
 
     write_sample(&writing, written);
     write_sample(&counting, counted);

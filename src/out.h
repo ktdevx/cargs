@@ -1,8 +1,8 @@
 /*
- * CLArgs - internal declarations for the output of the help: the part that
+ * CLine - internal declarations for the output of the help: the part that
  * counts columns while it passes text to a write function.
  *
- * Everything the help writes goes through a clargs_out_t. It keeps the
+ * Everything the help writes goes through a cline_out_t. It keeps the
  * column of the current line, where one byte is one column, whatever the
  * byte is.
  *
@@ -20,17 +20,17 @@
  * the same code that writes it.
  *
  * The functions allocate nothing and know nothing about a schema. A
- * clargs_out_t is an object of the caller, used for one generation and by
+ * cline_out_t is an object of the caller, used for one generation and by
  * one thread.
  *
  * Preconditions of every function: out is not NULL (checked with assert),
- * and, except for clargs_out_init(), it was initialised with
- * clargs_out_init() (not checked).
+ * and, except for cline_out_init(), it was initialised with
+ * cline_out_init() (not checked).
  */
-#ifndef CLARGS_OUT_H
-#define CLARGS_OUT_H
+#ifndef CLINE_OUT_H
+#define CLINE_OUT_H
 
-#include <clargs/help.h>
+#include <cline/help.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -39,21 +39,21 @@
  * The state of the output. The members are read and written by the
  * functions of this header only.
  */
-typedef struct clargs_out
+typedef struct cline_out
 {
-    clargs_help_write_fn_t write_fn; /* NULL: only the columns are counted */
+    cline_help_write_fn_t write_fn; /* NULL: only the columns are counted */
     void *user_data;                 /* passed on to write_fn as it is */
     size_t column;                   /* the current column, with the blanks not yet written */
     size_t pending;                  /* the number of blanks not yet written */
     bool failed;                     /* write_fn has reported a failure */
-} clargs_out_t;
+} cline_out_t;
 
 /*
  * Starts an output at column 0, with no blanks remembered and no failure.
  * write_fn receives the text, together with user_data; when write_fn is
  * NULL, nothing is written and only the columns are counted.
  */
-void clargs_out_init(clargs_out_t *out, clargs_help_write_fn_t write_fn, void *user_data);
+void cline_out_init(cline_out_t *out, cline_help_write_fn_t write_fn, void *user_data);
 
 /*
  * Writes the length bytes of text: first the blanks that are remembered,
@@ -61,47 +61,47 @@ void clargs_out_init(clargs_out_t *out, clargs_help_write_fn_t write_fn, void *u
  * happens: the blanks stay remembered.
  *
  * Preconditions: text is not NULL unless length is 0, and it holds no
- * '\n' (a line is ended with clargs_out_newline()). They are checked with
+ * '\n' (a line is ended with cline_out_newline()). They are checked with
  * assert.
  */
-void clargs_out_text(clargs_out_t *out, const char *text, size_t length);
+void cline_out_text(cline_out_t *out, const char *text, size_t length);
 
 /*
- * The same as clargs_out_text() with the length of the string text.
+ * The same as cline_out_text() with the length of the string text.
  *
  * Preconditions: text is not NULL and holds no '\n'. They are checked with
  * assert.
  */
-void clargs_out_string(clargs_out_t *out, const char *text);
+void cline_out_string(cline_out_t *out, const char *text);
 
 /*
  * Remembers count more blanks and advances the column by count. Nothing is
  * written yet.
  */
-void clargs_out_spaces(clargs_out_t *out, size_t count);
+void cline_out_spaces(cline_out_t *out, size_t count);
 
 /*
  * When the current column is to the left of column, remembers the blanks
- * that lead to it, as clargs_out_spaces() does. Otherwise nothing happens.
+ * that lead to it, as cline_out_spaces() does. Otherwise nothing happens.
  */
-void clargs_out_pad_to(clargs_out_t *out, size_t column);
+void cline_out_pad_to(cline_out_t *out, size_t column);
 
 /*
  * Ends the line: drops the blanks that are remembered, writes the one byte
  * '\n' and sets the column to 0.
  */
-void clargs_out_newline(clargs_out_t *out);
+void cline_out_newline(cline_out_t *out);
 
 /*
  * Returns the current column: the number of bytes written on this line
  * plus the number of blanks that are remembered.
  */
-size_t clargs_out_column(const clargs_out_t *out);
+size_t cline_out_column(const cline_out_t *out);
 
 /*
  * Returns true when the write function has reported a failure. Always
  * false without a write function.
  */
-bool clargs_out_failed(const clargs_out_t *out);
+bool cline_out_failed(const cline_out_t *out);
 
-#endif /* CLARGS_OUT_H */
+#endif /* CLINE_OUT_H */

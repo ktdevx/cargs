@@ -1,5 +1,5 @@
 /*
- * CLArgs - the message of a parse error.
+ * CLine - the message of a parse error.
  */
 #include "message.h"
 
@@ -49,7 +49,7 @@ static void add_string(pieces_t *pieces, const char *text)
 }
 
 /* Appends <name>: the prefix and the name. */
-static void add_name(pieces_t *pieces, const clargs_message_parts_t *parts)
+static void add_name(pieces_t *pieces, const cline_message_parts_t *parts)
 {
     assert(parts->name != NULL);
 
@@ -64,34 +64,34 @@ static void add_name(pieces_t *pieces, const clargs_message_parts_t *parts)
  * Collects the pieces of the wording of the kind; see the table in
  * "message.h".
  */
-static void collect(pieces_t *pieces, const clargs_message_parts_t *parts)
+static void collect(pieces_t *pieces, const cline_message_parts_t *parts)
 {
     pieces->count = 0;
 
     switch (parts->kind)
     {
-    case CLARGS_PARSE_ERROR_UNKNOWN_OPTION:
+    case CLINE_PARSE_ERROR_UNKNOWN_OPTION:
         ADD_TEXT(pieces, "unknown option '");
         add_name(pieces, parts);
         ADD_TEXT(pieces, "'");
         break;
-    case CLARGS_PARSE_ERROR_UNKNOWN_SUBCOMMAND:
+    case CLINE_PARSE_ERROR_UNKNOWN_SUBCOMMAND:
         ADD_TEXT(pieces, "unknown command '");
         add_string(pieces, parts->value);
         ADD_TEXT(pieces, "'");
         break;
-    case CLARGS_PARSE_ERROR_MISSING_VALUE:
+    case CLINE_PARSE_ERROR_MISSING_VALUE:
         ADD_TEXT(pieces, "option '");
         add_name(pieces, parts);
         ADD_TEXT(pieces, "' requires a value");
         break;
-    case CLARGS_PARSE_ERROR_UNEXPECTED_VALUE:
+    case CLINE_PARSE_ERROR_UNEXPECTED_VALUE:
         ADD_TEXT(pieces, "option '");
         add_name(pieces, parts);
         ADD_TEXT(pieces, "' does not take a value");
         break;
-    case CLARGS_PARSE_ERROR_INVALID_VALUE:
-        if (parts->source == CLARGS_SOURCE_DEFAULT)
+    case CLINE_PARSE_ERROR_INVALID_VALUE:
+        if (parts->source == CLINE_SOURCE_DEFAULT)
         {
             ADD_TEXT(pieces, "invalid default value '");
         }
@@ -113,34 +113,34 @@ static void collect(pieces_t *pieces, const clargs_message_parts_t *parts)
         add_string(pieces, parts->type_name);
         ADD_TEXT(pieces, ")");
         break;
-    case CLARGS_PARSE_ERROR_MISSING_OPTION:
+    case CLINE_PARSE_ERROR_MISSING_OPTION:
         ADD_TEXT(pieces, "missing required option '");
         add_name(pieces, parts);
         ADD_TEXT(pieces, "'");
         break;
-    case CLARGS_PARSE_ERROR_MISSING_POSITIONAL:
+    case CLINE_PARSE_ERROR_MISSING_POSITIONAL:
         ADD_TEXT(pieces, "missing required argument '");
         add_name(pieces, parts);
         ADD_TEXT(pieces, "'");
         break;
-    case CLARGS_PARSE_ERROR_UNEXPECTED_POSITIONAL:
+    case CLINE_PARSE_ERROR_UNEXPECTED_POSITIONAL:
         ADD_TEXT(pieces, "unexpected argument '");
         add_string(pieces, parts->value);
         ADD_TEXT(pieces, "'");
         break;
-    case CLARGS_PARSE_ERROR_INVALID_ENCODING:
+    case CLINE_PARSE_ERROR_INVALID_ENCODING:
         ADD_TEXT(pieces, "invalid character encoding in argument '");
         add_string(pieces, parts->value);
         ADD_TEXT(pieces, "'");
         break;
-    case CLARGS_PARSE_ERROR_NONE:
+    case CLINE_PARSE_ERROR_NONE:
     default:
         /* Ruled out by the precondition. */
         break;
     }
 }
 
-clargs_error_t clargs_message_build(const clargs_message_parts_t *parts, char **out)
+cline_error_t cline_message_build(const cline_message_parts_t *parts, char **out)
 {
     pieces_t pieces;
     size_t length = 0;
@@ -150,8 +150,8 @@ clargs_error_t clargs_message_build(const clargs_message_parts_t *parts, char **
 
     assert(parts != NULL);
     assert(out != NULL);
-    assert(parts->kind != CLARGS_PARSE_ERROR_NONE);
-    assert(parts->kind <= CLARGS_PARSE_ERROR_INVALID_ENCODING);
+    assert(parts->kind != CLINE_PARSE_ERROR_NONE);
+    assert(parts->kind <= CLINE_PARSE_ERROR_INVALID_ENCODING);
 
     *out = NULL;
 
@@ -161,19 +161,19 @@ clargs_error_t clargs_message_build(const clargs_message_parts_t *parts, char **
     {
         if (pieces.items[i].length > (SIZE_MAX - length))
         {
-            return CLARGS_ERROR_OUT_OF_MEMORY;
+            return CLINE_ERROR_OUT_OF_MEMORY;
         }
         length += pieces.items[i].length;
     }
     if (length == SIZE_MAX)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
 
-    message = clargs_malloc(length + 1);
+    message = cline_malloc(length + 1);
     if (message == NULL)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
 
     end = message;
@@ -188,5 +188,5 @@ clargs_error_t clargs_message_build(const clargs_message_parts_t *parts, char **
     *end = '\0';
 
     *out = message;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }

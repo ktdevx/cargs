@@ -1,5 +1,5 @@
 /*
- * CLArgs - validation: the checks of a schema that need the whole tree, and
+ * CLine - validation: the checks of a schema that need the whole tree, and
  * whether the tree has been validated.
  *
  * The validation reads the tree through the reading functions of the
@@ -21,9 +21,9 @@
  */
 typedef struct fault
 {
-    const clargs_command_t *command;
-    const clargs_option_t *option;
-    const clargs_positional_t *positional;
+    const cline_command_t *command;
+    const cline_option_t *option;
+    const cline_positional_t *positional;
 } fault_t;
 
 /*
@@ -36,19 +36,19 @@ typedef struct fault
  * 2. One before it takes any number of arguments (ZERO_OR_MORE,
  *    ONE_OR_MORE).
  */
-static const clargs_positional_t *find_positional_fault(const clargs_command_t *command)
+static const cline_positional_t *find_positional_fault(const cline_command_t *command)
 {
-    const size_t count = clargs_command_positional_count(command);
+    const size_t count = cline_command_positional_count(command);
     bool after_optional = false;
     bool after_variadic = false;
     size_t index;
 
     for (index = 0; index < count; ++index)
     {
-        const clargs_positional_t *positional = clargs_command_positional_at(command, index);
-        const clargs_arity_t arity = clargs_positional_arity(positional);
+        const cline_positional_t *positional = cline_command_positional_at(command, index);
+        const cline_arity_t arity = cline_positional_arity(positional);
 
-        if (after_optional && ((arity == CLARGS_ARITY_REQUIRED) || (arity == CLARGS_ARITY_ONE_OR_MORE)))
+        if (after_optional && ((arity == CLINE_ARITY_REQUIRED) || (arity == CLINE_ARITY_ONE_OR_MORE)))
         {
             return positional;
         }
@@ -57,11 +57,11 @@ static const clargs_positional_t *find_positional_fault(const clargs_command_t *
             return positional;
         }
 
-        if ((arity == CLARGS_ARITY_OPTIONAL) || (arity == CLARGS_ARITY_ZERO_OR_MORE))
+        if ((arity == CLINE_ARITY_OPTIONAL) || (arity == CLINE_ARITY_ZERO_OR_MORE))
         {
             after_optional = true;
         }
-        if ((arity == CLARGS_ARITY_ZERO_OR_MORE) || (arity == CLARGS_ARITY_ONE_OR_MORE))
+        if ((arity == CLINE_ARITY_ZERO_OR_MORE) || (arity == CLINE_ARITY_ONE_OR_MORE))
         {
             after_variadic = true;
         }
@@ -75,37 +75,37 @@ static const clargs_positional_t *find_positional_fault(const clargs_command_t *
  * type, cleaned up if the conversion succeeded, and the area is freed: when
  * the function returns, nothing of the conversion is left.
  *
- * Returns CLARGS_ERROR_NONE when the value type takes text,
- * CLARGS_ERROR_OUT_OF_MEMORY when the area cannot be allocated or the
- * conversion returns that code, and CLARGS_ERROR_INVALID_DEFAULT for every
+ * Returns CLINE_ERROR_NONE when the value type takes text,
+ * CLINE_ERROR_OUT_OF_MEMORY when the area cannot be allocated or the
+ * conversion returns that code, and CLINE_ERROR_INVALID_DEFAULT for every
  * other code of the conversion.
  */
-static clargs_error_t check_default(const clargs_type_t *type, const char *text)
+static cline_error_t check_default(const cline_type_t *type, const char *text)
 {
     /*
      * Memory of the allocator is aligned for an object of any type, as the
      * conversion needs it, and the size of a value is never 0.
      */
-    void *value = clargs_malloc(clargs_type_value_size(type));
-    clargs_error_t error;
+    void *value = cline_malloc(cline_type_value_size(type));
+    cline_error_t error;
 
     if (value == NULL)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
 
-    error = clargs_type_convert(type, text, value);
-    if (error == CLARGS_ERROR_NONE)
+    error = cline_type_convert(type, text, value);
+    if (error == CLINE_ERROR_NONE)
     {
-        clargs_type_release(type, value);
+        cline_type_release(type, value);
     }
-    clargs_free(value);
+    cline_free(value);
 
-    if ((error == CLARGS_ERROR_NONE) || (error == CLARGS_ERROR_OUT_OF_MEMORY))
+    if ((error == CLINE_ERROR_NONE) || (error == CLINE_ERROR_OUT_OF_MEMORY))
     {
         return error;
     }
-    return CLARGS_ERROR_INVALID_DEFAULT;
+    return CLINE_ERROR_INVALID_DEFAULT;
 }
 
 /*
@@ -113,25 +113,25 @@ static clargs_error_t check_default(const clargs_type_t *type, const char *text)
  * with two rules, in this order:
  *
  * 1. It is not both required and given a default value
- *    (CLARGS_ERROR_INVALID_DEFINITION).
+ *    (CLINE_ERROR_INVALID_DEFINITION).
  * 2. Its value type takes its default value, if it has one
- *    (CLARGS_ERROR_INVALID_DEFAULT).
+ *    (CLINE_ERROR_INVALID_DEFAULT).
  *
  * Stops at the first option that breaks a rule, writes it to *faulty and
- * returns the error code. Returns CLARGS_ERROR_OUT_OF_MEMORY, with *faulty
+ * returns the error code. Returns CLINE_ERROR_OUT_OF_MEMORY, with *faulty
  * not written, when a default value cannot be checked for a lack of memory,
- * and CLARGS_ERROR_NONE, with *faulty not written, when no rule is broken.
+ * and CLINE_ERROR_NONE, with *faulty not written, when no rule is broken.
  */
-static clargs_error_t check_options(const clargs_command_t *command, const clargs_option_t **faulty)
+static cline_error_t check_options(const cline_command_t *command, const cline_option_t **faulty)
 {
-    const size_t count = clargs_command_option_count(command);
+    const size_t count = cline_command_option_count(command);
     size_t index;
 
     for (index = 0; index < count; ++index)
     {
-        const clargs_option_t *option = clargs_command_option_at(command, index);
-        const char *text = clargs_option_default(option);
-        clargs_error_t error;
+        const cline_option_t *option = cline_command_option_at(command, index);
+        const char *text = cline_option_default(option);
+        cline_error_t error;
 
         /* Only an option that takes a value has a default value. */
         if (text == NULL)
@@ -139,62 +139,62 @@ static clargs_error_t check_options(const clargs_command_t *command, const clarg
             continue;
         }
 
-        if (clargs_option_is_required(option))
+        if (cline_option_is_required(option))
         {
             *faulty = option;
-            return CLARGS_ERROR_INVALID_DEFINITION;
+            return CLINE_ERROR_INVALID_DEFINITION;
         }
 
-        error = check_default(clargs_option_type(option), text);
-        if (error == CLARGS_ERROR_INVALID_DEFAULT)
+        error = check_default(cline_option_type(option), text);
+        if (error == CLINE_ERROR_INVALID_DEFAULT)
         {
             *faulty = option;
         }
-        if (error != CLARGS_ERROR_NONE)
+        if (error != CLINE_ERROR_NONE)
         {
             return error;
         }
     }
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /*
  * Checks, in the order of the definition, that the value type of every
  * positional of command that has a default value takes it. Stops at the
  * first that does not, writes it to *faulty and returns
- * CLARGS_ERROR_INVALID_DEFAULT. Returns CLARGS_ERROR_OUT_OF_MEMORY, with
+ * CLINE_ERROR_INVALID_DEFAULT. Returns CLINE_ERROR_OUT_OF_MEMORY, with
  * *faulty not written, when a default value cannot be checked for a lack of
- * memory, and CLARGS_ERROR_NONE, with *faulty not written, when every
+ * memory, and CLINE_ERROR_NONE, with *faulty not written, when every
  * default value is taken.
  */
-static clargs_error_t check_positional_defaults(const clargs_command_t *command,
-                                                const clargs_positional_t **faulty)
+static cline_error_t check_positional_defaults(const cline_command_t *command,
+                                                const cline_positional_t **faulty)
 {
-    const size_t count = clargs_command_positional_count(command);
+    const size_t count = cline_command_positional_count(command);
     size_t index;
 
     for (index = 0; index < count; ++index)
     {
-        const clargs_positional_t *positional = clargs_command_positional_at(command, index);
-        const char *text = clargs_positional_default(positional);
-        clargs_error_t error;
+        const cline_positional_t *positional = cline_command_positional_at(command, index);
+        const char *text = cline_positional_default(positional);
+        cline_error_t error;
 
         if (text == NULL)
         {
             continue;
         }
 
-        error = check_default(clargs_positional_type(positional), text);
-        if (error == CLARGS_ERROR_INVALID_DEFAULT)
+        error = check_default(cline_positional_type(positional), text);
+        if (error == CLINE_ERROR_INVALID_DEFAULT)
         {
             *faulty = positional;
         }
-        if (error != CLARGS_ERROR_NONE)
+        if (error != CLINE_ERROR_NONE)
         {
             return error;
         }
     }
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /*
@@ -202,19 +202,19 @@ static clargs_error_t check_positional_defaults(const clargs_command_t *command,
  * definition, each with everything below it. Within one command: the order
  * of the positionals, then the options, then the default values of the
  * positionals. Stops at the first fault, writes where it is to *fault and
- * returns its error code. Returns CLARGS_ERROR_NONE, with *fault not
- * written, when there is no fault, and CLARGS_ERROR_OUT_OF_MEMORY, with
+ * returns its error code. Returns CLINE_ERROR_NONE, with *fault not
+ * written, when there is no fault, and CLINE_ERROR_OUT_OF_MEMORY, with
  * *fault not written, when a check fails for a lack of memory.
  *
  * The order of the checks is part of the contract of
- * clargs_command_validate(). The depth of the recursion is the depth of
+ * cline_command_validate(). The depth of the recursion is the depth of
  * the tree.
  */
-static clargs_error_t check_command(const clargs_command_t *command, fault_t *fault)
+static cline_error_t check_command(const cline_command_t *command, fault_t *fault)
 {
-    const clargs_positional_t *positional = find_positional_fault(command);
-    const clargs_option_t *option = NULL;
-    clargs_error_t error;
+    const cline_positional_t *positional = find_positional_fault(command);
+    const cline_option_t *option = NULL;
+    cline_error_t error;
     size_t count;
     size_t index;
 
@@ -223,7 +223,7 @@ static clargs_error_t check_command(const clargs_command_t *command, fault_t *fa
         fault->command = command;
         fault->option = NULL;
         fault->positional = positional;
-        return CLARGS_ERROR_INVALID_DEFINITION;
+        return CLINE_ERROR_INVALID_DEFINITION;
     }
 
     error = check_options(command, &option);
@@ -233,7 +233,7 @@ static clargs_error_t check_command(const clargs_command_t *command, fault_t *fa
         fault->option = option;
         fault->positional = NULL;
     }
-    if (error != CLARGS_ERROR_NONE)
+    if (error != CLINE_ERROR_NONE)
     {
         return error;
     }
@@ -245,29 +245,29 @@ static clargs_error_t check_command(const clargs_command_t *command, fault_t *fa
         fault->option = NULL;
         fault->positional = positional;
     }
-    if (error != CLARGS_ERROR_NONE)
+    if (error != CLINE_ERROR_NONE)
     {
         return error;
     }
 
-    count = clargs_command_subcommand_count(command);
+    count = cline_command_subcommand_count(command);
     for (index = 0; index < count; ++index)
     {
-        error = check_command(clargs_command_subcommand_at(command, index), fault);
-        if (error != CLARGS_ERROR_NONE)
+        error = check_command(cline_command_subcommand_at(command, index), fault);
+        if (error != CLINE_ERROR_NONE)
         {
             return error;
         }
     }
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
-clargs_error_t clargs_command_validate(clargs_command_t *root, const clargs_command_t **command,
-                                       const clargs_option_t **option,
-                                       const clargs_positional_t **positional)
+cline_error_t cline_command_validate(cline_command_t *root, const cline_command_t **command,
+                                       const cline_option_t **option,
+                                       const cline_positional_t **positional)
 {
     fault_t fault;
-    clargs_error_t error;
+    cline_error_t error;
 
     assert(root != NULL);
     assert(root->parent == NULL);
@@ -282,7 +282,7 @@ clargs_error_t clargs_command_validate(clargs_command_t *root, const clargs_comm
      * The state changes only here: a validation that fails leaves it as it
      * was.
      */
-    if (error == CLARGS_ERROR_NONE)
+    if (error == CLINE_ERROR_NONE)
     {
         root->validated = true;
     }
@@ -303,7 +303,7 @@ clargs_error_t clargs_command_validate(clargs_command_t *root, const clargs_comm
     return error;
 }
 
-bool clargs_command_is_validated(const clargs_command_t *command)
+bool cline_command_is_validated(const cline_command_t *command)
 {
     assert(command != NULL);
 

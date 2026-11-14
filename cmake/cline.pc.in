@@ -1,0 +1,15 @@
+# cline.pc - the pkg-config file of CLine.
+#
+#   cc main.c $(pkg-config --cflags --libs cline)
+#
+# The same for a static and a shared CLine.
+
+prefix=@cline_pc_prefix@
+libdir=@cline_pc_libdir@
+includedir=@cline_pc_includedir@
+
+Name: cline
+Description: A command-line argument parser library for C99
+Version: @cline_version_full@
+Cflags: -I${includedir}@cline_pc_cflags@
+Libs: -L${libdir} -l@cline_pc_library@

@@ -1,9 +1,9 @@
-# ClargsCTestDefaults.cmake - the configuration ctest uses when none is given.
+# ClineCTestDefaults.cmake - the configuration ctest uses when none is given.
 #
 # This file is not included by a CMakeLists.txt. ctest reads it, before the
 # tests of the build directory, each time it runs: the top CMakeLists.txt adds
 # it to the directory property TEST_INCLUDE_FILES of the top directory, only
-# when CLArgs is the top-level project and the generator is multi-config
+# when CLine is the top-level project and the generator is multi-config
 # (Visual Studio, Xcode, Ninja Multi-Config).
 #
 # With such a generator, "cmake --build <dir>" with no --config builds Debug,

@@ -1,5 +1,5 @@
 /*
- * CLArgs - the conversion of numbers.
+ * CLine - the conversion of numbers.
  */
 #include "number.h"
 
@@ -36,7 +36,7 @@ static bool is_digit(char c)
     return (c >= '0') && (c <= '9');
 }
 
-clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
+cline_error_t cline_number_parse_int(const char *text, int64_t *out)
 {
     const char *p;
     bool negative;
@@ -54,7 +54,7 @@ clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
     }
     if (!is_digit(*p))
     {
-        return CLARGS_ERROR_INVALID_VALUE;
+        return CLINE_ERROR_INVALID_VALUE;
     }
 
     /*
@@ -71,12 +71,12 @@ clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
 
         if (!is_digit(*p))
         {
-            return CLARGS_ERROR_INVALID_VALUE;
+            return CLINE_ERROR_INVALID_VALUE;
         }
         digit = *p - '0';
         if (value < ((INT64_MIN + digit) / 10))
         {
-            return CLARGS_ERROR_INVALID_VALUE;
+            return CLINE_ERROR_INVALID_VALUE;
         }
         value = (value * 10) - digit;
     }
@@ -86,13 +86,13 @@ clargs_error_t clargs_number_parse_int(const char *text, int64_t *out)
         /* -INT64_MIN is one more than INT64_MAX. */
         if (value == INT64_MIN)
         {
-            return CLARGS_ERROR_INVALID_VALUE;
+            return CLINE_ERROR_INVALID_VALUE;
         }
         value = -value;
     }
 
     *out = value;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /*
@@ -191,7 +191,7 @@ static size_t decimal_point(char *buffer)
     return length;
 }
 
-clargs_error_t clargs_number_parse_float(const char *text, double *out)
+cline_error_t cline_number_parse_float(const char *text, double *out)
 {
     char short_copy[SHORT_COPY_SIZE];
     char point_text[DECIMAL_POINT_SIZE];
@@ -210,7 +210,7 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
 
     if (!scan_float(text, &length, &point))
     {
-        return CLARGS_ERROR_INVALID_VALUE;
+        return CLINE_ERROR_INVALID_VALUE;
     }
 
     /* snprintf and strtod may write errno. */
@@ -230,11 +230,11 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
     }
     else
     {
-        copy = clargs_malloc(copy_length + 1);
+        copy = cline_malloc(copy_length + 1);
         if (copy == NULL)
         {
             errno = saved_errno;
-            return CLARGS_ERROR_OUT_OF_MEMORY;
+            return CLINE_ERROR_OUT_OF_MEMORY;
         }
     }
 
@@ -251,7 +251,7 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
 
     if (copy != short_copy)
     {
-        clargs_free(copy);
+        cline_free(copy);
     }
     errno = saved_errno;
 
@@ -262,9 +262,9 @@ clargs_error_t clargs_number_parse_float(const char *text, double *out)
      */
     if (!complete || (value > DBL_MAX) || (value < -DBL_MAX))
     {
-        return CLARGS_ERROR_INVALID_VALUE;
+        return CLINE_ERROR_INVALID_VALUE;
     }
 
     *out = value;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }

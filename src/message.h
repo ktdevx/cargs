@@ -1,5 +1,5 @@
 /*
- * CLArgs - internal declarations for the message of a parse error.
+ * CLine - internal declarations for the message of a parse error.
  *
  * A message is one line of English that can be shown to the user of the
  * program as it is. It has no line break, no prefix such as the name of the
@@ -25,11 +25,11 @@
  * The function knows neither the schema nor the result: it gets the kind
  * and the strings only.
  */
-#ifndef CLARGS_MESSAGE_H
-#define CLARGS_MESSAGE_H
+#ifndef CLINE_MESSAGE_H
+#define CLINE_MESSAGE_H
 
-#include <clargs/error.h>
-#include <clargs/parse.h>
+#include <cline/error.h>
+#include <cline/parse.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -38,28 +38,28 @@
  * What a message is built from. The strings are only read during the
  * call.
  */
-typedef struct clargs_message_parts
+typedef struct cline_message_parts
 {
-    clargs_parse_error_kind_t kind;
-    clargs_source_t source;  /* CLARGS_SOURCE_DEFAULT: the wording of a default value */
+    cline_parse_error_kind_t kind;
+    cline_source_t source;  /* CLINE_SOURCE_DEFAULT: the wording of a default value */
     bool for_positional;     /* INVALID_VALUE: the wording of a positional argument */
     const char *name_prefix; /* "--", "-" or "". Never NULL */
     const char *name;        /* The name. NULL for a kind that has no <name> */
     size_t name_length;      /* The length of name, which need not end at a terminator */
     const char *value;       /* The value or the element. NULL for a kind that has no <value> */
     const char *type_name;   /* The name of the value type. Used by INVALID_VALUE only */
-} clargs_message_parts_t;
+} cline_message_parts_t;
 
 /*
  * Builds the message of a parse error from parts and writes it to *out, as
  * a string with a terminator in memory of the allocator that is set. The
  * message takes one allocation. source and for_positional are read for
- * CLARGS_PARSE_ERROR_INVALID_VALUE only.
+ * CLINE_PARSE_ERROR_INVALID_VALUE only.
  *
- * The caller owns the message and frees it with clargs_free()
+ * The caller owns the message and frees it with cline_free()
  * ("alloc_internal.h").
  *
- * Returns CLARGS_ERROR_NONE on success. Returns CLARGS_ERROR_OUT_OF_MEMORY
+ * Returns CLINE_ERROR_NONE on success. Returns CLINE_ERROR_OUT_OF_MEMORY
  * when the allocation fails or the length of the message does not fit in
  * size_t; *out is NULL then and nothing is left allocated.
  *
@@ -67,11 +67,11 @@ typedef struct clargs_message_parts
  *
  * - parts and out are not NULL.
  * - parts->kind is one of the kinds of the table above; it is not
- *   CLARGS_PARSE_ERROR_NONE.
+ *   CLINE_PARSE_ERROR_NONE.
  * - The strings that the wording of the kind uses are not NULL:
  *   name_prefix and name for <name>, value for <value>, type_name for
  *   <type>.
  */
-clargs_error_t clargs_message_build(const clargs_message_parts_t *parts, char **out);
+cline_error_t cline_message_build(const cline_message_parts_t *parts, char **out);
 
-#endif /* CLARGS_MESSAGE_H */
+#endif /* CLINE_MESSAGE_H */

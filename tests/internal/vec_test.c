@@ -2,8 +2,8 @@
  * Tests of the growing array: "vec.h".
  *
  * The tests use the test allocator ("../support/test_allocator.h") to see
- * the requests that a clargs_vec_t makes: its count of requests shows when
- * the array grows, its count of live blocks shows that clargs_vec_destroy
+ * the requests that a cline_vec_t makes: its count of requests shows when
+ * the array grows, its count of live blocks shows that cline_vec_destroy
  * frees everything and that a failed push leaves nothing behind, and its
  * count of violations shows a call that the library must never make.
  *
@@ -15,7 +15,7 @@
  * The test fails_at_every_allocation_point is the pattern for the tests of
  * the failure of an allocation; copy its shape.
  */
-#include <clargs/clargs.h>
+#include <cline/cline.h>
 
 #include "alloc_internal.h"
 #include "vec.h"
@@ -69,9 +69,9 @@ static void wrap_free(void *ptr)
     free(ptr);
 }
 
-static clargs_allocator_t wrap_allocator(void)
+static cline_allocator_t wrap_allocator(void)
 {
-    clargs_allocator_t allocator;
+    cline_allocator_t allocator;
 
     allocator.malloc_fn = wrap_malloc;
     allocator.realloc_fn = wrap_realloc;
@@ -96,15 +96,15 @@ static void wrap_reset(void)
  */
 static void check_clean(void)
 {
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
 }
 
 /*
  * The array is in the empty state, the state right after
- * clargs_vec_init.
+ * cline_vec_init.
  */
-static void check_empty(const clargs_vec_t *vec, size_t item_size)
+static void check_empty(const cline_vec_t *vec, size_t item_size)
 {
     NAOS_CHECK_TRUE(vec->items == NULL);
     NAOS_CHECK_UINT_EQ(vec->count, 0);
@@ -126,32 +126,32 @@ static int int_value(size_t index)
  * the array has total items afterwards. Stops at the first push that fails
  * and returns its error.
  */
-static clargs_error_t push_ints_up_to(clargs_vec_t *vec, size_t total)
+static cline_error_t push_ints_up_to(cline_vec_t *vec, size_t total)
 {
     while (vec->count < total)
     {
         int value = int_value(vec->count);
-        clargs_error_t error = clargs_vec_push(vec, &value);
+        cline_error_t error = cline_vec_push(vec, &value);
 
-        if (error != CLARGS_ERROR_NONE)
+        if (error != CLINE_ERROR_NONE)
         {
             return error;
         }
     }
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /*
  * Every item of an array of int has the value that push_ints_up_to gave
  * it.
  */
-static void check_ints(const clargs_vec_t *vec)
+static void check_ints(const cline_vec_t *vec)
 {
     size_t i;
 
     for (i = 0; i < vec->count; ++i)
     {
-        const int *item = clargs_vec_at(vec, i);
+        const int *item = cline_vec_at(vec, i);
 
         NAOS_CHECK_INT_EQ(*item, int_value(i));
     }
@@ -159,27 +159,27 @@ static void check_ints(const clargs_vec_t *vec)
 
 /* ---- The empty state -------------------------------------------------- */
 
-/* clargs_vec_init makes an empty array and allocates nothing. */
+/* cline_vec_init makes an empty array and allocates nothing. */
 NAOS_TEST(init_makes_an_empty_array_without_allocating)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
 
-    clargs_test_allocator_install();
+    cline_test_allocator_install();
 
     /*
      * Not the values of the empty state, so that the checks below see what
-     * clargs_vec_init wrote.
+     * cline_vec_init wrote.
      */
     memset(&vec, 0x5a, sizeof vec);
 
-    clargs_vec_init(&vec, sizeof(int));
+    cline_vec_init(&vec, sizeof(int));
     check_empty(&vec, sizeof(int));
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -189,15 +189,15 @@ NAOS_TEST(init_makes_an_empty_array_without_allocating)
  */
 NAOS_TEST(destroy_of_an_empty_array_does_not_call_the_allocator)
 {
-    clargs_allocator_t allocator = wrap_allocator();
-    clargs_vec_t vec;
+    cline_allocator_t allocator = wrap_allocator();
+    cline_vec_t vec;
 
-    clargs_test_allocator_reset();
-    clargs_set_allocator(&allocator);
+    cline_test_allocator_reset();
+    cline_set_allocator(&allocator);
     wrap_reset();
 
-    clargs_vec_init(&vec, sizeof(long));
-    clargs_vec_destroy(&vec);
+    cline_vec_init(&vec, sizeof(long));
+    cline_vec_destroy(&vec);
     check_empty(&vec, sizeof(long));
 
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 0);
@@ -205,7 +205,7 @@ NAOS_TEST(destroy_of_an_empty_array_does_not_call_the_allocator)
     NAOS_CHECK_UINT_EQ(wrap_calloc_calls, 0);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 0);
 
-    clargs_set_allocator(NULL);
+    cline_set_allocator(NULL);
     check_clean();
 }
 
@@ -217,32 +217,32 @@ NAOS_TEST(destroy_of_an_empty_array_does_not_call_the_allocator)
  */
 NAOS_TEST(first_push_allocates_four_items)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     void *items;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(int));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(int));
 
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 1), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 1), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 1);
     NAOS_CHECK_UINT_EQ(vec.capacity, 4);
     NAOS_CHECK_UINT_EQ(vec.item_size, sizeof(int));
     NAOS_CHECK_TRUE(vec.items != NULL);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
 
     items = vec.items;
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 4), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 4), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 4);
     NAOS_CHECK_UINT_EQ(vec.capacity, 4);
     /* No request, so the items did not move. */
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
     NAOS_CHECK_TRUE(vec.items == items);
     check_ints(&vec);
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -252,49 +252,49 @@ NAOS_TEST(first_push_allocates_four_items)
  */
 NAOS_TEST(capacity_doubles_when_the_array_is_full)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     size_t capacity = 4;
     size_t requests = 1;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(int));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(int));
 
     while (vec.count < 100)
     {
         NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, vec.count + 1),
-            CLARGS_ERROR_NONE);
+            CLINE_ERROR_NONE);
         if (vec.count > capacity)
         {
             capacity *= 2;
             ++requests;
         }
         NAOS_CHECK_UINT_EQ(vec.capacity, capacity);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 1);
+        NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), requests);
+        NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
     }
     NAOS_CHECK_UINT_EQ(vec.capacity, 128);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 6);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 6);
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
 /* Growing past the first capacity, several times, keeps every item. */
 NAOS_TEST(growth_keeps_the_contents)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     size_t i;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(int));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(int));
 
     for (i = 0; i < 100; ++i)
     {
         int value = int_value(i);
 
-        NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(vec.count, i + 1);
         /* All the items so far, after every push. */
         check_ints(&vec);
@@ -302,9 +302,9 @@ NAOS_TEST(growth_keeps_the_contents)
     NAOS_CHECK_UINT_EQ(vec.count, 100);
     NAOS_CHECK_TRUE(vec.count <= vec.capacity);
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -315,55 +315,55 @@ NAOS_TEST(growth_keeps_the_contents)
  */
 NAOS_TEST(push_copies_the_item)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     int value = 11;
     int *item;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof value);
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof value);
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     value = 22;
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     value = 33;
 
     NAOS_CHECK_UINT_EQ(vec.count, 2);
     if (vec.count == 2)
     {
-        item = clargs_vec_at(&vec, 0);
+        item = cline_vec_at(&vec, 0);
         NAOS_CHECK_TRUE(item != &value);
         NAOS_CHECK_INT_EQ(*item, 11);
-        item = clargs_vec_at(&vec, 1);
+        item = cline_vec_at(&vec, 1);
         NAOS_CHECK_TRUE(item != &value);
         NAOS_CHECK_INT_EQ(*item, 22);
     }
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
-/* ---- clargs_vec_at ---------------------------------------------------- */
+/* ---- cline_vec_at ---------------------------------------------------- */
 
 /*
- * clargs_vec_at returns the address of the item: index * item_size bytes
+ * cline_vec_at returns the address of the item: index * item_size bytes
  * from the start of the items. The item can be written through it.
  */
 NAOS_TEST(at_returns_the_address_of_the_item)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     size_t i;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(int));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(int));
 
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 10), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 10), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 10);
 
     for (i = 0; i < vec.count; ++i)
     {
-        int *item = clargs_vec_at(&vec, i);
+        int *item = cline_vec_at(&vec, i);
 
         NAOS_CHECK_TRUE((char *)item == ((char *)vec.items + (i * sizeof(int))));
         NAOS_CHECK_INT_EQ(*item, int_value(i));
@@ -372,19 +372,19 @@ NAOS_TEST(at_returns_the_address_of_the_item)
     /* Writing through the pointer changes that item and no other. */
     if (vec.count == 10)
     {
-        int *item = clargs_vec_at(&vec, 5);
+        int *item = cline_vec_at(&vec, 5);
 
         *item = 12345;
         for (i = 0; i < vec.count; ++i)
         {
-            item = clargs_vec_at(&vec, i);
+            item = cline_vec_at(&vec, i);
             NAOS_CHECK_INT_EQ(*item, (i == 5) ? 12345 : int_value(i));
         }
     }
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -393,24 +393,24 @@ NAOS_TEST(at_returns_the_address_of_the_item)
 /* Items of one byte. */
 NAOS_TEST(holds_chars)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     size_t i;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(char));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(char));
 
     for (i = 0; i < 50; ++i)
     {
         char value = (char)('a' + (int)(i % 26));
 
-        NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(vec.count, 50);
     NAOS_CHECK_UINT_EQ(vec.item_size, 1);
 
     for (i = 0; i < vec.count; ++i)
     {
-        const char *item = clargs_vec_at(&vec, i);
+        const char *item = cline_vec_at(&vec, i);
 
         NAOS_CHECK_INT_EQ(*item, 'a' + (int)(i % 26));
     }
@@ -420,9 +420,9 @@ NAOS_TEST(holds_chars)
         NAOS_CHECK_MEM_EQ(vec.items, 26, "abcdefghijklmnopqrstuvwxyz", 26);
     }
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -438,11 +438,11 @@ typedef struct sample
 NAOS_TEST(holds_structs)
 {
     static const char *const names[] = { "zero", "one", "two" };
-    clargs_vec_t vec;
+    cline_vec_t vec;
     size_t i;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(sample_t));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(sample_t));
 
     for (i = 0; i < 30; ++i)
     {
@@ -452,14 +452,14 @@ NAOS_TEST(holds_structs)
         value.number = (double)i * 0.5;
         value.small = (short)(1000 + (int)i);
         value.name = names[i % 3];
-        NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(vec.count, 30);
     NAOS_CHECK_UINT_EQ(vec.item_size, sizeof(sample_t));
 
     for (i = 0; i < vec.count; ++i)
     {
-        const sample_t *item = clargs_vec_at(&vec, i);
+        const sample_t *item = cline_vec_at(&vec, i);
 
         NAOS_CHECK_INT_EQ(item->tag, 'A' + (int)(i % 26));
         NAOS_CHECK_TRUE(item->number == ((double)i * 0.5));
@@ -467,9 +467,9 @@ NAOS_TEST(holds_structs)
         NAOS_CHECK_TRUE(item->name == names[i % 3]);
     }
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -483,39 +483,39 @@ NAOS_TEST(holds_pointers)
     char second[] = "second";
     char third[] = "third";
     char *strings[3];
-    clargs_vec_t vec;
+    cline_vec_t vec;
     size_t i;
 
     strings[0] = first;
     strings[1] = second;
     strings[2] = third;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(char *));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(char *));
 
     for (i = 0; i < 21; ++i)
     {
-        NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &strings[i % 3]),
-            CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &strings[i % 3]),
+            CLINE_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(vec.count, 21);
     /* Only the array itself was allocated. */
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
 
     for (i = 0; i < vec.count; ++i)
     {
-        char **item = clargs_vec_at(&vec, i);
+        char **item = cline_vec_at(&vec, i);
 
         NAOS_CHECK_TRUE(*item == strings[i % 3]);
     }
 
-    clargs_vec_destroy(&vec);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    cline_vec_destroy(&vec);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
     NAOS_CHECK_STR_EQ(first, "first");
     NAOS_CHECK_STR_EQ(second, "second");
     NAOS_CHECK_STR_EQ(third, "third");
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -526,143 +526,143 @@ NAOS_TEST(holds_large_items)
     {
         unsigned char bytes[1000];
     } large_t;
-    clargs_vec_t vec;
+    cline_vec_t vec;
     large_t value;
     size_t i;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(large_t));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(large_t));
 
     for (i = 0; i < 9; ++i)
     {
         memset(value.bytes, (int)(i + 1), sizeof value.bytes);
-        NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(vec.count, 9);
 
     for (i = 0; i < vec.count; ++i)
     {
-        const large_t *item = clargs_vec_at(&vec, i);
+        const large_t *item = cline_vec_at(&vec, i);
 
         memset(value.bytes, (int)(i + 1), sizeof value.bytes);
         NAOS_CHECK_MEM_EQ(item->bytes, sizeof item->bytes,
             value.bytes, sizeof value.bytes);
     }
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
 /* ---- Destroying ------------------------------------------------------- */
 
 /*
- * clargs_vec_destroy frees the items and puts the array back in the empty
+ * cline_vec_destroy frees the items and puts the array back in the empty
  * state.
  */
 NAOS_TEST(destroy_frees_and_empties)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(int));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(int));
 
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 20), CLARGS_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 1);
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 20), CLINE_ERROR_NONE);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
 
-    clargs_vec_destroy(&vec);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    cline_vec_destroy(&vec);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
     check_empty(&vec, sizeof(int));
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
 /*
- * clargs_vec_destroy may be called twice: the second call does nothing,
+ * cline_vec_destroy may be called twice: the second call does nothing,
  * and does not free NULL.
  */
 NAOS_TEST(destroy_twice_is_allowed)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(int));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(int));
 
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 5), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 5), CLINE_ERROR_NONE);
 
-    clargs_vec_destroy(&vec);
-    clargs_vec_destroy(&vec);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_violations(), 0);
+    cline_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_violations(), 0);
     check_empty(&vec, sizeof(int));
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
 /*
- * After clargs_vec_destroy the array can be used again, without another
- * clargs_vec_init: it starts again from the first capacity.
+ * After cline_vec_destroy the array can be used again, without another
+ * cline_vec_init: it starts again from the first capacity.
  */
 NAOS_TEST(usable_again_after_destroy)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     size_t requests;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(int));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(int));
 
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 30), CLARGS_ERROR_NONE);
-    clargs_vec_destroy(&vec);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
-    requests = clargs_test_allocator_requests();
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 30), CLINE_ERROR_NONE);
+    cline_vec_destroy(&vec);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
+    requests = cline_test_allocator_requests();
 
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 1), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 1), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 1);
     NAOS_CHECK_UINT_EQ(vec.capacity, 4);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), requests + 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), requests + 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 1);
 
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 30), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 30), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 30);
     check_ints(&vec);
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
     check_empty(&vec, sizeof(int));
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
 /* ---- The allocator ---------------------------------------------------- */
 
 /*
- * All the memory comes from clargs_realloc: the first allocation reaches
+ * All the memory comes from cline_realloc: the first allocation reaches
  * the allocator as a malloc_fn of 4 items (the pointer is NULL then), every
  * growth as a realloc_fn of twice the items, and destroy as one free_fn.
  */
 NAOS_TEST(requests_go_through_realloc_and_free)
 {
-    clargs_allocator_t allocator = wrap_allocator();
-    clargs_vec_t vec;
+    cline_allocator_t allocator = wrap_allocator();
+    cline_vec_t vec;
     double value = 0.5;
 
-    clargs_test_allocator_reset();
-    clargs_set_allocator(&allocator);
+    cline_test_allocator_reset();
+    cline_set_allocator(&allocator);
     wrap_reset();
 
-    clargs_vec_init(&vec, sizeof value);
+    cline_vec_init(&vec, sizeof value);
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_malloc_size, 4 * sizeof(double));
     NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 0);
 
     while (vec.count < 5)
     {
-        NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 1);
@@ -670,7 +670,7 @@ NAOS_TEST(requests_go_through_realloc_and_free)
 
     while (vec.count < 9)
     {
-        NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     }
     NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
     NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 2);
@@ -679,33 +679,33 @@ NAOS_TEST(requests_go_through_realloc_and_free)
     NAOS_CHECK_UINT_EQ(wrap_calloc_calls, 0);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 0);
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
     NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
 
-    clargs_set_allocator(NULL);
+    cline_set_allocator(NULL);
     /* Nothing went to the test allocator: it was not set. */
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     check_clean();
 }
 
 /* With nothing set, the array works with the default allocator. */
 NAOS_TEST(works_with_the_default_allocator)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
 
-    clargs_test_allocator_reset();
-    clargs_set_allocator(NULL);
+    cline_test_allocator_reset();
+    cline_set_allocator(NULL);
 
-    clargs_vec_init(&vec, sizeof(int));
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 100), CLARGS_ERROR_NONE);
+    cline_vec_init(&vec, sizeof(int));
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 100), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 100);
     check_ints(&vec);
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
     check_empty(&vec, sizeof(int));
 
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     check_clean();
 }
 
@@ -713,32 +713,32 @@ NAOS_TEST(works_with_the_default_allocator)
 
 /*
  * When the first allocation fails, the push returns
- * CLARGS_ERROR_OUT_OF_MEMORY and the array stays empty.
+ * CLINE_ERROR_OUT_OF_MEMORY and the array stays empty.
  */
 NAOS_TEST(failed_first_push_leaves_the_array_empty)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     int value = 7;
 
-    clargs_test_allocator_install();
-    clargs_test_allocator_fail_at(1);
-    clargs_vec_init(&vec, sizeof value);
+    cline_test_allocator_install();
+    cline_test_allocator_fail_at(1);
+    cline_vec_init(&vec, sizeof value);
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
     check_empty(&vec, sizeof value);
 
     /* The array can still be destroyed, and it can still be used. */
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
     check_empty(&vec, sizeof value);
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &value), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &value), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 1);
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -775,24 +775,24 @@ NAOS_TEST(fails_at_every_allocation_point)
     int completed = 0;
     size_t n;
 
-    clargs_test_allocator_install();
+    cline_test_allocator_install();
 
     for (n = 1; n <= limit; ++n)
     {
-        clargs_vec_t vec;
-        clargs_error_t error;
+        cline_vec_t vec;
+        cline_error_t error;
         size_t count;
         size_t capacity;
         void *items;
 
-        clargs_test_allocator_reset();
-        clargs_test_allocator_fail_at(n);
+        cline_test_allocator_reset();
+        cline_test_allocator_fail_at(n);
 
-        clargs_vec_init(&vec, sizeof(int));
+        cline_vec_init(&vec, sizeof(int));
         error = push_ints_up_to(&vec, total);
 
-        if ((error == CLARGS_ERROR_NONE) &&
-            (clargs_test_allocator_requests() < n))
+        if ((error == CLINE_ERROR_NONE) &&
+            (cline_test_allocator_requests() < n))
         {
             /*
              * The operation ended before the request to fail was reached:
@@ -800,7 +800,7 @@ NAOS_TEST(fails_at_every_allocation_point)
              */
             NAOS_CHECK_UINT_EQ(vec.count, total);
             check_ints(&vec);
-            clargs_vec_destroy(&vec);
+            cline_vec_destroy(&vec);
             check_clean();
             completed = 1;
             break;
@@ -808,8 +808,8 @@ NAOS_TEST(fails_at_every_allocation_point)
 
         /* The n-th request failed, and the push reported it. */
         ++failures;
-        NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), n);
+        NAOS_CHECK_INT_EQ(error, CLINE_ERROR_OUT_OF_MEMORY);
+        NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), n);
 
         /*
          * The array is as it was before the push: it is full, the items
@@ -823,14 +823,14 @@ NAOS_TEST(fails_at_every_allocation_point)
         NAOS_CHECK_UINT_EQ(count, capacity);
         NAOS_CHECK_UINT_EQ(vec.item_size, sizeof(int));
         NAOS_CHECK_TRUE((items == NULL) == (count == 0));
-        NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(),
+        NAOS_CHECK_UINT_EQ(cline_test_allocator_live(),
             (count == 0) ? 0 : 1);
         check_ints(&vec);
 
         /* A push that fails again changes nothing either. */
-        clargs_test_allocator_fail_at(n + 1);
+        cline_test_allocator_fail_at(n + 1);
         error = push_ints_up_to(&vec, count + 1);
-        NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_OUT_OF_MEMORY);
+        NAOS_CHECK_INT_EQ(error, CLINE_ERROR_OUT_OF_MEMORY);
         NAOS_CHECK_UINT_EQ(vec.count, count);
         NAOS_CHECK_UINT_EQ(vec.capacity, capacity);
         NAOS_CHECK_TRUE(vec.items == items);
@@ -841,17 +841,17 @@ NAOS_TEST(fails_at_every_allocation_point)
          * the pushes after it.
          */
         error = push_ints_up_to(&vec, count + 1);
-        NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(error, CLINE_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(vec.count, count + 1);
         check_ints(&vec);
 
         error = push_ints_up_to(&vec, total);
-        NAOS_CHECK_INT_EQ(error, CLARGS_ERROR_NONE);
+        NAOS_CHECK_INT_EQ(error, CLINE_ERROR_NONE);
         NAOS_CHECK_UINT_EQ(vec.count, total);
         check_ints(&vec);
 
         /* Destroy what exists; nothing is left and nothing was violated. */
-        clargs_vec_destroy(&vec);
+        cline_vec_destroy(&vec);
         check_clean();
     }
 
@@ -862,7 +862,7 @@ NAOS_TEST(fails_at_every_allocation_point)
     NAOS_CHECK_TRUE(completed);
     NAOS_CHECK_UINT_EQ(failures, allocation_points);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -882,19 +882,19 @@ NAOS_TEST(fails_at_every_allocation_point)
 NAOS_TEST(overflow_of_the_first_allocation)
 {
     const size_t item_size = SIZE_MAX / 2;
-    clargs_vec_t vec;
+    cline_vec_t vec;
     char item = 'x';
 
-    clargs_test_allocator_install();
+    cline_test_allocator_install();
 
     vec.items = NULL;
     vec.count = 0;
     vec.capacity = 0;
     vec.item_size = item_size;
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     check_empty(&vec, item_size);
 
     /*
@@ -902,12 +902,12 @@ NAOS_TEST(overflow_of_the_first_allocation)
      * byte only.
      */
     vec.item_size = (SIZE_MAX / 4) + 1;
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     check_empty(&vec, (SIZE_MAX / 4) + 1);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -915,19 +915,19 @@ NAOS_TEST(overflow_of_the_first_allocation)
 NAOS_TEST(overflow_of_the_doubled_capacity)
 {
     const size_t full = (SIZE_MAX / 2) + 1;
-    clargs_vec_t vec;
+    cline_vec_t vec;
     int item = 1;
 
-    clargs_test_allocator_install();
+    cline_test_allocator_install();
 
     vec.items = NULL;
     vec.count = full;
     vec.capacity = full;
     vec.item_size = sizeof item;
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     NAOS_CHECK_TRUE(vec.items == NULL);
     NAOS_CHECK_UINT_EQ(vec.count, full);
     NAOS_CHECK_UINT_EQ(vec.capacity, full);
@@ -936,9 +936,9 @@ NAOS_TEST(overflow_of_the_doubled_capacity)
     /* The largest capacity there is. */
     vec.count = SIZE_MAX;
     vec.capacity = SIZE_MAX;
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     NAOS_CHECK_TRUE(vec.items == NULL);
     NAOS_CHECK_UINT_EQ(vec.count, SIZE_MAX);
     NAOS_CHECK_UINT_EQ(vec.capacity, SIZE_MAX);
@@ -947,7 +947,7 @@ NAOS_TEST(overflow_of_the_doubled_capacity)
     vec.count = 0;
     vec.capacity = 0;
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -960,19 +960,19 @@ NAOS_TEST(overflow_of_the_doubled_capacity_to_a_small_number)
 {
     /* Twice this is 4, modulo SIZE_MAX + 1. */
     const size_t full = (SIZE_MAX / 2) + 3;
-    clargs_vec_t vec;
+    cline_vec_t vec;
     int item = 1;
 
-    clargs_test_allocator_install();
+    cline_test_allocator_install();
 
     vec.items = NULL;
     vec.count = full;
     vec.capacity = full;
     vec.item_size = sizeof item;
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     NAOS_CHECK_TRUE(vec.items == NULL);
     NAOS_CHECK_UINT_EQ(vec.count, full);
     NAOS_CHECK_UINT_EQ(vec.capacity, full);
@@ -982,7 +982,7 @@ NAOS_TEST(overflow_of_the_doubled_capacity_to_a_small_number)
     vec.count = 0;
     vec.capacity = 0;
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -1001,21 +1001,21 @@ NAOS_TEST(overflow_of_the_doubled_capacity_to_a_small_number)
 NAOS_TEST(largest_capacity_that_doubles_is_requested)
 {
     const size_t full = SIZE_MAX / 2;
-    clargs_vec_t vec;
+    cline_vec_t vec;
     char item = 'x';
 
-    clargs_test_allocator_install();
-    clargs_test_allocator_fail_at(1);
+    cline_test_allocator_install();
+    cline_test_allocator_fail_at(1);
 
     vec.items = NULL;
     vec.count = full;
     vec.capacity = full;
     vec.item_size = sizeof item;
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
     NAOS_CHECK_TRUE(vec.items == NULL);
     NAOS_CHECK_UINT_EQ(vec.count, full);
     NAOS_CHECK_UINT_EQ(vec.capacity, full);
@@ -1025,7 +1025,7 @@ NAOS_TEST(largest_capacity_that_doubles_is_requested)
     vec.count = 0;
     vec.capacity = 0;
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -1036,24 +1036,24 @@ NAOS_TEST(largest_capacity_that_doubles_is_requested)
 NAOS_TEST(largest_first_allocation_is_requested)
 {
     const size_t item_size = SIZE_MAX / 4;
-    clargs_vec_t vec;
+    cline_vec_t vec;
     char item = 'x';
 
-    clargs_test_allocator_install();
-    clargs_test_allocator_fail_at(1);
+    cline_test_allocator_install();
+    cline_test_allocator_fail_at(1);
 
     vec.items = NULL;
     vec.count = 0;
     vec.capacity = 0;
     vec.item_size = item_size;
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 1);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_live(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 1);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_live(), 0);
     check_empty(&vec, item_size);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -1069,19 +1069,19 @@ NAOS_TEST(overflow_of_the_size_in_bytes)
     } eight_t;
     /* Twice this is SIZE_MAX / 4 + 1 items of 8 bytes at the least. */
     const size_t full = (SIZE_MAX / 8) + 1;
-    clargs_vec_t vec;
+    cline_vec_t vec;
     eight_t item = { { 0 } };
 
-    clargs_test_allocator_install();
+    cline_test_allocator_install();
 
     vec.items = NULL;
     vec.count = full;
     vec.capacity = full;
     vec.item_size = sizeof item;
 
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     NAOS_CHECK_TRUE(vec.items == NULL);
     NAOS_CHECK_UINT_EQ(vec.count, full);
     NAOS_CHECK_UINT_EQ(vec.capacity, full);
@@ -1091,7 +1091,7 @@ NAOS_TEST(overflow_of_the_size_in_bytes)
     vec.count = 0;
     vec.capacity = 0;
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 
@@ -1101,28 +1101,28 @@ NAOS_TEST(overflow_of_the_size_in_bytes)
  */
 NAOS_TEST(usable_after_an_overflow)
 {
-    clargs_vec_t vec;
+    cline_vec_t vec;
     int item = 1;
 
-    clargs_test_allocator_install();
-    clargs_vec_init(&vec, sizeof(int));
+    cline_test_allocator_install();
+    cline_vec_init(&vec, sizeof(int));
 
     /* A full array of a capacity that cannot be doubled. */
     vec.count = SIZE_MAX;
     vec.capacity = SIZE_MAX;
-    NAOS_CHECK_INT_EQ(clargs_vec_push(&vec, &item),
-        CLARGS_ERROR_OUT_OF_MEMORY);
-    NAOS_CHECK_UINT_EQ(clargs_test_allocator_requests(), 0);
+    NAOS_CHECK_INT_EQ(cline_vec_push(&vec, &item),
+        CLINE_ERROR_OUT_OF_MEMORY);
+    NAOS_CHECK_UINT_EQ(cline_test_allocator_requests(), 0);
     vec.count = 0;
     vec.capacity = 0;
 
-    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 10), CLARGS_ERROR_NONE);
+    NAOS_CHECK_INT_EQ(push_ints_up_to(&vec, 10), CLINE_ERROR_NONE);
     NAOS_CHECK_UINT_EQ(vec.count, 10);
     check_ints(&vec);
 
-    clargs_vec_destroy(&vec);
+    cline_vec_destroy(&vec);
 
-    clargs_test_allocator_uninstall();
+    cline_test_allocator_uninstall();
     check_clean();
 }
 

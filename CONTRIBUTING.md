@@ -1,6 +1,6 @@
-# Contributing to CLArgs
+# Contributing to CLine
 
-Thank you for your interest in contributing to CLArgs. Everyone who takes part in this project, including in issues, pull requests and discussions, is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Thank you for your interest in contributing to CLine. Everyone who takes part in this project, including in issues, pull requests and discussions, is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 This document is the entry point for contributors. It covers how to report problems, set up a development environment, build and test, and submit a pull request. It does not repeat the rules for writing code: those are in [Development Conventions](docs/conventions.md). How to use the library is described in the [README](README.md) and the documents it links to.
 
@@ -35,7 +35,7 @@ You need:
 - A C99 compiler.
 - Network access when you configure with the tests enabled. The tests are written with the test framework [Naos](https://github.com/vabelorg/naos), and a configuration with tests enabled (the default when you build the repository directly) fetches Naos from GitHub at configure time.
 
-CLArgs builds on these environments:
+CLine builds on these environments:
 
 - Linux with GCC and Clang
 - macOS with Clang
@@ -100,4 +100,4 @@ This section is for maintainers. The release procedure is described in [docs/rel
 
 ## License
 
-By contributing to CLArgs, you agree that your contributions are distributed under the MIT License, as described in [LICENSE](LICENSE).
+By contributing to CLine, you agree that your contributions are distributed under the MIT License, as described in [LICENSE](LICENSE).

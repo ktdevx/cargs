@@ -1,6 +1,6 @@
 /*
- * CLArgs - internal declarations for the wrapping of the help: one text is
- * written to a clargs_out_t, broken into lines at the blanks so that it
+ * CLine - internal declarations for the wrapping of the help: one text is
+ * written to a cline_out_t, broken into lines at the blanks so that it
  * fits a width.
  *
  * A word is a run of bytes other than the ASCII blank (0x20) and the
@@ -9,8 +9,8 @@
  *
  * The function allocates nothing and knows nothing about a schema.
  */
-#ifndef CLARGS_WRAP_H
-#define CLARGS_WRAP_H
+#ifndef CLINE_WRAP_H
+#define CLINE_WRAP_H
 
 #include "out.h"
 
@@ -38,13 +38,13 @@
  *     the text only.
  *
  * The newline of the last line is not written; the caller ends the line
- * with clargs_out_newline(). The bytes of text are written as they are.
+ * with cline_out_newline(). The bytes of text are written as they are.
  *
  * Preconditions: out is not NULL, text is not NULL unless length is 0, and
  * the current column of out is not to the right of column. They are
  * checked with assert.
  */
-void clargs_wrap_write(clargs_out_t *out, const char *text, size_t length,
+void cline_wrap_write(cline_out_t *out, const char *text, size_t length,
                        size_t column, size_t width);
 
-#endif /* CLARGS_WRAP_H */
+#endif /* CLINE_WRAP_H */

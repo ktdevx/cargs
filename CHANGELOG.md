@@ -19,11 +19,11 @@ section of the new version.
 - A C99 library for parsing command-line arguments, with no compiler
   extensions and no dependencies beyond the C standard library. It builds on
   Linux (GCC, Clang), macOS (Clang) and Windows (MSVC). Programs include
-  `<clargs/clargs.h>` and link to `CLArgs::clargs`.
+  `<cline/cline.h>` and link to `CLine::cline`.
 - Schemas built with function calls on opaque handles: a root command
-  (`clargs_command_create()`), its options, positionals and subcommands,
+  (`cline_command_create()`), its options, positionals and subcommands,
   descriptions for the help, and validation of the whole schema with
-  `clargs_command_validate()` before it is used.
+  `cline_command_validate()` before it is used.
 - Options of four kinds: flags, counts, negatable flags that are switched
   with `--name` and `--no-name`, and options that take a value. Options can
   have a short name, a long name, a value name, a default value and can be
@@ -33,9 +33,9 @@ section of the new version.
 - Nested subcommands, each with its own options and positionals.
 - Typed values: strings, integers, floating-point numbers and choices from a
   fixed list, and value types defined by the user with their own conversion
-  function and an optional cleanup function (`clargs_type_create()`).
-- Parsing of `argv` with `clargs_parse()`, and of wide-character `argv`
-  (such as the one of `wmain()`) with `clargs_parse_wide()`, which reads
+  function and an optional cleanup function (`cline_type_create()`).
+- Parsing of `argv` with `cline_parse()`, and of wide-character `argv`
+  (such as the one of `wmain()`) with `cline_parse_wide()`, which reads
   UTF-16 or UTF-32 and does not depend on the locale.
 - Results that tell which subcommands were selected, whether and how often
   options were given, where each value came from (the command line or a
@@ -44,22 +44,22 @@ section of the new version.
   value, option, positional and command involved. The library prints
   nothing, never exits the process and does not read environment variables.
 - Help and usage text generated from the schema, written through a write
-  function supplied by the caller (`clargs_help_write()`,
-  `clargs_help_write_usage()`) or into a buffer of the caller
-  (`clargs_help_format()`, `clargs_help_format_usage()`), with settings for
+  function supplied by the caller (`cline_help_write()`,
+  `cline_help_write_usage()`) or into a buffer of the caller
+  (`cline_help_format()`, `cline_help_format_usage()`), with settings for
   the width, the indentation and the latest column where descriptions may
   start.
-- A replaceable allocator (`clargs_set_allocator()`) and error codes with
-  messages (`clargs_error_t`, `clargs_error_message()`).
-- Version macros in `<clargs/version.h>` (`CLARGS_VERSION_MAJOR`,
-  `CLARGS_VERSION_MINOR`, `CLARGS_VERSION_PATCH`,
-  `CLARGS_VERSION_PRERELEASE`) and `clargs_version()` for the version of the
+- A replaceable allocator (`cline_set_allocator()`) and error codes with
+  messages (`cline_error_t`, `cline_error_message()`).
+- Version macros in `<cline/version.h>` (`CLINE_VERSION_MAJOR`,
+  `CLINE_VERSION_MINOR`, `CLINE_VERSION_PATCH`,
+  `CLINE_VERSION_PRERELEASE`) and `cline_version()` for the version of the
   library that is linked.
 - Static and shared library builds (`BUILD_SHARED_LIBS`), and four ways to
   use the library from another project: CMake `FetchContent`,
-  `add_subdirectory`, `find_package` and pkg-config (module `clargs`).
-- Build options `CLARGS_BUILD_TESTS`, `CLARGS_INSTALL` and
-  `CLARGS_WARNINGS_AS_ERRORS`, with defaults that add nothing to a parent
+  `add_subdirectory`, `find_package` and pkg-config (module `cline`).
+- Build options `CLINE_BUILD_TESTS`, `CLINE_INSTALL` and
+  `CLINE_WARNINGS_AS_ERRORS`, with defaults that add nothing to a parent
   project that embeds the library.
 
 [Unreleased]: https://github.com/ktdevx/cargs/commits/main

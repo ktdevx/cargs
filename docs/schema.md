@@ -4,7 +4,7 @@ This document explains how to define, with function calls, which command lines a
 
 This document covers defining, validating, reading and destroying a schema. It does not cover parsing argv or generating help text. A schema knows nothing about argv. How to parse argv with a validated schema and read the values is in [Parsing](parse.md). How to generate help and the usage line from a validated schema is in [Help and Usage](help.md).
 
-The detailed description and the preconditions of each function are in the comments of the public headers `include/clargs/schema.h` and `include/clargs/type.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
+The detailed description and the preconditions of each function are in the comments of the public headers `include/cline/schema.h` and `include/cline/type.h`. The rules for who owns memory are in [Ownership and Lifetime](ownership.md).
 
 Contents:
 
@@ -31,10 +31,10 @@ pack [-v]... [-q] [--color | --no-color] create -o FILE [-l LEVEL] [--ratio RATI
 pack [-v]... [-q] [--color | --no-color] list archive [pattern]
 ```
 
-The example is one translation unit, and it includes only `<clargs/clargs.h>` and standard headers. You can copy it out and compile it as it is. If the validation succeeds, it prints `the schema of pack is valid` and exits with status 0.
+The example is one translation unit, and it includes only `<cline/cline.h>` and standard headers. You can copy it out and compile it as it is. If the validation succeeds, it prints `the schema of pack is valid` and exits with status 0.
 
 ```c
-#include <clargs/clargs.h>
+#include <cline/cline.h>
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -51,11 +51,11 @@ typedef struct size_limit
  * with an optional unit, 'k' or 'm' ("512", "64k", "2m"), and writes the
  * number of bytes as an unsigned long.
  *
- * It returns CLARGS_ERROR_INVALID_VALUE for an input that it does not take,
+ * It returns CLINE_ERROR_INVALID_VALUE for an input that it does not take,
  * and it has no side effect: the validation of a schema calls it for every
  * default value of this type.
  */
-static clargs_error_t convert_size(const char *text, void *value, void *context)
+static cline_error_t convert_size(const char *text, void *value, void *context)
 {
     const size_limit_t *limit = context;
     const char *p = text;
@@ -64,7 +64,7 @@ static clargs_error_t convert_size(const char *text, void *value, void *context)
 
     if (*p < '0' || *p > '9')
     {
-        return CLARGS_ERROR_INVALID_VALUE;
+        return CLINE_ERROR_INVALID_VALUE;
     }
     for (; *p >= '0' && *p <= '9'; ++p)
     {
@@ -72,7 +72,7 @@ static clargs_error_t convert_size(const char *text, void *value, void *context)
 
         if (bytes > (limit->max - digit) / 10)
         {
-            return CLARGS_ERROR_INVALID_VALUE;
+            return CLINE_ERROR_INVALID_VALUE;
         }
         bytes = bytes * 10 + digit;
     }
@@ -88,36 +88,36 @@ static clargs_error_t convert_size(const char *text, void *value, void *context)
     }
     if (*p != '\0' || bytes > limit->max / unit)
     {
-        return CLARGS_ERROR_INVALID_VALUE;
+        return CLINE_ERROR_INVALID_VALUE;
     }
 
     *(unsigned long *)value = bytes * unit;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /* Keeps the result of a call in *error and tells whether the call failed. */
-static bool failed(clargs_error_t *error, clargs_error_t result)
+static bool failed(cline_error_t *error, cline_error_t result)
 {
     *error = result;
-    return result != CLARGS_ERROR_NONE;
+    return result != CLINE_ERROR_NONE;
 }
 
 /* The options of the root: they stand in front of the subcommand. */
-static clargs_error_t define_common_options(clargs_command_t *root)
+static cline_error_t define_common_options(cline_command_t *root)
 {
-    clargs_option_t *option;
-    clargs_error_t error;
+    cline_option_t *option;
+    cline_error_t error;
 
     /* A count: -v, -vv, --verbose. */
-    if (failed(&error, clargs_command_add_count(root, 'v', "verbose", &option)) ||
-        failed(&error, clargs_option_set_description(option, "Print more; can be repeated.")))
+    if (failed(&error, cline_command_add_count(root, 'v', "verbose", &option)) ||
+        failed(&error, cline_option_set_description(option, "Print more; can be repeated.")))
     {
         return error;
     }
 
     /* A flag: -q, --quiet. */
-    if (failed(&error, clargs_command_add_flag(root, 'q', "quiet", &option)) ||
-        failed(&error, clargs_option_set_description(option, "Print nothing.")))
+    if (failed(&error, cline_command_add_flag(root, 'q', "quiet", &option)) ||
+        failed(&error, cline_option_set_description(option, "Print nothing.")))
     {
         return error;
     }
@@ -126,37 +126,37 @@ static clargs_error_t define_common_options(clargs_command_t *root)
      * A negatable flag without a short name: --color and --no-color. It is
      * on when neither is given.
      */
-    if (failed(&error, clargs_command_add_negatable(root, '\0', "color", &option)) ||
-        failed(&error, clargs_option_set_description(option, "Color the output.")) ||
-        failed(&error, clargs_option_set_initial(option, true)))
+    if (failed(&error, cline_command_add_negatable(root, '\0', "color", &option)) ||
+        failed(&error, cline_option_set_description(option, "Color the output.")) ||
+        failed(&error, cline_option_set_initial(option, true)))
     {
         return error;
     }
 
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /* The subcommand "create": options that take a value, and its positional. */
-static clargs_error_t define_create(clargs_command_t *root, const clargs_type_t *format,
-                                    const clargs_type_t *size)
+static cline_error_t define_create(cline_command_t *root, const cline_type_t *format,
+                                    const cline_type_t *size)
 {
-    clargs_command_t *create;
-    clargs_option_t *option;
-    clargs_positional_t *positional;
-    clargs_error_t error;
+    cline_command_t *create;
+    cline_option_t *option;
+    cline_positional_t *positional;
+    cline_error_t error;
 
-    if (failed(&error, clargs_command_add_subcommand(root, "create", &create)) ||
-        failed(&error, clargs_command_set_description(create, "Create an archive.")))
+    if (failed(&error, cline_command_add_subcommand(root, "create", &create)) ||
+        failed(&error, cline_command_set_description(create, "Create an archive.")))
     {
         return error;
     }
 
     /* A required option with the built-in value type string. */
-    if (failed(&error, clargs_command_add_value(create, 'o', "output", clargs_type_string(),
+    if (failed(&error, cline_command_add_value(create, 'o', "output", cline_type_string(),
                                                 &option)) ||
-        failed(&error, clargs_option_set_description(option, "The archive to write.")) ||
-        failed(&error, clargs_option_set_value_name(option, "FILE")) ||
-        failed(&error, clargs_option_set_required(option, true)))
+        failed(&error, cline_option_set_description(option, "The archive to write.")) ||
+        failed(&error, cline_option_set_value_name(option, "FILE")) ||
+        failed(&error, cline_option_set_required(option, true)))
     {
         return error;
     }
@@ -165,117 +165,117 @@ static clargs_error_t define_create(clargs_command_t *root, const clargs_type_t 
      * The built-in value type integer, with a default value. A default
      * value is a string, written as on a command line.
      */
-    if (failed(&error, clargs_command_add_value(create, 'l', "level", clargs_type_int(),
+    if (failed(&error, cline_command_add_value(create, 'l', "level", cline_type_int(),
                                                 &option)) ||
-        failed(&error, clargs_option_set_description(option, "The compression level.")) ||
-        failed(&error, clargs_option_set_value_name(option, "LEVEL")) ||
-        failed(&error, clargs_option_set_default(option, "6")))
+        failed(&error, cline_option_set_description(option, "The compression level.")) ||
+        failed(&error, cline_option_set_value_name(option, "LEVEL")) ||
+        failed(&error, cline_option_set_default(option, "6")))
     {
         return error;
     }
 
     /* The built-in value type float; only a long name. */
-    if (failed(&error, clargs_command_add_value(create, '\0', "ratio", clargs_type_float(),
+    if (failed(&error, cline_command_add_value(create, '\0', "ratio", cline_type_float(),
                                                 &option)) ||
-        failed(&error, clargs_option_set_description(option, "Stop below this ratio.")) ||
-        failed(&error, clargs_option_set_value_name(option, "RATIO")) ||
-        failed(&error, clargs_option_set_default(option, "0.5")))
+        failed(&error, cline_option_set_description(option, "Stop below this ratio.")) ||
+        failed(&error, cline_option_set_value_name(option, "RATIO")) ||
+        failed(&error, cline_option_set_default(option, "0.5")))
     {
         return error;
     }
 
     /* A choice. */
-    if (failed(&error, clargs_command_add_value(create, '\0', "format", format, &option)) ||
-        failed(&error, clargs_option_set_description(option, "The format of the archive.")) ||
-        failed(&error, clargs_option_set_default(option, "tar")))
+    if (failed(&error, cline_command_add_value(create, '\0', "format", format, &option)) ||
+        failed(&error, cline_option_set_description(option, "The format of the archive.")) ||
+        failed(&error, cline_option_set_default(option, "tar")))
     {
         return error;
     }
 
     /* A user-defined value type. */
-    if (failed(&error, clargs_command_add_value(create, '\0', "block-size", size, &option)) ||
-        failed(&error, clargs_option_set_description(option, "The size of a block.")) ||
-        failed(&error, clargs_option_set_value_name(option, "SIZE")) ||
-        failed(&error, clargs_option_set_default(option, "64k")))
+    if (failed(&error, cline_command_add_value(create, '\0', "block-size", size, &option)) ||
+        failed(&error, cline_option_set_description(option, "The size of a block.")) ||
+        failed(&error, cline_option_set_value_name(option, "SIZE")) ||
+        failed(&error, cline_option_set_default(option, "64k")))
     {
         return error;
     }
 
     /* One or more files. */
-    if (failed(&error, clargs_command_add_positional(create, "file", clargs_type_string(),
-                                                     CLARGS_ARITY_ONE_OR_MORE, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The files to pack.")))
+    if (failed(&error, cline_command_add_positional(create, "file", cline_type_string(),
+                                                     CLINE_ARITY_ONE_OR_MORE, &positional)) ||
+        failed(&error, cline_positional_set_description(positional, "The files to pack.")))
     {
         return error;
     }
 
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /* The subcommand "list": a required positional, then an optional one. */
-static clargs_error_t define_list(clargs_command_t *root)
+static cline_error_t define_list(cline_command_t *root)
 {
-    clargs_command_t *list;
-    clargs_positional_t *positional;
-    clargs_error_t error;
+    cline_command_t *list;
+    cline_positional_t *positional;
+    cline_error_t error;
 
-    if (failed(&error, clargs_command_add_subcommand(root, "list", &list)) ||
-        failed(&error, clargs_command_set_description(list, "List the files of an archive.")))
+    if (failed(&error, cline_command_add_subcommand(root, "list", &list)) ||
+        failed(&error, cline_command_set_description(list, "List the files of an archive.")))
     {
         return error;
     }
 
-    if (failed(&error, clargs_command_add_positional(list, "archive", clargs_type_string(),
-                                                     CLARGS_ARITY_REQUIRED, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The archive to read.")))
+    if (failed(&error, cline_command_add_positional(list, "archive", cline_type_string(),
+                                                     CLINE_ARITY_REQUIRED, &positional)) ||
+        failed(&error, cline_positional_set_description(positional, "The archive to read.")))
     {
         return error;
     }
 
     /* Only an optional positional can have a default value. */
-    if (failed(&error, clargs_command_add_positional(list, "pattern", clargs_type_string(),
-                                                     CLARGS_ARITY_OPTIONAL, &positional)) ||
-        failed(&error, clargs_positional_set_description(positional, "The files to list.")) ||
-        failed(&error, clargs_positional_set_default(positional, "*")))
+    if (failed(&error, cline_command_add_positional(list, "pattern", cline_type_string(),
+                                                     CLINE_ARITY_OPTIONAL, &positional)) ||
+        failed(&error, cline_positional_set_description(positional, "The files to list.")) ||
+        failed(&error, cline_positional_set_default(positional, "*")))
     {
         return error;
     }
 
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /* Tells which definition the validation found a fault in. */
-static void report_fault(clargs_error_t error, const clargs_command_t *command,
-                         const clargs_option_t *option, const clargs_positional_t *positional)
+static void report_fault(cline_error_t error, const cline_command_t *command,
+                         const cline_option_t *option, const cline_positional_t *positional)
 {
-    fprintf(stderr, "pack: the schema is not valid: %s\n", clargs_error_message(error));
+    fprintf(stderr, "pack: the schema is not valid: %s\n", cline_error_message(error));
 
     if (command != NULL)
     {
-        fprintf(stderr, "  in the command \"%s\"\n", clargs_command_name(command));
+        fprintf(stderr, "  in the command \"%s\"\n", cline_command_name(command));
     }
     if (option != NULL)
     {
-        if (clargs_option_long_name(option) != NULL)
+        if (cline_option_long_name(option) != NULL)
         {
-            fprintf(stderr, "  at the option --%s\n", clargs_option_long_name(option));
+            fprintf(stderr, "  at the option --%s\n", cline_option_long_name(option));
         }
         else
         {
-            fprintf(stderr, "  at the option -%c\n", clargs_option_short_name(option));
+            fprintf(stderr, "  at the option -%c\n", cline_option_short_name(option));
         }
-        if (clargs_option_default(option) != NULL)
+        if (cline_option_default(option) != NULL)
         {
-            fprintf(stderr, "  whose default value is \"%s\"\n", clargs_option_default(option));
+            fprintf(stderr, "  whose default value is \"%s\"\n", cline_option_default(option));
         }
     }
     if (positional != NULL)
     {
-        fprintf(stderr, "  at the positional \"%s\"\n", clargs_positional_name(positional));
-        if (clargs_positional_default(positional) != NULL)
+        fprintf(stderr, "  at the positional \"%s\"\n", cline_positional_name(positional));
+        if (cline_positional_default(positional) != NULL)
         {
             fprintf(stderr, "  whose default value is \"%s\"\n",
-                    clargs_positional_default(positional));
+                    cline_positional_default(positional));
         }
     }
 }
@@ -285,21 +285,21 @@ int main(void)
     static const char *const formats[] = { "tar", "zip" };
     size_limit_t limit = { 1024UL * 1024UL * 1024UL };
 
-    clargs_type_t *format = NULL;
-    clargs_type_t *size = NULL;
-    clargs_command_t *root = NULL;
-    const clargs_command_t *faulty_command;
-    const clargs_option_t *faulty_option;
-    const clargs_positional_t *faulty_positional;
-    clargs_error_t error;
+    cline_type_t *format = NULL;
+    cline_type_t *size = NULL;
+    cline_command_t *root = NULL;
+    const cline_command_t *faulty_command;
+    const cline_option_t *faulty_option;
+    const cline_positional_t *faulty_positional;
+    cline_error_t error;
     int status = EXIT_FAILURE;
 
     /* The value types come first: the schema borrows them. */
-    if (failed(&error, clargs_type_create_choice(formats, 2, &format)) ||
-        failed(&error, clargs_type_create("size", sizeof(unsigned long), convert_size, NULL,
+    if (failed(&error, cline_type_create_choice(formats, 2, &format)) ||
+        failed(&error, cline_type_create("size", sizeof(unsigned long), convert_size, NULL,
                                           &limit, &size)) ||
-        failed(&error, clargs_command_create("pack", &root)) ||
-        failed(&error, clargs_command_set_description(root, "Pack files into an archive.")) ||
+        failed(&error, cline_command_create("pack", &root)) ||
+        failed(&error, cline_command_set_description(root, "Pack files into an archive.")) ||
         failed(&error, define_common_options(root)) ||
         failed(&error, define_create(root, format, size)) ||
         failed(&error, define_list(root)))
@@ -309,15 +309,15 @@ int main(void)
          * call that failed, and it can still be destroyed.
          */
         fprintf(stderr, "pack: cannot define the command line: %s\n",
-                clargs_error_message(error));
-    } else if (failed(&error, clargs_command_validate(root, &faulty_command, &faulty_option,
+                cline_error_message(error));
+    } else if (failed(&error, cline_command_validate(root, &faulty_command, &faulty_option,
                                                       &faulty_positional)))
     {
         report_fault(error, faulty_command, faulty_option, faulty_positional);
     }
-    else if (clargs_command_is_validated(root))
+    else if (cline_command_is_validated(root))
     {
-        printf("the schema of %s is valid\n", clargs_command_name(root));
+        printf("the schema of %s is valid\n", cline_command_name(root));
         status = EXIT_SUCCESS;
     }
 
@@ -325,9 +325,9 @@ int main(void)
      * The schema first, then the value types it borrowed. Destroying NULL
      * does nothing, so this is also right after a failure.
      */
-    clargs_command_destroy(root);
-    clargs_type_destroy(size);
-    clargs_type_destroy(format);
+    cline_command_destroy(root);
+    cline_type_destroy(size);
+    cline_type_destroy(format);
 
     return status;
 }
@@ -337,7 +337,7 @@ Key points of the example:
 
 - It creates two value types (a choice and a user-defined one) and one root command. These three are also the only things it destroys. The subcommands, options and positionals are freed when the root is destroyed.
 - The handles that the add functions write (`option`, `positional`, `create`) are used to set attributes. You do not destroy them.
-- Every function returns a value other than `CLARGS_ERROR_NONE` when it fails. The example relies on `||` evaluating from left to right and stopping at the first failure, so that it never passes a `NULL` handle written by a failed addition to the next set function.
+- Every function returns a value other than `CLINE_ERROR_NONE` when it fails. The example relies on `||` evaluating from left to right and stopping at the first failure, so that it never passes a `NULL` handle written by a failed addition to the next set function.
 - Validation is called once, after the definition is complete. If it fails, the example passes the handles written to the three output parameters to the read functions to find which definition has the error (`report_fault`).
 - The schema is destroyed first, and the value types after it.
 
@@ -347,10 +347,10 @@ A schema is a tree of commands. The root command represents the program, and eve
 
 | To do this | Function | Notes |
 |---|---|---|
-| Create the root | `clargs_command_create` | The name is any non-empty string. The rules for subcommand names do not apply |
-| Add a subcommand | `clargs_command_add_subcommand` | The name has one character or more. The first is an ASCII letter or digit; the rest are ASCII letters, digits, `-` or `_` |
-| Set the description | `clargs_command_set_description` | An empty string can also be set. Setting it again replaces it |
-| Destroy the whole tree | `clargs_command_destroy` | Call it only on the root. `NULL` does nothing |
+| Create the root | `cline_command_create` | The name is any non-empty string. The rules for subcommand names do not apply |
+| Add a subcommand | `cline_command_add_subcommand` | The name has one character or more. The first is an ASCII letter or digit; the rest are ASCII letters, digits, `-` or `_` |
+| Set the description | `cline_command_set_description` | An empty string can also be set. Setting it again replaces it |
+| Destroy the whole tree | `cline_command_destroy` | Call it only on the root. `NULL` does nothing |
 
 - The root owns the whole tree. There are no functions that destroy a subcommand, an option or a positional on its own.
 - Every string you pass is copied. Once the call returns, you may change or free the string.
@@ -366,10 +366,10 @@ There are four kinds of options, and each kind has its own add function.
 
 | Kind | Add function | Meaning |
 |---|---|---|
-| `CLARGS_OPTION_FLAG` | `clargs_command_add_flag` | Whether it was given |
-| `CLARGS_OPTION_NEGATABLE` | `clargs_command_add_negatable` | Switched with `--name` and `--no-name` |
-| `CLARGS_OPTION_COUNT` | `clargs_command_add_count` | How many times it was given |
-| `CLARGS_OPTION_VALUE` | `clargs_command_add_value` | Takes one value. You specify a value type |
+| `CLINE_OPTION_FLAG` | `cline_command_add_flag` | Whether it was given |
+| `CLINE_OPTION_NEGATABLE` | `cline_command_add_negatable` | Switched with `--name` and `--no-name` |
+| `CLINE_OPTION_COUNT` | `cline_command_add_count` | How many times it was given |
+| `CLINE_OPTION_VALUE` | `cline_command_add_value` | Takes one value. You specify a value type |
 
 Names:
 
@@ -382,11 +382,11 @@ All attributes are optional. After you add an option, you set each attribute wit
 
 | Attribute | Set function | Kinds it can be set on | Value when not set |
 |---|---|---|---|
-| Description | `clargs_option_set_description` | All | `NULL` |
-| Value name | `clargs_option_set_value_name` | `CLARGS_OPTION_VALUE` | `NULL` |
-| Required | `clargs_option_set_required` | `CLARGS_OPTION_VALUE` | `false` |
-| Default value | `clargs_option_set_default` | `CLARGS_OPTION_VALUE` | `NULL` |
-| Initial state | `clargs_option_set_initial` | `CLARGS_OPTION_NEGATABLE` | `false` (off) |
+| Description | `cline_option_set_description` | All | `NULL` |
+| Value name | `cline_option_set_value_name` | `CLINE_OPTION_VALUE` | `NULL` |
+| Required | `cline_option_set_required` | `CLINE_OPTION_VALUE` | `false` |
+| Default value | `cline_option_set_default` | `CLINE_OPTION_VALUE` | `NULL` |
+| Initial state | `cline_option_set_initial` | `CLINE_OPTION_NEGATABLE` | `false` (off) |
 
 - String attributes are copied. An empty string can also be set, and it is different from not being set (`NULL`). Setting an attribute again replaces the previous value. There are no functions that clear a setting.
 - A default value is passed as a string in the same form as it would be written on the command line. Setting it does not check whether the value type can convert it. Validation checks that.
@@ -396,17 +396,17 @@ All attributes are optional. After you add an option, you set each attribute wit
 
 ## Positionals
 
-A positional is added with `clargs_command_add_positional`. You specify its name, its value type and its arity. The positionals of a command receive the command-line arguments in the order they were added.
+A positional is added with `cline_command_add_positional`. You specify its name, its value type and its arity. The positionals of a command receive the command-line arguments in the order they were added.
 
 | Arity | Meaning |
 |---|---|
-| `CLARGS_ARITY_REQUIRED` | Exactly one |
-| `CLARGS_ARITY_OPTIONAL` | Zero or one |
-| `CLARGS_ARITY_ZERO_OR_MORE` | Zero or more |
-| `CLARGS_ARITY_ONE_OR_MORE` | One or more |
+| `CLINE_ARITY_REQUIRED` | Exactly one |
+| `CLINE_ARITY_OPTIONAL` | Zero or one |
+| `CLINE_ARITY_ZERO_OR_MORE` | Zero or more |
+| `CLINE_ARITY_ONE_OR_MORE` | One or more |
 
 - The name is for display and identification, and it does not appear on the command line. Any non-empty string can be used. Within the same command, the names must differ from each other. The name appears in the usage line and in the `Arguments:` list in forms such as `<name>` and `[name]...` ([Help and Usage](help.md#usage-line)). A newline in the name breaks the columns of the help ([Help and Usage](help.md#limits)).
-- There are two attributes. The description (`clargs_positional_set_description`) can be set for any arity. The default value (`clargs_positional_set_default`) can be set only on a positional with `CLARGS_ARITY_OPTIONAL`. Strings are handled in the same way as option attributes.
+- There are two attributes. The description (`cline_positional_set_description`) can be set for any arity. The default value (`cline_positional_set_default`) can be set only on a positional with `CLINE_ARITY_OPTIONAL`. Strings are handled in the same way as option attributes.
 - Whether the sequence of arities is consistent (no required positional after an optional one, no positional after a variadic one) is not checked when a positional is added. Validation checks that.
 
 ## Value types
@@ -419,11 +419,11 @@ The kinds of value types, and the type of the value that the conversion writes t
 
 | Kind | How to get it | Type name | C type of the value | Value |
 |---|---|---|---|---|
-| `CLARGS_TYPE_STRING` | `clargs_type_string()` | `"string"` | `const char *` | A pointer to the input string (not a copy) |
-| `CLARGS_TYPE_INT` | `clargs_type_int()` | `"integer"` | `int64_t` | The converted integer |
-| `CLARGS_TYPE_FLOAT` | `clargs_type_float()` | `"float"` | `double` | The converted value |
-| `CLARGS_TYPE_CHOICE` | `clargs_type_create_choice()` | `"choice"` | `size_t` | The index of the matching choice (from 0) |
-| `CLARGS_TYPE_CUSTOM` | `clargs_type_create()` | Given by you | Decided by you | Written by your conversion function |
+| `CLINE_TYPE_STRING` | `cline_type_string()` | `"string"` | `const char *` | A pointer to the input string (not a copy) |
+| `CLINE_TYPE_INT` | `cline_type_int()` | `"integer"` | `int64_t` | The converted integer |
+| `CLINE_TYPE_FLOAT` | `cline_type_float()` | `"float"` | `double` | The converted value |
+| `CLINE_TYPE_CHOICE` | `cline_type_create_choice()` | `"choice"` | `size_t` | The index of the matching choice (from 0) |
+| `CLINE_TYPE_CUSTOM` | `cline_type_create()` | Given by you | Decided by you | Written by your conversion function |
 
 The input that the built-in value types accept:
 
@@ -432,43 +432,43 @@ The input that the built-in value types accept:
 - Float: decimal notation. It may have an exponent (`1`, `1.5`, `.5`, `-1.5e-3`). Only finite values are accepted. The decimal point is `.`, whatever the locale. An empty string, white space, notations for infinity and NaN, and hexadecimal notation are not accepted.
 - Choice: an input that exactly matches one of the choices in the list. The match is case-sensitive. An empty string can also be a choice.
 
-For the string, integer and float value types, the function returns the same pointer every time. They allocate nothing, so they do not fail, and there is nothing to destroy. You create choice value types and user-defined value types yourself, and you destroy them yourself with `clargs_type_destroy`. The strings in the list of choices and the name of a user-defined value type are copied.
+For the string, integer and float value types, the function returns the same pointer every time. They allocate nothing, so they do not fail, and there is nothing to destroy. You create choice value types and user-defined value types yourself, and you destroy them yourself with `cline_type_destroy`. The strings in the list of choices and the name of a user-defined value type are copied.
 
-A value type can be read with these functions: `clargs_type_name`, `clargs_type_kind`, `clargs_type_value_size`, `clargs_type_choice_count`, `clargs_type_choice_at`. For a value type that is not a choice, the number of choices is 0.
+A value type can be read with these functions: `cline_type_name`, `cline_type_kind`, `cline_type_value_size`, `cline_type_choice_count`, `cline_type_choice_at`. For a value type that is not a choice, the number of choices is 0.
 
-A conversion is requested with `clargs_type_convert` and `clargs_type_release`. They are called in the same way for every value type. You need to know the kind only when you read the value. If you only define a schema, you do not need to call these two functions (validation calls them to check the default values).
+A conversion is requested with `cline_type_convert` and `cline_type_release`. They are called in the same way for every value type. You need to know the kind only when you read the value. If you only define a schema, you do not need to call these two functions (validation calls them to check the default values).
 
-- The caller that requests a conversion provides the buffer the value is written to. The buffer is at least `clargs_type_value_size()` bytes, with an alignment that is suitable for an object of any type. The library neither allocates nor frees this buffer.
-- If the conversion succeeds, the value has been written to the buffer. When you are done with it, call `clargs_type_release` on that value exactly once.
-- If the conversion fails, the contents of the buffer are undefined. Do not call `clargs_type_release`.
+- The caller that requests a conversion provides the buffer the value is written to. The buffer is at least `cline_type_value_size()` bytes, with an alignment that is suitable for an object of any type. The library neither allocates nor frees this buffer.
+- If the conversion succeeds, the value has been written to the buffer. When you are done with it, call `cline_type_release` on that value exactly once.
+- If the conversion fails, the contents of the buffer are undefined. Do not call `cline_type_release`.
 - The value may refer to the input string (the value of the string value type is the pointer to the input itself). The caller that requested the conversion keeps the input string valid and unchanged until the value has been released.
 
 Because values are passed as `void *`, the compiler does not detect a wrong buffer size or a wrong type. Read the value with the type given in the table above.
 
 ## Writing a user-defined value type
 
-Pass the type name, the size of the value, the conversion function, the release function and your user data to `clargs_type_create`.
+Pass the type name, the size of the value, the conversion function, the release function and your user data to `cline_type_create`.
 
 ```
-clargs_error_t clargs_type_create(const char *name, size_t value_size,
-                                  clargs_convert_fn_t convert_fn,
-                                  clargs_release_fn_t release_fn, void *context,
-                                  clargs_type_t **out);
+cline_error_t cline_type_create(const char *name, size_t value_size,
+                                  cline_convert_fn_t convert_fn,
+                                  cline_release_fn_t release_fn, void *context,
+                                  cline_type_t **out);
 ```
 
 | Argument | Contents |
 |---|---|
 | `name` | The type name (such as `"size"`). Any non-empty string. It is copied |
 | `value_size` | The size of the value in bytes. Greater than 0. The buffer that the conversion writes to is at least this size |
-| `convert_fn` | The conversion function. `clargs_error_t (*)(const char *text, void *value, void *context)` |
+| `convert_fn` | The conversion function. `cline_error_t (*)(const char *text, void *value, void *context)` |
 | `release_fn` | The release function. `void (*)(void *value, void *context)`. `NULL` if the value needs no release |
 | `context` | User data passed to both functions. `NULL` if not needed |
 
 What the conversion function must do:
 
-- Convert `text`, write the value to the buffer that `value` points to, and return `CLARGS_ERROR_NONE`. The buffer is at least `value_size` bytes, with an alignment that is suitable for any type.
-- For an input it does not accept, return `CLARGS_ERROR_INVALID_VALUE`. If an allocation inside the conversion fails, return `CLARGS_ERROR_OUT_OF_MEMORY`.
-- Any return value other than `CLARGS_ERROR_NONE` is treated as a failure. `clargs_type_convert` returns the return value of the conversion function as it is.
+- Convert `text`, write the value to the buffer that `value` points to, and return `CLINE_ERROR_NONE`. The buffer is at least `value_size` bytes, with an alignment that is suitable for any type.
+- For an input it does not accept, return `CLINE_ERROR_INVALID_VALUE`. If an allocation inside the conversion fails, return `CLINE_ERROR_OUT_OF_MEMORY`.
+- Any return value other than `CLINE_ERROR_NONE` is treated as a failure. `cline_type_convert` returns the return value of the conversion function as it is.
 - When it fails, it leaves nothing that needs a release. The release function is not called for a failed conversion.
 - **It has no side effects.** On every validation, the conversion function is called once for each default value that the validation reaches among the definition elements with that value type. If it prints, counts, or changes some outside state, that happens on every validation. Write it so that it always returns the same result for the same input.
 - The value may refer to `text`.
@@ -488,73 +488,73 @@ Creating and destroying a value type calls neither the conversion function nor t
 
 ## Borrowed value types and the order of destruction
 
-A schema borrows its value types. `clargs_command_add_value` and `clargs_command_add_positional` do not copy the value type they are given. They only keep a pointer to it.
+A schema borrows its value types. `cline_command_add_value` and `cline_command_add_positional` do not copy the value type they are given. They only keep a pointer to it.
 
 | Object | Owner | How long it must stay valid |
 |---|---|---|
-| String, integer and float value types | The library | Valid until the program ends. Not destroyed (passing them to `clargs_type_destroy` does nothing) |
+| String, integer and float value types | The library | Valid until the program ends. Not destroyed (passing them to `cline_type_destroy` does nothing) |
 | Choice value types, user-defined value types | The user who created them | Until every schema that uses them has been destroyed |
 | The `context` of a user-defined value type | The user | Until the value type is destroyed |
 | The schema (root command) | The user who created it | — |
 
 The order of destruction:
 
-1. Destroy the schema (`clargs_command_destroy`). The value types are not destroyed.
-2. Destroy the value types that the schema used (`clargs_type_destroy`).
+1. Destroy the schema (`cline_command_destroy`). The value types are not destroyed.
+2. Destroy the value types that the schema used (`cline_type_destroy`).
 3. Clean up the `context` that the value types borrowed, in your own way.
 
 - Do not destroy a value type before the schemas that use it. The library does not detect this error.
-- If there are results (`clargs_result_t`) parsed with the schema, destroy all of them before the schema. While a result remains, do not change or destroy the schema ([Parsing](parse.md#lifetime-rules)).
+- If there are results (`cline_result_t`) parsed with the schema, destroy all of them before the schema. While a result remains, do not change or destroy the schema ([Parsing](parse.md#lifetime-rules)).
 - If one value type is used by several schemas, destroy all of them before you destroy the value type.
-- `clargs_type_destroy(NULL)` and `clargs_command_destroy(NULL)` do nothing. So you can write the destruction in the same order even after a creation has failed.
-- What `clargs_option_type` and `clargs_positional_type` return is the very value type that was passed when the element was added. It belongs to you, and it does not become invalid when the schema is destroyed.
+- `cline_type_destroy(NULL)` and `cline_command_destroy(NULL)` do nothing. So you can write the destruction in the same order even after a creation has failed.
+- What `cline_option_type` and `cline_positional_type` return is the very value type that was passed when the element was added. It belongs to you, and it does not become invalid when the schema is destroyed.
 
 ## Definition errors
 
 Errors in a definition are returned as error codes. Errors that the add and set functions can check are returned right away. Errors that can only be found by looking at the whole tree are returned by validation.
 
-| Error code | Message (`clargs_error_message`) | Meaning |
+| Error code | Message (`cline_error_message`) | Meaning |
 |---|---|---|
-| `CLARGS_ERROR_OUT_OF_MEMORY` | `"out of memory"` | A memory allocation failed |
-| `CLARGS_ERROR_INVALID_NAME` | `"invalid name"` | A name does not follow the rules, is empty, or is missing |
-| `CLARGS_ERROR_NAME_CONFLICT` | `"name already in use"` | Names conflict within the same command |
-| `CLARGS_ERROR_INVALID_DEFINITION` | `"inconsistent definition"` | Definitions contradict each other |
-| `CLARGS_ERROR_INVALID_DEFAULT` | `"default value rejected by its value type"` | In validation, the value type cannot convert a default value |
-| `CLARGS_ERROR_INVALID_VALUE` | `"invalid value"` | In the conversion of a value type, the input is not valid |
+| `CLINE_ERROR_OUT_OF_MEMORY` | `"out of memory"` | A memory allocation failed |
+| `CLINE_ERROR_INVALID_NAME` | `"invalid name"` | A name does not follow the rules, is empty, or is missing |
+| `CLINE_ERROR_NAME_CONFLICT` | `"name already in use"` | Names conflict within the same command |
+| `CLINE_ERROR_INVALID_DEFINITION` | `"inconsistent definition"` | Definitions contradict each other |
+| `CLINE_ERROR_INVALID_DEFAULT` | `"default value rejected by its value type"` | In validation, the value type cannot convert a default value |
+| `CLINE_ERROR_INVALID_VALUE` | `"invalid value"` | In the conversion of a value type, the input is not valid |
 
 If an add or set function fails, the schema has the same contents as before the call, and its validation state does not change. The output parameter that receives the created object is set to `NULL`. No memory that the call allocated is left behind. After the failure, you can keep using the schema, and you can add an element again with the same name.
 
 ### Errors when adding and setting
 
-Within one function, the conditions are checked from the top row down, and the first one that applies is returned. Besides these, every function returns `CLARGS_ERROR_OUT_OF_MEMORY` when an allocation fails.
+Within one function, the conditions are checked from the top row down, and the first one that applies is returned. Besides these, every function returns `CLINE_ERROR_OUT_OF_MEMORY` when an allocation fails.
 
 | Function | Condition | Error code |
 |---|---|---|
-| `clargs_command_create` | The name is empty | `INVALID_NAME` |
-| `clargs_command_add_subcommand` | The name does not follow the rules (including an empty name) | `INVALID_NAME` |
+| `cline_command_create` | The name is empty | `INVALID_NAME` |
+| `cline_command_add_subcommand` | The name does not follow the rules (including an empty name) | `INVALID_NAME` |
 | | The command it is added to has positionals | `INVALID_DEFINITION` |
 | | The command it is added to already has a subcommand with the same name | `NAME_CONFLICT` |
-| `clargs_command_add_flag`, `_add_negatable`, `_add_count`, `_add_value` | There is neither a short name nor a long name | `INVALID_NAME` |
+| `cline_command_add_flag`, `_add_negatable`, `_add_count`, `_add_value` | There is neither a short name nor a long name | `INVALID_NAME` |
 | | A negatable flag has no long name | `INVALID_NAME` |
 | | The short name or the long name does not follow the rules | `INVALID_NAME` |
 | | The same command already has an option with the same short name | `NAME_CONFLICT` |
 | | The same command already has a long name or a negated name equal to the long name | `NAME_CONFLICT` |
 | | For a negatable flag, the same command already has a long name or a negated name equal to its negated name | `NAME_CONFLICT` |
-| `clargs_command_add_positional` | The name is empty | `INVALID_NAME` |
+| `cline_command_add_positional` | The name is empty | `INVALID_NAME` |
 | | The command it is added to has subcommands | `INVALID_DEFINITION` |
 | | The command it is added to already has a positional with the same name | `NAME_CONFLICT` |
-| `clargs_option_set_value_name`, `_set_required`, `_set_default` | The option is not an option with a value | `INVALID_DEFINITION` |
-| `clargs_option_set_initial` | The option is not a negatable flag | `INVALID_DEFINITION` |
-| `clargs_positional_set_default` | The arity is not `CLARGS_ARITY_OPTIONAL` | `INVALID_DEFINITION` |
-| `clargs_type_create_choice` | There are 0 choices, or the same string appears twice or more | `INVALID_DEFINITION` |
-| `clargs_type_create` | The type name is empty | `INVALID_NAME` |
+| `cline_option_set_value_name`, `_set_required`, `_set_default` | The option is not an option with a value | `INVALID_DEFINITION` |
+| `cline_option_set_initial` | The option is not a negatable flag | `INVALID_DEFINITION` |
+| `cline_positional_set_default` | The arity is not `CLINE_ARITY_OPTIONAL` | `INVALID_DEFINITION` |
+| `cline_type_create_choice` | There are 0 choices, or the same string appears twice or more | `INVALID_DEFINITION` |
+| `cline_type_create` | The type name is empty | `INVALID_NAME` |
 
 - Setting an attribute on a kind it does not apply to is an error, whatever value you try to set (even `false`).
 - Setting a description (on a command, an option or a positional) fails only when an allocation fails.
 
 ### Errors found by validation
 
-These are returned by `clargs_command_validate`. The order of the checks is in [Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure).
+These are returned by `cline_command_validate`. The order of the checks is in [Validation and finding the cause of a failure](#validation-and-finding-the-cause-of-a-failure).
 
 | Condition | Error code | Reported definition element |
 |---|---|---|
@@ -563,9 +563,9 @@ These are returned by `clargs_command_validate`. The order of the checks is in [
 | An option is required and also has a default value | `INVALID_DEFINITION` | That option |
 | The value type of an option cannot convert its default value | `INVALID_DEFAULT` | That option |
 | The value type of a positional cannot convert its default value | `INVALID_DEFAULT` | That positional |
-| The allocation of the value buffer failed, or the conversion returned `CLARGS_ERROR_OUT_OF_MEMORY` | `OUT_OF_MEMORY` | None |
+| The allocation of the value buffer failed, or the conversion returned `CLINE_ERROR_OUT_OF_MEMORY` | `OUT_OF_MEMORY` | None |
 
-- If the conversion of a default value fails with anything other than `CLARGS_ERROR_OUT_OF_MEMORY`, the result is `CLARGS_ERROR_INVALID_DEFAULT`, whatever code the conversion function returned.
+- If the conversion of a default value fails with anything other than `CLINE_ERROR_OUT_OF_MEMORY`, the result is `CLINE_ERROR_INVALID_DEFAULT`, whatever code the conversion function returned.
 - Validation does not check the errors that are returned when adding and setting (invalid names, name conflicts, positionals together with subcommands, attributes on kinds they do not apply to). This is because the add and set functions never let you build such a schema.
 
 ### What is not an error code
@@ -575,14 +575,14 @@ A `NULL` for a required argument, an index out of range, a value that is not in 
 ## Validation and finding the cause of a failure
 
 ```
-clargs_error_t clargs_command_validate(clargs_command_t *root,
-                                       const clargs_command_t **command,
-                                       const clargs_option_t **option,
-                                       const clargs_positional_t **positional);
-bool clargs_command_is_validated(const clargs_command_t *command);
+cline_error_t cline_command_validate(cline_command_t *root,
+                                       const cline_command_t **command,
+                                       const cline_option_t **option,
+                                       const cline_positional_t **positional);
+bool cline_command_is_validated(const cline_command_t *command);
 ```
 
-`clargs_command_validate` checks the root and every subcommand below it. You pass the root. When it succeeds, the tree becomes validated.
+`cline_command_validate` checks the root and every subcommand below it. You pass the root. When it succeeds, the tree becomes validated.
 
 The order of the checks is fixed. Validation returns the first error it finds and stops, so the same definition always gives the same result.
 
@@ -596,10 +596,10 @@ The result and the three output parameters:
 
 | Return value | `*command` | `*option` | `*positional` | Validation state |
 |---|---|---|---|---|
-| `CLARGS_ERROR_NONE` | `NULL` | `NULL` | `NULL` | Becomes validated |
-| `CLARGS_ERROR_INVALID_DEFINITION`, `CLARGS_ERROR_INVALID_DEFAULT` (error in an option) | The command the option belongs to | The option with the error | `NULL` | Unchanged |
-| `CLARGS_ERROR_INVALID_DEFINITION`, `CLARGS_ERROR_INVALID_DEFAULT` (error in a positional) | The command the positional belongs to | `NULL` | The positional with the error | Unchanged |
-| `CLARGS_ERROR_OUT_OF_MEMORY` | `NULL` | `NULL` | `NULL` | Unchanged |
+| `CLINE_ERROR_NONE` | `NULL` | `NULL` | `NULL` | Becomes validated |
+| `CLINE_ERROR_INVALID_DEFINITION`, `CLINE_ERROR_INVALID_DEFAULT` (error in an option) | The command the option belongs to | The option with the error | `NULL` | Unchanged |
+| `CLINE_ERROR_INVALID_DEFINITION`, `CLINE_ERROR_INVALID_DEFAULT` (error in a positional) | The command the positional belongs to | `NULL` | The positional with the error | Unchanged |
+| `CLINE_ERROR_OUT_OF_MEMORY` | `NULL` | `NULL` | `NULL` | Unchanged |
 
 - Each of the three output parameters can be omitted by passing `NULL`. An output parameter that is not `NULL` is always written on every call.
 - The handles written are ones in the tree. They stay valid until the root is destroyed, and you do not free them.
@@ -607,11 +607,11 @@ The result and the three output parameters:
 
 How to find the cause of a failure (`report_fault` in the example):
 
-1. Pass the return value to `clargs_error_message` to get the kind of error.
-2. Pass `*command` to `clargs_command_name` to get which command's definition it is. To walk up to the parents, use `clargs_command_parent` (`NULL` for the root).
-3. If `*option` is not `NULL`, use `clargs_option_long_name` (`NULL` if none), `clargs_option_short_name` (`'\0'` if none), `clargs_option_default`, `clargs_option_is_required` and so on to find which option has which error.
-4. If `*positional` is not `NULL`, use `clargs_positional_name`, `clargs_positional_arity`, `clargs_positional_default` and so on.
-5. If all three are `NULL` and the return value is `CLARGS_ERROR_OUT_OF_MEMORY`, it is not an error in the definition. The definition is unchanged, so you can validate again once enough memory is available.
+1. Pass the return value to `cline_error_message` to get the kind of error.
+2. Pass `*command` to `cline_command_name` to get which command's definition it is. To walk up to the parents, use `cline_command_parent` (`NULL` for the root).
+3. If `*option` is not `NULL`, use `cline_option_long_name` (`NULL` if none), `cline_option_short_name` (`'\0'` if none), `cline_option_default`, `cline_option_is_required` and so on to find which option has which error.
+4. If `*positional` is not `NULL`, use `cline_positional_name`, `cline_positional_arity`, `cline_positional_default` and so on.
+5. If all three are `NULL` and the return value is `CLINE_ERROR_OUT_OF_MEMORY`, it is not an error in the definition. The definition is unchanged, so you can validate again once enough memory is available.
 
 To fix an error, set the attribute again (replace the default value with a correct one, set required to `false`, and so on). There are no functions that remove a definition element, so for an error in the sequence of positionals, destroy the schema and build it again.
 
@@ -620,9 +620,9 @@ The validation state:
 - A root right after it is created is not validated.
 - When validation succeeds, the tree becomes validated. A failed validation does not change the state.
 - A successful addition or set, on any part of the tree, marks the tree as not validated again. This happens even when the same value is set again. A failed addition or set does not change the state.
-- You can pass any command of the tree to `clargs_command_is_validated`. The result is the same.
+- You can pass any command of the tree to `cline_command_is_validated`. The result is the same.
 - You can call validation as many times as you like. Call it again after you change the definition.
-- Only a validated schema can be passed to parsing (`clargs_parse`, `clargs_parse_wide`). Passing a schema that is not validated (one for which `clargs_command_is_validated` returns `false`: one that has never been validated successfully, or one that was changed by an addition or a set after validation) to parsing violates a precondition. No error code is returned. It is checked with `assert`: in the Debug configuration the process aborts, and in the Release configuration the behavior is undefined ([Preconditions](#preconditions), [Parsing](parse.md#preconditions)).
+- Only a validated schema can be passed to parsing (`cline_parse`, `cline_parse_wide`). Passing a schema that is not validated (one for which `cline_command_is_validated` returns `false`: one that has never been validated successfully, or one that was changed by an addition or a set after validation) to parsing violates a precondition. No error code is returned. It is checked with `assert`: in the Debug configuration the process aborts, and in the Release configuration the behavior is undefined ([Preconditions](#preconditions), [Parsing](parse.md#preconditions)).
 
 For each default value it reaches, validation allocates a value buffer, asks the value type to convert the value, requests its release if the conversion succeeds, and frees the buffer. So the conversion function and the release function of a user-defined value type are called on every validation ([Writing a user-defined value type](#writing-a-user-defined-value-type)). No value is left after validation.
 
@@ -637,11 +637,11 @@ What always holds for any schema (the add and set functions ensure it):
 - Options with a value and positionals have a value type, and other options do not.
 - Attributes are set only on definition elements of the kinds they apply to.
 
-In a validated schema (a tree for which `clargs_command_is_validated` returns `true`), the following also holds for every command:
+In a validated schema (a tree for which `cline_command_is_validated` returns `true`), the following also holds for every command:
 
 - The sequence of positionals is one of these:
-  - Zero or more `CLARGS_ARITY_REQUIRED`, then zero or more `CLARGS_ARITY_OPTIONAL`, and last at most one `CLARGS_ARITY_ZERO_OR_MORE`.
-  - Zero or more `CLARGS_ARITY_REQUIRED`, and last exactly one `CLARGS_ARITY_ONE_OR_MORE`.
+  - Zero or more `CLINE_ARITY_REQUIRED`, then zero or more `CLINE_ARITY_OPTIONAL`, and last at most one `CLINE_ARITY_ZERO_OR_MORE`.
+  - Zero or more `CLINE_ARITY_REQUIRED`, and last exactly one `CLINE_ARITY_ONE_OR_MORE`.
 - A required option with a value has no default value.
 - Every default value was converted successfully by its value type at the time of validation. If the conversion function has no side effects and returns the same result for the same input, converting it later also succeeds.
 
@@ -653,18 +653,18 @@ The read functions take `const` handles, change nothing, and do not fail.
 
 | Object | Functions |
 |---|---|
-| Command | `clargs_command_name`, `clargs_command_description`, `clargs_command_parent`, `clargs_command_is_validated` |
-| Enumerating within a command | `clargs_command_option_count` and `clargs_command_option_at`, `clargs_command_positional_count` and `clargs_command_positional_at`, `clargs_command_subcommand_count` and `clargs_command_subcommand_at` |
-| Lookup by name | `clargs_command_find_short`, `clargs_command_find_long`, `clargs_command_find_subcommand` |
-| Option | `clargs_option_command`, `clargs_option_kind`, `clargs_option_short_name`, `clargs_option_long_name`, `clargs_option_negated_name`, `clargs_option_type`, `clargs_option_description`, `clargs_option_value_name`, `clargs_option_is_required`, `clargs_option_default`, `clargs_option_initial` |
-| Positional | `clargs_positional_command`, `clargs_positional_name`, `clargs_positional_arity`, `clargs_positional_type`, `clargs_positional_description`, `clargs_positional_default` |
+| Command | `cline_command_name`, `cline_command_description`, `cline_command_parent`, `cline_command_is_validated` |
+| Enumerating within a command | `cline_command_option_count` and `cline_command_option_at`, `cline_command_positional_count` and `cline_command_positional_at`, `cline_command_subcommand_count` and `cline_command_subcommand_at` |
+| Lookup by name | `cline_command_find_short`, `cline_command_find_long`, `cline_command_find_subcommand` |
+| Option | `cline_option_command`, `cline_option_kind`, `cline_option_short_name`, `cline_option_long_name`, `cline_option_negated_name`, `cline_option_type`, `cline_option_description`, `cline_option_value_name`, `cline_option_is_required`, `cline_option_default`, `cline_option_initial` |
+| Positional | `cline_positional_command`, `cline_positional_name`, `cline_positional_arity`, `cline_positional_type`, `cline_positional_description`, `cline_positional_default` |
 
 - Enumeration is in the order the elements were added. Indexes start at 0.
 - "None" is represented by `NULL` for strings and handles, and by `'\0'` for short names. A description, value name or default value that is not set is `NULL`. An attribute that was set to an empty string reads as an empty string.
 - For an option of a kind that an attribute does not apply to, the negated name, the value type, the value name and the default value are `NULL`, and required and the initial state are `false`.
 - A lookup covers only the definitions of the command you pass. It does not look at parent or child commands. It compares the whole name, byte by byte.
-- `clargs_command_find_long` looks up the first `length` bytes of `name` as the name. This lets you look up a name inside a string such as `name=value` without copying it. It also matches negated names, and it writes which one matched to `*negated` (it writes nothing if no option is found).
-- Passing `'\0'` to `clargs_command_find_short` always returns `NULL`.
+- `cline_command_find_long` looks up the first `length` bytes of `name` as the name. This lets you look up a name inside a string such as `name=value` without copying it. It also matches negated names, and it writes which one matched to `*negated` (it writes nothing if no option is found).
+- Passing `'\0'` to `cline_command_find_short` always returns `NULL`.
 - The strings and handles returned stay valid until the root is destroyed. You do not free them. Adding definitions does not change the handles.
 - However, a string read from an attribute that can be set again (the description of a command; the description, value name or default value of an option; the description or default value of a positional) stays valid until the root is destroyed or that attribute is set again, whichever comes first. Setting the attribute again frees the previous string. Names are never replaced.
 - While a schema is not being changed, its read functions can be called from several threads at the same time. Changing or validating a schema cannot be done at the same time as any other call on it. You do the synchronization.
@@ -673,10 +673,10 @@ The read functions take `const` handles, change nothing, and do not fail.
 
 The preconditions of each function are written in the comments of the public headers, under `Preconditions:`. What they have in common is:
 
-- Pointer arguments are not `NULL`, unless the comment says they "may be `NULL`". The arguments that may be `NULL` are: the argument of a destroy function, the `out` of an add function, `long_name` to mean that there is no long name, `release_fn` and `context` of `clargs_type_create`, `choices` of `clargs_type_create_choice` when `count` is 0, `negated` of `clargs_command_find_long`, and the three output parameters of `clargs_command_validate`.
+- Pointer arguments are not `NULL`, unless the comment says they "may be `NULL`". The arguments that may be `NULL` are: the argument of a destroy function, the `out` of an add function, `long_name` to mean that there is no long name, `release_fn` and `context` of `cline_type_create`, `choices` of `cline_type_create_choice` when `count` is 0, `negated` of `cline_command_find_long`, and the three output parameters of `cline_command_validate`.
 - An index (the `index` of an `_at` function) is less than the corresponding count.
-- An enumeration argument (the `arity` of `clargs_command_add_positional`) is one of the defined constants.
-- What you pass to `clargs_command_destroy` and `clargs_command_validate` is the root. Do not pass a subcommand.
+- An enumeration argument (the `arity` of `cline_command_add_positional`) is one of the defined constants.
+- What you pass to `cline_command_destroy` and `cline_command_validate` is the root. Do not pass a subcommand.
 - Handles have not been destroyed. A value type has not been destroyed before the schemas that use it.
 
 Breaking a precondition is a programming error. No error code is returned. Preconditions that can be checked are checked with `assert`, and in the Debug configuration the process aborts when one is broken. In the Release configuration they are not checked, and the behavior is undefined. During development, we recommend that you use the library built in the Debug configuration ([Ownership and Lifetime](ownership.md#runtime-failures-and-programming-errors)).

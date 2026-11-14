@@ -4,7 +4,7 @@
 # Usage: build_examples.sh <repo-root> <outdir>
 #
 #  1. Configures, builds and installs the library with the tests disabled
-#     (CLARGS_BUILD_TESTS=OFF, so Naos is not fetched) into <outdir>/prefix.
+#     (CLINE_BUILD_TESTS=OFF, so Naos is not fetched) into <outdir>/prefix.
 #  2. Extracts the examples with `check_docs.py extract <outdir>/examples`.
 #  3. Compiles and links every `main` example with gcc and
 #     -std=c99 -Wall -Wextra -Wpedantic -Werror; compiles every `wmain`
@@ -52,7 +52,7 @@ mkdir -p "$2" || exit 2
 out=$(cd "$2" && pwd) || exit 2
 
 set -e
-cmake -S "$root" -B "$out/build" -DCMAKE_BUILD_TYPE=Release -DCLARGS_BUILD_TESTS=OFF \
+cmake -S "$root" -B "$out/build" -DCMAKE_BUILD_TYPE=Release -DCLINE_BUILD_TESTS=OFF \
     > "$out/configure.log"
 cmake --build "$out/build" -j8 > "$out/build.log"
 cmake --install "$out/build" --prefix "$out/prefix" > "$out/install.log"
@@ -192,7 +192,7 @@ for name, entry, source in manifest:
     exe = os.path.join(bindir, name[:-2])
     extra = [os.path.join(out, "user_alloc.c")] if doc == "docs/ownership.md" else []
     p = subprocess.run(["gcc"] + cflags + [src] + extra +
-                       ["-L", libdir, "-lclargs", "-o", exe], capture_output=True, text=True)
+                       ["-L", libdir, "-lcline", "-o", exe], capture_output=True, text=True)
     report(p.returncode == 0, doc, "%s (%s) compiles and links" % (name, source), p.stderr)
     if p.returncode != 0:
         continue

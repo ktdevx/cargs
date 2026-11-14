@@ -59,7 +59,7 @@ PENDING_TARGETS = ("CHANGELOG.md", "docs/releasing.md", "docs/versioning.md")
 # in them are counted separately in the summary and are not fixed by
 # english-docs.
 RELEASE_AUTOMATION_FILES = PENDING_TARGETS + (
-    "include/clargs/version.h", "CMakeLists.txt", "tests/CMakeLists.txt",
+    "include/cline/version.h", "CMakeLists.txt", "tests/CMakeLists.txt",
     "tests/public/version_test.c",
 )
 RELEASE_AUTOMATION_PREFIXES = (

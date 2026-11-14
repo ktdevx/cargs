@@ -16,13 +16,13 @@
 /* An empty string does not start with '-': it is not an option. */
 NAOS_TEST(classify_empty_is_plain)
 {
-    NAOS_CHECK_TRUE(clargs_lex_classify("") == CLARGS_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("") == CLINE_LEX_PLAIN);
 }
 
 /* A single '-' is not an option. */
 NAOS_TEST(classify_single_hyphen_is_plain)
 {
-    NAOS_CHECK_TRUE(clargs_lex_classify("-") == CLARGS_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("-") == CLINE_LEX_PLAIN);
 }
 
 /*
@@ -31,21 +31,21 @@ NAOS_TEST(classify_single_hyphen_is_plain)
  */
 NAOS_TEST(classify_without_leading_hyphen_is_plain)
 {
-    NAOS_CHECK_TRUE(clargs_lex_classify("x") == CLARGS_LEX_PLAIN);
-    NAOS_CHECK_TRUE(clargs_lex_classify("x-y") == CLARGS_LEX_PLAIN);
-    NAOS_CHECK_TRUE(clargs_lex_classify("x--y") == CLARGS_LEX_PLAIN);
-    NAOS_CHECK_TRUE(clargs_lex_classify("x-") == CLARGS_LEX_PLAIN);
-    NAOS_CHECK_TRUE(clargs_lex_classify(" -x") == CLARGS_LEX_PLAIN);
-    NAOS_CHECK_TRUE(clargs_lex_classify("1") == CLARGS_LEX_PLAIN);
-    NAOS_CHECK_TRUE(clargs_lex_classify(".5") == CLARGS_LEX_PLAIN);
-    NAOS_CHECK_TRUE(clargs_lex_classify("=x") == CLARGS_LEX_PLAIN);
-    NAOS_CHECK_TRUE(clargs_lex_classify("\xC3\xA9") == CLARGS_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("x") == CLINE_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("x-y") == CLINE_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("x--y") == CLINE_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("x-") == CLINE_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify(" -x") == CLINE_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("1") == CLINE_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify(".5") == CLINE_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("=x") == CLINE_LEX_PLAIN);
+    NAOS_CHECK_TRUE(cline_lex_classify("\xC3\xA9") == CLINE_LEX_PLAIN);
 }
 
 /* "--" alone ends the options. */
 NAOS_TEST(classify_double_hyphen_is_terminator)
 {
-    NAOS_CHECK_TRUE(clargs_lex_classify("--") == CLARGS_LEX_TERMINATOR);
+    NAOS_CHECK_TRUE(cline_lex_classify("--") == CLINE_LEX_TERMINATOR);
 }
 
 /*
@@ -54,15 +54,15 @@ NAOS_TEST(classify_double_hyphen_is_terminator)
  */
 NAOS_TEST(classify_double_hyphen_and_more_is_long)
 {
-    NAOS_CHECK_TRUE(clargs_lex_classify("--x") == CLARGS_LEX_LONG);
-    NAOS_CHECK_TRUE(clargs_lex_classify("---") == CLARGS_LEX_LONG);
-    NAOS_CHECK_TRUE(clargs_lex_classify("--=x") == CLARGS_LEX_LONG);
-    NAOS_CHECK_TRUE(clargs_lex_classify("--=") == CLARGS_LEX_LONG);
-    NAOS_CHECK_TRUE(clargs_lex_classify("--name") == CLARGS_LEX_LONG);
-    NAOS_CHECK_TRUE(clargs_lex_classify("--name=value") == CLARGS_LEX_LONG);
-    NAOS_CHECK_TRUE(clargs_lex_classify("--1") == CLARGS_LEX_LONG);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-- ") == CLARGS_LEX_LONG);
-    NAOS_CHECK_TRUE(clargs_lex_classify("--\xC3\xA9") == CLARGS_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("--x") == CLINE_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("---") == CLINE_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("--=x") == CLINE_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("--=") == CLINE_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("--name") == CLINE_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("--name=value") == CLINE_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("--1") == CLINE_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("-- ") == CLINE_LEX_LONG);
+    NAOS_CHECK_TRUE(cline_lex_classify("--\xC3\xA9") == CLINE_LEX_LONG);
 }
 
 /*
@@ -72,18 +72,18 @@ NAOS_TEST(classify_double_hyphen_and_more_is_long)
  */
 NAOS_TEST(classify_hyphen_and_other_is_short)
 {
-    NAOS_CHECK_TRUE(clargs_lex_classify("-x") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-xyz") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-1") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-.5") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-.") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-1x") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-x-") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-x--") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-=") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-o=value") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("- ") == CLARGS_LEX_SHORT);
-    NAOS_CHECK_TRUE(clargs_lex_classify("-\xC3\xA9") == CLARGS_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-x") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-xyz") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-1") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-.5") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-.") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-1x") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-x-") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-x--") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-=") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-o=value") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("- ") == CLINE_LEX_SHORT);
+    NAOS_CHECK_TRUE(cline_lex_classify("-\xC3\xA9") == CLINE_LEX_SHORT);
 }
 
 /* ---- The form of a negative number ------------------------------------ */
@@ -100,47 +100,47 @@ NAOS_TEST(negative_number_accepts_hyphen_and_digit)
     for (i = 0; i < (sizeof digits - 1); ++i)
     {
         arg[1] = digits[i];
-        NAOS_CHECK_TRUE(clargs_lex_is_negative_number(arg));
+        NAOS_CHECK_TRUE(cline_lex_is_negative_number(arg));
     }
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-1"));
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-42"));
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-1.5"));
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-1x"));
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-1e9"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-1"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-42"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-1.5"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-1x"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-1e9"));
 }
 
 /* '-', '.' and a digit, whatever follows the digit. */
 NAOS_TEST(negative_number_accepts_hyphen_dot_and_digit)
 {
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-.5"));
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-.0"));
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-.9"));
-    NAOS_CHECK_TRUE(clargs_lex_is_negative_number("-.5x"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-.5"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-.0"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-.9"));
+    NAOS_CHECK_TRUE(cline_lex_is_negative_number("-.5x"));
 }
 
 /* A '.' with no digit after it is not the form of a number. */
 NAOS_TEST(negative_number_rejects_dot_without_digit)
 {
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-."));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-.x"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-.."));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-..5"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-.-1"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-."));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-.x"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-.."));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-..5"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-.-1"));
 }
 
 /* Arguments without a leading '-', the '-' alone and the long forms. */
 NAOS_TEST(negative_number_rejects_other_shapes)
 {
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number(""));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("--"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("--1"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("---"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("1"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number(".5"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("x"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("x-1"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("+1"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number(""));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("--"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("--1"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("---"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("1"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number(".5"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("x"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("x-1"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("+1"));
 }
 
 /*
@@ -150,17 +150,17 @@ NAOS_TEST(negative_number_rejects_other_shapes)
  */
 NAOS_TEST(negative_number_rejects_hyphen_and_non_digit)
 {
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-x"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-xyz"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-x1"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-/")); /* before '0' */
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-:")); /* after '9' */
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-./"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-.:"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("- 1"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-e1"));
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-\xB1")); /* '1' + 0x80 */
-    NAOS_CHECK_FALSE(clargs_lex_is_negative_number("-.\xB5"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-x"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-xyz"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-x1"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-/")); /* before '0' */
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-:")); /* after '9' */
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-./"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-.:"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("- 1"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-e1"));
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-\xB1")); /* '1' + 0x80 */
+    NAOS_CHECK_FALSE(cline_lex_is_negative_number("-.\xB5"));
 }
 
 /*
@@ -174,8 +174,8 @@ NAOS_TEST(negative_number_is_classified_as_short)
 
     for (i = 0; i < (sizeof args / sizeof args[0]); ++i)
     {
-        NAOS_CHECK_TRUE(clargs_lex_is_negative_number(args[i]));
-        NAOS_CHECK_TRUE(clargs_lex_classify(args[i]) == CLARGS_LEX_SHORT);
+        NAOS_CHECK_TRUE(cline_lex_is_negative_number(args[i]));
+        NAOS_CHECK_TRUE(cline_lex_classify(args[i]) == CLINE_LEX_SHORT);
     }
 }
 
@@ -189,7 +189,7 @@ NAOS_TEST(split_long_without_equals)
     size_t name_length = 99;
     const char *value = arg;
 
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
 
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 4);
@@ -204,7 +204,7 @@ NAOS_TEST(split_long_one_character)
     size_t name_length = 99;
     const char *value = arg;
 
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
 
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 1);
@@ -219,7 +219,7 @@ NAOS_TEST(split_long_triple_hyphen)
     size_t name_length = 99;
     const char *value = arg;
 
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
 
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 1);
@@ -234,7 +234,7 @@ NAOS_TEST(split_long_with_one_equals)
     size_t name_length = 99;
     const char *value = NULL;
 
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
 
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 4);
@@ -250,7 +250,7 @@ NAOS_TEST(split_long_with_two_equals)
     size_t name_length = 99;
     const char *value = NULL;
 
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
 
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 4);
@@ -266,7 +266,7 @@ NAOS_TEST(split_long_with_empty_value)
     size_t name_length = 99;
     const char *value = NULL;
 
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
 
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 4);
@@ -282,7 +282,7 @@ NAOS_TEST(split_long_with_empty_name)
     size_t name_length = 99;
     const char *value = NULL;
 
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
 
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 0);
@@ -301,13 +301,13 @@ NAOS_TEST(split_long_keeps_the_bytes)
     size_t name_length = 99;
     const char *value = NULL;
 
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 3);
     NAOS_CHECK_STR_EQ(value, "-\xC3\xA9 ");
 
     arg = "--a==";
-    clargs_lex_split_long(arg, &name, &name_length, &value);
+    cline_lex_split_long(arg, &name, &name_length, &value);
     NAOS_CHECK_TRUE(name == (arg + 2));
     NAOS_CHECK_UINT_EQ(name_length, 1);
     NAOS_CHECK_STR_EQ(value, "=");

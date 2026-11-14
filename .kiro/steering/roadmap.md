@@ -49,7 +49,7 @@ C99 で書かれたコマンドライン引数パーサーライブラリを新�
   - 組み込んだ Naos は常に静的ライブラリになる。
   - アサーションを 1 つも実行しないテストは失敗する。
   - テストの実行ファイルはビルド直後に列挙のため一度起動される。動的ライブラリをテストするとき、Windows では DLL が実行ファイルと同じ場所にある必要がある。
-- **メモリ**: ライブラリ内のメモリ確保はすべて差し替え可能なアロケータを通す。標準の `malloc` を直接呼ばない。アロケータは `clargs_set_allocator()` でライブラリ全体に 1 つ設定する。利用者のデータ（コンテキスト）は持たない。設定は、ライブラリのオブジェクトが 1 つもなく、ほかのスレッドがライブラリを呼んでいないときに行う。
+- **メモリ**: ライブラリ内のメモリ確保はすべて差し替え可能なアロケータを通す。標準の `malloc` を直接呼ばない。アロケータは `cline_set_allocator()` でライブラリ全体に 1 つ設定する。利用者のデータ（コンテキスト）は持たない。設定は、ライブラリのオブジェクトが 1 つもなく、ほかのスレッドがライブラリを呼んでいないときに行う。
 - **エラー**: 実行時に起こりうる失敗は、戻り値のエラーコードで返す。呼び出し側のプログラムの誤り（必須の引数の `NULL` など）は、エラーコードにせず、関数の前提条件として標準の `assert` で検査する（Debug 構成では中断し、Release 構成では検査しない）。
 - **状態**: 変更可能なグローバル状態は、設定されたアロケータだけとする。ほかには持たない。
 - **依存**: 実行時の依存は C 標準ライブラリのみ。
@@ -57,20 +57,20 @@ C99 で書かれたコマンドライン引数パーサーライブラリを新�
 
 ## Naming (decided)
 
-プロジェクト名は **CLArgs**、ライブラリ名は **clargs** とする。リポジトリ名は `cargs` のままだが、既存の C ライブラリ [likle/cargs](https://github.com/likle/cargs)（`libcargs`、`cargs.h`）と衝突するため、公開名には使わない。
+プロジェクト名は **CLine**、ライブラリ名は **cline** とする。リポジトリ名は `cargs` のままだが、既存の C ライブラリ [likle/cargs](https://github.com/likle/cargs)（`libcargs`、`cargs.h`）と衝突するため、公開名には使わない。
 
 | 対象 | 名前 |
 |---|---|
-| プロジェクト名（文書、CMake の `project()`） | `CLArgs` |
-| ライブラリ名 | `clargs`（`libclargs.a`、`libclargs.so`、`clargs.dll` など） |
-| 公開ヘッダ | `<clargs/clargs.h>` |
-| 関数と型の接頭辞 | `clargs_` |
-| マクロの接頭辞 | `CLARGS_` |
-| CMake のパッケージとターゲット | `find_package(CLArgs)`、`CLArgs::clargs` |
-| pkg-config | `clargs.pc` |
+| プロジェクト名（文書、CMake の `project()`） | `CLine` |
+| ライブラリ名 | `cline`（`libcline.a`、`libcline.so`、`cline.dll` など） |
+| 公開ヘッダ | `<cline/cline.h>` |
+| 関数と型の接頭辞 | `cline_` |
+| マクロの接頭辞 | `CLINE_` |
+| CMake のパッケージとターゲット | `find_package(CLine)`、`CLine::cline` |
+| pkg-config | `cline.pc` |
 
-- 同名の小規模なプロジェクトがある（NuGet の C++ ライブラリ `libclargs`、接頭辞 `clargs_` を使う `santerijps/clargs` など）。主要なパッケージ管理での広い配布は確認していないが、同じ環境に入れると名前がぶつかりうる。
-- ヘッダは必ず `clargs/` の下に置き、公開する識別子にはすべて接頭辞を付ける。
+- 同名の小規模なプロジェクトがある（NuGet の C++ ライブラリ `libcline`、接頭辞 `cline_` を使う `santerijps/cline` など）。主要なパッケージ管理での広い配布は確認していないが、同じ環境に入れると名前がぶつかりうる。
+- ヘッダは必ず `cline/` の下に置き、公開する識別子にはすべて接頭辞を付ける。
 
 ## Boundary Strategy
 
@@ -104,7 +104,7 @@ C99 で書かれたコマンドライン引数パーサーライブラリを新�
 
 ### Overview
 
-Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、リリースできる状態にする。第三者が、日本語も `.kiro/` も知らずに、ライブラリを使い、開発に参加できることが目標である。
+Phase 1 で実装を終えた CLine を、GitHub で OSS として公開し、リリースできる状態にする。第三者が、日本語も `.kiro/` も知らずに、ライブラリを使い、開発に参加できることが目標である。
 
 人が読む文書（README、`docs/`、CONTRIBUTING など）とソースのコメントはすべて英語にする。`.kiro/` は AI 向けの作業領域であり、人は見ない前提とする。人向けの文書は `.kiro/` やスペック駆動の手順に触れない（`.kiro/` の中の文書は日本語のままでよい）。
 
@@ -113,7 +113,7 @@ Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、�
 ### Approach Decision
 
 - **Chosen**: 自前の GitHub Actions による「リリース PR の自動作成 → マージでタグと Release」。
-  - 手動起動（`workflow_dispatch`）のワークフローが、渡されたバージョンで `include/clargs/version.h` を書き換え、CHANGELOG の `Unreleased` を新しいバージョンの節に移し、リリース PR を開く。
+  - 手動起動（`workflow_dispatch`）のワークフローが、渡されたバージョンで `include/cline/version.h` を書き換え、CHANGELOG の `Unreleased` を新しいバージョンの節に移し、リリース PR を開く。
   - リリース PR のマージを検出したワークフローが、マージコミットに注釈付きタグ `v<version>` を付け、CHANGELOG の該当節から作ったノートで GitHub Release を作る。バージョンにプレリリースの識別子があれば Pre-release にする。
   - Release に載せるのはソースだけである（GitHub が自動で付けるアーカイブとノート）。ビルド済みのバイナリは付けない。
 - **Why**:
@@ -135,7 +135,7 @@ Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、�
   - CI の起動タイミングの見直し（PR、main への push、手動起動。文書だけの変更では重いビルドを飛ばす）
   - CODE_OF_CONDUCT.md、SECURITY.md、Issue と PR のテンプレート（直接実装）
 - **Out**:
-  - リポジトリ名の変更（`cargs` のまま。公開名は Naming のとおり `CLArgs` / `clargs`）
+  - リポジトリ名の変更（`cargs` のまま。公開名は Naming のとおり `CLine` / `cline`）
   - vcpkg、Conan などのパッケージ管理への登録
   - API リファレンスのサイト生成（Doxygen、GitHub Pages など）
   - CI のジョブの追加（Sanitizer、clang-format、静的解析、リンク検査など）。今回見直すのは起動タイミングだけ
@@ -147,7 +147,7 @@ Phase 1 で実装を終えた CLArgs を、GitHub で OSS として公開し、�
 - **文書の言語**: 人が読むもの（README、`docs/`、CONTRIBUTING、CHANGELOG、CoC、SECURITY、テンプレート、ワークフローとソースのコメント、Release のノート）は英語のみ。`.kiro/` の中と CLAUDE.md は例外。
 - **`.kiro/` を前提にしない**: 人向けの文書は `.kiro/`、スペック、Kiro の手順に触れない。コントリビューターはそれらを知らずに開発できる。
 - **タグの形式**: `v<SemVer>`（例 `v0.2.0`、`v0.2.0-rc.1`）。両スペックが共有する決定である。
-- **バージョンの出どころ**: これまでどおり `include/clargs/version.h` だけ。プレリリースの識別子も同じヘッダに置く（形は release-automation の設計で決める）。CMake の `project(VERSION)` は数字しか受け付けない。
+- **バージョンの出どころ**: これまでどおり `include/cline/version.h` だけ。プレリリースの識別子も同じヘッダに置く（形は release-automation の設計で決める）。CMake の `project(VERSION)` は数字しか受け付けない。
 - **GitHub Actions の制約**:
   - `GITHUB_TOKEN` で作った PR や push は、`pull_request` や `push` のワークフローを起動しない。そのため、リリース PR では CI が自動では走らない。`workflow_dispatch` は例外として起動できるので、それを使うか、GitHub App のトークンを使う。どちらにするかは設計で決める。
   - 同じ理由で、`GITHUB_TOKEN` で push したタグは別のワークフローを起動しない。タグ付けと Release の作成は同じワークフローで行う。

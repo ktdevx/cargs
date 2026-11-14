@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest a new feature or a change to CLArgs.
+description: Suggest a new feature or a change to CLine.
 labels:
   - enhancement
 body:
@@ -10,14 +10,14 @@ body:
     id: problem
     attributes:
       label: Problem
-      description: What are you trying to do, and why is it hard or impossible with CLArgs today?
+      description: What are you trying to do, and why is it hard or impossible with CLine today?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
       label: Proposed solution
-      description: How should CLArgs behave? An example of the API or the command line helps.
+      description: How should CLine behave? An example of the API or the command line helps.
     validations:
       required: true
   - type: textarea

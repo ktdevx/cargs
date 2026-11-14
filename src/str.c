@@ -1,5 +1,5 @@
 /*
- * CLArgs - the internal string functions.
+ * CLine - the internal string functions.
  */
 #include "str.h"
 
@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 
-char *clargs_strdup(const char *str)
+char *cline_strdup(const char *str)
 {
     size_t size;
     char *copy;
@@ -21,7 +21,7 @@ char *clargs_strdup(const char *str)
      * the string and its terminator are an object that exists.
      */
     size = strlen(str) + 1;
-    copy = clargs_malloc(size);
+    copy = cline_malloc(size);
     if (copy == NULL)
     {
         return NULL;

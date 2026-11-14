@@ -1,20 +1,20 @@
-# The consumer check: a small project that uses CLArgs the way a user does.
+# The consumer check: a small project that uses CLine the way a user does.
 #
-# It is not part of the CLArgs build. Copy this directory out of the
+# It is not part of the CLine build. Copy this directory out of the
 # repository and configure it as a project of its own:
 #
-#   cmake -S <copy> -B <build> -DCLARGS_CONSUME_MODE=<mode> ...
+#   cmake -S <copy> -B <build> -DCLINE_CONSUME_MODE=<mode> ...
 #   cmake --build <build>
-#   ctest --test-dir <build>          (or run the executable clargs_consumer)
+#   ctest --test-dir <build>          (or run the executable cline_consumer)
 #
-# CLARGS_CONSUME_MODE chooses how CLArgs is brought in:
+# CLINE_CONSUME_MODE chooses how CLine is brought in:
 #
 #   mode              how                              also give
-#   find_package      find_package(CLArgs <version>)   CMAKE_PREFIX_PATH=<install prefix>
-#   pkg_config        pkg-config, module clargs        CMAKE_PREFIX_PATH=<install prefix>
+#   find_package      find_package(CLine <version>)   CMAKE_PREFIX_PATH=<install prefix>
+#   pkg_config        pkg-config, module cline        CMAKE_PREFIX_PATH=<install prefix>
 #                                                      (or PKG_CONFIG_PATH)
-#   add_subdirectory  add_subdirectory(<checkout>)     CLARGS_CONSUME_SOURCE_DIR=<checkout>
-#   fetch_content     FetchContent on <checkout>,      CLARGS_CONSUME_SOURCE_DIR=<checkout>
+#   add_subdirectory  add_subdirectory(<checkout>)     CLINE_CONSUME_SOURCE_DIR=<checkout>
+#   fetch_content     FetchContent on <checkout>,      CLINE_CONSUME_SOURCE_DIR=<checkout>
 #                     without the network
 #
 # The executable returns 0 if the version of the linked library equals the
@@ -25,38 +25,38 @@
 #   - pkg_config: the version that pkg-config reports equals the headers';
 #   - find_package, pkg_config: the full version that the package reports,
 #     "<major>.<minor>.<patch>[-<pre-release>]", equals the headers' too,
-#     the pre-release identifiers included (CLARGS_VERSION_PRERELEASE);
-#   - add_subdirectory, fetch_content: CLArgs keeps the defaults of an
+#     the pre-release identifiers included (CLINE_VERSION_PRERELEASE);
+#   - add_subdirectory, fetch_content: CLine keeps the defaults of an
 #     embedded project: no tests, no Naos, no install rules, no warnings as
 #     errors.
 #
-# The steps are the same for a static and a shared CLArgs. For the last two
+# The steps are the same for a static and a shared CLine. For the last two
 # modes, BUILD_SHARED_LIBS chooses between them.
 
 cmake_minimum_required(VERSION 3.21)
 
-project(CLArgsConsumer LANGUAGES C)
+project(CLineConsumer LANGUAGES C)
 
 set(consumer_modes find_package pkg_config add_subdirectory fetch_content)
-set(CLARGS_CONSUME_MODE "" CACHE STRING
-    "How to bring CLArgs in: find_package, pkg_config, add_subdirectory or fetch_content")
-set_property(CACHE CLARGS_CONSUME_MODE PROPERTY STRINGS ${consumer_modes})
-set(CLARGS_CONSUME_SOURCE_DIR "" CACHE PATH
-    "The CLArgs checkout, for the modes add_subdirectory and fetch_content")
+set(CLINE_CONSUME_MODE "" CACHE STRING
+    "How to bring CLine in: find_package, pkg_config, add_subdirectory or fetch_content")
+set_property(CACHE CLINE_CONSUME_MODE PROPERTY STRINGS ${consumer_modes})
+set(CLINE_CONSUME_SOURCE_DIR "" CACHE PATH
+    "The CLine checkout, for the modes add_subdirectory and fetch_content")
 
-if(NOT CLARGS_CONSUME_MODE IN_LIST consumer_modes)
+if(NOT CLINE_CONSUME_MODE IN_LIST consumer_modes)
     list(JOIN consumer_modes ", " consumer_modes_text)
     message(FATAL_ERROR
-        "CLARGS_CONSUME_MODE is \"${CLARGS_CONSUME_MODE}\". "
+        "CLINE_CONSUME_MODE is \"${CLINE_CONSUME_MODE}\". "
         "Set it to one of: ${consumer_modes_text}.")
 endif()
 
-# Checks that the embedded CLArgs in <source-dir> kept its defaults. Stops
+# Checks that the embedded CLine in <source-dir> kept its defaults. Stops
 # with a FATAL_ERROR that names everything it found otherwise.
 function(consumer_check_embedded source_dir)
     set(problems "")
 
-    foreach(option IN ITEMS CLARGS_BUILD_TESTS CLARGS_INSTALL CLARGS_WARNINGS_AS_ERRORS)
+    foreach(option IN ITEMS CLINE_BUILD_TESTS CLINE_INSTALL CLINE_WARNINGS_AS_ERRORS)
         if(NOT DEFINED CACHE{${option}})
             list(APPEND problems "the option ${option} does not exist")
         elseif(${option})
@@ -64,16 +64,16 @@ function(consumer_check_embedded source_dir)
         endif()
     endforeach()
 
-    if(NOT TARGET CLArgs::clargs)
-        list(APPEND problems "the target CLArgs::clargs does not exist")
+    if(NOT TARGET CLine::cline)
+        list(APPEND problems "the target CLine::cline does not exist")
     endif()
-    foreach(target IN ITEMS Naos::naos naos clargs_internal)
+    foreach(target IN ITEMS Naos::naos naos cline_internal)
         if(TARGET "${target}")
             list(APPEND problems "the target ${target} exists")
         endif()
     endforeach()
 
-    # The directories of CLArgs: its own, and all it added below.
+    # The directories of CLine: its own, and all it added below.
     set(directories "")
     set(pending "${source_dir}")
     while(pending)
@@ -94,10 +94,10 @@ function(consumer_check_embedded source_dir)
             list(APPEND problems "${directory} registers tests: ${tests}")
         endif()
         get_property(targets DIRECTORY "${directory}" PROPERTY BUILDSYSTEM_TARGETS)
-        list(REMOVE_ITEM targets clargs)
+        list(REMOVE_ITEM targets cline)
         if(targets)
             list(JOIN targets ", " targets)
-            list(APPEND problems "${directory} adds targets besides clargs: ${targets}")
+            list(APPEND problems "${directory} adds targets besides cline: ${targets}")
         endif()
     endforeach()
 
@@ -109,40 +109,40 @@ function(consumer_check_embedded source_dir)
         list(APPEND problems "install rules were added (components: ${components})")
     endif()
 
-    if(TARGET clargs)
-        get_target_property(options clargs COMPILE_OPTIONS)
+    if(TARGET cline)
+        get_target_property(options cline COMPILE_OPTIONS)
         if(options MATCHES "(^|;)(-Werror|/WX)(;|$)")
             list(JOIN options " " options)
-            list(APPEND problems "clargs is compiled with warnings as errors: ${options}")
+            list(APPEND problems "cline is compiled with warnings as errors: ${options}")
         endif()
     endif()
 
     if(problems)
         list(JOIN problems "\n  - " problems_text)
         message(FATAL_ERROR
-            "CLArgs, embedded with ${CLARGS_CONSUME_MODE}, did not keep the "
+            "CLine, embedded with ${CLINE_CONSUME_MODE}, did not keep the "
             "defaults of an embedded project:\n  - ${problems_text}")
     endif()
 endfunction()
 
-if(CLARGS_CONSUME_MODE MATCHES "^(add_subdirectory|fetch_content)$"
-        AND NOT EXISTS "${CLARGS_CONSUME_SOURCE_DIR}/CMakeLists.txt")
+if(CLINE_CONSUME_MODE MATCHES "^(add_subdirectory|fetch_content)$"
+        AND NOT EXISTS "${CLINE_CONSUME_SOURCE_DIR}/CMakeLists.txt")
     message(FATAL_ERROR
-        "CLARGS_CONSUME_SOURCE_DIR is \"${CLARGS_CONSUME_SOURCE_DIR}\". "
-        "Set it to the CLArgs checkout for the mode ${CLARGS_CONSUME_MODE}.")
+        "CLINE_CONSUME_SOURCE_DIR is \"${CLINE_CONSUME_SOURCE_DIR}\". "
+        "Set it to the CLine checkout for the mode ${CLINE_CONSUME_MODE}.")
 endif()
 
-set(consumer_library CLArgs::clargs)
+set(consumer_library CLine::cline)
 set(consumer_package_version "")
 
-if(CLARGS_CONSUME_MODE STREQUAL "find_package")
+if(CLINE_CONSUME_MODE STREQUAL "find_package")
     # Without a version: tells which version is installed.
-    find_package(CLArgs CONFIG REQUIRED)
-    set(consumer_package_version "${CLArgs_VERSION}")
-    set(consumer_package_dir "${CLArgs_DIR}")
+    find_package(CLine CONFIG REQUIRED)
+    set(consumer_package_version "${CLine_VERSION}")
+    set(consumer_package_dir "${CLine_DIR}")
     if(NOT consumer_package_version MATCHES "^([0-9]+)\\.([0-9]+)\\.[0-9]+$")
         message(FATAL_ERROR
-            "find_package(CLArgs) reports the version \"${consumer_package_version}\", "
+            "find_package(CLine) reports the version \"${consumer_package_version}\", "
             "which is not <major>.<minor>.<patch>.")
     endif()
     set(consumer_major "${CMAKE_MATCH_1}")
@@ -165,58 +165,58 @@ if(CLARGS_CONSUME_MODE STREQUAL "find_package")
             "${consumer_next_major}.0" "${consumer_previous_major}.0")
     endif()
     foreach(version IN LISTS consumer_incompatible)
-        find_package(CLArgs ${version} CONFIG QUIET)
-        if(CLArgs_FOUND)
+        find_package(CLine ${version} CONFIG QUIET)
+        if(CLine_FOUND)
             message(FATAL_ERROR
-                "find_package(CLArgs ${version}) found CLArgs "
-                "${consumer_package_version} in ${CLArgs_DIR}. "
+                "find_package(CLine ${version}) found CLine "
+                "${consumer_package_version} in ${CLine_DIR}. "
                 "It must report that version as not found.")
         endif()
-        message(STATUS "find_package(CLArgs ${version}): not found, as expected")
+        message(STATUS "find_package(CLine ${version}): not found, as expected")
     endforeach()
 
     # The failed searches forgot where the package is.
-    set(CLArgs_DIR "${consumer_package_dir}" CACHE PATH
-        "The directory containing a CMake configuration file for CLArgs." FORCE)
+    set(CLine_DIR "${consumer_package_dir}" CACHE PATH
+        "The directory containing a CMake configuration file for CLine." FORCE)
 
-    # What a user writes: ask for the version, link to CLArgs::clargs.
-    find_package(CLArgs ${consumer_package_version} CONFIG REQUIRED)
+    # What a user writes: ask for the version, link to CLine::cline.
+    find_package(CLine ${consumer_package_version} CONFIG REQUIRED)
 
-    # CLArgs_VERSION has only the numeric part, which the compatibility check
+    # CLine_VERSION has only the numeric part, which the compatibility check
     # needs. The full version, with the pre-release identifiers, is in
-    # CLArgs_VERSION_FULL. Its numeric part must be CLArgs_VERSION.
-    if(NOT DEFINED CLArgs_VERSION_FULL)
+    # CLine_VERSION_FULL. Its numeric part must be CLine_VERSION.
+    if(NOT DEFINED CLine_VERSION_FULL)
         message(FATAL_ERROR
-            "find_package(CLArgs) does not set CLArgs_VERSION_FULL, "
+            "find_package(CLine) does not set CLine_VERSION_FULL, "
             "the full version of the package.")
     endif()
-    if(NOT CLArgs_VERSION_FULL MATCHES "^([0-9]+\\.[0-9]+\\.[0-9]+)(-[0-9A-Za-z.-]+)?$"
+    if(NOT CLine_VERSION_FULL MATCHES "^([0-9]+\\.[0-9]+\\.[0-9]+)(-[0-9A-Za-z.-]+)?$"
             OR NOT CMAKE_MATCH_1 STREQUAL consumer_package_version)
         message(FATAL_ERROR
-            "find_package(CLArgs) reports the full version \"${CLArgs_VERSION_FULL}\", "
+            "find_package(CLine) reports the full version \"${CLine_VERSION_FULL}\", "
             "which is not ${consumer_package_version}[-<pre-release>].")
     endif()
-    set(consumer_package_version "${CLArgs_VERSION_FULL}")
-elseif(CLARGS_CONSUME_MODE STREQUAL "pkg_config")
+    set(consumer_package_version "${CLine_VERSION_FULL}")
+elseif(CLINE_CONSUME_MODE STREQUAL "pkg_config")
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(CLARGS REQUIRED IMPORTED_TARGET clargs)
-    set(consumer_library PkgConfig::CLARGS)
-    set(consumer_package_version "${CLARGS_VERSION}")
-elseif(CLARGS_CONSUME_MODE STREQUAL "add_subdirectory")
+    pkg_check_modules(CLINE REQUIRED IMPORTED_TARGET cline)
+    set(consumer_library PkgConfig::CLINE)
+    set(consumer_package_version "${CLINE_VERSION}")
+elseif(CLINE_CONSUME_MODE STREQUAL "add_subdirectory")
     # The checkout is outside this project, so a build directory is named.
-    add_subdirectory("${CLARGS_CONSUME_SOURCE_DIR}" clargs)
-    consumer_check_embedded("${CLARGS_CONSUME_SOURCE_DIR}")
+    add_subdirectory("${CLINE_CONSUME_SOURCE_DIR}" cline)
+    consumer_check_embedded("${CLINE_CONSUME_SOURCE_DIR}")
 else()
     # A user gives GIT_REPOSITORY and GIT_TAG here. The check points at the
     # checkout instead, so that it tests this commit and needs no network.
     include(FetchContent)
-    FetchContent_Declare(CLArgs SOURCE_DIR "${CLARGS_CONSUME_SOURCE_DIR}")
-    FetchContent_MakeAvailable(CLArgs)
-    consumer_check_embedded("${CLARGS_CONSUME_SOURCE_DIR}")
+    FetchContent_Declare(CLine SOURCE_DIR "${CLINE_CONSUME_SOURCE_DIR}")
+    FetchContent_MakeAvailable(CLine)
+    consumer_check_embedded("${CLINE_CONSUME_SOURCE_DIR}")
 endif()
 
-add_executable(clargs_consumer main.c)
-target_link_libraries(clargs_consumer PRIVATE ${consumer_library})
+add_executable(cline_consumer main.c)
+target_link_libraries(cline_consumer PRIVATE ${consumer_library})
 
 # The full version that the package reported, for main.c to compare with the
 # headers: the numbers, and the pre-release identifiers as a string (empty for
@@ -228,7 +228,7 @@ if(consumer_package_version)
             "The package reports the version \"${consumer_package_version}\", "
             "which is not <major>.<minor>.<patch>[-<pre-release>].")
     endif()
-    target_compile_definitions(clargs_consumer PRIVATE
+    target_compile_definitions(cline_consumer PRIVATE
         "CONSUMER_PACKAGE_VERSION_MAJOR=${CMAKE_MATCH_1}"
         "CONSUMER_PACKAGE_VERSION_MINOR=${CMAKE_MATCH_2}"
         "CONSUMER_PACKAGE_VERSION_PATCH=${CMAKE_MATCH_3}"
@@ -236,22 +236,22 @@ if(consumer_package_version)
     )
 endif()
 
-# Windows looks for a DLL next to the executable. Only a shared CLArgs has
+# Windows looks for a DLL next to the executable. Only a shared CLine has
 # one: with no DLL the list is empty and the copy command would fail.
 get_target_property(consumer_library_type ${consumer_library} TYPE)
 if(WIN32 AND consumer_library_type STREQUAL "SHARED_LIBRARY")
-    add_custom_command(TARGET clargs_consumer POST_BUILD
+    add_custom_command(TARGET cline_consumer POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "$<TARGET_RUNTIME_DLLS:clargs_consumer>"
-            "$<TARGET_FILE_DIR:clargs_consumer>"
+            "$<TARGET_RUNTIME_DLLS:cline_consumer>"
+            "$<TARGET_FILE_DIR:cline_consumer>"
         COMMAND_EXPAND_LISTS
-        COMMENT "Copying the DLLs of clargs_consumer next to it"
+        COMMENT "Copying the DLLs of cline_consumer next to it"
         VERBATIM
     )
 endif()
 
 # So that ctest runs the executable, whatever the generator names its path.
 enable_testing()
-add_test(NAME clargs_consumer COMMAND clargs_consumer)
+add_test(NAME cline_consumer COMMAND cline_consumer)
 
-message(STATUS "CLArgs consumer: ${CLARGS_CONSUME_MODE}, linking to ${consumer_library}")
+message(STATUS "CLine consumer: ${CLINE_CONSUME_MODE}, linking to ${consumer_library}")

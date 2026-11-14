@@ -2,12 +2,12 @@
 
 ## Introduction
 
-CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン引数パーサーライブラリである。このスペックは、ライブラリの機能を書き始める前に必要な土台を定める。対象は、ビルド、静的/動的ライブラリの切り替え、配布、テスト基盤、CI、そして後続のスペックが従う命名規約とディレクトリ構成である。
+CLine（ライブラリ名 `cline`）は、C99 で書くコマンドライン引数パーサーライブラリである。このスペックは、ライブラリの機能を書き始める前に必要な土台を定める。対象は、ビルド、静的/動的ライブラリの切り替え、配布、テスト基盤、CI、そして後続のスペックが従う命名規約とディレクトリ構成である。
 
 利用者は 2 種類いる。
 
-- **ライブラリ開発者**: CLArgs 自体を開発する人。3 つの OS で静的・動的の両方をビルドしてテストできる土台を必要とする。
-- **ライブラリ利用者**: CLArgs を自分のプロジェクトに取り込む人。手間の少ない取り込み方法を必要とする。
+- **ライブラリ開発者**: CLine 自体を開発する人。3 つの OS で静的・動的の両方をビルドしてテストできる土台を必要とする。
+- **ライブラリ利用者**: CLine を自分のプロジェクトに取り込む人。手間の少ない取り込み方法を必要とする。
 
 現在のリポジトリにはスペック駆動開発の設定だけがあり、ソースコード、ビルド設定、CI はない。背景と判断の経緯は同じディレクトリの `brief.md` と、`.kiro/steering/roadmap.md` を参照。
 
@@ -40,12 +40,12 @@ CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン�
 
 #### Acceptance Criteria
 
-1. When ライブラリ開発者がリポジトリのルートで `cmake -S . -B build`、`cmake --build build`、`ctest --test-dir build` を順に実行したとき, the CLArgs ビルド shall Linux・macOS・Windows のそれぞれで、追加の引数や事前の手作業なしにライブラリのビルドとテストの実行を成功させる。
-2. The CLArgs ビルド shall CMake 3.21 以上を要求する。
-3. If CMake のバージョンが 3.21 より古い環境で構成が実行されたら, the CLArgs ビルド shall 必要なバージョンを示して構成を失敗させる。
-4. The CLArgs ビルド shall ライブラリのソースを C99 として、コンパイラ独自の拡張を無効にしてコンパイルする。
-5. The clargs ライブラリ shall 実行時に C 標準ライブラリ以外へ依存しない。
-6. The CLArgs ビルド shall 対応するコンパイラ（GCC、Clang、MSVC）のそれぞれで、ライブラリのソースに対して警告を有効にする。
+1. When ライブラリ開発者がリポジトリのルートで `cmake -S . -B build`、`cmake --build build`、`ctest --test-dir build` を順に実行したとき, the CLine ビルド shall Linux・macOS・Windows のそれぞれで、追加の引数や事前の手作業なしにライブラリのビルドとテストの実行を成功させる。
+2. The CLine ビルド shall CMake 3.21 以上を要求する。
+3. If CMake のバージョンが 3.21 より古い環境で構成が実行されたら, the CLine ビルド shall 必要なバージョンを示して構成を失敗させる。
+4. The CLine ビルド shall ライブラリのソースを C99 として、コンパイラ独自の拡張を無効にしてコンパイルする。
+5. The cline ライブラリ shall 実行時に C 標準ライブラリ以外へ依存しない。
+6. The CLine ビルド shall 対応するコンパイラ（GCC、Clang、MSVC）のそれぞれで、ライブラリのソースに対して警告を有効にする。
 
 ### Requirement 2: 静的ライブラリと動的ライブラリの切り替え
 
@@ -53,11 +53,11 @@ CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン�
 
 #### Acceptance Criteria
 
-1. When `BUILD_SHARED_LIBS` を指定せず、または偽にして構成したとき, the CLArgs ビルド shall 静的ライブラリを生成する。
-2. When `BUILD_SHARED_LIBS` を真にして構成したとき, the CLArgs ビルド shall 動的ライブラリを生成する。
-3. The CLArgs ビルド shall 静的ライブラリと動的ライブラリを、ソースを変更せずに同じソースから生成する。
-4. Where 動的ライブラリをビルドする場合, the CLArgs ビルド shall ライブラリのバージョンに対応する ABI バージョン（SOVERSION）を成果物に付ける。
-5. Where Debug 構成でビルドする場合, the CLArgs ビルド shall 成果物のファイル名を Release 構成の成果物と区別できる名前にする。
+1. When `BUILD_SHARED_LIBS` を指定せず、または偽にして構成したとき, the CLine ビルド shall 静的ライブラリを生成する。
+2. When `BUILD_SHARED_LIBS` を真にして構成したとき, the CLine ビルド shall 動的ライブラリを生成する。
+3. The CLine ビルド shall 静的ライブラリと動的ライブラリを、ソースを変更せずに同じソースから生成する。
+4. Where 動的ライブラリをビルドする場合, the CLine ビルド shall ライブラリのバージョンに対応する ABI バージョン（SOVERSION）を成果物に付ける。
+5. Where Debug 構成でビルドする場合, the CLine ビルド shall 成果物のファイル名を Release 構成の成果物と区別できる名前にする。
 
 ### Requirement 3: 公開シンボルの制御
 
@@ -65,11 +65,11 @@ CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン�
 
 #### Acceptance Criteria
 
-1. Where 動的ライブラリをビルドする場合, the clargs ライブラリ shall 公開関数として印を付けた関数だけを export する。
-2. Where 動的ライブラリをビルドする場合, the clargs ライブラリ shall 印を付けていない内部の関数と変数を、Linux・macOS・Windows のいずれでも export しない。
-3. When 利用者のプログラムが動的ライブラリの公開関数を呼び出すとき, the clargs ライブラリ shall Linux・macOS・Windows のいずれでも、利用者側の追加の定義なしにリンクと実行を成功させる。
-4. When 利用者のプログラムが静的ライブラリの公開関数を呼び出すとき, the clargs ライブラリ shall 動的ライブラリ向けの属性を利用者のコードに適用せず、利用者側の追加の定義なしにリンクを成功させる。
-5. The clargs ライブラリ shall 公開関数に印を付ける方法を 1 つだけ提供し、後続のスペックが同じ方法で公開関数を足せるようにする。
+1. Where 動的ライブラリをビルドする場合, the cline ライブラリ shall 公開関数として印を付けた関数だけを export する。
+2. Where 動的ライブラリをビルドする場合, the cline ライブラリ shall 印を付けていない内部の関数と変数を、Linux・macOS・Windows のいずれでも export しない。
+3. When 利用者のプログラムが動的ライブラリの公開関数を呼び出すとき, the cline ライブラリ shall Linux・macOS・Windows のいずれでも、利用者側の追加の定義なしにリンクと実行を成功させる。
+4. When 利用者のプログラムが静的ライブラリの公開関数を呼び出すとき, the cline ライブラリ shall 動的ライブラリ向けの属性を利用者のコードに適用せず、利用者側の追加の定義なしにリンクを成功させる。
+5. The cline ライブラリ shall 公開関数に印を付ける方法を 1 つだけ提供し、後続のスペックが同じ方法で公開関数を足せるようにする。
 
 ### Requirement 4: 公開名と命名規約
 
@@ -77,12 +77,12 @@ CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン�
 
 #### Acceptance Criteria
 
-1. The CLArgs ビルド shall プロジェクト名を `CLArgs`、ライブラリの成果物の名前を `clargs` とする。
-2. The clargs ライブラリ shall 公開ヘッダを `<clargs/clargs.h>` として取り込めるようにし、すべての公開ヘッダを `clargs/` の下に置く。
-3. The clargs ライブラリ shall 公開する関数と型のすべてに接頭辞 `clargs_` を、公開するマクロのすべてに接頭辞 `CLARGS_` を付ける。
-4. The CLArgs リポジトリ shall 成果物、ヘッダ、識別子、パッケージのいずれの公開名にも `cargs` を使わない。
-5. The CLArgs リポジトリ shall 公開する識別子と内部の識別子の命名規約、ファイルの命名規約、ディレクトリ構成（公開ヘッダ、ソース、テスト、ビルド補助ファイルの置き場所）を、リポジトリ内の文書に記載する。
-6. The CLArgs リポジトリ shall 後続のスペックが新しい公開ヘッダ、ソースファイル、テストを足すときの手順を、リポジトリ内の文書に記載する。
+1. The CLine ビルド shall プロジェクト名を `CLine`、ライブラリの成果物の名前を `cline` とする。
+2. The cline ライブラリ shall 公開ヘッダを `<cline/cline.h>` として取り込めるようにし、すべての公開ヘッダを `cline/` の下に置く。
+3. The cline ライブラリ shall 公開する関数と型のすべてに接頭辞 `cline_` を、公開するマクロのすべてに接頭辞 `CLINE_` を付ける。
+4. The CLine リポジトリ shall 成果物、ヘッダ、識別子、パッケージのいずれの公開名にも `cargs` を使わない。
+5. The CLine リポジトリ shall 公開する識別子と内部の識別子の命名規約、ファイルの命名規約、ディレクトリ構成（公開ヘッダ、ソース、テスト、ビルド補助ファイルの置き場所）を、リポジトリ内の文書に記載する。
+6. The CLine リポジトリ shall 後続のスペックが新しい公開ヘッダ、ソースファイル、テストを足すときの手順を、リポジトリ内の文書に記載する。
 
 ### Requirement 5: バージョン情報
 
@@ -90,38 +90,38 @@ CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン�
 
 #### Acceptance Criteria
 
-1. The clargs ライブラリ shall バージョン（メジャー、マイナー、パッチ）を、公開ヘッダからコンパイル時に参照できる形で提供する。
-2. When 利用者のプログラムがバージョンを返す関数を呼び出したとき, the clargs ライブラリ shall ビルドに使われた公開ヘッダのバージョンと一致する値を返す。
-3. The CLArgs ビルド shall ビルド、`find_package` 用のパッケージ情報、pkg-config の情報、動的ライブラリの ABI バージョンのすべてで、公開ヘッダに書かれたバージョンを唯一の出どころとして使う。
-4. If 公開ヘッダからバージョンを読み取れなかったら, the CLArgs ビルド shall 原因を示して構成を失敗させる。
-5. The clargs ライブラリ shall このスペックの範囲では、バージョンを返す関数以外の公開関数を提供しない。
+1. The cline ライブラリ shall バージョン（メジャー、マイナー、パッチ）を、公開ヘッダからコンパイル時に参照できる形で提供する。
+2. When 利用者のプログラムがバージョンを返す関数を呼び出したとき, the cline ライブラリ shall ビルドに使われた公開ヘッダのバージョンと一致する値を返す。
+3. The CLine ビルド shall ビルド、`find_package` 用のパッケージ情報、pkg-config の情報、動的ライブラリの ABI バージョンのすべてで、公開ヘッダに書かれたバージョンを唯一の出どころとして使う。
+4. If 公開ヘッダからバージョンを読み取れなかったら, the CLine ビルド shall 原因を示して構成を失敗させる。
+5. The cline ライブラリ shall このスペックの範囲では、バージョンを返す関数以外の公開関数を提供しない。
 
 ### Requirement 6: ソースからの取り込み
 
-**Objective:** As a ライブラリ利用者, I want CLArgs のソースを自分のビルドに直接組み込めること, so that 事前のインストールなしで使い始められ、自分のビルドが余計な影響を受けない
+**Objective:** As a ライブラリ利用者, I want CLine のソースを自分のビルドに直接組み込めること, so that 事前のインストールなしで使い始められ、自分のビルドが余計な影響を受けない
 
 #### Acceptance Criteria
 
-1. When 利用者のプロジェクトが `FetchContent` または `add_subdirectory` で CLArgs を組み込んだとき, the CLArgs ビルド shall ターゲット `CLArgs::clargs` を提供する。
-2. When 利用者のターゲットが `CLArgs::clargs` にリンクしたとき, the CLArgs ビルド shall 利用者側の追加の設定なしに、公開ヘッダの取り込みとリンクに必要な設定を利用者のターゲットへ伝える。
-3. While CLArgs がほかのプロジェクトに組み込まれている間, the CLArgs ビルド shall 既定では、テストのビルド、Naos の取得、インストール規則の追加、警告のエラー化を行わない。
-4. While CLArgs がトップレベルのプロジェクトとしてビルドされている間, the CLArgs ビルド shall 既定で、テストのビルド、インストール規則、警告のエラー化を有効にする。
-5. The CLArgs ビルド shall テストのビルド、インストール規則、警告のエラー化のそれぞれについて、既定の動作を上書きするオプションを接頭辞 `CLARGS_` 付きの名前で提供する。
-6. The CLArgs ビルド shall 警告の設定を CLArgs 自身のソースだけに適用し、CLArgs にリンクする利用者のターゲットへ伝えない。
+1. When 利用者のプロジェクトが `FetchContent` または `add_subdirectory` で CLine を組み込んだとき, the CLine ビルド shall ターゲット `CLine::cline` を提供する。
+2. When 利用者のターゲットが `CLine::cline` にリンクしたとき, the CLine ビルド shall 利用者側の追加の設定なしに、公開ヘッダの取り込みとリンクに必要な設定を利用者のターゲットへ伝える。
+3. While CLine がほかのプロジェクトに組み込まれている間, the CLine ビルド shall 既定では、テストのビルド、Naos の取得、インストール規則の追加、警告のエラー化を行わない。
+4. While CLine がトップレベルのプロジェクトとしてビルドされている間, the CLine ビルド shall 既定で、テストのビルド、インストール規則、警告のエラー化を有効にする。
+5. The CLine ビルド shall テストのビルド、インストール規則、警告のエラー化のそれぞれについて、既定の動作を上書きするオプションを接頭辞 `CLINE_` 付きの名前で提供する。
+6. The CLine ビルド shall 警告の設定を CLine 自身のソースだけに適用し、CLine にリンクする利用者のターゲットへ伝えない。
 
 ### Requirement 7: インストールとパッケージ
 
-**Objective:** As a ライブラリ利用者, I want インストール済みの CLArgs を標準的な方法で見つけて使えること, so that CMake でもそれ以外のビルドシステムでも取り込める
+**Objective:** As a ライブラリ利用者, I want インストール済みの CLine を標準的な方法で見つけて使えること, so that CMake でもそれ以外のビルドシステムでも取り込める
 
 #### Acceptance Criteria
 
-1. When ライブラリ開発者またはライブラリ利用者がインストールを実行したとき, the CLArgs ビルド shall ライブラリ、公開ヘッダ、`find_package` 用のパッケージ情報、pkg-config 用の `clargs.pc` を、指定されたインストール先へ配置する。
-2. When インストール済みの CLArgs に対して利用者のプロジェクトが `find_package(CLArgs)` を実行したとき, the CLArgs パッケージ shall ターゲット `CLArgs::clargs` を提供し、利用者のターゲットがそれにリンクするだけでビルドできるようにする。
-3. When 利用者のプロジェクトが `find_package(CLArgs <version>)` でバージョンを指定したとき, the CLArgs パッケージ shall インストール済みのバージョンが要求と互換である場合にだけ、見つかったと報告する。
-4. When 利用者が pkg-config で `clargs` を問い合わせたとき, the CLArgs パッケージ shall インストール済みのライブラリを使ってコンパイルとリンクができるフラグと、ライブラリのバージョンを返す。
-5. The CLArgs パッケージ shall インストール先を別の場所へ移しても、`find_package` と pkg-config による取り込みが動くようにする。
-6. The CLArgs パッケージ shall インストール物に、テスト、Naos、内部ヘッダを含めない。
-7. The CLArgs パッケージ shall 静的ライブラリとしてインストールした場合も動的ライブラリとしてインストールした場合も、同じ取り込み手順（`find_package(CLArgs)` と `CLArgs::clargs`、または pkg-config の `clargs`）で使えるようにする。
+1. When ライブラリ開発者またはライブラリ利用者がインストールを実行したとき, the CLine ビルド shall ライブラリ、公開ヘッダ、`find_package` 用のパッケージ情報、pkg-config 用の `cline.pc` を、指定されたインストール先へ配置する。
+2. When インストール済みの CLine に対して利用者のプロジェクトが `find_package(CLine)` を実行したとき, the CLine パッケージ shall ターゲット `CLine::cline` を提供し、利用者のターゲットがそれにリンクするだけでビルドできるようにする。
+3. When 利用者のプロジェクトが `find_package(CLine <version>)` でバージョンを指定したとき, the CLine パッケージ shall インストール済みのバージョンが要求と互換である場合にだけ、見つかったと報告する。
+4. When 利用者が pkg-config で `cline` を問い合わせたとき, the CLine パッケージ shall インストール済みのライブラリを使ってコンパイルとリンクができるフラグと、ライブラリのバージョンを返す。
+5. The CLine パッケージ shall インストール先を別の場所へ移しても、`find_package` と pkg-config による取り込みが動くようにする。
+6. The CLine パッケージ shall インストール物に、テスト、Naos、内部ヘッダを含めない。
+7. The CLine パッケージ shall 静的ライブラリとしてインストールした場合も動的ライブラリとしてインストールした場合も、同じ取り込み手順（`find_package(CLine)` と `CLine::cline`、または pkg-config の `cline`）で使えるようにする。
 
 ### Requirement 8: テスト基盤
 
@@ -129,14 +129,14 @@ CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン�
 
 #### Acceptance Criteria
 
-1. Where テストが有効な場合, the CLArgs ビルド shall Naos を、決まったリリースタグに固定して自動的に取得する。
-2. Where テストが無効な場合, the CLArgs ビルド shall Naos を取得せず、テストの実行ファイルをビルドしない。
-3. When ライブラリ開発者が決められた手順でテストのソースファイルを足したとき, the CLArgs ビルド shall そのファイルに書かれた Naos のテストを CTest に登録し、`ctest` で実行できるようにする。
-4. The CLArgs ビルド shall 公開 API のテストを、構成で選ばれた形（静的または動的）のライブラリに対して実行する。
-5. Where 動的ライブラリをビルドする場合, the CLArgs ビルド shall 内部関数（export されない関数）のテストも、ビルドして実行できるようにする。
-6. Where Windows で動的ライブラリをビルドする場合, the CLArgs ビルド shall ライブラリ開発者が `PATH` の変更やファイルのコピーを手作業で行わなくても、テストのビルドと実行を成功させる。
-7. The CLArgs リポジトリ shall バージョンを返す関数のテストを含み、そのテストで土台（ビルド、公開関数の export、テストの登録）が動くことを確かめる。
-8. If テストが 1 つでも失敗したら, the CLArgs ビルド shall `ctest` を 0 以外の終了コードで終わらせる。
+1. Where テストが有効な場合, the CLine ビルド shall Naos を、決まったリリースタグに固定して自動的に取得する。
+2. Where テストが無効な場合, the CLine ビルド shall Naos を取得せず、テストの実行ファイルをビルドしない。
+3. When ライブラリ開発者が決められた手順でテストのソースファイルを足したとき, the CLine ビルド shall そのファイルに書かれた Naos のテストを CTest に登録し、`ctest` で実行できるようにする。
+4. The CLine ビルド shall 公開 API のテストを、構成で選ばれた形（静的または動的）のライブラリに対して実行する。
+5. Where 動的ライブラリをビルドする場合, the CLine ビルド shall 内部関数（export されない関数）のテストも、ビルドして実行できるようにする。
+6. Where Windows で動的ライブラリをビルドする場合, the CLine ビルド shall ライブラリ開発者が `PATH` の変更やファイルのコピーを手作業で行わなくても、テストのビルドと実行を成功させる。
+7. The CLine リポジトリ shall バージョンを返す関数のテストを含み、そのテストで土台（ビルド、公開関数の export、テストの登録）が動くことを確かめる。
+8. If テストが 1 つでも失敗したら, the CLine ビルド shall `ctest` を 0 以外の終了コードで終わらせる。
 
 ### Requirement 9: CI
 
@@ -147,7 +147,7 @@ CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン�
 1. When 変更がリポジトリへプッシュされたとき、またはプルリクエストが作成・更新されたとき, the CI shall ビルドとテストを自動で実行する。
 2. The CI shall Linux の GCC、Linux の Clang、macOS の Clang、Windows の MSVC のそれぞれについて、静的ライブラリと動的ライブラリの両方をビルドしてテストする。
 3. The CI shall 警告をエラーとして扱ってビルドする。
-4. The CI shall インストールした CLArgs を、リポジトリの外に置いた別のプロジェクトから `find_package` と pkg-config で取り込めること、および `add_subdirectory` と `FetchContent` で組み込めることを確かめる。
+4. The CI shall インストールした CLine を、リポジトリの外に置いた別のプロジェクトから `find_package` と pkg-config で取り込めること、および `add_subdirectory` と `FetchContent` で組み込めることを確かめる。
 5. Where 動的ライブラリをビルドする場合, the CI shall 動的ライブラリが export するシンボルが公開関数だけであることを確かめる。
 6. If いずれかの組み合わせでビルド、テスト、または確認が失敗したら, the CI shall 全体の結果を失敗として報告し、失敗した組み合わせを特定できるようにする。
 
@@ -157,7 +157,7 @@ CLArgs（ライブラリ名 `clargs`）は、C99 で書くコマンドライン�
 
 #### Acceptance Criteria
 
-1. The CLArgs リポジトリ shall ライセンスの全文を記した文書を、リポジトリのルートに含む。
-2. The CLArgs リポジトリ shall README に、プロジェクトの概要、ビルドとテストの手順、4 つの取り込み方法（`FetchContent`、`add_subdirectory`、`find_package`、pkg-config）の例を記載する。
-3. The CLArgs リポジトリ shall ビルドの生成物を、バージョン管理の対象から除外する。
-4. The CLArgs リポジトリ shall 文字コード、改行、インデントの設定を、エディタが自動で適用できる形で提供する。
+1. The CLine リポジトリ shall ライセンスの全文を記した文書を、リポジトリのルートに含む。
+2. The CLine リポジトリ shall README に、プロジェクトの概要、ビルドとテストの手順、4 つの取り込み方法（`FetchContent`、`add_subdirectory`、`find_package`、pkg-config）の例を記載する。
+3. The CLine リポジトリ shall ビルドの生成物を、バージョン管理の対象から除外する。
+4. The CLine リポジトリ shall 文字コード、改行、インデントの設定を、エディタが自動で適用できる形で提供する。

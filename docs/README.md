@@ -1,14 +1,14 @@
-# CLArgs Documentation
+# CLine Documentation
 
-This page lists the documents of CLArgs, grouped by reader, with a one-line description of each; the [README](../README.md) at the root of the repository is the starting point for the project.
+This page lists the documents of CLine, grouped by reader, with a one-line description of each; the [README](../README.md) at the root of the repository is the starting point for the project.
 
 Contents:
 
-- [Using CLArgs](#using-clargs)
-- [Contributing to CLArgs](#contributing-to-clargs)
-- [Maintaining CLArgs](#maintaining-clargs)
+- [Using CLine](#using-cline)
+- [Contributing to CLine](#contributing-to-cline)
+- [Maintaining CLine](#maintaining-cline)
 
-## Using CLArgs
+## Using CLine
 
 For users of the library. Read [Schemas](schema.md), [Parsing](parse.md) and [Help and Usage](help.md) in this order; use [Ownership and Lifetime](ownership.md) and [Versioning](versioning.md) as references.
 
@@ -18,14 +18,14 @@ For users of the library. Read [Schemas](schema.md), [Parsing](parse.md) and [He
 - [Ownership and Lifetime](ownership.md): a reference for all users; covers who allocates and frees memory, and how long what you pass and what you get back stay valid.
 - [Versioning](versioning.md): a reference for users and contributors; covers how versions are numbered and tagged, what a new version may change, and how to check the version in code.
 
-## Contributing to CLArgs
+## Contributing to CLine
 
 For contributors who change the code, the tests or the documentation.
 
-- [Contributing to CLArgs](../CONTRIBUTING.md): the entry point for contributors; covers reporting problems, setting up a development environment, building and testing, and submitting a pull request.
+- [Contributing to CLine](../CONTRIBUTING.md): the entry point for contributors; covers reporting problems, setting up a development environment, building and testing, and submitting a pull request.
 - [Development Conventions](conventions.md): for contributors who change the library; covers the naming conventions, the directory layout, and the procedures and rules for adding public functions, headers, sources and tests.
 
-## Maintaining CLArgs
+## Maintaining CLine
 
 For maintainers who make releases.
 

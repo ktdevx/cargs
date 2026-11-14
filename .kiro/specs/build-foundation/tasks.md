@@ -14,8 +14,8 @@
   - メジャー、マイナー、パッチを整数リテラルのマクロとして持ち、最初の値を 0.1.0 にする。3 つを 1 つの数値にまとめるマクロも用意する
   - 公開関数に付ける唯一の印を用意し、「動的ライブラリとして使う」「ライブラリ自身をコンパイルしている」の 2 つの定義の組み合わせと OS・コンパイラに応じて、設計の表のとおりに展開する
   - バージョンを返す関数を、印を先頭に付け、C++ から取り込めるガードで囲んで宣言する
-  - 利用者が取り込む唯一の入口のヘッダを置き、ほかの公開ヘッダを取り込むだけにする。公開ヘッダはすべて `clargs/` の下に置く
-  - 公開する識別子はすべて `clargs_` または `CLARGS_` で始める
+  - 利用者が取り込む唯一の入口のヘッダを置き、ほかの公開ヘッダを取り込むだけにする。公開ヘッダはすべて `cline/` の下に置く
+  - 公開する識別子はすべて `cline_` または `CLINE_` で始める
   - 完了の目安: 入口のヘッダだけを取り込む 1 行の C ファイルが、C99・拡張なし・警告ありの設定で、何も定義しない場合と動的ライブラリ用の定義を与えた場合のどちらでも警告なくコンパイルできる
   - _Boundary: VersionSource, ExportMacro, PublicHeaders_
   - _Requirements: 3.5, 4.2, 4.3, 5.1_
@@ -29,8 +29,8 @@
 - [x] 2. ライブラリのビルド
 - [x] 2.1 トップレベルのプロジェクト定義とオプションを作る
   - CMake 3.21 以上を最初に要求し、古い CMake では必要なバージョンを示して失敗するようにする
-  - プロジェクト名を `CLArgs` とし、バージョンは公開ヘッダから読んだ値を使う。言語は C だけを有効にする
-  - テストのビルド、インストール規則、警告のエラー化の 3 つのオプションを `CLARGS_` で始まる名前で用意し、既定をトップレベルなら ON、ほかのプロジェクトに組み込まれたときは OFF にする
+  - プロジェクト名を `CLine` とし、バージョンは公開ヘッダから読んだ値を使う。言語は C だけを有効にする
+  - テストのビルド、インストール規則、警告のエラー化の 3 つのオプションを `CLINE_` で始まる名前で用意し、既定をトップレベルなら ON、ほかのプロジェクトに組み込まれたときは OFF にする
   - 静的と動的の切り替えは CMake 標準の変数をそのまま使い、独自の切り替えを作らない
   - コンパイルフラグ、C 標準、出力ディレクトリなどの全体設定を変えない。公開名に `cargs` を使わない
   - 完了の目安: ルートで構成が成功し、プロジェクトのバージョンが公開ヘッダの値と一致する。3 つのオプションがトップレベルでは ON としてキャッシュに現れる
@@ -39,8 +39,8 @@
 - [x] 2.2 バージョンを返す関数とライブラリのターゲットを作る
   - バージョンを返す公開関数を実装する。値は、3 つの要素を 1 つの数値にまとめる内部関数を通して作る。内部関数は内部ヘッダで宣言し、公開の印を付けない
   - ソースの一覧を 1 つの変数で持ち、後続のスペックが 1 行足すだけでソースを追加できるようにする
-  - ライブラリの種類を書かずにターゲットを定義し、標準の変数に従って静的または動的になるようにする。成果物の名前は `clargs`、Debug 構成では名前の末尾に `d` を付ける
-  - インストール後と同じ名前（`CLArgs::clargs`）の別名を作り、公開ヘッダの取り込みパスをリンクした側へ伝える。内部ヘッダのパスは伝えない
+  - ライブラリの種類を書かずにターゲットを定義し、標準の変数に従って静的または動的になるようにする。成果物の名前は `cline`、Debug 構成では名前の末尾に `d` を付ける
+  - インストール後と同じ名前（`CLine::cline`）の別名を作り、公開ヘッダの取り込みパスをリンクした側へ伝える。内部ヘッダのパスは伝えない
   - 動的のとき、成果物にバージョン全体と ABI バージョン（メジャーが 0 の間は `0.<minor>`、1 以上は `<major>`）を付け、「動的ライブラリとして使う」定義をリンクした側へ伝える。「ライブラリ自身をコンパイルしている」定義は常に内側だけに付ける
   - ほかのライブラリへリンクしない
   - トップレベルの定義からライブラリのディレクトリを追加する
@@ -60,17 +60,17 @@
 - [x] 3.1 インストール規則と `find_package` 用のパッケージ情報を作る
   - インストールのオプションが ON のときだけ有効にし、トップレベルの定義から組み込む
   - ライブラリ、公開ヘッダの全体、パッケージ情報を、標準のインストール先の規則に従って配置する。DLL は実行ファイル用の場所へ置く
-  - ターゲットを `CLArgs::` の名前空間で書き出し、利用者が `CLArgs::clargs` にリンクするだけで使えるようにする。動的のときだけ「動的ライブラリとして使う」定義が利用者へ伝わるようにする
+  - ターゲットを `CLine::` の名前空間で書き出し、利用者が `CLine::cline` にリンクするだけで使えるようにする。動的のときだけ「動的ライブラリとして使う」定義が利用者へ伝わるようにする
   - バージョンの互換判定は、メジャーが 0 の間は同じマイナー、1 以上は同じメジャーとする
   - 生成物はインストール先からの相対パスで動くようにし、内部ヘッダ、テスト、Naos、内部関数のテスト用ターゲットをインストールしない
-  - 完了の目安: 一時的な場所へインストールすると、ライブラリ、`clargs/` の公開ヘッダ、Config・バージョン・ターゲットのファイルが設計の表の場所に置かれ、内部ヘッダが含まれない。静的と動的のどちらでも同じファイル名になる
+  - 完了の目安: 一時的な場所へインストールすると、ライブラリ、`cline/` の公開ヘッダ、Config・バージョン・ターゲットのファイルが設計の表の場所に置かれ、内部ヘッダが含まれない。静的と動的のどちらでも同じファイル名になる
   - _Requirements: 2.5, 3.3, 3.4, 4.4, 5.3, 7.1, 7.2, 7.3, 7.5, 7.6, 7.7_
 
 - [x] 3.2 pkg-config 用の情報を生成してインストールする
-  - 名前を `clargs`、バージョンを公開ヘッダの値とし、取り込みパスとリンクのフラグを返すようにする。動的のときだけ「動的ライブラリとして使う」定義をコンパイルのフラグに足す
+  - 名前を `cline`、バージョンを公開ヘッダの値とし、取り込みパスとリンクのフラグを返すようにする。動的のときだけ「動的ライブラリとして使う」定義をコンパイルのフラグに足す
   - リンクするライブラリ名は、インストールする構成の実際の成果物名にする（Debug では末尾に `d` が付く）。そのため構成ごとに生成する
   - インストール先の場所は、情報ファイル自身の場所からの相対パスで書く。ライブラリのインストール先が絶対パスで指定された場合は絶対パスを書く
-  - 完了の目安: インストール後に、インストール先のディレクトリ名を変えてから pkg-config で `clargs` を問い合わせると、移動後の場所を指すフラグと `0.1.0` が返る。Debug のインストールでは `-lclargsd` が返る
+  - 完了の目安: インストール後に、インストール先のディレクトリ名を変えてから pkg-config で `cline` を問い合わせると、移動後の場所を指すフラグと `0.1.0` が返る。Debug のインストールでは `-lclined` が返る
   - _Requirements: 2.5, 5.3, 7.1, 7.4, 7.5, 7.7_
 
 - [x] 4. テスト基盤
@@ -115,11 +115,11 @@
 
 - [x] 5. 確認の仕組み
 - [x] 5.1 動的ライブラリの export を確かめるチェックを作る
-  - 単独で動くスクリプトとして作り、動的ライブラリをビルドしていてテストが有効なとき、CTest に `clargs.exports` の名前で登録する
+  - 単独で動くスクリプトとして作り、動的ライブラリをビルドしていてテストが有効なとき、CTest に `cline.exports` の名前で登録する
   - export されたシンボルの一覧を、Linux と macOS では `nm`、MSVC では `dumpbin` で得る。道具が見つからなければ失敗させる。macOS では先頭の `_` を取り除いてから比べる
   - 期待する一覧は、公開ヘッダの全体から、コメントを除いたうえで、印の付いた関数宣言の名前を抜き出して作る。手で保守する一覧を持たない
-  - export された関数の集合が期待する一覧と完全に一致すること、期待する名前がすべて `clargs_` で始まることを確かめ、食い違いがあればその名前を示して失敗させる
-  - 完了の目安: 動的の構成で `ctest` が `clargs.exports` を実行して通り、export がバージョンを返す関数だけであることが確かめられる。リポジトリのコピーの上で、公開関数の印を一時的に外す、または内部関数に一時的に印を付けると、その名前を示して失敗する（作業ツリーは書き換えない）。静的の構成では登録されない
+  - export された関数の集合が期待する一覧と完全に一致すること、期待する名前がすべて `cline_` で始まることを確かめ、食い違いがあればその名前を示して失敗させる
+  - 完了の目安: 動的の構成で `ctest` が `cline.exports` を実行して通り、export がバージョンを返す関数だけであることが確かめられる。リポジトリのコピーの上で、公開関数の印を一時的に外す、または内部関数に一時的に印を付けると、その名前を示して失敗する（作業ツリーは書き換えない）。静的の構成では登録されない
   - _Boundary: ExportCheck, TestHarness_
   - _Depends: 4.3_
   - _Requirements: 3.1, 3.2, 4.3, 5.5, 9.5_
@@ -130,7 +130,7 @@
   - `find_package` のモードでは、現在のバージョンを要求して見つかること、マイナーの違うバージョンを要求すると見つからないと報告されることも確かめる
   - `add_subdirectory` と `FetchContent` のモードでは、Naos のターゲットとテストが作られていないこと、インストール規則が足されていないことも確かめる。`FetchContent` はネットワークを使わず手元のチェックアウトを指す
   - Windows で動的ライブラリを使うモードでは、利用側が DLL を実行ファイルの隣へコピーする
-  - 完了の目安: 手元でインストールした CLArgs とリポジトリのチェックアウトを指して、4 つのモードのそれぞれで、利用側のプロジェクトを構成、ビルド、実行でき、実行ファイルが 0 を返す
+  - 完了の目安: 手元でインストールした CLine とリポジトリのチェックアウトを指して、4 つのモードのそれぞれで、利用側のプロジェクトを構成、ビルド、実行でき、実行ファイルが 0 を返す
   - _Boundary: ConsumerCheck_
   - _Depends: 3.1, 3.2_
   - _Requirements: 6.1, 6.2, 6.3, 7.2, 7.3, 7.4, 7.7_
@@ -190,42 +190,42 @@
 ## Implementation Notes
 
 - 1.1: `LICENSE` の著作権表示（`Copyright (c) 2026 Kaito Takemura`）はスペックに定めがなく、git の履歴（唯一の人間の作者と最初のコミットの年）から決めた。変更する場合は `LICENSE` の 1 行だけを直す。
-- 1.2: `include/clargs/export.h` には `#define CLARGS_API __declspec(dllexport)` のような行がある。公開ヘッダから印の付いた宣言を抜き出す処理（5.1）は、プリプロセッサ行を除いてから名前を拾う。
-- 1.2: `CLARGS_VERSION_NUMBER` は `(unsigned long)` のキャストを含むので `#if` では使えない。`#if` では `CLARGS_VERSION_MAJOR` などを個別に使う（6.1 の文書に書く）。
-- 1.3: `clargs_read_version(<header-path> <out-var>)` は設計より厳しく失敗する。コメントを除いてから読み、同じマクロの二重定義と先頭ゼロ（`010` など）も失敗にする。`version.h` の 3 つのマクロは 1 行ずつ、10 進の 0〜255 で書く。
-- 2.1: トップレベルの `CMakeLists.txt` は `CMAKE_MODULE_PATH` を変えず、`include("${CMAKE_CURRENT_LIST_DIR}/cmake/<Module>.cmake")` の形でモジュールを取り込む。後続のタスクも同じ形で足す。バージョンは `PROJECT_VERSION` / `CLArgs_VERSION` を参照する。
+- 1.2: `include/cline/export.h` には `#define CLINE_API __declspec(dllexport)` のような行がある。公開ヘッダから印の付いた宣言を抜き出す処理（5.1）は、プリプロセッサ行を除いてから名前を拾う。
+- 1.2: `CLINE_VERSION_NUMBER` は `(unsigned long)` のキャストを含むので `#if` では使えない。`#if` では `CLINE_VERSION_MAJOR` などを個別に使う（6.1 の文書に書く）。
+- 1.3: `cline_read_version(<header-path> <out-var>)` は設計より厳しく失敗する。コメントを除いてから読み、同じマクロの二重定義と先頭ゼロ（`010` など）も失敗にする。`version.h` の 3 つのマクロは 1 行ずつ、10 進の 0〜255 で書く。
+- 2.1: トップレベルの `CMakeLists.txt` は `CMAKE_MODULE_PATH` を変えず、`include("${CMAKE_CURRENT_LIST_DIR}/cmake/<Module>.cmake")` の形でモジュールを取り込む。後続のタスクも同じ形で足す。バージョンは `PROJECT_VERSION` / `CLine_VERSION` を参照する。
 - 2.2: `src/CMakeLists.txt` の取り込みパスは `BUILD_INTERFACE` だけを持つ。インストール後の取り込みパスは 3.1 が `install(TARGETS ... INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})` で足す。
 - 2.2: ライブラリは C 標準ライブラリの関数を呼ばないので、動的ライブラリの `readelf -d` に NEEDED の行が 1 つも出ないことがある（8.1 の依存の確認では、libc 以外がないことを見る）。
-- 2.3: `clargs_target_defaults(<target> [STRICT])` は、ソースを持たないターゲット（INTERFACE、IMPORTED、ALIAS）、存在しないターゲット、未知の引数を `FATAL_ERROR` にする。`CLARGS_WARNINGS_AS_ERRORS` は呼び出した時点の値を読む。MSVC の分岐（`/W4`、`/WX`）は手元で実行できず、CI（4.5、7、8.2）で確かめる。
-- 3.1: 互換判定は `SameMinorVersion`（メジャー 0 の間）なので、`find_package(CLArgs 0)` や範囲指定は見つからない。メジャーが 0 の間はマイナーまで指定する（6.1、6.2 の文書に書く）。
-- 3.1: `CMAKE_INSTALL_LIBDIR=lib64` へ入れた場合、Debian 系の CMake は `CMAKE_PREFIX_PATH` から `lib64/cmake` を探さない。確認には `-DCLArgs_DIR=<prefix>/lib64/cmake/CLArgs` を使う。
-- 3.1: 公開ヘッダのインストールは `include/clargs` の `*.h` に絞っている。組み込みで `CLARGS_INSTALL=ON` を明示すると、`GNUInstallDirs` のキャッシュ変数が親からも見える。
+- 2.3: `cline_target_defaults(<target> [STRICT])` は、ソースを持たないターゲット（INTERFACE、IMPORTED、ALIAS）、存在しないターゲット、未知の引数を `FATAL_ERROR` にする。`CLINE_WARNINGS_AS_ERRORS` は呼び出した時点の値を読む。MSVC の分岐（`/W4`、`/WX`）は手元で実行できず、CI（4.5、7、8.2）で確かめる。
+- 3.1: 互換判定は `SameMinorVersion`（メジャー 0 の間）なので、`find_package(CLine 0)` や範囲指定は見つからない。メジャーが 0 の間はマイナーまで指定する（6.1、6.2 の文書に書く）。
+- 3.1: `CMAKE_INSTALL_LIBDIR=lib64` へ入れた場合、Debian 系の CMake は `CMAKE_PREFIX_PATH` から `lib64/cmake` を探さない。確認には `-DCLine_DIR=<prefix>/lib64/cmake/CLine` を使う。
+- 3.1: 公開ヘッダのインストールは `include/cline` の `*.h` に絞っている。組み込みで `CLINE_INSTALL=ON` を明示すると、`GNUInstallDirs` のキャッシュ変数が親からも見える。
 - 3.2: pkg-config が返すフラグは `-I<prefix>/lib/pkgconfig/../../include` の形になる（pkgconf はパスを正規化しない）。5.2、5.3 でフラグを比べるときは、正規化してから比べる。
-- 3.2: 設計にない追加として、`clargs.pc` を置く前にインストール済みの `clargs.pc` を消す `install(CODE "file(REMOVE ...)")` がある。マルチコンフィグで Debug と Release を同じ場所へ入れると、同じ時刻のファイルが「Up-to-date」と扱われて古い `-lclargsd` が残るためである。同じ場所へ複数の構成を入れた場合、`clargs.pc` は最後にインストールした構成のものになる。
-- 3.2: `CMAKE_INSTALL_LIBDIR` が絶対パスのとき、`clargs.pc` の `prefix` は構成時の `CMAKE_INSTALL_PREFIX` になる。`cmake --install --prefix <別の場所>` で入れると `includedir` がずれ、再配置できない。
-- 4.1: `clargs_internal` は、動的のとき `libclargs_internal.a`（`OUTPUT_NAME` と Debug の `d` なし）、静的のとき INTERFACE ライブラリになる。INTERFACE ライブラリは `cmake --build --target help` に現れないので、存在は `if(TARGET clargs_internal)` で確かめる。
-- 4.2: 登録関数は `clargs_add_test(<name> SOURCES <source>... [INTERNAL])`。`PUBLIC` というキーワードはない（`INTERNAL` がなければ公開 API のテスト）。名前は英数字と下線だけで、全体で一意にする。
+- 3.2: 設計にない追加として、`cline.pc` を置く前にインストール済みの `cline.pc` を消す `install(CODE "file(REMOVE ...)")` がある。マルチコンフィグで Debug と Release を同じ場所へ入れると、同じ時刻のファイルが「Up-to-date」と扱われて古い `-lclined` が残るためである。同じ場所へ複数の構成を入れた場合、`cline.pc` は最後にインストールした構成のものになる。
+- 3.2: `CMAKE_INSTALL_LIBDIR` が絶対パスのとき、`cline.pc` の `prefix` は構成時の `CMAKE_INSTALL_PREFIX` になる。`cmake --install --prefix <別の場所>` で入れると `includedir` がずれ、再配置できない。
+- 4.1: `cline_internal` は、動的のとき `libcline_internal.a`（`OUTPUT_NAME` と Debug の `d` なし）、静的のとき INTERFACE ライブラリになる。INTERFACE ライブラリは `cmake --build --target help` に現れないので、存在は `if(TARGET cline_internal)` で確かめる。
+- 4.2: 登録関数は `cline_add_test(<name> SOURCES <source>... [INTERNAL])`。`PUBLIC` というキーワードはない（`INTERNAL` がなければ公開 API のテスト）。名前は英数字と下線だけで、全体で一意にする。
 - 4.2: Naos v0.4.0 の実物は research.md と 3 点違う。`naos_discover_tests()` に `DISCOVERY_TIMEOUT` と `ALLOW_NO_ASSERTIONS` がある。テストを 1 つも持たない `NAOS_SUITE` はコンパイルエラーになる。実行ファイルをビルドする前の `ctest` には、失敗する `<name>.NOT_BUILT` が 1 つ載る（マルチコンフィグで未ビルドの構成を選んだときも同じ）。
-- 4.2: アサーションを 1 つも実行しないテストは、Naos が `no assertion ran` で失敗にする。テストを ON にすると、Naos の `include(GNUInstallDirs)` により `CLARGS_INSTALL=OFF` でも `CMAKE_INSTALL_*` のキャッシュ変数が現れる（インストール規則は増えない）。
+- 4.2: アサーションを 1 つも実行しないテストは、Naos が `no assertion ran` で失敗にする。テストを ON にすると、Naos の `include(GNUInstallDirs)` により `CLINE_INSTALL=OFF` でも `CMAKE_INSTALL_*` のキャッシュ変数が現れる（インストール規則は増えない）。
 - 4.2: ほかのビルドディレクトリでは `-DFETCHCONTENT_SOURCE_DIR_NAOS=<取得済みの _deps/naos-src>` を渡すと、ネットワークなしで構成できる。Windows の DLL コピーの分岐は手元で実行できず、CI（4.5、8.2）で確かめる。
 - 4.3: テストは公開 5 件（`version.version.*`）と内部 6 件（`version_internal.pack.*`）の計 11 件。設計にない追加として、公開側に `number_has_no_other_bits`、内部側にリテラル（`0x010203UL` など）との比較がある。バージョンが 0.1.0 の間、公開側の `major_` と `patch_` は 0 どうしの比較になる。
-- 4.4: `cmake/ClargsCTestDefaults.cmake` は変数 `CTEST_CONFIGURATION_TYPE` が空のときだけ `Debug` を入れる。Naos の生成ファイルも `add_test(NAME ...)` の生成コードもこの変数で分岐するので、`add_test(NAME ... COMMAND ... $<TARGET_FILE:clargs>)` の形のテスト（5.1）も `-C` なしで正しい構成で走る。Ninja Multi-Config で確かめた。Visual Studio ジェネレータは 4.5 で確かめる。
+- 4.4: `cmake/ClineCTestDefaults.cmake` は変数 `CTEST_CONFIGURATION_TYPE` が空のときだけ `Debug` を入れる。Naos の生成ファイルも `add_test(NAME ...)` の生成コードもこの変数で分岐するので、`add_test(NAME ... COMMAND ... $<TARGET_FILE:cline>)` の形のテスト（5.1）も `-C` なしで正しい構成で走る。Ninja Multi-Config で確かめた。Visual Studio ジェネレータは 4.5 で確かめる。
 - 4.4: 既定は Debug 固定。`CMAKE_CONFIGURATION_TYPES` に Debug がない場合や `CMAKE_DEFAULT_BUILD_TYPE=Release` の場合、`-C` なしの `ctest` は `NOT_BUILT` で失敗する（`-C <構成>` を付ければ通る）。CI のマトリクス（7）では構成を明示する。
 - 4.4: テストが OFF のまま `-DFETCHCONTENT_SOURCE_DIR_NAOS=...` を渡すと、CMake が未使用変数の警告を出す（害はない）。
-- 4.5: CI の `quickstart` ジョブ（run 43049613386、コミット `a750715`）が Linux、macOS、Windows で成功した。Windows（Visual Studio ジェネレータ、MSVC の `/W4 /WX`）で、構成を指定しない `ctest` が 11 件を実行して通ることを確かめた。`ClargsCTestDefaults.cmake` の方法は実機で確認済み。
+- 4.5: CI の `quickstart` ジョブ（run 43049613386、コミット `a750715`）が Linux、macOS、Windows で成功した。Windows（Visual Studio ジェネレータ、MSVC の `/W4 /WX`）で、構成を指定しない `ctest` が 11 件を実行して通ることを確かめた。`ClineCTestDefaults.cmake` の方法は実機で確認済み。
 - 4.5: ワークフローのアクションはメジャータグで固定している（`actions/checkout@v7`）。設計に固定の方針はない。構成コマンドは要件 1.1 の文字どおり `cmake -S . -B build`。
-- 5.1（設計へ戻す点、人の判断が要る）: `clargs.exports` は `CLARGS_API` を基準にするので、公開関数から印を外した場合は検出できない（その関数は export からも期待する一覧からも消える）。完了の目安の「印を外すと、その名前を示して失敗する」は、設計の規則では満たせない。現状では、印を外すと公開 API のテストが動的の構成でリンクに失敗し（`undefined reference to 'clargs_version'`）、ライブラリだけをビルドした場合は `clargs.exports` が「公開ヘッダに `CLARGS_API` の付いた関数宣言が 1 つもない」で失敗する（名前は出ない。設計にない追加の規則）。公開関数が 2 つ以上になると、印を外した関数は `clargs.exports` を通り、その関数を呼ぶ公開 API のテストのリンク失敗だけが検出の手段になる。公開ヘッダの印のない関数宣言を違反にする規則を足すかどうかは、設計の変更として判断する。
-- 5.1: 設計にない追加として、export された変数も違反にし（要件 3.2）、ELF のリンカ由来の名前（`_init`、`_fini`、`__bss_start`、`_edata`、`_end`）を無視し、関数宣言でないものに付いた `CLARGS_API` を失敗にする。`clargs.exports` に CTest のラベルはない（`ctest -L public` などには含まれない）。
-- 5.1: 単独実行は `cmake -DCLARGS_LIBRARY=<動的ライブラリ> -P cmake/ClargsCheckExports.cmake`。関数ポインタを直接返す宣言は名前を誤読するので、`typedef` を使う（6.1 の文書に書く）。`dumpbin` と macOS の `nm -gU` の分岐は偽の出力でしか確かめておらず、CI（7、8.2）で確かめる。
-- 5.2: 利用側プロジェクト `tests/consumer/` の入力は、`CLARGS_CONSUME_MODE`（`find_package` / `pkg_config` / `add_subdirectory` / `fetch_content`）、インストール済みを使うモードの `CMAKE_PREFIX_PATH`（pkg-config は `PKG_CONFIG_PATH` でもよい）、組み込みのモードの `CLARGS_CONSUME_SOURCE_DIR`（チェックアウトのパス。設計に名前の定めはない）。実行ファイルと CTest のテストの名前は `clargs_consumer`。組み込みのモードでライブラリの形を選ぶには `-DBUILD_SHARED_LIBS=` を渡す。
-- 5.2: 組み込みのモードの確認は設計より厳しい。CLArgs のディレクトリに `clargs` 以外のターゲットがないこと、`clargs` に `-Werror` / `/WX` が付いていないことも見る。後続のスペックが組み込み時にも作るターゲットを足したら、この許可リストを直す。インストール規則はグローバルプロパティ `COMPONENTS`、テストは `TESTS` と `TEST_INCLUDE_FILES`（Naos の列挙はこちらを使う）で検出する。
+- 5.1（設計へ戻す点、人の判断が要る）: `cline.exports` は `CLINE_API` を基準にするので、公開関数から印を外した場合は検出できない（その関数は export からも期待する一覧からも消える）。完了の目安の「印を外すと、その名前を示して失敗する」は、設計の規則では満たせない。現状では、印を外すと公開 API のテストが動的の構成でリンクに失敗し（`undefined reference to 'cline_version'`）、ライブラリだけをビルドした場合は `cline.exports` が「公開ヘッダに `CLINE_API` の付いた関数宣言が 1 つもない」で失敗する（名前は出ない。設計にない追加の規則）。公開関数が 2 つ以上になると、印を外した関数は `cline.exports` を通り、その関数を呼ぶ公開 API のテストのリンク失敗だけが検出の手段になる。公開ヘッダの印のない関数宣言を違反にする規則を足すかどうかは、設計の変更として判断する。
+- 5.1: 設計にない追加として、export された変数も違反にし（要件 3.2）、ELF のリンカ由来の名前（`_init`、`_fini`、`__bss_start`、`_edata`、`_end`）を無視し、関数宣言でないものに付いた `CLINE_API` を失敗にする。`cline.exports` に CTest のラベルはない（`ctest -L public` などには含まれない）。
+- 5.1: 単独実行は `cmake -DCLINE_LIBRARY=<動的ライブラリ> -P cmake/ClineCheckExports.cmake`。関数ポインタを直接返す宣言は名前を誤読するので、`typedef` を使う（6.1 の文書に書く）。`dumpbin` と macOS の `nm -gU` の分岐は偽の出力でしか確かめておらず、CI（7、8.2）で確かめる。
+- 5.2: 利用側プロジェクト `tests/consumer/` の入力は、`CLINE_CONSUME_MODE`（`find_package` / `pkg_config` / `add_subdirectory` / `fetch_content`）、インストール済みを使うモードの `CMAKE_PREFIX_PATH`（pkg-config は `PKG_CONFIG_PATH` でもよい）、組み込みのモードの `CLINE_CONSUME_SOURCE_DIR`（チェックアウトのパス。設計に名前の定めはない）。実行ファイルと CTest のテストの名前は `cline_consumer`。組み込みのモードでライブラリの形を選ぶには `-DBUILD_SHARED_LIBS=` を渡す。
+- 5.2: 組み込みのモードの確認は設計より厳しい。CLine のディレクトリに `cline` 以外のターゲットがないこと、`cline` に `-Werror` / `/WX` が付いていないことも見る。後続のスペックが組み込み時にも作るターゲットを足したら、この許可リストを直す。インストール規則はグローバルプロパティ `COMPONENTS`、テストは `TESTS` と `TEST_INCLUDE_FILES`（Naos の列挙はこちらを使う）で検出する。
 - 5.2: Windows の DLL コピーと macOS の pkg-config のモードは手元で実行できず、CI（7、8.2）で確かめる。
-- 5.3: 駆動スクリプトは `cmake -D CLARGS_BUILD_DIR=<dir> -D CLARGS_CONFIG=<構成> -D CLARGS_SHARED=<ON|OFF> -P tests/consumer/run.cmake`。作業物は `<CLARGS_BUILD_DIR>/consumer-check/` に置き、毎回作り直す。1 つのモードが失敗しても残りを実行し、最後に失敗したモードと段階（configure / build / run）を示して 0 以外で終わる。
-- 5.3: `CMAKE_BUILD_TYPE` が空のビルドディレクトリ（README の 3 コマンドそのまま）は受け付けない。`-DCMAKE_BUILD_TYPE=<構成>` を付けて構成する。`CLARGS_CONFIG` は設計の `<Debug|Release>` より広く、ビルドディレクトリが持つ構成なら受け付ける。`CLARGS_SHARED` がビルドの形と合わなければエラーにする。
+- 5.3: 駆動スクリプトは `cmake -D CLINE_BUILD_DIR=<dir> -D CLINE_CONFIG=<構成> -D CLINE_SHARED=<ON|OFF> -P tests/consumer/run.cmake`。作業物は `<CLINE_BUILD_DIR>/consumer-check/` に置き、毎回作り直す。1 つのモードが失敗しても残りを実行し、最後に失敗したモードと段階（configure / build / run）を示して 0 以外で終わる。
+- 5.3: `CMAKE_BUILD_TYPE` が空のビルドディレクトリ（README の 3 コマンドそのまま）は受け付けない。`-DCMAKE_BUILD_TYPE=<構成>` を付けて構成する。`CLINE_CONFIG` は設計の `<Debug|Release>` より広く、ビルドディレクトリが持つ構成なら受け付ける。`CLINE_SHARED` がビルドの形と合わなければエラーにする。
 - 5.3: Windows の判定は「ホストが Windows」（設計は「Windows の MSVC」）。Windows の分岐は `-DCMAKE_HOST_WIN32=1` の模擬でしか確かめておらず、Visual Studio ジェネレータと macOS は CI（7、8.2）で確かめる。同じビルドディレクトリへの並行実行はできない。
-- 6.1: 文書は `docs/conventions.md`（日本語。設計は言語を定めておらず、CLAUDE.md の規則に従った）。設計の表にない追加として、内部関数と CMake モジュールを足す手順、インクルードガードの規約（`CLARGS_<名前>_H`）、内部関数のテスト名（`<名前>_internal`）、「確かめ方」とバージョンの注意の節がある。5.1 の既知の穴（印を外しても `clargs.exports` 自体は検出しない）は現状の挙動として書いてあり、設計が変われば該当の項目を直す。README（6.2）からこの文書へ案内する。
-- 6.2: `README.md` は日本語（6.1 と同じ理由）。リポジトリにリリースタグがないので、`FetchContent` の例は `GIT_TAG main` と書き、再現性が要る場合はコミットのハッシュを書くよう注記している。リリースタグを切ったら例を見直す。概要には、現時点の公開関数が `clargs_version()` だけであることを書いてある。後続のスペックが引数パーサーの機能を足したら概要を直す。
-- 7: `build` ジョブは構成ごとに別のビルドディレクトリ（`build/Debug`、`build/Release`）を使い、全環境で `shell: bash`、`-DCMAKE_BUILD_TYPE=<構成>`、`--config <構成>`、`-C <構成>` を付ける。コンパイラは環境変数 `CC`（Windows では空）。設計にない追加として、`ctest` に `--output-on-failure --no-tests=error` を付け、macOS では pkg-config がなければ `brew install pkgconf` で入れる。動的の組み合わせで `clargs.exports` が登録されたことを確かめる専用の手順はない（8.2 でログを見る）。手元で確かめたのは Linux の 4 組み合わせだけで、macOS と Windows は 8.2 で確かめる。
-- 8.1: コミット `dce1302` のコピーの上で、静的・動的 × Debug・Release の構成、ビルド、`ctest`（静的 11 件、動的 12 件）、取り込みの確認（4 モード）、手で確かめる 2 点、`cargs` の検索、インストール物、動的ライブラリの依存を確かめ、すべて通った（Linux のみ）。`cargs` が現れるのは、README の GitHub の URL、`docs/conventions.md` の規約の文、Debug の成果物のデバッグ情報に入るビルド時の絶対パスだけで、公開名にはない。静的ライブラリは内部関数 `clargs_version_pack` を外部リンケージで持つ（要件 3.1、3.2 は動的ライブラリが対象）。
-- 8.2: CI の run 43113675432（コミット `dce1302`）で、`build` の 8 組み合わせと `quickstart` の 3 つの OS がすべて成功した。Windows（Visual Studio 18 2026、MSVC 19.51）と macOS（AppleClang 21）の動的の組み合わせで、`ctest` が Debug と Release のそれぞれ 12 件（`clargs.exports` を含む）を手作業なしで通した。取り込みの確認は 16 回すべて通った（Windows の pkg-config は `clargs.pc` のインストールの確認だけ）。macOS のランナーには pkg-config が入っていた。
+- 6.1: 文書は `docs/conventions.md`（日本語。設計は言語を定めておらず、CLAUDE.md の規則に従った）。設計の表にない追加として、内部関数と CMake モジュールを足す手順、インクルードガードの規約（`CLINE_<名前>_H`）、内部関数のテスト名（`<名前>_internal`）、「確かめ方」とバージョンの注意の節がある。5.1 の既知の穴（印を外しても `cline.exports` 自体は検出しない）は現状の挙動として書いてあり、設計が変われば該当の項目を直す。README（6.2）からこの文書へ案内する。
+- 6.2: `README.md` は日本語（6.1 と同じ理由）。リポジトリにリリースタグがないので、`FetchContent` の例は `GIT_TAG main` と書き、再現性が要る場合はコミットのハッシュを書くよう注記している。リリースタグを切ったら例を見直す。概要には、現時点の公開関数が `cline_version()` だけであることを書いてある。後続のスペックが引数パーサーの機能を足したら概要を直す。
+- 7: `build` ジョブは構成ごとに別のビルドディレクトリ（`build/Debug`、`build/Release`）を使い、全環境で `shell: bash`、`-DCMAKE_BUILD_TYPE=<構成>`、`--config <構成>`、`-C <構成>` を付ける。コンパイラは環境変数 `CC`（Windows では空）。設計にない追加として、`ctest` に `--output-on-failure --no-tests=error` を付け、macOS では pkg-config がなければ `brew install pkgconf` で入れる。動的の組み合わせで `cline.exports` が登録されたことを確かめる専用の手順はない（8.2 でログを見る）。手元で確かめたのは Linux の 4 組み合わせだけで、macOS と Windows は 8.2 で確かめる。
+- 8.1: コミット `dce1302` のコピーの上で、静的・動的 × Debug・Release の構成、ビルド、`ctest`（静的 11 件、動的 12 件）、取り込みの確認（4 モード）、手で確かめる 2 点、`cargs` の検索、インストール物、動的ライブラリの依存を確かめ、すべて通った（Linux のみ）。`cargs` が現れるのは、README の GitHub の URL、`docs/conventions.md` の規約の文、Debug の成果物のデバッグ情報に入るビルド時の絶対パスだけで、公開名にはない。静的ライブラリは内部関数 `cline_version_pack` を外部リンケージで持つ（要件 3.1、3.2 は動的ライブラリが対象）。
+- 8.2: CI の run 43113675432（コミット `dce1302`）で、`build` の 8 組み合わせと `quickstart` の 3 つの OS がすべて成功した。Windows（Visual Studio 18 2026、MSVC 19.51）と macOS（AppleClang 21）の動的の組み合わせで、`ctest` が Debug と Release のそれぞれ 12 件（`cline.exports` を含む）を手作業なしで通した。取り込みの確認は 16 回すべて通った（Windows の pkg-config は `cline.pc` のインストールの確認だけ）。macOS のランナーには pkg-config が入っていた。
 - 8.2: ログに直接は出ず、成功からの推論にとどまる点が 3 つある。MSVC の `/W4 /WX`（MSBuild の既定の詳細度ではコマンドラインが出ない）、`dumpbin` の呼び出し、利用側での DLL のコピー。失敗するコミットはプッシュしていないので、「失敗した組み合わせがジョブ名から分かる」は、ジョブ名と `fail-fast: false` からの判断である。Visual Studio ジェネレータの構成では `CMAKE_BUILD_TYPE` の未使用変数の警告が出る（害はない）。

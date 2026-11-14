@@ -1,5 +1,5 @@
 /*
- * CLArgs - the allocator: the functions the library gets its memory from.
+ * CLine - the allocator: the functions the library gets its memory from.
  *
  * The library takes all of its memory from one allocator, a set of four
  * functions of the same form as the standard malloc, realloc, calloc and
@@ -31,10 +31,10 @@
  * The allocator carries no user data. An allocator that needs state keeps
  * it on its own side.
  */
-#ifndef CLARGS_ALLOC_H
-#define CLARGS_ALLOC_H
+#ifndef CLINE_ALLOC_H
+#define CLINE_ALLOC_H
 
-#include <clargs/export.h>
+#include <cline/export.h>
 
 #include <stddef.h>
 
@@ -42,26 +42,26 @@
  * The types of the four functions: the same form as the standard malloc,
  * realloc, calloc and free.
  */
-typedef void *(*clargs_malloc_fn_t)(size_t size);
-typedef void *(*clargs_realloc_fn_t)(void *ptr, size_t size);
-typedef void *(*clargs_calloc_fn_t)(size_t count, size_t size);
-typedef void (*clargs_free_fn_t)(void *ptr);
+typedef void *(*cline_malloc_fn_t)(size_t size);
+typedef void *(*cline_realloc_fn_t)(void *ptr, size_t size);
+typedef void *(*cline_calloc_fn_t)(size_t count, size_t size);
+typedef void (*cline_free_fn_t)(void *ptr);
 
 /*
  * An allocator. The standard functions can be used as they are:
  *
- *     clargs_allocator_t allocator = { malloc, realloc, calloc, free };
+ *     cline_allocator_t allocator = { malloc, realloc, calloc, free };
  *
  * The layout is fixed: later versions add no field and change neither the
  * order nor the types of the fields.
  */
-typedef struct clargs_allocator
+typedef struct cline_allocator
 {
-    clargs_malloc_fn_t malloc_fn;
-    clargs_realloc_fn_t realloc_fn;
-    clargs_calloc_fn_t calloc_fn;
-    clargs_free_fn_t free_fn;
-} clargs_allocator_t;
+    cline_malloc_fn_t malloc_fn;
+    cline_realloc_fn_t realloc_fn;
+    cline_calloc_fn_t calloc_fn;
+    cline_free_fn_t free_fn;
+} cline_allocator_t;
 
 #ifdef __cplusplus
 extern "C"
@@ -90,10 +90,10 @@ extern "C"
  *   setting is not synchronized. Usually the allocator is set once, when
  *   the program starts.
  */
-CLARGS_API void clargs_set_allocator(const clargs_allocator_t *allocator);
+CLINE_API void cline_set_allocator(const cline_allocator_t *allocator);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CLARGS_ALLOC_H */
+#endif /* CLINE_ALLOC_H */

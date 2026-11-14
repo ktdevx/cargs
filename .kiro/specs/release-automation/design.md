@@ -2,11 +2,11 @@
 
 ## Overview
 
-**Purpose**: CLArgs のリリースを半自動にする。メンテナーが手動起動のワークフローにバージョンを渡すとリリース PR が開き、それをマージすると注釈付きタグ `v<SemVer>` と GitHub Release ができる。プレリリースも同じ流れで出す。あわせて、CI の起動を「PR、`main` への push、手動起動」に絞り、文書だけの変更では重いビルドを飛ばしつつ、required check にする集約チェックが必ず結果を返すようにする。
+**Purpose**: CLine のリリースを半自動にする。メンテナーが手動起動のワークフローにバージョンを渡すとリリース PR が開き、それをマージすると注釈付きタグ `v<SemVer>` と GitHub Release ができる。プレリリースも同じ流れで出す。あわせて、CI の起動を「PR、`main` への push、手動起動」に絞り、文書だけの変更では重いビルドを飛ばしつつ、required check にする集約チェックが必ず結果を返すようにする。
 
 **Users**: メンテナーはリリース PR のワークフローとリリース手順書を使う。コントリビューターは PR で CHANGELOG の `Unreleased` に項目を足す。ライブラリ利用者はタグ、Release のノート、CHANGELOG、バージョン方針の文書を読む。
 
-**Impact**: build-foundation のバージョンの仕組みに、プレリリースの識別子（`CLARGS_VERSION_PRERELEASE`）を足し、pkg-config と CMake のパッケージに完全なバージョンを渡す。`ci.yml` の起動の契機と判定を変える（ジョブの中身は変えない）。新しいワークフロー 2 つ、`tools/` の下の CMake スクリプト、CHANGELOG.md、英語の文書 2 つを足す。
+**Impact**: build-foundation のバージョンの仕組みに、プレリリースの識別子（`CLINE_VERSION_PRERELEASE`）を足し、pkg-config と CMake のパッケージに完全なバージョンを渡す。`ci.yml` の起動の契機と判定を変える（ジョブの中身は変えない）。新しいワークフロー 2 つ、`tools/` の下の CMake スクリプト、CHANGELOG.md、英語の文書 2 つを足す。
 
 ### Goals
 - `version.h` を唯一の出どころのまま、正式版とプレリリースを表せる。
@@ -18,14 +18,14 @@
 ### Non-Goals
 - 新しい CI のジョブ（Sanitizer、lint など）、既存のジョブの中身の変更。
 - ビルド済みバイナリの添付、パッケージ管理への登録。
-- 完全なバージョンの文字列を返す公開関数（`clargs_version_string()` など）。
+- 完全なバージョンの文字列を返す公開関数（`cline_version_string()` など）。
 - README.md、CONTRIBUTING.md の本文、`docs/` の英語化と再編。
 - 実際の v0.1.0 のリリースの操作。
 
 ## Boundary Commitments
 
 ### This Spec Owns
-- バージョンの表現: `include/clargs/version.h` の `CLARGS_VERSION_PRERELEASE`、`cmake/ClargsVersion.cmake` の読み取りの規則、pkg-config の `Version` と `CLArgs_VERSION_FULL` / `CLArgs_VERSION_PRERELEASE` の意味。
+- バージョンの表現: `include/cline/version.h` の `CLINE_VERSION_PRERELEASE`、`cmake/ClineVersion.cmake` の読み取りの規則、pkg-config の `Version` と `CLine_VERSION_FULL` / `CLine_VERSION_PRERELEASE` の意味。
 - consumer check の版の比較（プレリリースを含める部分だけ）。
 - CHANGELOG.md の形式、中身の最初の版、`Unreleased` に記録する規則。
 - バージョン方針の文書 `docs/versioning.md`（英語）とリリース手順書 `docs/releasing.md`（英語）の中身とファイルの場所。
@@ -38,29 +38,29 @@
 - `ci.yml` の `quickstart` と `build` のジョブの中身（matrix、steps、ジョブの名前）。足すのは `needs` と `if` だけ。
 - README.md、CONTRIBUTING.md（english-docs）。`docs/` のほかのファイルと、`docs/conventions.md` の他の節、`docs/conventions.md` の英語化（english-docs）。
 - CODE_OF_CONDUCT.md、SECURITY.md、`.github/ISSUE_TEMPLATE/*`、`.github/pull_request_template.md`（実装済み。変えない）。
-- `clargs_version()`、`CLARGS_VERSION_NUMBER`、`CLARGS_MAKE_VERSION` の意味、SOVERSION と `find_package` の互換判定の規則。
+- `cline_version()`、`CLINE_VERSION_NUMBER`、`CLINE_MAKE_VERSION` の意味、SOVERSION と `find_package` の互換判定の規則。
 - リポジトリの設定（ブランチの保護、ruleset、Actions の権限の設定）。手順書で案内するだけ。
 
 ### Allowed Dependencies
-- build-foundation: `cmake/ClargsVersion.cmake`（拡張して再利用）、`cmake/ClargsInstall.cmake`、`tests/consumer/`、`tests/CMakeLists.txt` の登録の仕組み。
+- build-foundation: `cmake/ClineVersion.cmake`（拡張して再利用）、`cmake/ClineInstall.cmake`、`tests/consumer/`、`tests/CMakeLists.txt` の登録の仕組み。
 - GitHub-hosted runner（`ubuntu-latest`）に入っている `git`、`gh`、`cmake`（3.21 以上）、bash。
 - `actions/checkout@v7`（既存と同じ版）。ほかのサードパーティのアクションは使わない。
-- `GITHUB_TOKEN` のみ。依存の向きは「ワークフロー → 入口のスクリプト → モジュール → `ClargsVersion.cmake`」で、逆向きの参照をしない。ライブラリのビルド（`CMakeLists.txt`）は `tools/` を参照しない。
+- `GITHUB_TOKEN` のみ。依存の向きは「ワークフロー → 入口のスクリプト → モジュール → `ClineVersion.cmake`」で、逆向きの参照をしない。ライブラリのビルド（`CMakeLists.txt`）は `tools/` を参照しない。
 
 ### Revalidation Triggers
-- `CLARGS_VERSION_PRERELEASE` の書式、`CLArgs_VERSION_FULL`/`CLArgs_VERSION_PRERELEASE` の名前や意味の変更 → consumer check、english-docs の README の取り込みの説明を確かめ直す。
+- `CLINE_VERSION_PRERELEASE` の書式、`CLine_VERSION_FULL`/`CLine_VERSION_PRERELEASE` の名前や意味の変更 → consumer check、english-docs の README の取り込みの説明を確かめ直す。
 - required check の名前 `CI result` の変更 → 手順書、メンテナーのブランチ保護の設定（english-docs の CONTRIBUTING は check の名前に触れない）。
 - `docs/releasing.md`、`docs/versioning.md`、`CHANGELOG.md` の場所の変更 → english-docs のリンク、CHANGELOG の冒頭のリンク、PR テンプレートのリンク。
 - english-docs が `docs/` を再編してこの 2 つのファイルの場所を変えたい場合 → このスペックの File Structure Plan と手順書を改める。
 - 実装の順序: このスペックを先に実装し、english-docs はそのあとに実装する（english-docs が release-automation に依存する）。english-docs は、このスペックが作るファイル（`tools/`、`tests/release/`、`CHANGELOG.md`、`docs/releasing.md`、`docs/versioning.md`、ワークフロー）が既にある前提で、`docs/conventions.md` 全体の英語化とその「Directory layout」の節を書く。このスペックは「バージョンについての注意」の節を、まだ日本語のファイルの中で日本語で更新する。
-- CHANGELOG の見出しやリンクの書式の変更 → `ClargsChangelog.cmake` とそのテスト、PR テンプレートの案内。
+- CHANGELOG の見出しやリンクの書式の変更 → `ClineChangelog.cmake` とそのテスト、PR テンプレートの案内。
 
 ## Architecture
 
 ### Existing Architecture Analysis
-- バージョンは `version.h` → `clargs_read_version()` → `project(VERSION)` → `PROJECT_VERSION` → SOVERSION、`CLArgsConfigVersion.cmake`、`clargs.pc` の一方向に流れる。数字の部分の流れは変えず、完全なバージョンの流れを横に足す。
-- `clargs_read_version()` は `cmake -P` からも呼べ、`project()` に依存しない。リリースのスクリプトはこれを再利用し、ヘッダの解析を二重に持たない。
-- CTest のテストは `tests/CMakeLists.txt` が登録し、CI の `quickstart` と `build` の `ctest` がすべて走らせる。`clargs.allocations` のように `cmake -P` のスクリプトをテストとして登録する前例がある。
+- バージョンは `version.h` → `cline_read_version()` → `project(VERSION)` → `PROJECT_VERSION` → SOVERSION、`CLineConfigVersion.cmake`、`cline.pc` の一方向に流れる。数字の部分の流れは変えず、完全なバージョンの流れを横に足す。
+- `cline_read_version()` は `cmake -P` からも呼べ、`project()` に依存しない。リリースのスクリプトはこれを再利用し、ヘッダの解析を二重に持たない。
+- CTest のテストは `tests/CMakeLists.txt` が登録し、CI の `quickstart` と `build` の `ctest` がすべて走らせる。`cline.allocations` のように `cmake -P` のスクリプトをテストとして登録する前例がある。
 - `ci.yml` は全ブランチの push と PR で動き、権限は `contents: read`。
 
 ### Architecture Pattern & Boundary Map
@@ -78,18 +78,18 @@ graph TB
         Changes[tools/ci/changes.cmake]
     end
     subgraph Modules
-        Semver[ClargsSemver.cmake]
-        Changelog[ClargsChangelog.cmake]
-        HeaderWriter[ClargsVersionHeader.cmake]
-        VersionRead[cmake/ClargsVersion.cmake]
+        Semver[ClineSemver.cmake]
+        Changelog[ClineChangelog.cmake]
+        HeaderWriter[ClineVersionHeader.cmake]
+        VersionRead[cmake/ClineVersion.cmake]
     end
     subgraph Data
-        Header[include/clargs/version.h]
+        Header[include/cline/version.h]
         ChangelogFile[CHANGELOG.md]
     end
     subgraph Build
         TopCMake[CMakeLists.txt]
-        Install[cmake/ClargsInstall.cmake]
+        Install[cmake/ClineInstall.cmake]
         Consumer[tests/consumer]
     end
     ReleasePR --> Prepare
@@ -123,7 +123,7 @@ graph TB
 
 | Layer | Choice / Version | Role in Feature | Notes |
 |-------|------------------|-----------------|-------|
-| Library header | C99 | `CLARGS_VERSION_PRERELEASE` の文字列リテラル | 公開関数は足さない |
+| Library header | C99 | `CLINE_VERSION_PRERELEASE` の文字列リテラル | 公開関数は足さない |
 | Build | CMake 3.21+ | バージョンの読み取り、パッケージへの反映 | 既存 |
 | Release scripts | CMake スクリプトモード（`cmake -P`） | 検証、書き換え、ノート、変更の判定 | 新規。`cmake_policy(VERSION 3.21)` |
 | Tests | CTest（`add_test` で `cmake -P` を登録、ラベル `release`） | スクリプトの自動テスト | Naos は使わない |
@@ -140,20 +140,20 @@ graph TB
 └── release-publish.yml       # (新規) リリース PR のマージ（または手動のやり直し）でタグと Release を作る
 tools/
 ├── release/
-│   ├── ClargsSemver.cmake        # SemVer 2.0.0 の解析と優先順位の比較
-│   ├── ClargsChangelog.cmake     # CHANGELOG の解析、Unreleased の移動、リンクの更新、ノートの取り出し
-│   ├── ClargsVersionHeader.cmake # version.h の 4 つのマクロの値の書き換えと、読み直しによる確認
-│   ├── ClargsReadBytes.cmake     # ファイルをバイト単位で読む（CRLF を保つ）。prepare、publish、ClargsVersionHeader が共有する（実装時に追加）
+│   ├── ClineSemver.cmake        # SemVer 2.0.0 の解析と優先順位の比較
+│   ├── ClineChangelog.cmake     # CHANGELOG の解析、Unreleased の移動、リンクの更新、ノートの取り出し
+│   ├── ClineVersionHeader.cmake # version.h の 4 つのマクロの値の書き換えと、読み直しによる確認
+│   ├── ClineReadBytes.cmake     # ファイルをバイト単位で読む（CRLF を保つ）。prepare、publish、ClineVersionHeader が共有する（実装時に追加）
 │   ├── prepare.cmake             # 入口: リリース PR の前の検証と、ヘッダ・CHANGELOG の書き換え
 │   └── publish.cmake             # 入口: マージ後の照合、ノートの作成、Pre-release の判定
 └── ci/
     └── changes.cmake             # 入口: 変更されたファイルの一覧から、文書だけの変更かを判定する
 tests/release/
 ├── ReleaseTestHelpers.cmake      # テスト用のアサーションと、フィクスチャの写しの作成
-├── version_read_test.cmake       # clargs_read_version のプレリリースの読み取り
-├── semver_test.cmake             # ClargsSemver.cmake
-├── changelog_test.cmake          # ClargsChangelog.cmake
-├── version_header_test.cmake     # ClargsVersionHeader.cmake
+├── version_read_test.cmake       # cline_read_version のプレリリースの読み取り
+├── semver_test.cmake             # ClineSemver.cmake
+├── changelog_test.cmake          # ClineChangelog.cmake
+├── version_header_test.cmake     # ClineVersionHeader.cmake
 ├── prepare_test.cmake            # prepare.cmake を子プロセスで走らせ、成功と各失敗を確かめる
 ├── publish_test.cmake            # publish.cmake を子プロセスで走らせる
 ├── changes_test.cmake            # changes.cmake を子プロセスで走らせる
@@ -165,14 +165,14 @@ docs/
 ```
 
 ### Modified Files
-- `include/clargs/version.h` — `#define CLARGS_VERSION_PRERELEASE ""` とその説明のコメントを足す。冒頭のコメントに 4 つ目のマクロの書式を足す。
-- `cmake/ClargsVersion.cmake` — `clargs_read_version(<header> <out-var> [<prerelease-out-var>])`。プレリリースのマクロを常に検査し、3 つ目の引数があれば識別子を返す。
-- `CMakeLists.txt` — プレリリースを読み、`clargs_version_prerelease` と `clargs_version_full` を設定する。`project(VERSION)` は数字のまま。
-- `cmake/ClargsInstall.cmake` — `clargs.pc` の `Version` を完全なバージョンにし、`CLArgsConfig.cmake` に完全なバージョンとプレリリースを渡す。
-- `cmake/clargs.pc.in` — `Version: @clargs_version_full@`。
-- `cmake/CLArgsConfig.cmake.in` — `CLArgs_VERSION_FULL` と `CLArgs_VERSION_PRERELEASE` を設定する。
-- `tests/consumer/CMakeLists.txt`、`tests/consumer/main.c` — パッケージのバージョンの正規表現にプレリリースを許し、識別子をヘッダの `CLARGS_VERSION_PRERELEASE` と比べる。
-- `tests/public/version_test.c` — `CLARGS_VERSION_PRERELEASE` が文字列リテラルとして使えることのテストを足す。
+- `include/cline/version.h` — `#define CLINE_VERSION_PRERELEASE ""` とその説明のコメントを足す。冒頭のコメントに 4 つ目のマクロの書式を足す。
+- `cmake/ClineVersion.cmake` — `cline_read_version(<header> <out-var> [<prerelease-out-var>])`。プレリリースのマクロを常に検査し、3 つ目の引数があれば識別子を返す。
+- `CMakeLists.txt` — プレリリースを読み、`cline_version_prerelease` と `cline_version_full` を設定する。`project(VERSION)` は数字のまま。
+- `cmake/ClineInstall.cmake` — `cline.pc` の `Version` を完全なバージョンにし、`CLineConfig.cmake` に完全なバージョンとプレリリースを渡す。
+- `cmake/cline.pc.in` — `Version: @cline_version_full@`。
+- `cmake/CLineConfig.cmake.in` — `CLine_VERSION_FULL` と `CLine_VERSION_PRERELEASE` を設定する。
+- `tests/consumer/CMakeLists.txt`、`tests/consumer/main.c` — パッケージのバージョンの正規表現にプレリリースを許し、識別子をヘッダの `CLINE_VERSION_PRERELEASE` と比べる。
+- `tests/public/version_test.c` — `CLINE_VERSION_PRERELEASE` が文字列リテラルとして使えることのテストを足す。
 - `tests/CMakeLists.txt` — `tests/release/*_test.cmake` を `release.<name>` の名前、`release` のラベルで登録する。
 - `docs/conventions.md` — 「バージョンについての注意」の節だけ。プレリリースのマクロの書式、パッケージでの扱い、`docs/versioning.md` と `docs/releasing.md` への案内を足す。
 
@@ -254,40 +254,40 @@ flowchart LR
 | 1.4 | プレリリースの意味 | VersioningDoc | — | — |
 | 1.5 | SECURITY.md と一致 | VersioningDoc | — | — |
 | 1.6 | 利用者・開発者からのリンク | VersioningDoc, ChangelogFile, ConventionsVersionNotes | english-docs のリンク | — |
-| 2.1 | ヘッダにプレリリース | VersionHeader | `CLARGS_VERSION_PRERELEASE` | — |
-| 2.2 | ヘッダだけから読む | VersionReader, PackageVersion | `clargs_read_version` | — |
-| 2.3 | パッケージに完全な版 | PackageVersion | `CLArgs_VERSION_FULL`, pc `Version` | — |
+| 2.1 | ヘッダにプレリリース | VersionHeader | `CLINE_VERSION_PRERELEASE` | — |
+| 2.2 | ヘッダだけから読む | VersionReader, PackageVersion | `cline_read_version` | — |
+| 2.3 | パッケージに完全な版 | PackageVersion | `CLine_VERSION_FULL`, pc `Version` | — |
 | 2.4 | 正式版は今と同じ形 | PackageVersion | 同上 | — |
 | 2.5 | 互換判定と SOVERSION は数字 | PackageVersion | `PROJECT_VERSION` | — |
-| 2.6 | 数値の意味を変えない | VersionHeader | `CLARGS_VERSION_NUMBER` | — |
-| 2.7 | 不正な識別子で構成失敗 | VersionReader | `clargs_read_version` | — |
+| 2.6 | 数値の意味を変えない | VersionHeader | `CLINE_VERSION_NUMBER` | — |
+| 2.7 | 不正な識別子で構成失敗 | VersionReader | `cline_read_version` | — |
 | 2.8 | consumer check が合格 | ConsumerCheck | — | CI |
 | 3.1 | Keep a Changelog と Unreleased | ChangelogFile | CHANGELOG の書式 | — |
 | 3.2 | 見出しと分類 | ChangelogFile, ChangelogModule | 同上 | — |
-| 3.3 | 比較リンク | ChangelogFile, ChangelogModule | `clargs_changelog_promote` | リリース PR |
+| 3.3 | 比較リンク | ChangelogFile, ChangelogModule | `cline_changelog_promote` | リリース PR |
 | 3.4 | 0.1.0 の内容を Unreleased に | ChangelogFile | — | — |
 | 3.5 | 冒頭の宣言とリンク | ChangelogFile | — | — |
 | 3.6 | 記録の規則 | ChangelogFile, ReleasingDoc | — | — |
 | 4.1 | ブランチと PR | ReleasePRWorkflow | `release/v<V>` | リリース PR |
-| 4.2 | ヘッダの書き換え | PrepareScript, VersionHeaderWriter | `clargs_version_header_write` | リリース PR |
-| 4.3 | Unreleased の移動 | PrepareScript, ChangelogModule | `clargs_changelog_promote` | リリース PR |
+| 4.2 | ヘッダの書き換え | PrepareScript, VersionHeaderWriter | `cline_version_header_write` | リリース PR |
+| 4.3 | Unreleased の移動 | PrepareScript, ChangelogModule | `cline_changelog_promote` | リリース PR |
 | 4.4 | PR の本文 | ReleasePRWorkflow | PR 本文の雛形 | リリース PR |
 | 4.5 | CI の起動 | ReleasePRWorkflow, CIWorkflow | `gh workflow run` | リリース PR |
 | 4.6 | 2 ファイルだけ変える | PrepareScript, ReleasePRWorkflow | — | リリース PR |
 | 4.7 | 同時に走らない | ReleasePRWorkflow | `concurrency` | — |
-| 5.1 | SemVer の書式 | PrepareScript, SemverModule | `clargs_semver_parse` | リリース PR |
+| 5.1 | SemVer の書式 | PrepareScript, SemverModule | `cline_semver_parse` | リリース PR |
 | 5.2 | 0〜255 | PrepareScript, SemverModule | 同上 | リリース PR |
-| 5.3 | タグ以下を拒む | PrepareScript, SemverModule | `clargs_semver_compare` | リリース PR |
+| 5.3 | タグ以下を拒む | PrepareScript, SemverModule | `cline_semver_compare` | リリース PR |
 | 5.4 | ヘッダ未満を拒む | PrepareScript, SemverModule | 同上 | リリース PR |
 | 5.5 | 未タグのヘッダ版は受け付ける | PrepareScript | — | リリース PR |
 | 5.6 | タグ・ブランチの重複 | PrepareScript, ReleasePRWorkflow | — | リリース PR |
-| 5.7 | Unreleased が空・形が違う | PrepareScript, ChangelogModule | `clargs_changelog_parse` | リリース PR |
+| 5.7 | Unreleased が空・形が違う | PrepareScript, ChangelogModule | `cline_changelog_parse` | リリース PR |
 | 5.8 | main 以外で拒む | ReleasePRWorkflow | — | リリース PR |
 | 6.1 | 注釈付きタグ | PublishWorkflow | `git tag -a` | 公開 |
 | 6.2 | 同じ実行で Release | PublishWorkflow | `gh release create` | 公開 |
-| 6.3 | CHANGELOG からノート | PublishScript, ChangelogModule | `clargs_changelog_notes` | 公開 |
+| 6.3 | CHANGELOG からノート | PublishScript, ChangelogModule | `cline_changelog_notes` | 公開 |
 | 6.4 | Pre-release、Latest にしない | PublishScript, PublishWorkflow | `prerelease` 出力 | 公開 |
-| 6.5 | 先行プレリリースへの参照 | PublishScript, ChangelogModule, SemverModule | `clargs_changelog_notes` | 公開 |
+| 6.5 | 先行プレリリースへの参照 | PublishScript, ChangelogModule, SemverModule | `cline_changelog_notes` | 公開 |
 | 6.6 | ソースだけ | PublishWorkflow | — | 公開 |
 | 6.7 | 対象外の PR は無視 | PublishWorkflow | job の `if` | 公開 |
 | 6.8 | 照合の失敗 | PublishScript | — | 公開 |
@@ -314,7 +314,7 @@ flowchart LR
 | 9.1 | 手元で実行できる | PrepareScript, PublishScript, ChangesScript | 入口のスクリプトの引数 | — |
 | 9.2 | 成功と失敗のテスト | ReleaseTests | — | — |
 | 9.3 | 既存の CI の中で走る | ReleaseTests | `tests/CMakeLists.txt` | CI |
-| 9.4 | 指定した場所だけ書き換える | PrepareScript | `CLARGS_SOURCE_DIR` | — |
+| 9.4 | 指定した場所だけ書き換える | PrepareScript | `CLINE_SOURCE_DIR` | — |
 | 10.1 | 英語 | 全成果物 | — | — |
 | 10.2 | `.kiro/` に触れない | 全成果物 | — | — |
 | 10.3 | README/CONTRIBUTING を変えない | — （境界） | — | — |
@@ -348,7 +348,7 @@ flowchart LR
 
 ### バージョンの表現
 
-#### VersionHeader（`include/clargs/version.h`）
+#### VersionHeader（`include/cline/version.h`）
 
 | Field | Detail |
 |-------|--------|
@@ -362,12 +362,12 @@ flowchart LR
   ```c
   /* The pre-release identifiers of the version without the leading hyphen, such as "rc.1".
      An empty string for a release. */
-  #define CLARGS_VERSION_PRERELEASE ""
+  #define CLINE_VERSION_PRERELEASE ""
   ```
 - 不変条件: 値は 1 つの文字列リテラル。中身は空、または SemVer 2.0.0 のプレリリースの識別子（`.` で区切った `[0-9A-Za-z-]+`、数字だけの識別子は先頭に 0 を付けない）。
-- `CLARGS_MAKE_VERSION`、`CLARGS_VERSION_NUMBER`、`clargs_version()` は変えない（2.6）。
+- `CLINE_MAKE_VERSION`、`CLINE_VERSION_NUMBER`、`cline_version()` は変えない（2.6）。
 
-#### VersionReader（`cmake/ClargsVersion.cmake`）
+#### VersionReader（`cmake/ClineVersion.cmake`）
 
 | Field | Detail |
 |-------|--------|
@@ -378,15 +378,15 @@ flowchart LR
 
 ##### Service Interface
 ```cmake
-# clargs_read_version(<header-path> <out-var> [<prerelease-out-var>])
+# cline_read_version(<header-path> <out-var> [<prerelease-out-var>])
 #   <out-var>            "<major>.<minor>.<patch>"（今と同じ）
 #   <prerelease-out-var> 識別子（ハイフンなし）。正式版では空文字列
 ```
 - Preconditions: 引数は 2 つまたは 3 つ。それ以外は FATAL_ERROR。
-- Postconditions: 3 つの数字のマクロに加え、`CLARGS_VERSION_PRERELEASE` が 1 行の `#define CLARGS_VERSION_PRERELEASE "<id>"` の形でちょうど 1 回あり、`<id>` が空か正しい識別子であること。違反はすべて集めて、ヘッダのパスとマクロの名前を示す 1 つの FATAL_ERROR にする（2.7）。3 つ目の引数を渡さない呼び出しも同じ検査をする。
+- Postconditions: 3 つの数字のマクロに加え、`CLINE_VERSION_PRERELEASE` が 1 行の `#define CLINE_VERSION_PRERELEASE "<id>"` の形でちょうど 1 回あり、`<id>` が空か正しい識別子であること。違反はすべて集めて、ヘッダのパスとマクロの名前を示す 1 つの FATAL_ERROR にする（2.7）。3 つ目の引数を渡さない呼び出しも同じ検査をする。
 - Invariants: `project()` に依存しない（`cmake -P` から呼べる）。コメントの中のマクロは数えない（既存の規則）。
 
-#### PackageVersion（`CMakeLists.txt`、`cmake/ClargsInstall.cmake`、`cmake/clargs.pc.in`、`cmake/CLArgsConfig.cmake.in`）
+#### PackageVersion（`CMakeLists.txt`、`cmake/ClineInstall.cmake`、`cmake/cline.pc.in`、`cmake/CLineConfig.cmake.in`）
 
 | Field | Detail |
 |-------|--------|
@@ -396,10 +396,10 @@ flowchart LR
 **Contracts**: State [x]
 
 ##### State Management
-- `CMakeLists.txt`: `clargs_read_version(... clargs_version clargs_version_prerelease)`。`clargs_version_full` は、識別子が空なら `clargs_version`、空でなければ `${clargs_version}-${clargs_version_prerelease}`。`project(CLArgs VERSION ${clargs_version})` は変えない。
-- `clargs.pc`: `Version: @clargs_version_full@`（2.3、2.4）。
-- `CLArgsConfig.cmake`: `set(CLArgs_VERSION_FULL "@clargs_version_full@")`、`set(CLArgs_VERSION_PRERELEASE "@clargs_version_prerelease@")`。`CLArgs_VERSION`（互換判定から来る値）は数字のまま。
-- `CLArgsConfigVersion.cmake` と SOVERSION は `PROJECT_VERSION` から作り、規則を変えない（2.5）。
+- `CMakeLists.txt`: `cline_read_version(... cline_version cline_version_prerelease)`。`cline_version_full` は、識別子が空なら `cline_version`、空でなければ `${cline_version}-${cline_version_prerelease}`。`project(CLine VERSION ${cline_version})` は変えない。
+- `cline.pc`: `Version: @cline_version_full@`（2.3、2.4）。
+- `CLineConfig.cmake`: `set(CLine_VERSION_FULL "@cline_version_full@")`、`set(CLine_VERSION_PRERELEASE "@cline_version_prerelease@")`。`CLine_VERSION`（互換判定から来る値）は数字のまま。
+- `CLineConfigVersion.cmake` と SOVERSION は `PROJECT_VERSION` から作り、規則を変えない（2.5）。
 - add_subdirectory / FetchContent で取り込んだ場合のための変数は足さない（要件がない）。
 
 #### ConsumerCheck（`tests/consumer/CMakeLists.txt`、`tests/consumer/main.c`）
@@ -412,16 +412,16 @@ flowchart LR
 **Contracts**: Batch [x]
 
 ##### Batch / Job Contract
-- find_package: `CLArgs_VERSION` は今の正規表現で検査し、互換の検査も今のまま。加えて `CLArgs_VERSION_FULL` を `^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z.-]+))?$` で分け、プレリリースの部分を `CONSUMER_PACKAGE_VERSION_PRERELEASE="<id>"` で `main.c` に渡す。
-- pkg_config: `CLARGS_VERSION`（pkg-config の `Version`）を同じ正規表現で分ける。
-- `main.c`: `CONSUMER_PACKAGE_VERSION_PRERELEASE` が定義されていれば、`strcmp` で `CLARGS_VERSION_PRERELEASE` と比べ、違えば両方を表示して 1 を返す。
+- find_package: `CLine_VERSION` は今の正規表現で検査し、互換の検査も今のまま。加えて `CLine_VERSION_FULL` を `^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z.-]+))?$` で分け、プレリリースの部分を `CONSUMER_PACKAGE_VERSION_PRERELEASE="<id>"` で `main.c` に渡す。
+- pkg_config: `CLINE_VERSION`（pkg-config の `Version`）を同じ正規表現で分ける。
+- `main.c`: `CONSUMER_PACKAGE_VERSION_PRERELEASE` が定義されていれば、`strcmp` で `CLINE_VERSION_PRERELEASE` と比べ、違えば両方を表示して 1 を返す。
 - 正式版のヘッダでは、識別子は空同士で一致し、今と同じ結果になる（2.8）。手順（`run.cmake`）と CI のステップは変えない。
 
 ### リリースの処理（`tools/release/`、`tools/ci/`）
 
 共通の規則: すべて `cmake_minimum_required(VERSION 3.21)` 相当の方針で `cmake -P` から動く。ネットワーク、`git`、`gh` を呼ばない。エラーは `message(FATAL_ERROR "error: <理由>")` で、理由は英語の 1 文以上（どの値がどの規則に反したか）。モジュールは `include_guard(GLOBAL)`。
 
-#### SemverModule（`tools/release/ClargsSemver.cmake`）
+#### SemverModule（`tools/release/ClineSemver.cmake`）
 
 | Field | Detail |
 |-------|--------|
@@ -432,7 +432,7 @@ flowchart LR
 
 ##### Service Interface
 ```cmake
-# clargs_semver_parse(<version> <prefix>)
+# cline_semver_parse(<version> <prefix>)
 #   Sets <prefix>_VALID (TRUE/FALSE), <prefix>_ERROR (reason or ""),
 #        <prefix>_MAJOR, <prefix>_MINOR, <prefix>_PATCH (decimal strings),
 #        <prefix>_PRERELEASE (identifiers without "-", or ""),
@@ -440,13 +440,13 @@ flowchart LR
 #   Accepts only <major>.<minor>.<patch>[-<pre-release>]; build metadata ("+...") is invalid.
 #   Each of major/minor/patch must be 0-255 without leading zeros.
 #
-# clargs_semver_compare(<a> <b> <out-var>)
+# cline_semver_compare(<a> <b> <out-var>)
 #   <out-var> = -1, 0 or 1 by SemVer 2.0.0 precedence. Both must be valid (FATAL_ERROR otherwise).
 ```
 - 比較の規則: 数字の部分を数値で比べる → 片方だけプレリリースならそちらが小さい → 識別子を順に、数字だけ同士は数値（桁数→文字列の順で比べ、`math()` の桁あふれを避ける）、英数字同士は ASCII の順、数字は英数字より小さい → 共通部分が等しければ識別子の少ない方が小さい。
-- 0〜255 の検査は CLArgs のヘッダの制約であり、`clargs_semver_parse` の中で行う（5.2）。
+- 0〜255 の検査は CLine のヘッダの制約であり、`cline_semver_parse` の中で行う（5.2）。
 
-#### ChangelogModule（`tools/release/ClargsChangelog.cmake`）
+#### ChangelogModule（`tools/release/ClineChangelog.cmake`）
 
 | Field | Detail |
 |-------|--------|
@@ -457,17 +457,17 @@ flowchart LR
 
 ##### Service Interface
 ```cmake
-# clargs_changelog_parse(<text> <prefix>)
+# cline_changelog_parse(<text> <prefix>)
 #   Sets <prefix>_VALID, <prefix>_ERROR,
 #        <prefix>_VERSIONS (list of released versions, newest first, as in the file),
 #        <prefix>_UNRELEASED_ENTRIES (number of list items under [Unreleased])
 #
-# clargs_changelog_promote(<text> <version> <date> <repo-url> <out-var>)
+# cline_changelog_promote(<text> <version> <date> <repo-url> <out-var>)
 #   Returns the text with the body of [Unreleased] moved to "## [<version>] - <date>",
 #   [Unreleased] left empty, and the link definitions updated.
 #   FATAL_ERROR if the text is not valid, [Unreleased] has no entry, or <version> is already listed.
 #
-# clargs_changelog_notes(<text> <version> <repo-url> <out-var>)
+# cline_changelog_notes(<text> <version> <repo-url> <out-var>)
 #   Returns the body of the section of <version> (without its heading), followed, for a release
 #   without pre-release identifiers, by a reference to the pre-releases of the same
 #   <major>.<minor>.<patch> listed right below it. FATAL_ERROR if the section is missing.
@@ -478,7 +478,7 @@ flowchart LR
   `This release also includes the changes in the pre-releases [v<pre1>](<repo>/releases/tag/v<pre1>), ... .`
 - 本文の範囲: 見出しの次の行から、次の `## ` の見出しまたはリンク定義（`^\[[^]]+\]: `）の行の前まで。前後の空行は除く。
 
-#### VersionHeaderWriter（`tools/release/ClargsVersionHeader.cmake`）
+#### VersionHeaderWriter（`tools/release/ClineVersionHeader.cmake`）
 
 | Field | Detail |
 |-------|--------|
@@ -489,11 +489,11 @@ flowchart LR
 
 ##### Service Interface
 ```cmake
-# clargs_version_header_render(<text> <major> <minor> <patch> <prerelease> <out-var>)
-#   Replaces the value on each of the four "#define CLARGS_VERSION_<PART>" lines; keeps every other byte.
+# cline_version_header_render(<text> <major> <minor> <patch> <prerelease> <out-var>)
+#   Replaces the value on each of the four "#define CLINE_VERSION_<PART>" lines; keeps every other byte.
 #   FATAL_ERROR if a line is not found exactly once.
 ```
-- 書いたあと（呼び出し側の `prepare.cmake`）、`clargs_read_version()` で読み直して、渡した値と一致することを確かめる。
+- 書いたあと（呼び出し側の `prepare.cmake`）、`cline_read_version()` で読み直して、渡した値と一致することを確かめる。
 
 #### PrepareScript（`tools/release/prepare.cmake`）
 
@@ -510,22 +510,22 @@ flowchart LR
 
   | Variable | Required | Meaning |
   |----------|----------|---------|
-  | `CLARGS_RELEASE_VERSION` | yes | リリースするバージョン（例 `0.2.0-rc.1`） |
-  | `CLARGS_RELEASE_DATE` | yes | `YYYY-MM-DD`（ワークフローは `date -u +%F`） |
-  | `CLARGS_RELEASE_REPO_URL` | yes | `https://github.com/<owner>/<repo>` |
-  | `CLARGS_SOURCE_DIR` | yes | `include/clargs/version.h` と `CHANGELOG.md` を持つ根（9.4） |
-  | `CLARGS_RELEASE_TAGS_FILE` | yes | 既存のタグの一覧（1 行に 1 つ。空のファイル可）。`v` で始まり、残りが正しい SemVer のものだけを使う |
-  | `CLARGS_RELEASE_OUTPUT` | no | 結果を `key=value` の行で追記するファイル（ワークフローの `$GITHUB_OUTPUT`） |
-  | `CLARGS_RELEASE_CHECK_ONLY` | no | 真なら検証だけでファイルを書かない |
+  | `CLINE_RELEASE_VERSION` | yes | リリースするバージョン（例 `0.2.0-rc.1`） |
+  | `CLINE_RELEASE_DATE` | yes | `YYYY-MM-DD`（ワークフローは `date -u +%F`） |
+  | `CLINE_RELEASE_REPO_URL` | yes | `https://github.com/<owner>/<repo>` |
+  | `CLINE_SOURCE_DIR` | yes | `include/cline/version.h` と `CHANGELOG.md` を持つ根（9.4） |
+  | `CLINE_RELEASE_TAGS_FILE` | yes | 既存のタグの一覧（1 行に 1 つ。空のファイル可）。`v` で始まり、残りが正しい SemVer のものだけを使う |
+  | `CLINE_RELEASE_OUTPUT` | no | 結果を `key=value` の行で追記するファイル（ワークフローの `$GITHUB_OUTPUT`） |
+  | `CLINE_RELEASE_CHECK_ONLY` | no | 真なら検証だけでファイルを書かない |
 
 - Validation（この順、最初に見つかった違反で止まる。どれもファイルを書く前）:
   1. 必須の入力がある。日付が `YYYY-MM-DD`。
-  2. `clargs_semver_parse`（5.1、5.2）。
+  2. `cline_semver_parse`（5.1、5.2）。
   3. タグの一覧に `v<V>` がない（5.6）。
   4. すべての既存のリリースタグ `T` について `V > T`（5.3）。
   5. ヘッダのバージョン `H`（完全な形）について `V >= H`（5.4）。`V == H` は、`v<H>` のタグがないときだけ受け付ける（5.5。`v<H>` があれば 3 か 4 で既に拒まれている）。
-  6. `clargs_changelog_parse` が有効で、`Unreleased` の項目が 1 つ以上、`V` がまだ載っていない（5.7）。
-- Output: `version.h` と `CHANGELOG.md` だけを書き換える（4.6）。ヘッダを読み直して確かめる。`CLARGS_RELEASE_OUTPUT` に `version=<V>`、`tag=v<V>`、`prerelease=true|false` を追記する。標準出力に何を変えたかを書く。
+  6. `cline_changelog_parse` が有効で、`Unreleased` の項目が 1 つ以上、`V` がまだ載っていない（5.7）。
+- Output: `version.h` と `CHANGELOG.md` だけを書き換える（4.6）。ヘッダを読み直して確かめる。`CLINE_RELEASE_OUTPUT` に `version=<V>`、`tag=v<V>`、`prerelease=true|false` を追記する。標準出力に何を変えたかを書く。
 - Idempotency & recovery: 書き換えは 2 つのファイルの新しい中身をすべて作ってから書く。同じ入力で 2 回走らせると 2 回目は 6 で止まる（`V` が載っている）。
 
 #### PublishScript（`tools/release/publish.cmake`）
@@ -538,9 +538,9 @@ flowchart LR
 **Contracts**: Batch [x]
 
 ##### Batch / Job Contract
-- Input: `CLARGS_RELEASE_VERSION`、`CLARGS_RELEASE_REPO_URL`、`CLARGS_SOURCE_DIR`、`CLARGS_RELEASE_NOTES`（ノートを書くファイル）、`CLARGS_RELEASE_OUTPUT`（任意）。
+- Input: `CLINE_RELEASE_VERSION`、`CLINE_RELEASE_REPO_URL`、`CLINE_SOURCE_DIR`、`CLINE_RELEASE_NOTES`（ノートを書くファイル）、`CLINE_RELEASE_OUTPUT`（任意）。
 - Validation: バージョンが正しい。ヘッダの完全なバージョンが `V` と等しい。CHANGELOG が有効で、最新の版（`_VERSIONS` の先頭）が `V`（6.8）。
-- Output: `CLARGS_RELEASE_NOTES` にノート（`clargs_changelog_notes`）を書く。ノートが空なら失敗する。`CLARGS_RELEASE_OUTPUT` に `prerelease=true|false`、`title=v<V>` を追記する（6.4）。
+- Output: `CLINE_RELEASE_NOTES` にノート（`cline_changelog_notes`）を書く。ノートが空なら失敗する。`CLINE_RELEASE_OUTPUT` に `prerelease=true|false`、`title=v<V>` を追記する（6.4）。
 
 #### ChangesScript（`tools/ci/changes.cmake`）
 
@@ -552,13 +552,13 @@ flowchart LR
 **Contracts**: Batch [x]
 
 ##### Batch / Job Contract
-- Input: `CLARGS_CHANGED_FILES`（1 行に 1 つのパスのファイル。なくてもよい）、`CLARGS_CHANGES_OUTPUT`（任意）。
+- Input: `CLINE_CHANGED_FILES`（1 行に 1 つのパスのファイル。なくてもよい）、`CLINE_CHANGES_OUTPUT`（任意）。
 - 規則: 文書のファイルは次のどれかに当たるパス。
   - 拡張子が `.md` のファイルのうち、リポジトリの根の直下、`docs/` の下、`.github/` の下にあるもの（7.10。`tests/release/fixtures/*.md` などの CHANGELOG のフィクスチャはテストの入力なので文書とみなさない。ほかの階層の `.md` も文書とみなさない）
   - `docs/` の下のファイル
   - `LICENSE`
   - `.github/ISSUE_TEMPLATE/` の下のファイル
-- Output: 一覧のファイルがなく、空で、または文書でないパスが 1 つでもあれば `docs_only=false`。すべてが文書なら `docs_only=true`（7.4）。判定と、文書でなかった最初のパスを標準出力に書く。`CLARGS_CHANGES_OUTPUT` に `docs_only=<value>` を追記する。
+- Output: 一覧のファイルがなく、空で、または文書でないパスが 1 つでもあれば `docs_only=false`。すべてが文書なら `docs_only=true`（7.4）。判定と、文書でなかった最初のパスを標準出力に書く。`CLINE_CHANGES_OUTPUT` に `docs_only=<value>` を追記する。
 
 ### ワークフロー
 
@@ -582,10 +582,10 @@ flowchart LR
   2. `actions/checkout@v7`（`fetch-depth: 0`、タグを含む）。
   3. `git ls-remote --exit-code --heads origin "release/v$VERSION"` が見つけたら失敗（5.6）。
   4. `git tag --list 'v*' > "$RUNNER_TEMP/tags.txt"`。
-  5. `cmake -D ... -P tools/release/prepare.cmake`（`CLARGS_RELEASE_OUTPUT=$GITHUB_OUTPUT`、`CLARGS_RELEASE_REPO_URL=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY`）。
-  6. `git switch -c "release/v$VERSION"`、`git add include/clargs/version.h CHANGELOG.md`、`git status --porcelain` でほかの変更がないことを確かめる（4.6）、コミット `Release v<V>`、push。
+  5. `cmake -D ... -P tools/release/prepare.cmake`（`CLINE_RELEASE_OUTPUT=$GITHUB_OUTPUT`、`CLINE_RELEASE_REPO_URL=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY`）。
+  6. `git switch -c "release/v$VERSION"`、`git add include/cline/version.h CHANGELOG.md`、`git status --porcelain` でほかの変更がないことを確かめる（4.6）、コミット `Release v<V>`、push。
   7. `gh pr create --base main --head release/v<V> --title "Release v<V>" --body-file <本文>`（4.1、4.4）。本文の雛形:
-     - 1 行目: `This pull request releases CLArgs v<V>.`（プレリリースなら `This is a pre-release.` を足す）
+     - 1 行目: `This pull request releases CLine v<V>.`（プレリリースなら `This is a pre-release.` を足す）
      - `## What this pull request changes`: version.h と CHANGELOG の 2 点。
      - `## What happens on merge`: タグ `v<V>` と GitHub Release（Pre-release かどうか）ができる。
      - `## Before merging`: CHANGELOG の節を読み直す、`CI result` が通っている、日付が遅れたら直してよい。
@@ -612,7 +612,7 @@ flowchart LR
   1. Resolve: PR のイベントなら `VERSION = head.ref` から `release/v` を除いたもの、`SHA = pull_request.merge_commit_sha`。dispatch なら `github.ref` が `main` であることを確かめ、`gh pr list --state merged --base main --head "release/v$VERSION" --json mergeCommit` の 1 件から `SHA` を得る（なければ失敗）。
   2. `actions/checkout@v7`（`ref: SHA`、`fetch-depth: 0`）。
   3. `cmake -P tools/release/publish.cmake`（ノートは `$RUNNER_TEMP/notes.md`）（6.3、6.4、6.8）。
-  4. Tag: `git ls-remote --tags origin "refs/tags/v$VERSION"` で調べる。なければ `git tag -a "v$VERSION" -m "CLArgs v$VERSION" "$SHA"` と push（6.1）。あってその指すコミット（`^{}` で剥がした値）が `SHA` なら飛ばす。別なら失敗（6.9）。
+  4. Tag: `git ls-remote --tags origin "refs/tags/v$VERSION"` で調べる。なければ `git tag -a "v$VERSION" -m "CLine v$VERSION" "$SHA"` と push（6.1）。あってその指すコミット（`^{}` で剥がした値）が `SHA` なら飛ばす。別なら失敗（6.9）。
   5. Release: `gh release view "v$VERSION"` が見つけたら飛ばす（6.10）。なければ `gh release create "v$VERSION" --verify-tag --title "v$VERSION" --notes-file notes.md`、プレリリースなら `--prerelease --latest=false`（6.2、6.4）。資産のファイルは渡さない（6.6）。
 - Idempotency & recovery: タグと Release のどちらも「あれば確かめて飛ばす」。失敗した実行の再実行、またはワークフローを直したあとの dispatch で、足りないものだけを作る（6.10）。
 - `$GITHUB_STEP_SUMMARY` に、作ったもの・飛ばしたもの・失敗の理由を書く。
@@ -635,7 +635,7 @@ flowchart LR
   - `push`: `before` が全部 0、またはそのコミットが取得できなければ一覧を作らない。そうでなければ `git diff --name-only "$BEFORE" "$GITHUB_SHA"`。
   - `workflow_dispatch`: 一覧を作らない（7.5）。
   - `git diff` が失敗したら一覧を作らない（7.4）。
-  - そのあと `cmake -P tools/ci/changes.cmake`（`CLARGS_CHANGES_OUTPUT=$GITHUB_OUTPUT`）。出力 `docs_only`。
+  - そのあと `cmake -P tools/ci/changes.cmake`（`CLINE_CHANGES_OUTPUT=$GITHUB_OUTPUT`）。出力 `docs_only`。
 - `quickstart`、`build`: `needs: changes`、`if: needs.changes.outputs.docs_only != 'true'` だけを足す。名前、matrix、steps は変えない（7.8）。
 - Job `result`（`name: CI result`、`ubuntu-latest`、`needs: [changes, quickstart, build]`、`if: always()`）: 1 つの bash のステップで、上の「CI の判定と集約」の規則を評価し、ジョブの結果と理由を `$GITHUB_STEP_SUMMARY` に書き、成功なら 0、失敗なら 1 で終わる（7.6、7.7）。
 
@@ -651,7 +651,7 @@ flowchart LR
 **Contracts**: Batch [x]
 
 ##### Batch / Job Contract
-- 各 `*_test.cmake` は `cmake -D CLARGS_SOURCE_ROOT=<repo> -D CLARGS_TEST_WORK_DIR=<dir> -P <file>` で走り、失敗した確認をすべて表示して FATAL_ERROR で終わる。成功なら 0。確認が 1 つも走らなければ失敗する（Naos の規則に合わせる）。
+- 各 `*_test.cmake` は `cmake -D CLINE_SOURCE_ROOT=<repo> -D CLINE_TEST_WORK_DIR=<dir> -P <file>` で走り、失敗した確認をすべて表示して FATAL_ERROR で終わる。成功なら 0。確認が 1 つも走らなければ失敗する（Naos の規則に合わせる）。
 - `tests/CMakeLists.txt` で `release.version_read`、`release.semver`、`release.changelog`、`release.version_header`、`release.prepare`、`release.publish`、`release.changes` として登録し、`LABELS release` を付ける。作業ディレクトリは `${CMAKE_CURRENT_BINARY_DIR}/release/<name>`。静的・動的のどちらの構成でも登録する（ビルドに依存しない）。
 - 入口のスクリプトのテストは、フィクスチャを作業ディレクトリに写してから子プロセス（`execute_process(COMMAND ${CMAKE_COMMAND} ... -P ...)`）で走らせ、終了コード、メッセージの一部、ファイルの中身（失敗のときは変わっていないこと）を確かめる。
 
@@ -675,7 +675,7 @@ flowchart LR
 | Intent | 利用者と開発者のためのバージョン方針 |
 | Requirements | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 10.7 |
 
-- 節: Version numbers and tags（1.1）／Compatibility before and after 1.0（1.2。`find_package` の互換判定と SOVERSION との対応）／What counts as a breaking change（1.3）／Pre-releases（1.4。`-rc.N` など、支援しない、`find_package(CLArgs 0.2)` が `0.2.0-rc.1` も見つけること、pkg-config がプレリリースを正式版より新しいとみなすこと）／Supported versions（1.5。SECURITY.md へのリンクで支援の方針を述べ、内容を繰り返さない）／Checking the version in code（`CLARGS_VERSION_*`、`CLARGS_VERSION_PRERELEASE`、`clargs_version()`、`CLArgs_VERSION_FULL`、pkg-config の `Version`）。
+- 節: Version numbers and tags（1.1）／Compatibility before and after 1.0（1.2。`find_package` の互換判定と SOVERSION との対応）／What counts as a breaking change（1.3）／Pre-releases（1.4。`-rc.N` など、支援しない、`find_package(CLine 0.2)` が `0.2.0-rc.1` も見つけること、pkg-config がプレリリースを正式版より新しいとみなすこと）／Supported versions（1.5。SECURITY.md へのリンクで支援の方針を述べ、内容を繰り返さない）／Checking the version in code（`CLINE_VERSION_*`、`CLINE_VERSION_PRERELEASE`、`cline_version()`、`CLine_VERSION_FULL`、pkg-config の `Version`）。
 - 1.6: CHANGELOG の冒頭と `docs/conventions.md` の節からリンクする。README と CONTRIBUTING からのリンクは english-docs が張る。
 
 #### ReleasingDoc（`docs/releasing.md`、英語）
@@ -693,7 +693,7 @@ flowchart LR
   5. Making a release / Making a pre-release（8.1）— 起動の手順、入力の例、検証で止まる条件、PR の確認、マージ、できあがるもの。
   6. When the release PR shows no CI result（8.5）— Actions のタブから `CI` を `release/v<V>` で手動起動する、または PR を閉じて開き直す。
   7. Recovering from failures（8.4）— 検証で止まった（直して起動し直す）／PR を取り下げる（PR を閉じ、ブランチを消す）／push の後で PR の作成に失敗した（ブランチを消して起動し直す）／タグや Release の作成が途中で失敗した（失敗した実行を再実行、または `Release` を `version` を渡して手動起動）／誤って出したリリース（Release を消し、タグを消し、次のパッチまたはプレリリースで出し直す。公開したタグは使い回さない）。
-  8. Rehearsing the release process（8.6）— フォークで Actions を有効にし、試験用のプレリリース（例 `0.2.0-rehearsal.1`。ヘッダの版 0.1.0 より大きい版でなければ要件 5.4 の検証で止まる。同じ理由で、ヘッダにある版そのもののプレリリース（例 `0.1.0-rc.1`）は出せないことも手順書に書く）で全体を通す。確かめる項目: 検証の失敗の例、PR の内容、`CI result` が PR に示され required check を満たすこと、タグと Pre-release、やり直しの dispatch。終わったらフォークのタグと Release を消す。手元では `cmake -P tools/release/prepare.cmake`（`CLARGS_RELEASE_CHECK_ONLY` と作業ツリーの写し）で試せること。最初の本番のリリースの前の注意（8.8）: README.md の FetchContent の例が、これから作るタグを指していることを確かめる（手順書の英文はスペック名に触れず、README の今の内容に依らない形で書く。例: "Before the first release, check that the FetchContent example in README.md pins the tag you are about to create."）。違う場合は、リリース PR とは別の PR で README を先に直す（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）。
+  8. Rehearsing the release process（8.6）— フォークで Actions を有効にし、試験用のプレリリース（例 `0.2.0-rehearsal.1`。ヘッダの版 0.1.0 より大きい版でなければ要件 5.4 の検証で止まる。同じ理由で、ヘッダにある版そのもののプレリリース（例 `0.1.0-rc.1`）は出せないことも手順書に書く）で全体を通す。確かめる項目: 検証の失敗の例、PR の内容、`CI result` が PR に示され required check を満たすこと、タグと Pre-release、やり直しの dispatch。終わったらフォークのタグと Release を消す。手元では `cmake -P tools/release/prepare.cmake`（`CLINE_RELEASE_CHECK_ONLY` と作業ツリーの写し）で試せること。最初の本番のリリースの前の注意（8.8）: README.md の FetchContent の例が、これから作るタグを指していることを確かめる（手順書の英文はスペック名に触れず、README の今の内容に依らない形で書く。例: "Before the first release, check that the FetchContent example in README.md pins the tag you are about to create."）。違う場合は、リリース PR とは別の PR で README を先に直す（リリース PR は `version.h` と `CHANGELOG.md` だけを変える）。
 - 語の制約（10.7）: 3 つの英語の文書（この手順書、`docs/versioning.md`、`CHANGELOG.md`）では、単独の語 "spec"、"specs" と "steering" を使わない。SemVer に触れるときは "Semantic Versioning 2.0.0" または "specification" と書く（english-docs の検査が `docs/**/*.md` で `\bspecs?\b`、`steering`、`kiro` を拒むため）。
 
 #### ConventionsVersionNotes（`docs/conventions.md` の「バージョンについての注意」）
@@ -703,7 +703,7 @@ flowchart LR
 | Intent | 開発者向けのバージョンの注意を、プレリリースを含めて更新する |
 | Requirements | 1.6, 10.4 |
 
-- 足す内容: 4 つ目のマクロ `CLARGS_VERSION_PRERELEASE` の書式（1 行、文字列リテラル、ハイフンなし、正式版は空）、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`CLArgs_VERSION` は数字、`CLArgs_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク。既存の 3 つの項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）は残す。ただし最初の項目（唯一の出どころを `MAJOR`/`MINOR`/`PATCH` の 3 つのマクロとする文）は、節が食い違わないように、`CLARGS_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改める（数字の 3 つのマクロの書式の説明は残す）。
+- 足す内容: 4 つ目のマクロ `CLINE_VERSION_PRERELEASE` の書式（1 行、文字列リテラル、ハイフンなし、正式版は空）、バージョンを手で上げずにリリースのワークフローで上げること、パッケージでの扱い（`CLine_VERSION` は数字、`CLine_VERSION_FULL`、pkg-config の `Version`）、`docs/versioning.md` と `docs/releasing.md` へのリンク。既存の 3 つの項目（唯一の出どころ、`#if` での比較、`find_package` の互換判定）は残す。ただし最初の項目（唯一の出どころを `MAJOR`/`MINOR`/`PATCH` の 3 つのマクロとする文）は、節が食い違わないように、`CLINE_VERSION_PRERELEASE` を含む 4 つのマクロを挙げる形に改める（数字の 3 つのマクロの書式の説明は残す）。
 - english-docs との順序: release-automation を先に実装し、english-docs はそのあとに実装する。この節の編集は release-automation の最後のタスクにし、その時点のファイルの言語（日本語）で書く。この節の外は変えない。english-docs はあとでこの節を含むファイル全体を英語にする（english-docs は節の内容を変えない）。英語化済みの見出しへのリンクを張るときは、ファイルへのリンクにし、日本語の見出しのアンカーに依存しない。節の見出しは変えない（english-docs は英語化後の見出し `Version notes` とアンカー `#version-notes` を README からのリンクに使う）。
 
 ## Data Models
@@ -751,7 +751,7 @@ flowchart LR
   - `release.changelog`: 解析の成功と各無効な形（5.7）。最初の版と 2 つ目の版の `promote` のリンク（3.3、4.3）。`notes` の本文の範囲、先行プレリリースへの参照の有無（6.3、6.5）。CRLF の保持。
   - `release.version_header`: 4 つの値だけが変わり、ほかのバイトが変わらない（4.2）。
 - **Integration Tests**（入口のスクリプトを子プロセスで）:
-  - `release.prepare`: 最初のリリース（ヘッダ 0.1.0、タグなし、`0.1.0`）が成功（5.5）。通常（タグ `v0.1.0`、`0.2.0-rc.1`）が成功し、2 つのファイルだけが期待どおりに変わり、出力が `prerelease=true`（4.2、4.3、4.6）。5.1〜5.4、5.6（タグ）、5.7 の各失敗で終了コードが 0 でなく、ファイルが変わらない。`CLARGS_RELEASE_CHECK_ONLY` で何も書かない（9.4）。
+  - `release.prepare`: 最初のリリース（ヘッダ 0.1.0、タグなし、`0.1.0`）が成功（5.5）。通常（タグ `v0.1.0`、`0.2.0-rc.1`）が成功し、2 つのファイルだけが期待どおりに変わり、出力が `prerelease=true`（4.2、4.3、4.6）。5.1〜5.4、5.6（タグ）、5.7 の各失敗で終了コードが 0 でなく、ファイルが変わらない。`CLINE_RELEASE_CHECK_ONLY` で何も書かない（9.4）。
   - `release.publish`: 一致する場合のノートと出力。ヘッダや CHANGELOG の不一致で失敗（6.8）。
   - `release.changes`: 文書だけ、混在、空、一覧のファイルなし、`docs/` の下の画像、`.github/workflows/ci.yml`（文書でない）（7.3、7.4）。`tests/release/fixtures/CHANGELOG-valid.md` のような `tests/` の下の `.md` だけの一覧は `docs_only=false`、根の `CHANGELOG.md` と `.github/` の下の `.md` は文書（7.10）。
   - consumer check（既存の CI のステップ）: 正式版のヘッダで今と同じく合格（2.8）。プレリリースの経路は、プレリリースのリリース PR の CI で consumer check が走ることで確かめる（2.3）。

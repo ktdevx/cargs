@@ -1,5 +1,5 @@
 /*
- * CLArgs - the result of a parse: its creation and destruction, the copy
+ * CLine - the result of a parse: its creation and destruction, the copy
  * of the arguments, the selected commands, the values, the parse error and
  * the functions that read it.
  *
@@ -16,9 +16,9 @@
 #include <string.h>
 
 /* Returns the frame of the selected command at index. */
-static clargs_result_frame_t *frame_at(const clargs_result_t *result, size_t index)
+static cline_result_frame_t *frame_at(const cline_result_t *result, size_t index)
 {
-    return (clargs_result_frame_t *)clargs_vec_at(&result->frames, index);
+    return (cline_result_frame_t *)cline_vec_at(&result->frames, index);
 }
 
 /* ---- The copy of the arguments ------------------------------------------ */
@@ -29,10 +29,10 @@ static clargs_result_frame_t *frame_at(const clargs_result_t *result, size_t ind
  * are copied as they are. With a count of 0, nothing is allocated and *out
  * is NULL.
  *
- * Returns CLARGS_ERROR_OUT_OF_MEMORY when the allocation fails or the size
+ * Returns CLINE_ERROR_OUT_OF_MEMORY when the allocation fails or the size
  * of the copy does not fit in size_t; *out is NULL then.
  */
-static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
+static cline_error_t copy_args(size_t count, char *const *argv, char ***out)
 {
     size_t size;
     char **args;
@@ -42,12 +42,12 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
     *out = NULL;
     if (count == 0)
     {
-        return CLARGS_ERROR_NONE;
+        return CLINE_ERROR_NONE;
     }
 
     if (count > (SIZE_MAX / sizeof(char *)))
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
     size = count * sizeof(char *);
     for (i = 0; i < count; ++i)
@@ -59,20 +59,20 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
         length = strlen(argv[i]);
         if (length > (SIZE_MAX - size))
         {
-            return CLARGS_ERROR_OUT_OF_MEMORY;
+            return CLINE_ERROR_OUT_OF_MEMORY;
         }
         size += length;
         if (size == SIZE_MAX)
         {
-            return CLARGS_ERROR_OUT_OF_MEMORY;
+            return CLINE_ERROR_OUT_OF_MEMORY;
         }
         size += 1;
     }
 
-    args = (char **)clargs_malloc(size);
+    args = (char **)cline_malloc(size);
     if (args == NULL)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
 
     next = (char *)args + (count * sizeof(char *));
@@ -86,7 +86,7 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
     }
 
     *out = args;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /*
@@ -105,7 +105,7 @@ static clargs_error_t copy_args(size_t count, char *const *argv, char ***out)
  * that is less than SIZE_MAX. The sum over the strings is checked as in
  * copy_args().
  */
-static clargs_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***out, size_t *first_invalid)
+static cline_error_t copy_args_wide(size_t count, wchar_t *const *argv, char ***out, size_t *first_invalid)
 {
     size_t size;
     char **args;
@@ -116,12 +116,12 @@ static clargs_error_t copy_args_wide(size_t count, wchar_t *const *argv, char **
     *first_invalid = 0;
     if (count == 0)
     {
-        return CLARGS_ERROR_NONE;
+        return CLINE_ERROR_NONE;
     }
 
     if (count > (SIZE_MAX / sizeof(char *)))
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
     size = count * sizeof(char *);
     for (i = 0; i < count; ++i)
@@ -131,65 +131,65 @@ static clargs_error_t copy_args_wide(size_t count, wchar_t *const *argv, char **
 
         assert(argv[i] != NULL);
 
-        length = clargs_utf8_length(argv[i], &valid);
+        length = cline_utf8_length(argv[i], &valid);
         if (!valid && (i != 0) && (*first_invalid == 0))
         {
             *first_invalid = i;
         }
         if (length > (SIZE_MAX - size))
         {
-            return CLARGS_ERROR_OUT_OF_MEMORY;
+            return CLINE_ERROR_OUT_OF_MEMORY;
         }
         size += length;
         if (size == SIZE_MAX)
         {
-            return CLARGS_ERROR_OUT_OF_MEMORY;
+            return CLINE_ERROR_OUT_OF_MEMORY;
         }
         size += 1;
     }
 
-    args = (char **)clargs_malloc(size);
+    args = (char **)cline_malloc(size);
     if (args == NULL)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
 
     next = (char *)args + (count * sizeof(char *));
     for (i = 0; i < count; ++i)
     {
         args[i] = next;
-        next += clargs_utf8_write(argv[i], next) + 1;
+        next += cline_utf8_write(argv[i], next) + 1;
     }
 
     *out = args;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /* ---- Creation and destruction ------------------------------------------- */
 
 /*
  * Allocates a result of root with no argument, no selected command and no
- * parse error, and writes it to *out. Returns CLARGS_ERROR_OUT_OF_MEMORY
+ * parse error, and writes it to *out. Returns CLINE_ERROR_OUT_OF_MEMORY
  * when the allocation fails; *out is NULL then.
  */
-static clargs_error_t new_result(const clargs_command_t *root, clargs_result_t **out)
+static cline_error_t new_result(const cline_command_t *root, cline_result_t **out)
 {
-    clargs_result_t *result = (clargs_result_t *)clargs_malloc(sizeof(*result));
+    cline_result_t *result = (cline_result_t *)cline_malloc(sizeof(*result));
 
     *out = result;
     if (result == NULL)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
 
     result->root = root;
     result->args = NULL;
     result->arg_count = 0;
     result->first_invalid_arg = 0;
-    clargs_vec_init(&result->frames, sizeof(clargs_result_frame_t));
-    result->error = CLARGS_ERROR_NONE;
-    result->error_kind = CLARGS_PARSE_ERROR_NONE;
-    result->error_source = CLARGS_SOURCE_NONE;
+    cline_vec_init(&result->frames, sizeof(cline_result_frame_t));
+    result->error = CLINE_ERROR_NONE;
+    result->error_kind = CLINE_PARSE_ERROR_NONE;
+    result->error_source = CLINE_SOURCE_NONE;
     result->error_index = 0;
     result->error_argument = NULL;
     result->error_value = NULL;
@@ -198,7 +198,7 @@ static clargs_error_t new_result(const clargs_command_t *root, clargs_result_t *
     result->error_positional = NULL;
     result->error_short_name = '\0';
     result->error_message = NULL;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /*
@@ -208,40 +208,40 @@ static clargs_error_t new_result(const clargs_command_t *root, clargs_result_t *
  * *out stays NULL. The two functions that create a result differ in the
  * copy of the arguments only.
  */
-static clargs_error_t finish_result(clargs_result_t *result, clargs_error_t error, size_t count,
-                                    clargs_result_t **out)
+static cline_error_t finish_result(cline_result_t *result, cline_error_t error, size_t count,
+                                    cline_result_t **out)
 {
-    if (error == CLARGS_ERROR_NONE)
+    if (error == CLINE_ERROR_NONE)
     {
         result->arg_count = count;
-        error = clargs_result_push_command(result, result->root);
+        error = cline_result_push_command(result, result->root);
     }
-    if (error != CLARGS_ERROR_NONE)
+    if (error != CLINE_ERROR_NONE)
     {
-        clargs_result_destroy(result);
+        cline_result_destroy(result);
         return error;
     }
 
     *out = result;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
-clargs_error_t clargs_result_create(const clargs_command_t *root, int argc, char *const *argv,
-                                    clargs_result_t **out)
+cline_error_t cline_result_create(const cline_command_t *root, int argc, char *const *argv,
+                                    cline_result_t **out)
 {
-    clargs_result_t *result;
-    clargs_error_t error;
+    cline_result_t *result;
+    cline_error_t error;
 
     assert(root != NULL);
     assert(out != NULL);
-    assert(clargs_command_parent(root) == NULL);
+    assert(cline_command_parent(root) == NULL);
     assert(argc >= 0);
     assert((argc == 0) || (argv != NULL));
 
     *out = NULL;
 
     error = new_result(root, &result);
-    if (error != CLARGS_ERROR_NONE)
+    if (error != CLINE_ERROR_NONE)
     {
         return error;
     }
@@ -249,22 +249,22 @@ clargs_error_t clargs_result_create(const clargs_command_t *root, int argc, char
     return finish_result(result, error, (size_t)argc, out);
 }
 
-clargs_error_t clargs_result_create_wide(const clargs_command_t *root, int argc, wchar_t *const *argv,
-                                         clargs_result_t **out)
+cline_error_t cline_result_create_wide(const cline_command_t *root, int argc, wchar_t *const *argv,
+                                         cline_result_t **out)
 {
-    clargs_result_t *result;
-    clargs_error_t error;
+    cline_result_t *result;
+    cline_error_t error;
 
     assert(root != NULL);
     assert(out != NULL);
-    assert(clargs_command_parent(root) == NULL);
+    assert(cline_command_parent(root) == NULL);
     assert(argc >= 0);
     assert((argc == 0) || (argv != NULL));
 
     *out = NULL;
 
     error = new_result(root, &result);
-    if (error != CLARGS_ERROR_NONE)
+    if (error != CLINE_ERROR_NONE)
     {
         return error;
     }
@@ -276,17 +276,17 @@ clargs_error_t clargs_result_create_wide(const clargs_command_t *root, int argc,
  * Cleans up the value of type in the area value, and frees the area. This
  * is the one place that releases a value.
  */
-static void destroy_value(const clargs_type_t *type, void *value)
+static void destroy_value(const cline_type_t *type, void *value)
 {
-    clargs_type_release(type, value);
-    clargs_free(value);
+    cline_type_release(type, value);
+    cline_free(value);
 }
 
 /*
  * Cleans up every value that the slots of frame hold, once, and frees the
  * slots.
  */
-static void destroy_frame(clargs_result_frame_t *frame)
+static void destroy_frame(cline_result_frame_t *frame)
 {
     size_t i;
     size_t k;
@@ -295,27 +295,27 @@ static void destroy_frame(clargs_result_frame_t *frame)
     {
         if (frame->options[i].value != NULL)
         {
-            destroy_value(clargs_option_type(clargs_command_option_at(frame->command, i)),
+            destroy_value(cline_option_type(cline_command_option_at(frame->command, i)),
                           frame->options[i].value);
         }
     }
     for (i = 0; i < frame->positional_count; ++i)
     {
-        clargs_vec_t *values = &frame->positionals[i].values;
-        const clargs_type_t *type =
-            clargs_positional_type(clargs_command_positional_at(frame->command, i));
+        cline_vec_t *values = &frame->positionals[i].values;
+        const cline_type_t *type =
+            cline_positional_type(cline_command_positional_at(frame->command, i));
 
         for (k = 0; k < values->count; ++k)
         {
-            destroy_value(type, *(void **)clargs_vec_at(values, k));
+            destroy_value(type, *(void **)cline_vec_at(values, k));
         }
-        clargs_vec_destroy(values);
+        cline_vec_destroy(values);
     }
-    clargs_free(frame->positionals);
-    clargs_free(frame->options);
+    cline_free(frame->positionals);
+    cline_free(frame->options);
 }
 
-void clargs_result_destroy(clargs_result_t *result)
+void cline_result_destroy(cline_result_t *result)
 {
     size_t i;
 
@@ -328,15 +328,15 @@ void clargs_result_destroy(clargs_result_t *result)
     {
         destroy_frame(frame_at(result, i));
     }
-    clargs_vec_destroy(&result->frames);
-    clargs_free(result->error_message);
-    clargs_free(result->args);
-    clargs_free(result);
+    cline_vec_destroy(&result->frames);
+    cline_free(result->error_message);
+    cline_free(result->args);
+    cline_free(result);
 }
 
 /* ---- The arguments ------------------------------------------------------ */
 
-const char *clargs_result_arg(const clargs_result_t *result, size_t index)
+const char *cline_result_arg(const cline_result_t *result, size_t index)
 {
     assert(result != NULL);
     assert(index < result->arg_count);
@@ -344,7 +344,7 @@ const char *clargs_result_arg(const clargs_result_t *result, size_t index)
     return result->args[index];
 }
 
-size_t clargs_result_first_invalid_arg(const clargs_result_t *result)
+size_t cline_result_first_invalid_arg(const cline_result_t *result)
 {
     assert(result != NULL);
 
@@ -354,24 +354,24 @@ size_t clargs_result_first_invalid_arg(const clargs_result_t *result)
 /* ---- The selected commands ---------------------------------------------- */
 
 /* Puts slot in the state of option when it is not given. */
-static void init_option_slot(clargs_option_slot_t *slot, const clargs_option_t *option)
+static void init_option_slot(cline_option_slot_t *slot, const cline_option_t *option)
 {
-    slot->source = CLARGS_SOURCE_NONE;
+    slot->source = CLINE_SOURCE_NONE;
     slot->on = false;
     slot->count = 0;
     slot->value = NULL;
 
-    switch (clargs_option_kind(option))
+    switch (cline_option_kind(option))
     {
-    case CLARGS_OPTION_FLAG:
-    case CLARGS_OPTION_COUNT:
-        slot->source = CLARGS_SOURCE_DEFAULT;
+    case CLINE_OPTION_FLAG:
+    case CLINE_OPTION_COUNT:
+        slot->source = CLINE_SOURCE_DEFAULT;
         break;
-    case CLARGS_OPTION_NEGATABLE:
-        slot->source = CLARGS_SOURCE_DEFAULT;
-        slot->on = clargs_option_initial(option);
+    case CLINE_OPTION_NEGATABLE:
+        slot->source = CLINE_SOURCE_DEFAULT;
+        slot->on = cline_option_initial(option);
         break;
-    case CLARGS_OPTION_VALUE:
+    case CLINE_OPTION_VALUE:
     default:
         break;
     }
@@ -380,76 +380,76 @@ static void init_option_slot(clargs_option_slot_t *slot, const clargs_option_t *
 /*
  * Fills frame for command: allocates and initializes one slot for each of
  * its options and positionals. An array of no slots is not allocated.
- * Returns CLARGS_ERROR_OUT_OF_MEMORY when an allocation fails; nothing is
+ * Returns CLINE_ERROR_OUT_OF_MEMORY when an allocation fails; nothing is
  * left allocated then.
  */
-static clargs_error_t init_frame(clargs_result_frame_t *frame, const clargs_command_t *command)
+static cline_error_t init_frame(cline_result_frame_t *frame, const cline_command_t *command)
 {
     size_t i;
 
     frame->command = command;
     frame->options = NULL;
-    frame->option_count = clargs_command_option_count(command);
+    frame->option_count = cline_command_option_count(command);
     frame->positionals = NULL;
-    frame->positional_count = clargs_command_positional_count(command);
+    frame->positional_count = cline_command_positional_count(command);
 
     if (frame->option_count > 0)
     {
         frame->options =
-            (clargs_option_slot_t *)clargs_calloc(frame->option_count, sizeof(*frame->options));
+            (cline_option_slot_t *)cline_calloc(frame->option_count, sizeof(*frame->options));
         if (frame->options == NULL)
         {
-            return CLARGS_ERROR_OUT_OF_MEMORY;
+            return CLINE_ERROR_OUT_OF_MEMORY;
         }
         for (i = 0; i < frame->option_count; ++i)
         {
-            init_option_slot(&frame->options[i], clargs_command_option_at(command, i));
+            init_option_slot(&frame->options[i], cline_command_option_at(command, i));
         }
     }
 
     if (frame->positional_count > 0)
     {
-        frame->positionals = (clargs_positional_slot_t *)clargs_calloc(frame->positional_count,
+        frame->positionals = (cline_positional_slot_t *)cline_calloc(frame->positional_count,
                                                                        sizeof(*frame->positionals));
         if (frame->positionals == NULL)
         {
-            clargs_free(frame->options);
-            return CLARGS_ERROR_OUT_OF_MEMORY;
+            cline_free(frame->options);
+            return CLINE_ERROR_OUT_OF_MEMORY;
         }
         for (i = 0; i < frame->positional_count; ++i)
         {
-            frame->positionals[i].source = CLARGS_SOURCE_NONE;
-            clargs_vec_init(&frame->positionals[i].values, sizeof(void *));
+            frame->positionals[i].source = CLINE_SOURCE_NONE;
+            cline_vec_init(&frame->positionals[i].values, sizeof(void *));
         }
     }
 
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
-clargs_error_t clargs_result_push_command(clargs_result_t *result, const clargs_command_t *command)
+cline_error_t cline_result_push_command(cline_result_t *result, const cline_command_t *command)
 {
-    clargs_result_frame_t frame;
-    clargs_error_t error;
+    cline_result_frame_t frame;
+    cline_error_t error;
 
     assert(result != NULL);
     assert(command != NULL);
     assert((result->frames.count > 0) || (command == result->root));
     assert((result->frames.count == 0) ||
-           (clargs_command_parent(command) == frame_at(result, result->frames.count - 1)->command));
+           (cline_command_parent(command) == frame_at(result, result->frames.count - 1)->command));
 
     error = init_frame(&frame, command);
-    if (error != CLARGS_ERROR_NONE)
+    if (error != CLINE_ERROR_NONE)
     {
         return error;
     }
 
-    error = clargs_vec_push(&result->frames, &frame);
-    if (error != CLARGS_ERROR_NONE)
+    error = cline_vec_push(&result->frames, &frame);
+    if (error != CLINE_ERROR_NONE)
     {
         destroy_frame(&frame);
         return error;
     }
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /* ---- The slots of the options ------------------------------------------- */
@@ -458,14 +458,14 @@ clargs_error_t clargs_result_push_command(clargs_result_t *result, const clargs_
  * Returns the root of the schema of command: the command that has no
  * parent, reached from command through the parents.
  */
-static const clargs_command_t *root_of(const clargs_command_t *command)
+static const cline_command_t *root_of(const cline_command_t *command)
 {
-    const clargs_command_t *parent = clargs_command_parent(command);
+    const cline_command_t *parent = cline_command_parent(command);
 
     while (parent != NULL)
     {
         command = parent;
-        parent = clargs_command_parent(command);
+        parent = cline_command_parent(command);
     }
     return command;
 }
@@ -478,10 +478,10 @@ static const clargs_command_t *root_of(const clargs_command_t *command)
  * that option has in that command. A command of another schema is never
  * selected, so its options have no slot.
  */
-static clargs_option_slot_t *find_option_slot(const clargs_result_t *result,
-                                              const clargs_option_t *option)
+static cline_option_slot_t *find_option_slot(const cline_result_t *result,
+                                              const cline_option_t *option)
 {
-    const clargs_command_t *command = clargs_option_command(option);
+    const cline_command_t *command = cline_option_command(option);
     size_t i;
     size_t k;
 
@@ -492,7 +492,7 @@ static clargs_option_slot_t *find_option_slot(const clargs_result_t *result,
 
     for (i = 0; i < result->frames.count; ++i)
     {
-        clargs_result_frame_t *frame = frame_at(result, i);
+        cline_result_frame_t *frame = frame_at(result, i);
 
         if (frame->command != command)
         {
@@ -500,7 +500,7 @@ static clargs_option_slot_t *find_option_slot(const clargs_result_t *result,
         }
         for (k = 0; k < frame->option_count; ++k)
         {
-            if (clargs_command_option_at(command, k) == option)
+            if (cline_command_option_at(command, k) == option)
             {
                 return &frame->options[k];
             }
@@ -510,60 +510,60 @@ static clargs_option_slot_t *find_option_slot(const clargs_result_t *result,
     return NULL;
 }
 
-void clargs_result_record_flag(clargs_result_t *result, const clargs_option_t *option)
+void cline_result_record_flag(cline_result_t *result, const cline_option_t *option)
 {
-    clargs_option_slot_t *slot;
+    cline_option_slot_t *slot;
 
     assert(result != NULL);
     assert(option != NULL);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_FLAG);
+    assert(cline_option_kind(option) == CLINE_OPTION_FLAG);
 
     slot = find_option_slot(result, option);
     assert(slot != NULL);
 
     slot->on = true;
-    slot->source = CLARGS_SOURCE_COMMAND_LINE;
+    slot->source = CLINE_SOURCE_COMMAND_LINE;
 }
 
-void clargs_result_record_state(clargs_result_t *result, const clargs_option_t *option, bool on)
+void cline_result_record_state(cline_result_t *result, const cline_option_t *option, bool on)
 {
-    clargs_option_slot_t *slot;
+    cline_option_slot_t *slot;
 
     assert(result != NULL);
     assert(option != NULL);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_NEGATABLE);
+    assert(cline_option_kind(option) == CLINE_OPTION_NEGATABLE);
 
     slot = find_option_slot(result, option);
     assert(slot != NULL);
 
     slot->on = on;
-    slot->source = CLARGS_SOURCE_COMMAND_LINE;
+    slot->source = CLINE_SOURCE_COMMAND_LINE;
 }
 
-void clargs_result_record_count(clargs_result_t *result, const clargs_option_t *option)
+void cline_result_record_count(cline_result_t *result, const cline_option_t *option)
 {
-    clargs_option_slot_t *slot;
+    cline_option_slot_t *slot;
 
     assert(result != NULL);
     assert(option != NULL);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_COUNT);
+    assert(cline_option_kind(option) == CLINE_OPTION_COUNT);
 
     slot = find_option_slot(result, option);
     assert(slot != NULL);
 
     slot->count += 1;
-    slot->source = CLARGS_SOURCE_COMMAND_LINE;
+    slot->source = CLINE_SOURCE_COMMAND_LINE;
 }
 
-bool clargs_result_flag(const clargs_result_t *result, const clargs_option_t *option)
+bool cline_result_flag(const cline_result_t *result, const cline_option_t *option)
 {
-    const clargs_option_slot_t *slot;
+    const cline_option_slot_t *slot;
 
     assert(result != NULL);
     assert(option != NULL);
-    assert(root_of(clargs_option_command(option)) == result->root);
-    assert((clargs_option_kind(option) == CLARGS_OPTION_FLAG) ||
-           (clargs_option_kind(option) == CLARGS_OPTION_NEGATABLE));
+    assert(root_of(cline_option_command(option)) == result->root);
+    assert((cline_option_kind(option) == CLINE_OPTION_FLAG) ||
+           (cline_option_kind(option) == CLINE_OPTION_NEGATABLE));
 
     slot = find_option_slot(result, option);
     if (slot == NULL)
@@ -572,19 +572,19 @@ bool clargs_result_flag(const clargs_result_t *result, const clargs_option_t *op
          * Not given: false for a flag, the initial state for a negatable
          * flag.
          */
-        return clargs_option_initial(option);
+        return cline_option_initial(option);
     }
     return slot->on;
 }
 
-size_t clargs_result_count(const clargs_result_t *result, const clargs_option_t *option)
+size_t cline_result_count(const cline_result_t *result, const cline_option_t *option)
 {
-    const clargs_option_slot_t *slot;
+    const cline_option_slot_t *slot;
 
     assert(result != NULL);
     assert(option != NULL);
-    assert(root_of(clargs_option_command(option)) == result->root);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_COUNT);
+    assert(root_of(cline_option_command(option)) == result->root);
+    assert(cline_option_kind(option) == CLINE_OPTION_COUNT);
 
     slot = find_option_slot(result, option);
     if (slot == NULL)
@@ -594,19 +594,19 @@ size_t clargs_result_count(const clargs_result_t *result, const clargs_option_t 
     return slot->count;
 }
 
-clargs_source_t clargs_result_option_source(const clargs_result_t *result,
-                                            const clargs_option_t *option)
+cline_source_t cline_result_option_source(const cline_result_t *result,
+                                            const cline_option_t *option)
 {
-    const clargs_option_slot_t *slot;
+    const cline_option_slot_t *slot;
 
     assert(result != NULL);
     assert(option != NULL);
-    assert(root_of(clargs_option_command(option)) == result->root);
+    assert(root_of(cline_option_command(option)) == result->root);
 
     slot = find_option_slot(result, option);
     if (slot == NULL)
     {
-        return CLARGS_SOURCE_NONE;
+        return CLINE_SOURCE_NONE;
     }
     return slot->source;
 }
@@ -618,10 +618,10 @@ clargs_source_t clargs_result_option_source(const clargs_result_t *result,
  * positional is not a selected command of result. The slot is found as
  * that of an option is; see find_option_slot().
  */
-static clargs_positional_slot_t *find_positional_slot(const clargs_result_t *result,
-                                                      const clargs_positional_t *positional)
+static cline_positional_slot_t *find_positional_slot(const cline_result_t *result,
+                                                      const cline_positional_t *positional)
 {
-    const clargs_command_t *command = clargs_positional_command(positional);
+    const cline_command_t *command = cline_positional_command(positional);
     size_t i;
     size_t k;
 
@@ -632,7 +632,7 @@ static clargs_positional_slot_t *find_positional_slot(const clargs_result_t *res
 
     for (i = 0; i < result->frames.count; ++i)
     {
-        clargs_result_frame_t *frame = frame_at(result, i);
+        cline_result_frame_t *frame = frame_at(result, i);
 
         if (frame->command != command)
         {
@@ -640,7 +640,7 @@ static clargs_positional_slot_t *find_positional_slot(const clargs_result_t *res
         }
         for (k = 0; k < frame->positional_count; ++k)
         {
-            if (clargs_command_positional_at(command, k) == positional)
+            if (cline_command_positional_at(command, k) == positional)
             {
                 return &frame->positionals[k];
             }
@@ -655,32 +655,32 @@ static clargs_positional_slot_t *find_positional_slot(const clargs_result_t *res
  * the area to *out. text is passed to the value type as it is. This is the
  * one place that converts a value.
  *
- * Returns CLARGS_ERROR_NONE on success; the caller then owns the area and
- * the value in it (destroy_value()). Returns CLARGS_ERROR_OUT_OF_MEMORY
- * when the allocation of the area fails, and what clargs_type_convert()
+ * Returns CLINE_ERROR_NONE on success; the caller then owns the area and
+ * the value in it (destroy_value()). Returns CLINE_ERROR_OUT_OF_MEMORY
+ * when the allocation of the area fails, and what cline_type_convert()
  * returned when the conversion fails; the area is freed, without a cleanup
  * of the value, and *out is NULL then.
  */
-static clargs_error_t convert_value(const clargs_type_t *type, const char *text, void **out)
+static cline_error_t convert_value(const cline_type_t *type, const char *text, void **out)
 {
-    void *value = clargs_malloc(clargs_type_value_size(type));
-    clargs_error_t error;
+    void *value = cline_malloc(cline_type_value_size(type));
+    cline_error_t error;
 
     *out = NULL;
     if (value == NULL)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
 
-    error = clargs_type_convert(type, text, value);
-    if (error != CLARGS_ERROR_NONE)
+    error = cline_type_convert(type, text, value);
+    if (error != CLINE_ERROR_NONE)
     {
-        clargs_free(value);
+        cline_free(value);
         return error;
     }
 
     *out = value;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /* ---- The parse error ---------------------------------------------------- */
@@ -692,16 +692,16 @@ static clargs_error_t convert_value(const clargs_type_t *type, const char *text,
  *
  * The message is built first, so a lack of memory leaves result as it was:
  * no part of the error is recorded, and result still reports
- * CLARGS_ERROR_NONE.
+ * CLINE_ERROR_NONE.
  *
- * Returns CLARGS_ERROR_INVALID_COMMAND_LINE when the error was recorded
- * and CLARGS_ERROR_OUT_OF_MEMORY when the allocation of the message fails.
+ * Returns CLINE_ERROR_INVALID_COMMAND_LINE when the error was recorded
+ * and CLINE_ERROR_OUT_OF_MEMORY when the allocation of the message fails.
  */
-static clargs_error_t record_error(clargs_result_t *result, const clargs_result_failure_t *failure)
+static cline_error_t record_error(cline_result_t *result, const cline_result_failure_t *failure)
 {
-    const clargs_result_where_t *where = &failure->where;
-    clargs_message_parts_t parts;
-    clargs_error_t error;
+    const cline_result_where_t *where = &failure->where;
+    cline_message_parts_t parts;
+    cline_error_t error;
     char *message;
 
     parts.kind = failure->kind;
@@ -712,48 +712,48 @@ static clargs_error_t record_error(clargs_result_t *result, const clargs_result_
     parts.name_length = where->name_length;
     parts.value = failure->value;
     parts.type_name = NULL;
-    if (failure->kind == CLARGS_PARSE_ERROR_INVALID_VALUE)
+    if (failure->kind == CLINE_PARSE_ERROR_INVALID_VALUE)
     {
         /*
          * The value type is that of the option or the positional that the
          * value is for.
          */
-        parts.type_name = clargs_type_name((failure->positional != NULL) ?
-                                           clargs_positional_type(failure->positional) :
-                                           clargs_option_type(failure->option));
+        parts.type_name = cline_type_name((failure->positional != NULL) ?
+                                           cline_positional_type(failure->positional) :
+                                           cline_option_type(failure->option));
     }
 
-    error = clargs_message_build(&parts, &message);
-    if (error != CLARGS_ERROR_NONE)
+    error = cline_message_build(&parts, &message);
+    if (error != CLINE_ERROR_NONE)
     {
         return error;
     }
 
-    result->error = CLARGS_ERROR_INVALID_COMMAND_LINE;
+    result->error = CLINE_ERROR_INVALID_COMMAND_LINE;
     result->error_kind = failure->kind;
     result->error_source = where->source;
     result->error_index = where->index;
     /* Only an error on the command line is in an argument. */
     result->error_argument =
-        (where->source == CLARGS_SOURCE_COMMAND_LINE) ? clargs_result_arg(result, where->index) : NULL;
+        (where->source == CLINE_SOURCE_COMMAND_LINE) ? cline_result_arg(result, where->index) : NULL;
     result->error_value = failure->value;
     result->error_command = failure->command;
     result->error_option = failure->option;
     result->error_positional = failure->positional;
     result->error_short_name = where->short_name;
     result->error_message = message;
-    return CLARGS_ERROR_INVALID_COMMAND_LINE;
+    return CLINE_ERROR_INVALID_COMMAND_LINE;
 }
 
-clargs_error_t clargs_result_fail(clargs_result_t *result, const clargs_result_failure_t *failure)
+cline_error_t cline_result_fail(cline_result_t *result, const cline_result_failure_t *failure)
 {
     assert(result != NULL);
     assert(failure != NULL);
-    assert(failure->kind != CLARGS_PARSE_ERROR_NONE);
+    assert(failure->kind != CLINE_PARSE_ERROR_NONE);
     assert(failure->command != NULL);
-    assert(result->error == CLARGS_ERROR_NONE);
-    assert((failure->where.source != CLARGS_SOURCE_COMMAND_LINE) || (failure->where.index < result->arg_count));
-    assert((failure->kind != CLARGS_PARSE_ERROR_INVALID_VALUE) || (failure->option != NULL) ||
+    assert(result->error == CLINE_ERROR_NONE);
+    assert((failure->where.source != CLINE_SOURCE_COMMAND_LINE) || (failure->where.index < result->arg_count));
+    assert((failure->kind != CLINE_PARSE_ERROR_INVALID_VALUE) || (failure->option != NULL) ||
            (failure->positional != NULL));
 
     return record_error(result, failure);
@@ -763,44 +763,44 @@ clargs_error_t clargs_result_fail(clargs_result_t *result, const clargs_result_f
  * What a record of a value returns when convert_value() failed with error
  * for text, at where: the lack of memory as it is and, for every other
  * failure, the parse error of a value that its value type does not take,
- * which is recorded in result as clargs_result_fail() does. option or
+ * which is recorded in result as cline_result_fail() does. option or
  * positional is the one that the value is for; the other is NULL.
  */
-static clargs_error_t conversion_failure(clargs_result_t *result, clargs_error_t error, const char *text,
-                                         const clargs_result_where_t *where,
-                                         const clargs_option_t *option,
-                                         const clargs_positional_t *positional)
+static cline_error_t conversion_failure(cline_result_t *result, cline_error_t error, const char *text,
+                                         const cline_result_where_t *where,
+                                         const cline_option_t *option,
+                                         const cline_positional_t *positional)
 {
-    clargs_result_failure_t failure;
+    cline_result_failure_t failure;
 
-    if (error == CLARGS_ERROR_OUT_OF_MEMORY)
+    if (error == CLINE_ERROR_OUT_OF_MEMORY)
     {
-        return CLARGS_ERROR_OUT_OF_MEMORY;
+        return CLINE_ERROR_OUT_OF_MEMORY;
     }
 
-    failure.kind = CLARGS_PARSE_ERROR_INVALID_VALUE;
+    failure.kind = CLINE_PARSE_ERROR_INVALID_VALUE;
     failure.where = *where;
     failure.value = text;
     failure.command =
-        (positional != NULL) ? clargs_positional_command(positional) : clargs_option_command(option);
+        (positional != NULL) ? cline_positional_command(positional) : cline_option_command(option);
     failure.option = option;
     failure.positional = positional;
-    return clargs_result_fail(result, &failure);
+    return cline_result_fail(result, &failure);
 }
 
-clargs_error_t clargs_result_record_option_value(clargs_result_t *result, const clargs_option_t *option,
-                                                 const char *text, const clargs_result_where_t *where)
+cline_error_t cline_result_record_option_value(cline_result_t *result, const cline_option_t *option,
+                                                 const char *text, const cline_result_where_t *where)
 {
-    const clargs_type_t *type;
-    clargs_option_slot_t *slot;
-    clargs_error_t error;
+    const cline_type_t *type;
+    cline_option_slot_t *slot;
+    cline_error_t error;
     void *value;
 
     assert(result != NULL);
     assert(option != NULL);
     assert(text != NULL);
     assert(where != NULL);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_VALUE);
+    assert(cline_option_kind(option) == CLINE_OPTION_VALUE);
 
     slot = find_option_slot(result, option);
     assert(slot != NULL);
@@ -809,9 +809,9 @@ clargs_error_t clargs_result_record_option_value(clargs_result_t *result, const 
      * The new value is converted before the old one is touched: when the
      * conversion fails, the old value stays.
      */
-    type = clargs_option_type(option);
+    type = cline_option_type(option);
     error = convert_value(type, text, &value);
-    if (error != CLARGS_ERROR_NONE)
+    if (error != CLINE_ERROR_NONE)
     {
         return conversion_failure(result, error, text, where, option, NULL);
     }
@@ -822,16 +822,16 @@ clargs_error_t clargs_result_record_option_value(clargs_result_t *result, const 
     }
     slot->value = value;
     slot->source = where->source;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
-clargs_error_t clargs_result_record_positional_value(clargs_result_t *result,
-                                                     const clargs_positional_t *positional,
-                                                     const char *text, const clargs_result_where_t *where)
+cline_error_t cline_result_record_positional_value(cline_result_t *result,
+                                                     const cline_positional_t *positional,
+                                                     const char *text, const cline_result_where_t *where)
 {
-    const clargs_type_t *type;
-    clargs_positional_slot_t *slot;
-    clargs_error_t error;
+    const cline_type_t *type;
+    cline_positional_slot_t *slot;
+    cline_error_t error;
     void *value;
 
     assert(result != NULL);
@@ -842,72 +842,72 @@ clargs_error_t clargs_result_record_positional_value(clargs_result_t *result,
     slot = find_positional_slot(result, positional);
     assert(slot != NULL);
 
-    type = clargs_positional_type(positional);
+    type = cline_positional_type(positional);
     error = convert_value(type, text, &value);
-    if (error != CLARGS_ERROR_NONE)
+    if (error != CLINE_ERROR_NONE)
     {
         return conversion_failure(result, error, text, where, NULL, positional);
     }
 
-    error = clargs_vec_push(&slot->values, &value);
-    if (error != CLARGS_ERROR_NONE)
+    error = cline_vec_push(&slot->values, &value);
+    if (error != CLINE_ERROR_NONE)
     {
         /* The value is not kept, so it is cleaned up here. */
         destroy_value(type, value);
         return error;
     }
     slot->source = where->source;
-    return CLARGS_ERROR_NONE;
+    return CLINE_ERROR_NONE;
 }
 
 /*
  * Takes back the default values in the slots of frame: see
- * clargs_result_discard_defaults().
+ * cline_result_discard_defaults().
  */
-static void discard_frame_defaults(clargs_result_frame_t *frame)
+static void discard_frame_defaults(cline_result_frame_t *frame)
 {
     size_t i;
     size_t k;
 
     for (i = 0; i < frame->option_count; ++i)
     {
-        clargs_option_slot_t *slot = &frame->options[i];
+        cline_option_slot_t *slot = &frame->options[i];
 
         /*
          * A flag, a count and a negatable flag that were not given have
          * the source of a default value too, but never a value.
          */
-        if ((slot->source != CLARGS_SOURCE_DEFAULT) || (slot->value == NULL))
+        if ((slot->source != CLINE_SOURCE_DEFAULT) || (slot->value == NULL))
         {
             continue;
         }
-        destroy_value(clargs_option_type(clargs_command_option_at(frame->command, i)), slot->value);
+        destroy_value(cline_option_type(cline_command_option_at(frame->command, i)), slot->value);
         slot->value = NULL;
-        slot->source = CLARGS_SOURCE_NONE;
+        slot->source = CLINE_SOURCE_NONE;
     }
 
     for (i = 0; i < frame->positional_count; ++i)
     {
-        clargs_positional_slot_t *slot = &frame->positionals[i];
-        const clargs_type_t *type;
+        cline_positional_slot_t *slot = &frame->positionals[i];
+        const cline_type_t *type;
 
-        if (slot->source != CLARGS_SOURCE_DEFAULT)
+        if (slot->source != CLINE_SOURCE_DEFAULT)
         {
             continue;
         }
-        type = clargs_positional_type(clargs_command_positional_at(frame->command, i));
+        type = cline_positional_type(cline_command_positional_at(frame->command, i));
         for (k = 0; k < slot->values.count; ++k)
         {
-            destroy_value(type, *(void **)clargs_vec_at(&slot->values, k));
+            destroy_value(type, *(void **)cline_vec_at(&slot->values, k));
         }
         /* The slot is as it was when the frame was made. */
-        clargs_vec_destroy(&slot->values);
-        clargs_vec_init(&slot->values, sizeof(void *));
-        slot->source = CLARGS_SOURCE_NONE;
+        cline_vec_destroy(&slot->values);
+        cline_vec_init(&slot->values, sizeof(void *));
+        slot->source = CLINE_SOURCE_NONE;
     }
 }
 
-void clargs_result_discard_defaults(clargs_result_t *result)
+void cline_result_discard_defaults(cline_result_t *result)
 {
     size_t i;
 
@@ -923,9 +923,9 @@ void clargs_result_discard_defaults(clargs_result_t *result)
  * Returns the area of the value of option in result, or NULL when option
  * has no value or its command is not a selected command of result.
  */
-static const void *option_value(const clargs_result_t *result, const clargs_option_t *option)
+static const void *option_value(const cline_result_t *result, const cline_option_t *option)
 {
-    const clargs_option_slot_t *slot = find_option_slot(result, option);
+    const cline_option_slot_t *slot = find_option_slot(result, option);
 
     if (slot == NULL)
     {
@@ -934,7 +934,7 @@ static const void *option_value(const clargs_result_t *result, const clargs_opti
     return slot->value;
 }
 
-bool clargs_result_option_string(const clargs_result_t *result, const clargs_option_t *option,
+bool cline_result_option_string(const cline_result_t *result, const cline_option_t *option,
                                  const char **out)
 {
     const void *value;
@@ -942,9 +942,9 @@ bool clargs_result_option_string(const clargs_result_t *result, const clargs_opt
     assert(result != NULL);
     assert(option != NULL);
     assert(out != NULL);
-    assert(root_of(clargs_option_command(option)) == result->root);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_VALUE);
-    assert(clargs_type_kind(clargs_option_type(option)) == CLARGS_TYPE_STRING);
+    assert(root_of(cline_option_command(option)) == result->root);
+    assert(cline_option_kind(option) == CLINE_OPTION_VALUE);
+    assert(cline_type_kind(cline_option_type(option)) == CLINE_TYPE_STRING);
 
     value = option_value(result, option);
     if (value == NULL)
@@ -955,16 +955,16 @@ bool clargs_result_option_string(const clargs_result_t *result, const clargs_opt
     return true;
 }
 
-bool clargs_result_option_int(const clargs_result_t *result, const clargs_option_t *option, int64_t *out)
+bool cline_result_option_int(const cline_result_t *result, const cline_option_t *option, int64_t *out)
 {
     const void *value;
 
     assert(result != NULL);
     assert(option != NULL);
     assert(out != NULL);
-    assert(root_of(clargs_option_command(option)) == result->root);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_VALUE);
-    assert(clargs_type_kind(clargs_option_type(option)) == CLARGS_TYPE_INT);
+    assert(root_of(cline_option_command(option)) == result->root);
+    assert(cline_option_kind(option) == CLINE_OPTION_VALUE);
+    assert(cline_type_kind(cline_option_type(option)) == CLINE_TYPE_INT);
 
     value = option_value(result, option);
     if (value == NULL)
@@ -975,16 +975,16 @@ bool clargs_result_option_int(const clargs_result_t *result, const clargs_option
     return true;
 }
 
-bool clargs_result_option_float(const clargs_result_t *result, const clargs_option_t *option, double *out)
+bool cline_result_option_float(const cline_result_t *result, const cline_option_t *option, double *out)
 {
     const void *value;
 
     assert(result != NULL);
     assert(option != NULL);
     assert(out != NULL);
-    assert(root_of(clargs_option_command(option)) == result->root);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_VALUE);
-    assert(clargs_type_kind(clargs_option_type(option)) == CLARGS_TYPE_FLOAT);
+    assert(root_of(cline_option_command(option)) == result->root);
+    assert(cline_option_kind(option) == CLINE_OPTION_VALUE);
+    assert(cline_type_kind(cline_option_type(option)) == CLINE_TYPE_FLOAT);
 
     value = option_value(result, option);
     if (value == NULL)
@@ -995,16 +995,16 @@ bool clargs_result_option_float(const clargs_result_t *result, const clargs_opti
     return true;
 }
 
-bool clargs_result_option_choice(const clargs_result_t *result, const clargs_option_t *option, size_t *out)
+bool cline_result_option_choice(const cline_result_t *result, const cline_option_t *option, size_t *out)
 {
     const void *value;
 
     assert(result != NULL);
     assert(option != NULL);
     assert(out != NULL);
-    assert(root_of(clargs_option_command(option)) == result->root);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_VALUE);
-    assert(clargs_type_kind(clargs_option_type(option)) == CLARGS_TYPE_CHOICE);
+    assert(root_of(cline_option_command(option)) == result->root);
+    assert(cline_option_kind(option) == CLINE_OPTION_VALUE);
+    assert(cline_type_kind(cline_option_type(option)) == CLINE_TYPE_CHOICE);
 
     value = option_value(result, option);
     if (value == NULL)
@@ -1015,23 +1015,23 @@ bool clargs_result_option_choice(const clargs_result_t *result, const clargs_opt
     return true;
 }
 
-const void *clargs_result_option_value(const clargs_result_t *result, const clargs_option_t *option)
+const void *cline_result_option_value(const cline_result_t *result, const cline_option_t *option)
 {
     assert(result != NULL);
     assert(option != NULL);
-    assert(root_of(clargs_option_command(option)) == result->root);
-    assert(clargs_option_kind(option) == CLARGS_OPTION_VALUE);
+    assert(root_of(cline_option_command(option)) == result->root);
+    assert(cline_option_kind(option) == CLINE_OPTION_VALUE);
 
     return option_value(result, option);
 }
 
-size_t clargs_result_positional_count(const clargs_result_t *result, const clargs_positional_t *positional)
+size_t cline_result_positional_count(const cline_result_t *result, const cline_positional_t *positional)
 {
-    const clargs_positional_slot_t *slot;
+    const cline_positional_slot_t *slot;
 
     assert(result != NULL);
     assert(positional != NULL);
-    assert(root_of(clargs_positional_command(positional)) == result->root);
+    assert(root_of(cline_positional_command(positional)) == result->root);
 
     slot = find_positional_slot(result, positional);
     if (slot == NULL)
@@ -1041,19 +1041,19 @@ size_t clargs_result_positional_count(const clargs_result_t *result, const clarg
     return slot->values.count;
 }
 
-clargs_source_t clargs_result_positional_source(const clargs_result_t *result,
-                                                const clargs_positional_t *positional)
+cline_source_t cline_result_positional_source(const cline_result_t *result,
+                                                const cline_positional_t *positional)
 {
-    const clargs_positional_slot_t *slot;
+    const cline_positional_slot_t *slot;
 
     assert(result != NULL);
     assert(positional != NULL);
-    assert(root_of(clargs_positional_command(positional)) == result->root);
+    assert(root_of(cline_positional_command(positional)) == result->root);
 
     slot = find_positional_slot(result, positional);
     if (slot == NULL)
     {
-        return CLARGS_SOURCE_NONE;
+        return CLINE_SOURCE_NONE;
     }
     return slot->source;
 }
@@ -1063,19 +1063,19 @@ clargs_source_t clargs_result_positional_source(const clargs_result_t *result,
  * when there is no value at index or the command of positional is not a
  * selected command of result.
  */
-static const void *positional_value(const clargs_result_t *result, const clargs_positional_t *positional,
+static const void *positional_value(const cline_result_t *result, const cline_positional_t *positional,
                                     size_t index)
 {
-    const clargs_positional_slot_t *slot = find_positional_slot(result, positional);
+    const cline_positional_slot_t *slot = find_positional_slot(result, positional);
 
     if ((slot == NULL) || (index >= slot->values.count))
     {
         return NULL;
     }
-    return *(void *const *)clargs_vec_at(&slot->values, index);
+    return *(void *const *)cline_vec_at(&slot->values, index);
 }
 
-bool clargs_result_positional_string(const clargs_result_t *result, const clargs_positional_t *positional,
+bool cline_result_positional_string(const cline_result_t *result, const cline_positional_t *positional,
                                      size_t index, const char **out)
 {
     const void *value;
@@ -1083,8 +1083,8 @@ bool clargs_result_positional_string(const clargs_result_t *result, const clargs
     assert(result != NULL);
     assert(positional != NULL);
     assert(out != NULL);
-    assert(root_of(clargs_positional_command(positional)) == result->root);
-    assert(clargs_type_kind(clargs_positional_type(positional)) == CLARGS_TYPE_STRING);
+    assert(root_of(cline_positional_command(positional)) == result->root);
+    assert(cline_type_kind(cline_positional_type(positional)) == CLINE_TYPE_STRING);
 
     value = positional_value(result, positional, index);
     if (value == NULL)
@@ -1095,7 +1095,7 @@ bool clargs_result_positional_string(const clargs_result_t *result, const clargs
     return true;
 }
 
-bool clargs_result_positional_int(const clargs_result_t *result, const clargs_positional_t *positional,
+bool cline_result_positional_int(const cline_result_t *result, const cline_positional_t *positional,
                                   size_t index, int64_t *out)
 {
     const void *value;
@@ -1103,8 +1103,8 @@ bool clargs_result_positional_int(const clargs_result_t *result, const clargs_po
     assert(result != NULL);
     assert(positional != NULL);
     assert(out != NULL);
-    assert(root_of(clargs_positional_command(positional)) == result->root);
-    assert(clargs_type_kind(clargs_positional_type(positional)) == CLARGS_TYPE_INT);
+    assert(root_of(cline_positional_command(positional)) == result->root);
+    assert(cline_type_kind(cline_positional_type(positional)) == CLINE_TYPE_INT);
 
     value = positional_value(result, positional, index);
     if (value == NULL)
@@ -1115,7 +1115,7 @@ bool clargs_result_positional_int(const clargs_result_t *result, const clargs_po
     return true;
 }
 
-bool clargs_result_positional_float(const clargs_result_t *result, const clargs_positional_t *positional,
+bool cline_result_positional_float(const cline_result_t *result, const cline_positional_t *positional,
                                     size_t index, double *out)
 {
     const void *value;
@@ -1123,8 +1123,8 @@ bool clargs_result_positional_float(const clargs_result_t *result, const clargs_
     assert(result != NULL);
     assert(positional != NULL);
     assert(out != NULL);
-    assert(root_of(clargs_positional_command(positional)) == result->root);
-    assert(clargs_type_kind(clargs_positional_type(positional)) == CLARGS_TYPE_FLOAT);
+    assert(root_of(cline_positional_command(positional)) == result->root);
+    assert(cline_type_kind(cline_positional_type(positional)) == CLINE_TYPE_FLOAT);
 
     value = positional_value(result, positional, index);
     if (value == NULL)
@@ -1135,7 +1135,7 @@ bool clargs_result_positional_float(const clargs_result_t *result, const clargs_
     return true;
 }
 
-bool clargs_result_positional_choice(const clargs_result_t *result, const clargs_positional_t *positional,
+bool cline_result_positional_choice(const cline_result_t *result, const cline_positional_t *positional,
                                      size_t index, size_t *out)
 {
     const void *value;
@@ -1143,8 +1143,8 @@ bool clargs_result_positional_choice(const clargs_result_t *result, const clargs
     assert(result != NULL);
     assert(positional != NULL);
     assert(out != NULL);
-    assert(root_of(clargs_positional_command(positional)) == result->root);
-    assert(clargs_type_kind(clargs_positional_type(positional)) == CLARGS_TYPE_CHOICE);
+    assert(root_of(cline_positional_command(positional)) == result->root);
+    assert(cline_type_kind(cline_positional_type(positional)) == CLINE_TYPE_CHOICE);
 
     value = positional_value(result, positional, index);
     if (value == NULL)
@@ -1155,33 +1155,33 @@ bool clargs_result_positional_choice(const clargs_result_t *result, const clargs
     return true;
 }
 
-const void *clargs_result_positional_value(const clargs_result_t *result,
-                                           const clargs_positional_t *positional, size_t index)
+const void *cline_result_positional_value(const cline_result_t *result,
+                                           const cline_positional_t *positional, size_t index)
 {
     assert(result != NULL);
     assert(positional != NULL);
-    assert(root_of(clargs_positional_command(positional)) == result->root);
+    assert(root_of(cline_positional_command(positional)) == result->root);
 
     return positional_value(result, positional, index);
 }
 
 /* ---- The outcome and the selected commands ------------------------------ */
 
-clargs_error_t clargs_result_error(const clargs_result_t *result)
+cline_error_t cline_result_error(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error;
 }
 
-size_t clargs_result_command_count(const clargs_result_t *result)
+size_t cline_result_command_count(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->frames.count;
 }
 
-const clargs_command_t *clargs_result_command_at(const clargs_result_t *result, size_t index)
+const cline_command_t *cline_result_command_at(const cline_result_t *result, size_t index)
 {
     assert(result != NULL);
     assert(index < result->frames.count);
@@ -1189,7 +1189,7 @@ const clargs_command_t *clargs_result_command_at(const clargs_result_t *result, 
     return frame_at(result, index)->command;
 }
 
-const clargs_command_t *clargs_result_command(const clargs_result_t *result)
+const cline_command_t *cline_result_command(const cline_result_t *result)
 {
     assert(result != NULL);
     assert(result->frames.count > 0);
@@ -1204,70 +1204,70 @@ const clargs_command_t *clargs_result_command(const clargs_result_t *result)
  * them, so a result without a parse error needs no case of its own.
  */
 
-clargs_parse_error_kind_t clargs_result_error_kind(const clargs_result_t *result)
+cline_parse_error_kind_t cline_result_error_kind(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_kind;
 }
 
-const char *clargs_result_error_message(const clargs_result_t *result)
+const char *cline_result_error_message(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_message;
 }
 
-const char *clargs_result_error_argument(const clargs_result_t *result)
+const char *cline_result_error_argument(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_argument;
 }
 
-const char *clargs_result_error_value(const clargs_result_t *result)
+const char *cline_result_error_value(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_value;
 }
 
-clargs_source_t clargs_result_error_source(const clargs_result_t *result)
+cline_source_t cline_result_error_source(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_source;
 }
 
-size_t clargs_result_error_index(const clargs_result_t *result)
+size_t cline_result_error_index(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_index;
 }
 
-const clargs_command_t *clargs_result_error_command(const clargs_result_t *result)
+const cline_command_t *cline_result_error_command(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_command;
 }
 
-const clargs_option_t *clargs_result_error_option(const clargs_result_t *result)
+const cline_option_t *cline_result_error_option(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_option;
 }
 
-const clargs_positional_t *clargs_result_error_positional(const clargs_result_t *result)
+const cline_positional_t *cline_result_error_positional(const cline_result_t *result)
 {
     assert(result != NULL);
 
     return result->error_positional;
 }
 
-char clargs_result_error_short_name(const clargs_result_t *result)
+char cline_result_error_short_name(const cline_result_t *result)
 {
     assert(result != NULL);
 

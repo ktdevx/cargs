@@ -53,7 +53,7 @@
 - [x] 2.4 (P) 所有権と寿命の文書を、利用者向けの英語の文書にする
   - 所有権と寿命の文書を、題 `Ownership and Lifetime` と、対応表の ownership の行の見出しで英語にする。規則 1〜8、規約の一覧、実行時の失敗とプログラムの誤りの表、スキーマ・argv・結果とヘルプへの適用の表は、すべて残す
   - 設計の「ownership.md から除く記述と、書き換える記述」の表のとおりに、開発者だけに向けた記述（規則 6 の作らない形の表、規則 7 の開発者の側の例とその後の 3 項目、規則 8 の開発者向けの文、内部ユーティリティの表と 2 つの違いとグローバル状態の段落）を除き、`.kiro` とスペックへの言及を書き換える。除いた記述は、この文書の中にも、ほかの場所にも書かない（移すのは 3.2 である）
-  - 最後の節は `Allocator and error functions` とし、`clargs_set_allocator` と `clargs_error_message` の表だけを残す。冒頭で、ライブラリのコードが規則をどう実装するかは開発者向けの規約の `#applying-the-ownership-rules` にあると 1 文で示す
+  - 最後の節は `Allocator and error functions` とし、`cline_set_allocator` と `cline_error_message` の表だけを残す。冒頭で、ライブラリのコードが規則をどう実装するかは開発者向けの規約の `#applying-the-ownership-rules` にあると 1 文で示す
   - アロケータの例のコードは変えず、コメントだけを訳す
   - 完了の目安: この文書について検査を実行すると、`japanese`、`kiro`、`spec-term` が 0 件で、この文書の中の節へのアンカーがすべて解決する。文書に内部ヘッダの名前（`alloc_internal.h`、`str.h`、`vec.h`）と内部ユーティリティの表が残っていない。規則 1〜8 の見出しと、2 つの適用の表が揃っている
   - _Boundary: OwnershipGuide_
@@ -61,10 +61,10 @@
 
 - [x] 3. 開発者向けの文書
 - [x] 3.1 (P) 開発者向けの規約を英語にする
-  - 開発者向けの規約の文書を、題 `Development Conventions` と、対応表の conventions の行の見出しで、節の順序と数を保って英語にする。命名規約の表、手順の表、`clargs_add_test()` の規則、実装の規則、テストを書くときの注意、確かめ方を、すべて訳す
+  - 開発者向けの規約の文書を、題 `Development Conventions` と、対応表の conventions の行の見出しで、節の順序と数を保って英語にする。命名規約の表、手順の表、`cline_add_test()` の規則、実装の規則、テストを書くときの注意、確かめ方を、すべて訳す
   - C、CMake、シェルの例は、コメントと仮の値の表記（`<名前>` → `<name>`、`<動的ライブラリのパス>` → `<path-to-shared-library>` など）だけを訳し、コードを変えない
   - 確保の各回を順に失敗させる節の見出しを `The failure of every allocation in turn` にし、テストのコメント 2 か所の言い回しと一致させる
-  - `Version notes` の節は、release-automation が日本語のまま更新した後の内容を、項目の数と順序を保ち、足さず減らさずに訳す。既存の 3 項目に加え、プレリリースの内容（`CLARGS_VERSION_PRERELEASE` の書式、バージョンをリリースのワークフローで上げること、パッケージでの扱い、`docs/versioning.md` と `docs/releasing.md` へのリンク）も忠実に訳す。見出しは `Version notes`、アンカーは `#version-notes` から変えない
+  - `Version notes` の節は、release-automation が日本語のまま更新した後の内容を、項目の数と順序を保ち、足さず減らさずに訳す。既存の 3 項目に加え、プレリリースの内容（`CLINE_VERSION_PRERELEASE` の書式、バージョンをリリースのワークフローで上げること、パッケージでの扱い、`docs/versioning.md` と `docs/releasing.md` へのリンク）も忠実に訳す。見出しは `Version notes`、アンカーは `#version-notes` から変えない
   - 完了の目安: この文書について検査を実行すると、`japanese`、`kiro`、`spec-term` が 0 件で、この文書の中の節へのアンカーがすべて解決する。`#the-failure-of-every-allocation-in-turn` と `#version-notes` のアンカーが存在する。英語化の前の版と比べて、コードブロックの差分がコメントと仮の値だけで、`Version notes` の項目の数が同じである
   - _Boundary: DevConventions_
   - _Requirements: 1.1, 1.4, 1.5, 2.2, 6.4, 6.5, 8.1, 8.4, 8.5, 8.6, 8.8, 9.1, 9.2, 9.4, 9.7_
@@ -72,7 +72,7 @@
 - [x] 3.2 所有権の規則を実装に当てはめる節を開発者向けの規約に足し、ディレクトリ構成を更新する
   - 実装の規則の中、メモリの確保の節の後に `Applying the ownership rules` の節を足し、英語化の前のコミットの所有権の文書から、設計の表で「conventions へ移す」とした記述を、意味を変えずに英語にして置く。小見出しは対応表の新規の 3 つ（作らない形、失敗の返し方、内部ユーティリティの従い方）とする
   - 規則 8 の開発者向けの文は、既存の `Global state` の節に統合する。既に同じ内容がある文は足さず、同じ見出しを 2 つ作らない
-  - 移した例（仮の名前の `clargs_example_create` と `clargs_example_destroy`）のコードは変えず、コメントだけを訳す。所有権の規則そのものは、所有権の文書の規則の節（`#6-whoever-allocates-frees` など）へリンクして参照する
+  - 移した例（仮の名前の `cline_example_create` と `cline_example_destroy`）のコードは変えず、コメントだけを訳す。所有権の規則そのものは、所有権の文書の規則の節（`#6-whoever-allocates-frees` など）へリンクして参照する
   - ディレクトリ構成の節（このスペックが内容まで持つ）を、作業の時点の `git ls-files` と照らし、条件を付けずにすべてを載せるように更新する。`docs/` の一覧に索引の `README.md`、`versioning.md`、`releasing.md` を足し、各ファイルの説明を利用者向けか開発者向けかが分かる英語にする。CHANGELOG.md、`tools/release/`、`tools/ci/`、`tests/release/`、`.github/workflows/` の `ci.yml`、`release-pr.yml`、`release-publish.yml` を各 1 行の役割とともに載せ、`tests/CMakeLists.txt` が release のテストを `release.<name>` の名前と `release` のラベルで登録していることを書く。冒頭の導入で、コントリビューターの入口がルートの CONTRIBUTING.md であることに触れる
   - 完了の目安: 開発者向けの規約に `#applying-the-ownership-rules` とその 3 つの小見出しのアンカーがあり、設計の「ownership.md から除く記述と、書き換える記述」の表で conventions へ移すとした記述のすべてが、この文書のどこかに英語で 1 回ずつある。`#global-state` は 1 つだけである。ディレクトリ構成の節が、上に挙げた release-automation のファイルとディレクトリをすべて載せ、それらへの相対リンクが解決する。この文書について検査を実行すると、`japanese`、`kiro`、`spec-term`、`missing-file`、`pending` が 0 件である
   - _Depends: 3.1_
@@ -92,7 +92,7 @@
   - 設計の「README の構成」の 11 の部分を、その順に書く。CI のバッジとライセンスのバッジは設計の URL で置く
   - 特徴の一覧は今の 7 項目をすべて訳す。サンプルプログラムと実行の例は、コードと出力を変えずに写し、例の後の注意を訳す
   - ビルドとテストの 3 つのコマンドを、この順に、引数を変えずに載せる。Naos とネットワーク、ネットワークなしの構成、テストの無効化、複数の構成を持つジェネレータ、CMake のオプションの表と注意、`BUILD_SHARED_LIBS` を訳す
-  - 4 つの取り込み方法と、組み込んだ CLArgs のテストの実行を訳す。CMake の例は `GIT_TAG` の行だけを `v0.1.0` に変え、ほかのコードは変えない。FetchContent の例の後に、最新のリリースのタグへの置き換え、タグが `v<SemVer>` の形であること（例 `v0.2.0`。プレリリースは `v0.2.0-rc.1` など。Releases and changes の節と同じ書き方）、Releases のページ、タグかコミットのハッシュへの固定を案内する。find_package のバージョンの注意は、利用者向けの互換の規則として `docs/versioning.md` へリンクし、開発者向けの補足として `docs/conventions.md#version-notes` へのリンクも置く
+  - 4 つの取り込み方法と、組み込んだ CLine のテストの実行を訳す。CMake の例は `GIT_TAG` の行だけを `v0.1.0` に変え、ほかのコードは変えない。FetchContent の例の後に、最新のリリースのタグへの置き換え、タグが `v<SemVer>` の形であること（例 `v0.2.0`。プレリリースは `v0.2.0-rc.1` など。Releases and changes の節と同じ書き方）、Releases のページ、タグかコミットのハッシュへの固定を案内する。find_package のバージョンの注意は、利用者向けの互換の規則として `docs/versioning.md` へリンクし、開発者向けの補足として `docs/conventions.md#version-notes` へのリンクも置く
   - 文書の一覧（利用者向けの 4 文書、索引、CONTRIBUTING.md、開発者向けの規約）、Releases and changes（CHANGELOG.md、Releases のページ、タグの形、バージョン方針の文書へのリンクだけ）、Contributing（CONTRIBUTING.md、CODE_OF_CONDUCT.md、SECURITY.md）、License を置く
   - 完了の目安: README について検査を実行すると、`japanese`、`kiro`、`spec-term`、`missing-file`、`pending` が 0 件で（CHANGELOG.md と `docs/versioning.md` へのリンクが解決する）、README の中の節へのアンカーがすべて解決する。FetchContent の後の案内と Releases and changes の節のタグの書き方が一致する。README から、利用者向けの 4 文書、索引、CONTRIBUTING.md、開発者向けの規約へ、それぞれ 1 回のリンクで移れる。英語化の前の版と比べて、コードブロックの差分が `GIT_TAG` の行とコメントと仮の値だけである
   - _Boundary: ReadmeEntry_
@@ -138,7 +138,7 @@
 
 ## Implementation Notes
 - 1.1: 検査は `python3 .kiro/specs/english-docs/check_docs.py check [--files ...]`。`--files` は `git ls-files` にないパスを終了コード 2 で拒む。新しく作る文書（CONTRIBUTING.md、docs/README.md）は、検査の前に `git add -N <path>` で対象に入れる。
-- 1.1: release-automation に分類するパスは要件 10.4 の一覧（設計の一覧より広い。`cmake/`、ルートの CMakeLists.txt、`tests/CMakeLists.txt`、`tests/consumer/`、`tests/public/version_test.c`、`include/clargs/version.h` を含む）。`pending` の対象は 3 文書のまま。アンカーの断片は大文字小文字を区別する。
+- 1.1: release-automation に分類するパスは要件 10.4 の一覧（設計の一覧より広い。`cmake/`、ルートの CMakeLists.txt、`tests/CMakeLists.txt`、`tests/consumer/`、`tests/public/version_test.c`、`include/cline/version.h` を含む）。`pending` の対象は 3 文書のまま。アンカーの断片は大文字小文字を区別する。
 - 1.1: 英語化の前の件数は japanese README 66、conventions 254（release-automation が 7 行増やした）、help 278、ownership 174、parse 256、schema 254。kiro は ownership.md:301 の 1 件、spec-term は ownership.md の 5 件。
 - 1.2: 例の手順は `bash .kiro/specs/english-docs/build_examples.sh <repo-root> <outdir>`（テストを無効にしてビルドとインストール、例の取り出し、`-std=c99 -Wall -Wextra -Wpedantic -Werror` でのコンパイル、`wmain` はコンパイルだけ、ownership は利用者の 4 関数と一緒にリンク、直後の出力のブロックとの比較）。例の集合 7 つと README の 4 つのコマンドラインが欠けると失敗する。英語化の前の文書で 7 例、28 の確認がすべて通り、違いはなかった。テストは `python3 .kiro/specs/english-docs/test_check_docs.py`（`unittest discover` は `__pycache__` を残すので使わない）。
 - 1.2: 翻訳のときは、例のコードブロックの info（```` ```c ````）と、出力のブロック（info なし、例との間に見出しを置かない）、README の `$ ` の行を変えない。手順はこの構造に頼っている。

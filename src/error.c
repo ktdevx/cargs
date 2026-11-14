@@ -1,9 +1,9 @@
 /*
- * CLArgs - error codes and their messages.
+ * CLine - error codes and their messages.
  */
-#include <clargs/error.h>
+#include <cline/error.h>
 
-const char *clargs_error_message(clargs_error_t error)
+const char *cline_error_message(cline_error_t error)
 {
     /*
      * One case for each error code of the list. There is no default label,
@@ -11,11 +11,11 @@ const char *clargs_error_message(clargs_error_t error)
      */
     switch (error)
     {
-#define CLARGS_ERROR_CASE(name, message) \
+#define CLINE_ERROR_CASE(name, message) \
     case name: \
         return message;
-        CLARGS_ERROR_LIST(CLARGS_ERROR_CASE)
-#undef CLARGS_ERROR_CASE
+        CLINE_ERROR_LIST(CLINE_ERROR_CASE)
+#undef CLINE_ERROR_CASE
     }
 
     return "unknown error code";
