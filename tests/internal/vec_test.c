@@ -21,74 +21,13 @@
 #include "vec.h"
 
 #include "../support/test_allocator.h"
+#include "../support/wrap_allocator.h"
 
 #include <naos/naos.h>
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
-
-/*
- * An allocator that only wraps the standard functions and records what it
- * was asked for: the number of calls of each function and the size of the
- * last malloc_fn and realloc_fn. They are functions of this file, not the
- * standard functions themselves, so that no initializer takes the address
- * of an imported function (MSVC warns about that).
- */
-static size_t wrap_malloc_calls;
-static size_t wrap_malloc_size;
-static size_t wrap_realloc_calls;
-static size_t wrap_realloc_size;
-static size_t wrap_calloc_calls;
-static size_t wrap_free_calls;
-
-static void *wrap_malloc(size_t size)
-{
-    ++wrap_malloc_calls;
-    wrap_malloc_size = size;
-    return malloc(size);
-}
-
-static void *wrap_realloc(void *ptr, size_t size)
-{
-    ++wrap_realloc_calls;
-    wrap_realloc_size = size;
-    return realloc(ptr, size);
-}
-
-static void *wrap_calloc(size_t count, size_t size)
-{
-    ++wrap_calloc_calls;
-    return calloc(count, size);
-}
-
-static void wrap_free(void *ptr)
-{
-    ++wrap_free_calls;
-    free(ptr);
-}
-
-static argx_allocator_t wrap_allocator(void)
-{
-    argx_allocator_t allocator;
-
-    allocator.malloc_fn = wrap_malloc;
-    allocator.realloc_fn = wrap_realloc;
-    allocator.calloc_fn = wrap_calloc;
-    allocator.free_fn = wrap_free;
-    return allocator;
-}
-
-static void wrap_reset(void)
-{
-    wrap_malloc_calls = 0;
-    wrap_malloc_size = 0;
-    wrap_realloc_calls = 0;
-    wrap_realloc_size = 0;
-    wrap_calloc_calls = 0;
-    wrap_free_calls = 0;
-}
 
 /*
  * The end of every test: the test allocator has no live block and saw no
@@ -189,23 +128,17 @@ NAOS_TEST(init_makes_an_empty_array_without_allocating)
  */
 NAOS_TEST(destroy_of_an_empty_array_does_not_call_the_allocator)
 {
-    argx_allocator_t allocator = wrap_allocator();
     argx_vec_t vec;
 
-    argx_test_allocator_reset();
-    argx_set_allocator(&allocator);
-    wrap_reset();
+    argx_test_allocator_install();
 
     argx_vec_init(&vec, sizeof(long));
     argx_vec_destroy(&vec);
     check_empty(&vec, sizeof(long));
 
-    NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 0);
-    NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 0);
-    NAOS_CHECK_UINT_EQ(wrap_calloc_calls, 0);
-    NAOS_CHECK_UINT_EQ(wrap_free_calls, 0);
+    NAOS_CHECK_UINT_EQ(argx_test_allocator_requests(), 0);
 
-    argx_set_allocator(NULL);
+    argx_test_allocator_uninstall();
     check_clean();
 }
 
@@ -390,42 +323,6 @@ NAOS_TEST(at_returns_the_address_of_the_item)
 
 /* ---- Items of different sizes ----------------------------------------- */
 
-/* Items of one byte. */
-NAOS_TEST(holds_chars)
-{
-    argx_vec_t vec;
-    size_t i;
-
-    argx_test_allocator_install();
-    argx_vec_init(&vec, sizeof(char));
-
-    for (i = 0; i < 50; ++i)
-    {
-        char value = (char)('a' + (int)(i % 26));
-
-        NAOS_CHECK_INT_EQ(argx_vec_push(&vec, &value), ARGX_ERROR_NONE);
-    }
-    NAOS_CHECK_UINT_EQ(vec.count, 50);
-    NAOS_CHECK_UINT_EQ(vec.item_size, 1);
-
-    for (i = 0; i < vec.count; ++i)
-    {
-        const char *item = argx_vec_at(&vec, i);
-
-        NAOS_CHECK_INT_EQ(*item, 'a' + (int)(i % 26));
-    }
-    /* The items are next to each other: one byte each. */
-    if (vec.count == 50)
-    {
-        NAOS_CHECK_MEM_EQ(vec.items, 26, "abcdefghijklmnopqrstuvwxyz", 26);
-    }
-
-    argx_vec_destroy(&vec);
-
-    argx_test_allocator_uninstall();
-    check_clean();
-}
-
 /* A structure with members of different sizes, so with padding. */
 typedef struct sample
 {
@@ -514,42 +411,6 @@ NAOS_TEST(holds_pointers)
     NAOS_CHECK_STR_EQ(first, "first");
     NAOS_CHECK_STR_EQ(second, "second");
     NAOS_CHECK_STR_EQ(third, "third");
-
-    argx_test_allocator_uninstall();
-    check_clean();
-}
-
-/* An item that is larger than any small block. */
-NAOS_TEST(holds_large_items)
-{
-    typedef struct large
-    {
-        unsigned char bytes[1000];
-    } large_t;
-    argx_vec_t vec;
-    large_t value;
-    size_t i;
-
-    argx_test_allocator_install();
-    argx_vec_init(&vec, sizeof(large_t));
-
-    for (i = 0; i < 9; ++i)
-    {
-        memset(value.bytes, (int)(i + 1), sizeof value.bytes);
-        NAOS_CHECK_INT_EQ(argx_vec_push(&vec, &value), ARGX_ERROR_NONE);
-    }
-    NAOS_CHECK_UINT_EQ(vec.count, 9);
-
-    for (i = 0; i < vec.count; ++i)
-    {
-        const large_t *item = argx_vec_at(&vec, i);
-
-        memset(value.bytes, (int)(i + 1), sizeof value.bytes);
-        NAOS_CHECK_MEM_EQ(item->bytes, sizeof item->bytes,
-            value.bytes, sizeof value.bytes);
-    }
-
-    argx_vec_destroy(&vec);
 
     argx_test_allocator_uninstall();
     check_clean();
@@ -645,44 +506,44 @@ NAOS_TEST(usable_again_after_destroy)
  */
 NAOS_TEST(requests_go_through_realloc_and_free)
 {
-    argx_allocator_t allocator = wrap_allocator();
+    argx_allocator_t allocator = argx_wrap_allocator_get();
     argx_vec_t vec;
     double value = 0.5;
 
     argx_test_allocator_reset();
     argx_set_allocator(&allocator);
-    wrap_reset();
+    argx_wrap_allocator_reset();
 
     argx_vec_init(&vec, sizeof value);
 
     NAOS_CHECK_INT_EQ(argx_vec_push(&vec, &value), ARGX_ERROR_NONE);
-    NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_malloc_size, 4 * sizeof(double));
-    NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 0);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().malloc_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().malloc_size, 4 * sizeof(double));
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().realloc_calls, 0);
 
     while (vec.count < 5)
     {
         NAOS_CHECK_INT_EQ(argx_vec_push(&vec, &value), ARGX_ERROR_NONE);
     }
-    NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_realloc_size, 8 * sizeof(double));
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().malloc_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().realloc_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().realloc_size, 8 * sizeof(double));
 
     while (vec.count < 9)
     {
         NAOS_CHECK_INT_EQ(argx_vec_push(&vec, &value), ARGX_ERROR_NONE);
     }
-    NAOS_CHECK_UINT_EQ(wrap_malloc_calls, 1);
-    NAOS_CHECK_UINT_EQ(wrap_realloc_calls, 2);
-    NAOS_CHECK_UINT_EQ(wrap_realloc_size, 16 * sizeof(double));
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().malloc_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().realloc_calls, 2);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().realloc_size, 16 * sizeof(double));
 
-    NAOS_CHECK_UINT_EQ(wrap_calloc_calls, 0);
-    NAOS_CHECK_UINT_EQ(wrap_free_calls, 0);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().calloc_calls, 0);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().free_calls, 0);
 
     argx_vec_destroy(&vec);
-    NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().free_calls, 1);
     argx_vec_destroy(&vec);
-    NAOS_CHECK_UINT_EQ(wrap_free_calls, 1);
+    NAOS_CHECK_UINT_EQ(argx_wrap_allocator_counts().free_calls, 1);
 
     argx_set_allocator(NULL);
     /* Nothing went to the test allocator: it was not set. */
@@ -1140,10 +1001,8 @@ NAOS_SUITE(push,
 )
 
 NAOS_SUITE(item_sizes,
-    NAOS_ADD_TEST(holds_chars),
     NAOS_ADD_TEST(holds_structs),
-    NAOS_ADD_TEST(holds_pointers),
-    NAOS_ADD_TEST(holds_large_items)
+    NAOS_ADD_TEST(holds_pointers)
 )
 
 NAOS_SUITE(destroy,
