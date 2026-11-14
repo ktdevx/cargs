@@ -23,8 +23,8 @@
 #define ARGX_VERSION_MINOR 1
 #define ARGX_VERSION_PATCH 0
 /*
- * The pre-release identifiers of the version without the leading hyphen, such as "rc.1".
- * An empty string for a release.
+ * The version's pre-release identifiers without the leading hyphen, such
+ * as "rc.1". An empty string for a release.
  */
 #define ARGX_VERSION_PRERELEASE ""
 

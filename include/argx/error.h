@@ -4,14 +4,14 @@
  *
  * ArgX - error codes and their messages.
  *
- * A function that can fail at run time returns a argx_error_t. Only
+ * A function that can fail at run time returns an argx_error_t. Only
  * ARGX_ERROR_NONE means success; every other value is a failure. Test for
  * success like this:
  *
  *     if (error == ARGX_ERROR_NONE) { ... }
  *
- * An error code tells the kind of the failure only. It carries no position
- * and no subject.
+ * An error code tells only what kind of failure occurred. It carries no
+ * position and no subject.
  *
  * Later versions add error codes. Write code that may receive a value it
  * does not know: give a switch over argx_error_t a default label.
@@ -22,15 +22,15 @@
 #include <argx/export.h>
 
 /*
- * The list of the error codes: ARGX_ERROR_LIST(X) expands to one
- * X(name, message) for each error code, in the order of their values. The
- * enumeration below and argx_error_message() are generated from it. Use it
- * to generate tables of your own.
+ * The error code list. ARGX_ERROR_LIST(X) expands to one X(name, message)
+ * for each error code, in value order. The enumeration below and
+ * argx_error_message() are generated from it. Use it to generate your own
+ * tables.
  *
- * The values are given in the order of the list, starting at 0, and a value
- * that has been published never changes and is never used for another
- * meaning. So add new error codes at the end only: never remove a line,
- * never reorder the lines and never add a line in the middle.
+ * Values follow the list order, starting at 0. A published value never
+ * changes and is never reused for another meaning. So add new error codes
+ * only at the end: never remove a line, never reorder the lines and never
+ * add a line in the middle.
  */
 #define ARGX_ERROR_LIST(X) \
     X(ARGX_ERROR_NONE, "success") \
@@ -57,7 +57,7 @@ extern "C"
 #endif
 
 /*
- * Returns the message of an error code: a short English phrase, such as
+ * Returns the message for an error code: a short English phrase, such as
  * "out of memory".
  *
  * Any value may be passed. The result is never NULL and never empty. For a
