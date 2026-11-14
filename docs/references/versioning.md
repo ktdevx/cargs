@@ -63,4 +63,3 @@ Under Semantic Versioning 2.0.0, a pre-release has a lower precedence than its r
 ## Supported versions
 
 Which versions receive fixes is described in the [security policy](../../SECURITY.md#supported-versions).
-
