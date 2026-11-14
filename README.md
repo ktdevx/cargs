@@ -3,7 +3,7 @@
 [![CI](https://github.com/ktdevx/cargs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ktdevx/cargs/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-ArgX is a command-line argument parser library written in C99. You define the command line your program accepts (the schema) with function calls, parse `argv` with it, and read the values from the result. ArgX also generates the help text and the usage line from the schema.
+ArgX is a command-line argument parser for C99. Define your command line once as a schema, and ArgX parses `argv`, checks it, converts the values and writes the help, all from that one definition.
 
 ## Features
 
@@ -14,11 +14,9 @@ ArgX is a command-line argument parser library written in C99. You define the co
 - Help and usage text generated from the schema, written through your write function or into your buffer.
 - No side effects: the library prints nothing, never exits the process and reads no environment variables. Errors come back as an error code and a one-line message.
 
-Include `<argx/argx.h>` and link to `ArgX::argx`.
-
 ## Example
 
-A complete program that accepts `greet [-h] [-l] [-n COUNT] name`. A larger one, with subcommands, every kind of option and value types of its own, is [examples/pack.c](examples/pack.c).
+A complete program that accepts `greet [-h] [-l] [-n COUNT] name`. A larger one with subcommands is [examples/pack.c](examples/pack.c).
 
 ```c
 #include <argx/argx.h>
@@ -29,13 +27,14 @@ A complete program that accepts `greet [-h] [-l] [-n COUNT] name`. A larger one,
 #include <stdlib.h>
 
 /* Checks a call that can fail; on a failure, goes to the message. */
-#define CHECK(call)                              \
-    do                                           \
-    {                                            \
-        if ((error = (call)) != ARGX_ERROR_NONE) \
-        {                                        \
-            goto define_failed;                  \
-        }                                        \
+#define TRY(call)                     \
+    do                                \
+    {                                 \
+        error = (call);               \
+        if (error != ARGX_ERROR_NONE) \
+        {                             \
+            goto define_failed;       \
+        }                             \
     } while (0)
 
 /* The library passes the help text to this function, part by part. */
@@ -56,19 +55,19 @@ int main(int argc, char **argv)
     int status = EXIT_FAILURE;
 
     /* The schema. The descriptions are for the help. */
-    CHECK(argx_command_create("greet", &root));
-    CHECK(argx_command_set_description(root, "Greet somebody."));
-    CHECK(argx_command_add_flag(root, 'h', "help", &help));
-    CHECK(argx_option_set_description(help, "Print this help."));
-    CHECK(argx_command_add_flag(root, 'l', "loud", &loud));
-    CHECK(argx_option_set_description(loud, "Add an exclamation mark."));
-    CHECK(argx_command_add_value(root, 'n', "count", argx_type_int(), &count));
-    CHECK(argx_option_set_description(count, "How often to greet."));
-    CHECK(argx_option_set_value_name(count, "COUNT"));
-    CHECK(argx_option_set_default(count, "1"));
-    CHECK(argx_command_add_positional(root, "name", argx_type_string(), ARGX_ARITY_REQUIRED, &name));
-    CHECK(argx_positional_set_description(name, "Whom to greet."));
-    CHECK(argx_command_validate(root, NULL, NULL, NULL));
+    TRY(argx_command_create("greet", &root));
+    TRY(argx_command_set_description(root, "Greet somebody."));
+    TRY(argx_command_add_flag(root, 'h', "help", &help));
+    TRY(argx_option_set_description(help, "Print this help."));
+    TRY(argx_command_add_flag(root, 'l', "loud", &loud));
+    TRY(argx_option_set_description(loud, "Add an exclamation mark."));
+    TRY(argx_command_add_value(root, 'n', "count", argx_type_int(), &count));
+    TRY(argx_option_set_description(count, "How often to greet."));
+    TRY(argx_option_set_value_name(count, "COUNT"));
+    TRY(argx_option_set_default(count, "1"));
+    TRY(argx_command_add_positional(root, "name", argx_type_string(), ARGX_ARITY_REQUIRED, &name));
+    TRY(argx_positional_set_description(name, "Whom to greet."));
+    TRY(argx_command_validate(root, NULL, NULL, NULL));
 
     error = argx_parse(root, argc, argv, &result);
     if (result == NULL)
@@ -120,7 +119,7 @@ cleanup:
 }
 ```
 
-Example run (lines starting with `$` are input, the lines after them are output):
+Running it:
 
 ```
 $ greet --loud -n 2 world
@@ -148,17 +147,11 @@ Options:
   -n, --count <COUNT>  How often to greet. [default: 1]
 ```
 
-- `--help` is an ordinary flag in your schema. The help text comes from the schema; printing it is up to your code.
-- A parse error still leaves a result, which you destroy. Destroy the result before the schema.
-
 ## Installation
 
-With CMake `FetchContent`:
+With CMake `FetchContent` (replace `v0.1.0` with the latest [release](https://github.com/ktdevx/cargs/releases)):
 
 ```cmake
-cmake_minimum_required(VERSION 3.21)
-project(app LANGUAGES C)
-
 include(FetchContent)
 FetchContent_Declare(ArgX
     GIT_REPOSITORY https://github.com/ktdevx/cargs.git
@@ -170,11 +163,11 @@ add_executable(app main.c)
 target_link_libraries(app PRIVATE ArgX::argx)
 ```
 
-Replace `v0.1.0` with the latest tag from the [Releases](https://github.com/ktdevx/cargs/releases) page. `add_subdirectory`, `find_package`, pkg-config and the build options are described in [Installation](docs/getting-started/installation.md).
+`add_subdirectory`, `find_package` and pkg-config are covered in [Installation](docs/getting-started/installation.md).
 
 ## Building and testing
 
-You need CMake 3.21 or later and a C99 compiler. Run the following three commands in the root of the repository.
+Requires CMake 3.21 or later and a C99 compiler.
 
 ```sh
 cmake -S . -B build
@@ -182,25 +175,16 @@ cmake --build build
 ctest --test-dir build
 ```
 
-The tests fetch the test framework Naos from GitHub at configure time. To build offline or without the tests, see [Building and testing](docs/getting-started/installation.md#building-and-testing) in the installation guide.
+The tests fetch Naos from GitHub; to build offline, see [Building and testing](docs/getting-started/installation.md#building-and-testing).
 
 ## Documentation
 
-The [documentation index](docs/README.md) lists every document. To start:
-
-- **Getting started:** [Installation](docs/getting-started/installation.md) covers building, the build options, and the four ways to use ArgX from your project.
-- **Guides:** the [Guide](docs/guides/guide.md) walks through [examples/pack.c](examples/pack.c), a complete program, step by step. The [FAQ](docs/guides/faq.md) answers common questions, and [Design](docs/guides/design.md) explains why the library works the way it does.
-- **References:** one API page for each public header ([Schemas](docs/references/schema.md), [Value Types](docs/references/types.md), [Parsing](docs/references/parse.md), [Help and Usage](docs/references/help.md), [Allocator](docs/references/alloc.md), [Error Codes](docs/references/errors.md), [Version](docs/references/version.md)), and the specifications of the [command-line syntax](docs/references/syntax.md), the [help text layout](docs/references/help-layout.md) and [ownership and lifetime](docs/references/ownership.md).
-- **Development:** [Contributing to ArgX](CONTRIBUTING.md) is the entry point for contributors.
-
-## Releases and changes
-
-Changes in each version are recorded in [CHANGELOG.md](CHANGELOG.md), and releases are published on the [Releases](https://github.com/ktdevx/cargs/releases) page. Release tags have the form `v<SemVer>`, such as `v0.2.0`. What stays compatible between versions is described in [Version](docs/references/version.md#compatibility).
+Start with the [Guide](docs/guides/guide.md), then the [FAQ](docs/guides/faq.md). Every document is listed in the [documentation index](docs/README.md).
 
 ## Contributing
 
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before you open an issue or a pull request: it explains the development environment, how to build and test, and how to submit changes. Everyone who takes part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Report security vulnerabilities as described in [SECURITY.md](SECURITY.md), not in a public issue.
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-ArgX is distributed under the MIT License. The full text is in [LICENSE](LICENSE).
+[MIT](LICENSE)
