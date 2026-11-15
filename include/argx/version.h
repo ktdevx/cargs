@@ -25,7 +25,7 @@ extern "C"
 #endif
 
 #define ARGX_VERSION_MAJOR 0
-#define ARGX_VERSION_MINOR 1
+#define ARGX_VERSION_MINOR 2
 #define ARGX_VERSION_PATCH 0
 
 /*
