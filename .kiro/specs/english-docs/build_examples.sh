@@ -8,9 +8,10 @@
 #  2. Extracts the examples with `check_docs.py extract <outdir>/examples`.
 #  3. Compiles and links every `main` example with gcc and
 #     -std=c99 -Wall -Wextra -Wpedantic -Werror; compiles every `wmain`
-#     example only (-c). The allocator example of docs/ownership.md is linked
-#     with <outdir>/user_alloc.c, which defines my_malloc, my_realloc,
-#     my_calloc and my_free.
+#     example only (-c). The allocator example of docs/references/alloc.md is
+#     linked with <outdir>/user_alloc.c, which defines my_malloc, my_realloc,
+#     my_calloc and my_free. An excerpt, a block with a line that is only
+#     "...", is not compiled: it is reported as a SKIP line.
 #  4. Runs every `main` example and compares it with its document:
 #     - the next fenced block after the example (before the next heading and
 #       the next C block), if it has no info string:
@@ -23,23 +24,21 @@
 #           nothing on stderr.
 #         * no "$ " lines -> the output of running with no arguments; it must
 #           be on stdout, with exit status 0 and nothing on stderr.
-#     - otherwise the example is run with no arguments and must exit with 0 and print nothing,
-#       except docs/schema.md, which must print exactly
-#       "the schema of pack is valid".
+#     - otherwise the example is run with no arguments and must exit with 0 and print nothing.
 #
 #  5. Checks that nothing went missing, each as a PASS/FAIL line:
-#     - the counted examples (all but those of docs/versioning.md and
-#       docs/releasing.md) are exactly: README.md 1 main, docs/schema.md
-#       1 main, docs/parse.md 1 main and 1 wmain, docs/help.md 2 main,
-#       docs/ownership.md 1 main (7 in all);
+#     - the counted examples (all but those of docs/references/version.md
+#       and docs/development/releasing.md) are exactly: README.md 1 main,
+#       docs/guides/how-to.md 1 wmain (an excerpt), docs/references/alloc.md
+#       1 main (3 in all);
 #     - the transcript after the README example has exactly the command lines
 #       `greet --loud -n 2 world`, `greet`, `greet --count=many world` and
 #       `greet --help`, in this order;
 #     - every example that has an output block ran at least one comparison.
 #
 # Prints one PASS/FAIL line per check (with a diff on FAIL) and exits with 1
-# if any check failed. Examples extracted from docs/versioning.md or
-# docs/releasing.md are built and run the same way but reported as
+# if any check failed. Examples extracted from docs/references/version.md or
+# docs/development/releasing.md are built and run the same way but reported as
 # release-automation findings and not counted as failures.
 set -u
 
@@ -88,17 +87,16 @@ cflags = ["-std=c99", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
           "-I", os.path.join(prefix, "include")]
 bindir = os.path.join(out, "bin")
 os.makedirs(bindir, exist_ok=True)
-RELEASE_DOCS = ("docs/versioning.md", "docs/releasing.md")
-EXPECT_NO_ARGS_TEXT = {"docs/schema.md": "the schema of pack is valid\n"}
+RELEASE_DOCS = ("docs/references/version.md", "docs/development/releasing.md")
+ALLOC_DOC = "docs/references/alloc.md"
 EXPECTED_EXAMPLES = collections.Counter({
-    ("README.md", "main"): 1, ("docs/schema.md", "main"): 1,
-    ("docs/parse.md", "main"): 1, ("docs/parse.md", "wmain"): 1,
-    ("docs/help.md", "main"): 2, ("docs/ownership.md", "main"): 1,
+    ("README.md", "main"): 1, ("docs/guides/how-to.md", "wmain"): 1,
+    (ALLOC_DOC, "main"): 1,
 })
 README_COMMANDS = ["greet --loud -n 2 world", "greet", "greet --count=many world",
                    "greet --help"]
 
-failures, ra_findings, passes = [], [], 0
+failures, ra_findings, passes, skips = [], [], 0, 0
 
 
 def report(ok, doc, what, detail=""):
@@ -169,7 +167,8 @@ counted = [m for m in manifest if m[2].rsplit(":", 1)[0] not in RELEASE_DOCS]
 print("examples: %d (counted: %d)" % (len(manifest), len(counted)))
 
 found = collections.Counter((m[2].rsplit(":", 1)[0], m[1]) for m in counted)
-report(found == EXPECTED_EXAMPLES, "", "the counted examples are exactly the expected 7",
+report(found == EXPECTED_EXAMPLES, "",
+       "the counted examples are exactly the expected %d" % sum(EXPECTED_EXAMPLES.values()),
        "  expected: %s\n  found:    %s" % (sorted(EXPECTED_EXAMPLES.items()),
                                           sorted(found.items())))
 readme_commands = None
@@ -178,6 +177,11 @@ for name, entry, source in manifest:
     doc, fence_line = source.rsplit(":", 1)
     fence_line = int(fence_line)
     src = os.path.join(out, "examples", name)
+    with open(src, encoding="utf-8") as f:
+        if any(l.strip() == "..." for l in f):
+            print("SKIP: %s (%s) is an excerpt, not compiled" % (name, source))
+            skips += 1
+            continue
     if entry == "wmain":
         obj = os.path.join(bindir, name[:-2] + ".o")
         p = subprocess.run(["gcc"] + cflags + ["-c", src, "-o", obj],
@@ -190,7 +194,7 @@ for name, entry, source in manifest:
     if doc == "README.md":
         readme_commands = [cmd for cmd, _ in runs]
     exe = os.path.join(bindir, name[:-2])
-    extra = [os.path.join(out, "user_alloc.c")] if doc == "docs/ownership.md" else []
+    extra = [os.path.join(out, "user_alloc.c")] if doc == ALLOC_DOC else []
     p = subprocess.run(["gcc"] + cflags + [src] + extra +
                        ["-L", libdir, "-largx", "-o", exe], capture_output=True, text=True)
     report(p.returncode == 0, doc, "%s (%s) compiles and links" % (name, source), p.stderr)
@@ -205,7 +209,7 @@ for name, entry, source in manifest:
     elif body is not None:
         check_run(doc, name, exe, [], "".join(l + "\n" for l in body), False, "(no arguments)")
     else:
-        check_run(doc, name, exe, [], EXPECT_NO_ARGS_TEXT.get(doc, ""), False, "(no arguments)")
+        check_run(doc, name, exe, [], "", False, "(no arguments)")
     if body is not None:
         report(comparisons > 0, doc, "%s (%s) ran %d comparison(s) with its output block"
                % (name, source, comparisons))
@@ -214,8 +218,8 @@ report(readme_commands == README_COMMANDS, "README.md",
        "the README transcript has exactly the 4 documented command lines",
        "  expected: %r\n  found:    %r" % (README_COMMANDS, readme_commands))
 
-print("\nchecks passed: %d, failed: %d, release-automation findings: %d"
-      % (passes, len(failures), len(ra_findings)))
+print("\nchecks passed: %d, failed: %d, skipped excerpts: %d, release-automation findings: %d"
+      % (passes, len(failures), skips, len(ra_findings)))
 for f in failures:
     print("  FAILED: " + f)
 for f in ra_findings:
