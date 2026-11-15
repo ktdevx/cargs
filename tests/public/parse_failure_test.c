@@ -295,6 +295,9 @@ static void set_up(fixture_t *fixture)
     fixture->item = add_positional(fixture->add, "NAME", fixture->word, ARGX_ARITY_REQUIRED, NULL);
     fixture->urls = add_positional(fixture->add, "URL", fixture->word, ARGX_ARITY_ZERO_OR_MORE, NULL);
 
+    /* "tool" alone, the command line of the result that stays alive. */
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(fixture->root, true) == ARGX_ERROR_NONE);
+
     fixture->init = add_subcommand(fixture->root, "init");
     fixture->owner = add_value(fixture->init, '\0', "owner", fixture->word, "nobody");
     fixture->template_name = add_value(fixture->init, '\0', "template", fixture->word, "bad");

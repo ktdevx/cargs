@@ -115,6 +115,7 @@ NAOS_TEST(enumerations_keep_their_order)
     NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_MISSING_POSITIONAL, 7);
     NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL, 8);
     NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_INVALID_ENCODING, 9);
+    NAOS_CHECK_INT_EQ(ARGX_PARSE_ERROR_MISSING_SUBCOMMAND, 10);
 }
 
 /* ---- The wording of each kind ----------------------------------------- */
@@ -302,6 +303,19 @@ NAOS_TEST(invalid_encoding)
     check_clean();
 }
 
+NAOS_TEST(missing_subcommand)
+{
+    argx_message_parts_t parts = parts_of(ARGX_PARSE_ERROR_MISSING_SUBCOMMAND);
+
+    argx_test_allocator_install();
+
+    /* The wording names nothing. */
+    check_message(&parts, "missing required command");
+
+    argx_test_allocator_uninstall();
+    check_clean();
+}
+
 /* ---- What the wording does not depend on ------------------------------ */
 
 /*
@@ -354,6 +368,12 @@ NAOS_TEST(unused_strings_are_ignored)
     parts.value = "extra";
     parts.type_name = "string";
     check_message(&parts, "unexpected argument 'extra'");
+
+    parts = parts_of(ARGX_PARSE_ERROR_MISSING_SUBCOMMAND);
+    set_name(&parts, "--", "colour");
+    parts.value = "extra";
+    parts.type_name = "string";
+    check_message(&parts, "missing required command");
 
     argx_test_allocator_uninstall();
     check_clean();
@@ -489,7 +509,7 @@ NAOS_TEST(message_is_one_line_without_a_full_stop)
         ARGX_PARSE_ERROR_MISSING_VALUE,      ARGX_PARSE_ERROR_UNEXPECTED_VALUE,
         ARGX_PARSE_ERROR_INVALID_VALUE,      ARGX_PARSE_ERROR_MISSING_OPTION,
         ARGX_PARSE_ERROR_MISSING_POSITIONAL, ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL,
-        ARGX_PARSE_ERROR_INVALID_ENCODING
+        ARGX_PARSE_ERROR_INVALID_ENCODING,   ARGX_PARSE_ERROR_MISSING_SUBCOMMAND
     };
     size_t i;
 
@@ -606,6 +626,7 @@ NAOS_SUITE(wording,
     NAOS_ADD_TEST(missing_positional),
     NAOS_ADD_TEST(unexpected_positional),
     NAOS_ADD_TEST(invalid_encoding),
+    NAOS_ADD_TEST(missing_subcommand),
     NAOS_ADD_TEST(source_and_for_positional_change_only_an_invalid_value),
     NAOS_ADD_TEST(unused_strings_are_ignored)
 )

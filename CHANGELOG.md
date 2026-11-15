@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Schemas built with function calls on opaque handles: a root command (`argx_command_create()`), its options, positionals and subcommands, descriptions for the help, and validation of the whole schema with `argx_command_validate()` before it is used.
 - Options of four kinds: flags, counts, negatable flags that are switched with `--name` and `--no-name`, and options that take a value. Options can have a short name, a long name, a value name, a default value and can be required.
 - Positional arguments with an arity (required, optional, zero or more, one or more) and an optional default value.
-- Nested subcommands, each with its own options and positionals.
+- Nested subcommands, each with its own options and positionals. A command line must name a subcommand of the command it ends in (the parse error `ARGX_PARSE_ERROR_MISSING_SUBCOMMAND`, and `<COMMAND>` in the usage line), unless that command's subcommands are made optional with `argx_command_set_subcommand_optional()`.
 - Typed values: strings, integers, floating-point numbers and choices from a fixed list, and value types defined by the user with their own conversion function and an optional cleanup function (`argx_type_create()`).
 - Parsing of `argv` with `argx_parse()`, and of wide-character `argv` (such as the one of `wmain()`) with `argx_parse_wide()`, which reads UTF-16 or UTF-32 and does not depend on the locale.
 - Results that tell which subcommands were selected, whether and how often options were given, where each value came from (the command line or a default) and the converted values.

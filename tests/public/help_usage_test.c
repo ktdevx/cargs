@@ -461,7 +461,7 @@ NAOS_TEST(options_come_before_positionals)
 /* ---- Subcommands --------------------------------------------------------- */
 
 /*
- * A command with subcommands ends with [COMMAND], once, whatever their
+ * A command with subcommands ends with <COMMAND>, once, whatever their
  * number.
  */
 NAOS_TEST(subcommands_give_command_marker)
@@ -471,7 +471,7 @@ NAOS_TEST(subcommands_give_command_marker)
     root = create_root();
     add_sub(root, "build");
     validate(root);
-    check_usage(root, "Usage: tool [COMMAND]\n");
+    check_usage(root, "Usage: tool <COMMAND>\n");
     destroy_root(root);
 
     root = create_root();
@@ -480,7 +480,38 @@ NAOS_TEST(subcommands_give_command_marker)
     NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
     add_value(root, '\0', "key", argx_type_string(), "KEY", true);
     validate(root);
-    check_usage(root, "Usage: tool [OPTIONS] --key <KEY> [COMMAND]\n");
+    check_usage(root, "Usage: tool [OPTIONS] --key <KEY> <COMMAND>\n");
+    destroy_root(root);
+}
+
+/*
+ * Optional subcommands give "[COMMAND]", per command: a subcommand whose
+ * own subcommands are required still gives "<COMMAND>".
+ */
+NAOS_TEST(optional_subcommands_give_optional_command_marker)
+{
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add_sub(root, "remote");
+
+    add_sub(remote, "add");
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(root, true) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_add_flag(root, 'h', "help", NULL) == ARGX_ERROR_NONE);
+    validate(root);
+    check_usage(root, "Usage: tool [OPTIONS] [COMMAND]\n");
+    check_usage(remote, "Usage: tool remote <COMMAND>\n");
+
+    /* Both markers are 9 bytes wide: they break at the same width. */
+    {
+        argx_help_options_t *options = create_options(31);
+
+        check_usage_with(root, options, "Usage: tool [OPTIONS] [COMMAND]\n");
+        argx_help_options_set_width(options, 30);
+        check_usage_with(root, options,
+                         "Usage: tool [OPTIONS]\n"
+                         "       [COMMAND]\n");
+        argx_help_options_destroy(options);
+    }
+
     destroy_root(root);
 }
 
@@ -507,8 +538,8 @@ NAOS_TEST(subcommand_usage_has_path_from_root)
     NAOS_REQUIRE_TRUE(argx_command_add_flag(list, 'a', "all", NULL) == ARGX_ERROR_NONE);
     validate(root);
 
-    check_usage(root, "Usage: tool [OPTIONS] --key <KEY> [COMMAND]\n");
-    check_usage(remote, "Usage: tool remote [COMMAND]\n");
+    check_usage(root, "Usage: tool [OPTIONS] --key <KEY> <COMMAND>\n");
+    check_usage(remote, "Usage: tool remote <COMMAND>\n");
     check_usage(add, "Usage: tool remote add --track <BRANCH> <name> [url]\n");
     check_usage(list, "Usage: tool remote list [OPTIONS]\n");
 
@@ -623,7 +654,7 @@ NAOS_TEST(narrow_width_breaks_between_items_with_indent_of_seven)
 }
 
 /*
- * "[COMMAND]" is an item like the others: it stays on the line when it
+ * "<COMMAND>" is an item like the others: it stays on the line when it
  * fits and starts a new line when it does not. The whole line has 43
  * bytes.
  */
@@ -638,12 +669,12 @@ NAOS_TEST(command_marker_moves_to_next_line_when_it_does_not_fit)
     validate(root);
 
     options = create_options(43);
-    check_usage_with(root, options, "Usage: tool [OPTIONS] --key <KEY> [COMMAND]\n");
+    check_usage_with(root, options, "Usage: tool [OPTIONS] --key <KEY> <COMMAND>\n");
 
     argx_help_options_set_width(options, 42);
     check_usage_with(root, options,
                      "Usage: tool [OPTIONS] --key <KEY>\n"
-                     "       [COMMAND]\n");
+                     "       <COMMAND>\n");
 
     argx_help_options_destroy(options);
     destroy_root(root);
@@ -757,7 +788,7 @@ NAOS_TEST(item_wider_than_width_is_written_as_it_is)
     options = create_options(1);
     check_usage_with(remote, options,
                      "Usage: tool remote\n"
-                     "       [COMMAND]\n");
+                     "       <COMMAND>\n");
 
     /*
      * The path, 22 bytes, and the option, 29 bytes with the indent, are
@@ -958,6 +989,7 @@ NAOS_SUITE(help_usage,
     NAOS_ADD_TEST(positionals_come_in_definition_order),
     NAOS_ADD_TEST(options_come_before_positionals),
     NAOS_ADD_TEST(subcommands_give_command_marker),
+    NAOS_ADD_TEST(optional_subcommands_give_optional_command_marker),
     NAOS_ADD_TEST(subcommand_usage_has_path_from_root),
     NAOS_ADD_TEST(schema_strings_are_written_unchanged),
     NAOS_ADD_TEST(null_options_are_the_default_options),

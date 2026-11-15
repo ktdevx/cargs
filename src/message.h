@@ -20,6 +20,7 @@
  *     MISSING_POSITIONAL      missing required argument '<name>'
  *     UNEXPECTED_POSITIONAL   unexpected argument '<value>'
  *     INVALID_ENCODING        invalid character encoding in argument '<value>'
+ *     MISSING_SUBCOMMAND      missing required command
  *
  * <name> is name_prefix followed by the first name_length bytes of name,
  * <value> is value, and <type> is type_name. The strings are inserted as

@@ -11,14 +11,20 @@
  *   3. validates it, and tells which definition a failed validation points to;
  *   4. parses argv and branches on the error code, reading --help in both
  *      cases that give a result;
- *   5. prints the help of the selected command, or the message and the usage
- *      line of a parse error;
+ *   5. prints the help of the selected command, also when a subcommand is
+ *      missing, or the message and the usage line of any other parse error;
  *   6. reads the values and where they came from;
  *   7. destroys the result, the schema and the value types, in this order.
  *
  * docs/getting-started/tutorial.md walks through this program step by step, and the API
  * pages in docs/references/ (schema.md, types.md, parse.md and help.md) are
  * the reference for each function it calls.
+ *
+ * The program behaves like most programs with subcommands: a subcommand is
+ * required, and a command line without one prints the help and fails. To
+ * change it, for example to make a subcommand optional or to report a
+ * missing subcommand as an error message, follow the recipes in
+ * docs/guides/how-to.md.
  *
  * It accepts command lines of this form:
  *
@@ -52,11 +58,13 @@
  *   For more information, try '--help'.
  *
  *   $ pack
- *   pack: a command is required
- *   For more information, try '--help'.
+ *   Usage: pack [OPTIONS] <COMMAND>
  *
- * "pack --help" and "pack create --help" print the help of the root and of
- * create.
+ *   Pack files into an archive.
+ *   ...
+ *
+ * "pack" exits with a failure status, "pack --help" with success. "pack
+ * create --help" prints the help of create.
  */
 
 #include <argx/argx.h>
@@ -195,7 +203,11 @@ static argx_error_t add_help(argx_command_t *command)
     return argx_option_set_description(option, "Print this help.");
 }
 
-/* The root: its options stand in front of the subcommand. */
+/*
+ * The root: its options stand in front of the subcommand. A command line
+ * must name one of its subcommands; that is the default, so nothing is set
+ * for it.
+ */
 static argx_error_t define_root(pack_schema_t *schema)
 {
     argx_error_t error;
@@ -483,18 +495,14 @@ static int run_list(const pack_schema_t *schema, const argx_result_t *result)
     return EXIT_SUCCESS;
 }
 
-/* Reads the values of a command line that matched the schema. */
+/*
+ * Reads the values of a command line that matched the schema. The root's
+ * subcommands are required, so the last selected command is create or
+ * list.
+ */
 static int run(const pack_schema_t *schema, const argx_result_t *result)
 {
     const argx_command_t *command = argx_result_command(result);
-
-    if ((command != schema->create) && (command != schema->list))
-    {
-        /* A command line that names no subcommand is not a parse error. */
-        fprintf(stderr, "pack: a command is required\n");
-        fprintf(stderr, "For more information, try '--help'.\n");
-        return EXIT_FAILURE;
-    }
 
     if (argx_result_flag(result, schema->quiet))
     {
@@ -568,11 +576,22 @@ int main(int argc, char **argv)
         /*
          * 5. A parse error also gives a result, holding what was read before
          * the error. "pack create --help" leaves out what create requires,
-         * but --help was read, so the help is printed, not the error.
+         * and "pack --help" the subcommand, but --help was read, so the help
+         * is printed, not the error.
          */
         if (help_was_given(result))
         {
             status = print_help(result);
+        }
+        else if (argx_result_error_kind(result) == ARGX_PARSE_ERROR_MISSING_SUBCOMMAND)
+        {
+            /*
+             * A command line that ends without a subcommand: the help of the
+             * command that misses it, as most programs do, and a failure,
+             * since nothing was done.
+             */
+            (void)print_help(result);
+            status = EXIT_FAILURE;
         }
         else
         {

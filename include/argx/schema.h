@@ -188,6 +188,30 @@ ARGX_API argx_error_t argx_command_add_subcommand(argx_command_t *command, const
 ARGX_API argx_error_t argx_command_set_description(argx_command_t *command, const char *text);
 
 /*
+ * Sets whether a command line may end without naming one of command's
+ * subcommands. By default it may not: when command is the last command
+ * selected on a command line and has subcommands, parsing reports
+ * ARGX_PARSE_ERROR_MISSING_SUBCOMMAND, and the help's usage line shows
+ * "<COMMAND>". With optional set to true, such a command line is not a
+ * parse error, argx_result_command() returns command, and the usage line
+ * shows "[COMMAND]". Use it for a command that does something of its own
+ * when no subcommand is named.
+ *
+ * Only a command with subcommands can make them optional. Since
+ * subcommands can be added after this call, this is not checked here but
+ * by argx_command_validate(): setting true on a command that has no
+ * subcommands is a fault there. Setting false is never one.
+ *
+ * Returns ARGX_ERROR_NONE.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ */
+ARGX_API argx_error_t argx_command_set_subcommand_optional(argx_command_t *command,
+                                                           bool optional);
+
+/*
  * Returns the name of command. Never NULL and never empty.
  *
  * Preconditions:
@@ -204,6 +228,17 @@ ARGX_API const char *argx_command_name(const argx_command_t *command);
  * - command is not NULL. Checked with assert.
  */
 ARGX_API const char *argx_command_description(const argx_command_t *command);
+
+/*
+ * Returns whether a command line may end without naming one of command's
+ * subcommands: what argx_command_set_subcommand_optional() set, or false
+ * when it has not been called.
+ *
+ * Preconditions:
+ *
+ * - command is not NULL. Checked with assert.
+ */
+ARGX_API bool argx_command_is_subcommand_optional(const argx_command_t *command);
 
 /*
  * Returns the command that command is a subcommand of, or NULL when command
@@ -670,6 +705,9 @@ ARGX_API const char *argx_positional_default(const argx_positional_t *positional
  * 3. The positionals' default values, in the order the positionals were
  *    added. A positional is faulty when its value type does not take its
  *    default value (ARGX_ERROR_INVALID_DEFAULT).
+ * 4. The command itself. It is faulty when its subcommands are optional
+ *    (argx_command_set_subcommand_optional()) and it has no subcommands
+ *    (ARGX_ERROR_INVALID_DEFINITION).
  *
  * Validation stops at the first fault. The order is fixed, so the same
  * definition always gives the same result.
@@ -689,12 +727,13 @@ ARGX_API const char *argx_positional_default(const argx_positional_t *positional
  * validated, and NULL is written to *command, *option and *positional.
  *
  * Returns ARGX_ERROR_INVALID_DEFINITION or ARGX_ERROR_INVALID_DEFAULT
- * for a fault, as listed with the checks above. The command that owns the
- * faulty option or positional is written to *command. The faulty option
- * is written to *option, or the faulty positional to *positional, and NULL
- * to the other one. The handles belong to the tree: they are valid until
- * the root is destroyed and can be read with the reading functions. The
- * tree stays unvalidated.
+ * for a fault, as listed with the checks above. The faulty command, or
+ * the command that owns the faulty option or positional, is written to
+ * *command. The faulty option is written to *option, or the faulty
+ * positional to *positional, and NULL to the other one; for a faulty
+ * command, NULL is written to both. The handles belong to the tree: they
+ * are valid until the root is destroyed and can be read with the reading
+ * functions. The tree stays unvalidated.
  *
  * Returns ARGX_ERROR_OUT_OF_MEMORY when the area for a value cannot be
  * allocated or a conversion returns that code. NULL is written to

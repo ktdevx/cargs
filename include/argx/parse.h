@@ -96,7 +96,8 @@ typedef enum argx_parse_error_kind
     ARGX_PARSE_ERROR_MISSING_OPTION,        /* A required option was not given. */
     ARGX_PARSE_ERROR_MISSING_POSITIONAL,    /* A required positional argument was not given. */
     ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL, /* One positional argument too many. */
-    ARGX_PARSE_ERROR_INVALID_ENCODING       /* A wide argument that cannot be converted to UTF-8. */
+    ARGX_PARSE_ERROR_INVALID_ENCODING,      /* A wide argument that cannot be converted to UTF-8. */
+    ARGX_PARSE_ERROR_MISSING_SUBCOMMAND     /* A command line that names no required subcommand. */
 } argx_parse_error_kind_t;
 
 /*
@@ -176,10 +177,12 @@ typedef enum argx_parse_error_kind
  * negative numbers: whether an argument in the form of a negative number
  * is a bundle depends on the current command's short names.
  *
- * A command line that names no subcommand of a command that has
- * subcommands is not a parse error: the command line ends in that command,
- * and argx_result_command() returns it. The options and positionals of the
- * commands that were not selected read as not given.
+ * A command line that ends in a command that has subcommands, without
+ * naming one of them, is a parse error (ARGX_PARSE_ERROR_MISSING_SUBCOMMAND,
+ * see below), unless that command's subcommands are optional
+ * (argx_command_set_subcommand_optional()). Then the command line ends in
+ * that command, and argx_result_command() returns it. The options and
+ * positionals of the commands that were not selected read as not given.
  *
  * For a command that has no subcommands, an argument that is not an option
  * is a value of one of the command's positionals. The arguments are
@@ -224,10 +227,12 @@ typedef enum argx_parse_error_kind
  * First, everything required must have been given: an option that takes a
  * value and is required (argx_option_set_required()) must have a value,
  * and a positional with arity ARGX_ARITY_REQUIRED or
- * ARGX_ARITY_ONE_OR_MORE must have at least one value. A missing one is a
- * parse error. If several are missing, the first is reported: commands
- * from the root down, a command's options before its positionals, and
- * each in the order they were added.
+ * ARGX_ARITY_ONE_OR_MORE must have at least one value, and the last
+ * selected command must not be one whose subcommands are required (see
+ * above). A missing one is a parse error. If several are missing, the
+ * first is reported: commands from the root down, a command's options
+ * before its positionals, each in the order they were added, and the
+ * missing subcommand last.
  *
  * Then, if nothing is missing, everything that was not given gets its
  * default value:
@@ -564,7 +569,8 @@ ARGX_API const void *argx_result_positional_value(const argx_result_t *result,
  * the index is 0.
  * argx_result_error_command() returns the command being read when the
  * error was found or, for an error about a required or default value, the
- * command of the option or positional.
+ * command of the option or positional. For a missing subcommand, it is the
+ * command whose subcommand is missing.
  * argx_result_error_option() and argx_result_error_positional() return
  * the option or positional that the error is about.
  * argx_result_error_short_name() returns the letter that the error is
@@ -587,6 +593,7 @@ ARGX_API const void *argx_result_positional_value(const argx_result_t *result,
  *     MISSING_POSITIONAL      no        no     the positional
  *     UNEXPECTED_POSITIONAL   yes       yes    no
  *     INVALID_ENCODING        yes       yes    no
+ *     MISSING_SUBCOMMAND      no        no     no
  *
  *     (*) Not when the value is a default value of the schema.
  *

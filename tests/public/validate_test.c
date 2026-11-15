@@ -636,6 +636,75 @@ NAOS_TEST(the_first_faulty_option_of_a_command_is_reported)
     destroy_root(root);
 }
 
+/* ---- Optional subcommands of a command without subcommands --------------- */
+
+NAOS_TEST(optional_subcommands_without_a_subcommand_are_an_inconsistent_definition)
+{
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add_sub(root, "remote");
+    argx_command_t *add = add_sub(remote, "add");
+
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(add, true) == ARGX_ERROR_NONE);
+
+    /* The command is reported, with neither an option nor a positional. */
+    check_validate(root, ARGX_ERROR_INVALID_DEFINITION, add, NULL, NULL);
+    NAOS_CHECK_FALSE(argx_command_is_validated(root));
+    NAOS_CHECK_TRUE(argx_command_is_subcommand_optional(add));
+
+    /* A subcommand added later makes the definition consistent. */
+    (void)add_sub(add, "origin");
+    check_validate(root, ARGX_ERROR_NONE, NULL, NULL, NULL);
+    NAOS_CHECK_TRUE(argx_command_is_validated(root));
+
+    destroy_root(root);
+}
+
+NAOS_TEST(optional_subcommands_with_subcommands_and_required_ones_without_are_valid)
+{
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add_sub(root, "remote");
+    argx_command_t *add = add_sub(remote, "add");
+
+    /* Optional with subcommands. */
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(root, true) == ARGX_ERROR_NONE);
+    /* Set and taken back on a command without subcommands. */
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(add, true) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(add, false) == ARGX_ERROR_NONE);
+    /* add was never set: required, without subcommands, is the default. */
+    (void)add_positional(add, "NAME", ARGX_ARITY_REQUIRED);
+
+    check_validate(root, ARGX_ERROR_NONE, NULL, NULL, NULL);
+    NAOS_CHECK_TRUE(argx_command_is_validated(root));
+
+    destroy_root(root);
+}
+
+NAOS_TEST(optional_subcommands_are_checked_after_the_defaults_and_before_the_subcommands)
+{
+    argx_command_t *root = create_root();
+    argx_command_t *leaf = add_sub(root, "leaf");
+    argx_command_t *sibling = add_sub(root, "sibling");
+    argx_option_t *output = add_value(leaf, 'o', "output");
+    argx_positional_t *later;
+
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(leaf, true) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(sibling, true) == ARGX_ERROR_NONE);
+
+    /* The commands are checked in the order of their definition. */
+    check_validate(root, ARGX_ERROR_INVALID_DEFINITION, leaf, NULL, NULL);
+
+    /* A faulty option of the same command comes first. */
+    make_faulty(output);
+    check_validate(root, ARGX_ERROR_INVALID_DEFINITION, leaf, output, NULL);
+
+    /* So does a faulty order of its positionals. */
+    (void)add_positional(leaf, "first", ARGX_ARITY_OPTIONAL);
+    later = add_positional(leaf, "later", ARGX_ARITY_REQUIRED);
+    check_validate(root, ARGX_ERROR_INVALID_DEFINITION, leaf, NULL, later);
+
+    destroy_root(root);
+}
+
 /* ---- Faults anywhere in the tree, and which one is reported -------------- */
 
 NAOS_TEST(a_faulty_option_in_a_subcommand_is_found)
@@ -976,6 +1045,7 @@ typedef enum mutation
     ADD_VALUE,
     ADD_POSITIONAL,
     SET_COMMAND_DESCRIPTION,
+    SET_COMMAND_SUBCOMMAND_OPTIONAL,
     SET_OPTION_DESCRIPTION,
     SET_OPTION_VALUE_NAME,
     SET_OPTION_REQUIRED,
@@ -985,10 +1055,11 @@ typedef enum mutation
     SET_POSITIONAL_DEFAULT
 } mutation_t;
 
-#define MUTATION_COUNT 14
+#define MUTATION_COUNT 15
 static const mutation_t all_mutations[MUTATION_COUNT] = {
     ADD_SUBCOMMAND,          ADD_FLAG,              ADD_NEGATABLE,       ADD_COUNT,
     ADD_VALUE,               ADD_POSITIONAL,        SET_COMMAND_DESCRIPTION,
+    SET_COMMAND_SUBCOMMAND_OPTIONAL,
     SET_OPTION_DESCRIPTION,  SET_OPTION_VALUE_NAME, SET_OPTION_REQUIRED, SET_OPTION_DEFAULT,
     SET_OPTION_INITIAL,      SET_POSITIONAL_DESCRIPTION,
     SET_POSITIONAL_DEFAULT
@@ -1018,6 +1089,7 @@ static size_t mutation_allocations(mutation_t mutation)
         return 3;
     case ADD_NEGATABLE:
         return 4;
+    case SET_COMMAND_SUBCOMMAND_OPTIONAL:
     case SET_OPTION_REQUIRED:
     case SET_OPTION_INITIAL:
         return 0;
@@ -1049,6 +1121,9 @@ static argx_error_t mutate(const fixture_t *fixture, mutation_t mutation)
                                            ARGX_ARITY_OPTIONAL, NULL);
     case SET_COMMAND_DESCRIPTION:
         return argx_command_set_description(fixture->target, "A description.");
+    case SET_COMMAND_SUBCOMMAND_OPTIONAL:
+        /* The target has subcommands for this change. */
+        return argx_command_set_subcommand_optional(fixture->target, true);
     case SET_OPTION_DESCRIPTION:
         return argx_option_set_description(fixture->flag, "A description.");
     case SET_OPTION_VALUE_NAME:
@@ -1124,6 +1199,11 @@ NAOS_TEST(a_set_of_the_same_value_takes_a_validated_tree_back_to_not_validated)
         NAOS_REQUIRE_TRUE(argx_command_validate(fixture.root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
 
         NAOS_CHECK_INT_EQ(argx_option_set_initial(fixture.negatable, false), ARGX_ERROR_NONE);
+        check_state(&fixture, false);
+        NAOS_REQUIRE_TRUE(argx_command_validate(fixture.root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
+
+        NAOS_CHECK_INT_EQ(argx_command_set_subcommand_optional(fixture.target, false),
+                          ARGX_ERROR_NONE);
         check_state(&fixture, false);
         NAOS_REQUIRE_TRUE(argx_command_validate(fixture.root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
 
@@ -2360,6 +2440,12 @@ NAOS_SUITE(required_default,
     NAOS_ADD_TEST(the_first_faulty_option_of_a_command_is_reported)
 )
 
+NAOS_SUITE(optional_subcommands,
+    NAOS_ADD_TEST(optional_subcommands_without_a_subcommand_are_an_inconsistent_definition),
+    NAOS_ADD_TEST(optional_subcommands_with_subcommands_and_required_ones_without_are_valid),
+    NAOS_ADD_TEST(optional_subcommands_are_checked_after_the_defaults_and_before_the_subcommands)
+)
+
 NAOS_SUITE(traversal,
     NAOS_ADD_TEST(a_faulty_option_in_a_subcommand_is_found),
     NAOS_ADD_TEST(a_faulty_positional_in_a_subcommand_is_found),
@@ -2403,6 +2489,7 @@ NAOS_MAIN(
     NAOS_ADD_SUITE(valid),
     NAOS_ADD_SUITE(positional_order),
     NAOS_ADD_SUITE(required_default),
+    NAOS_ADD_SUITE(optional_subcommands),
     NAOS_ADD_SUITE(traversal),
     NAOS_ADD_SUITE(state),
     NAOS_ADD_SUITE(defaults)

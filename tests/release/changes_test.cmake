@@ -72,7 +72,7 @@ endfunction()
 # --- Documentation only ------------------------------------------------------
 
 string(CONCAT all_list
-    "README.md\nCHANGELOG.md\nCONTRIBUTING.md\ndocs/references/version.md\ndocs/development/releasing.md\n"
+    "SECURITY.md\nCHANGELOG.md\nCONTRIBUTING.md\ndocs/references/version.md\ndocs/development/releasing.md\n"
     "docs/images/diagram.png\nLICENSE\n.github/pull_request_template.md\n"
     ".github/ISSUE_TEMPLATE/bug_report.yml\n.github/ISSUE_TEMPLATE/config.yml\n")
 expect_docs_only(all "every kind of documentation" all "${all_list}" "true")
@@ -81,24 +81,24 @@ expect_docs_only(markdown "Markdown at the root, under docs/ and under .github/"
 expect_docs_only(docs "files under docs/ only" docs
     "docs/development/releasing.md\ndocs/images/logo.svg\ndocs/data/example.json\n" "true")
 expect_docs_only(image "an image under docs/" image "docs/images/diagram.png\n" "true")
-expect_docs_only(one "a single path without a final newline" one "README.md" "true")
-expect_docs_only(blank "blank lines between the paths" blank "\nREADME.md\n\n\nLICENSE\n\n" "true")
-expect_docs_only(crlf "CRLF line endings" crlf "README.md\r\ndocs/references/version.md\r\nLICENSE\r\n" "true")
+expect_docs_only(one "a single path without a final newline" one "CONTRIBUTING.md" "true")
+expect_docs_only(blank "blank lines between the paths" blank "\nCONTRIBUTING.md\n\n\nLICENSE\n\n" "true")
+expect_docs_only(crlf "CRLF line endings" crlf "CONTRIBUTING.md\r\ndocs/references/version.md\r\nLICENSE\r\n" "true")
 expect_docs_only(semicolon "a path with a semicolon under docs/" semicolon
-    "docs/a;b.png\nREADME.md\n" "true")
+    "docs/a;b.png\nCONTRIBUTING.md\n" "true")
 argx_test_expect_contains("${all_STDOUT}" "(10 in all)" "the number of paths is printed")
 
 # --- Not documentation only --------------------------------------------------
 
 expect_docs_only(mixed "documentation and a source file" mixed
-    "README.md\nsrc/argx.c\ninclude/argx/argx.h\ndocs/references/version.md\n" "false")
+    "CONTRIBUTING.md\nsrc/argx.c\ninclude/argx/argx.h\ndocs/references/version.md\n" "false")
 argx_test_expect_contains("${mixed_STDOUT}" "src/argx.c"
     "mixed: the first path that is not documentation is printed")
 argx_test_expect_not_contains("${mixed_STDOUT}" "include/argx/argx.h"
     "mixed: only the first path that is not documentation is printed")
 
 expect_docs_only(workflow "the CI workflow" workflow
-    "README.md\n.github/workflows/ci.yml\n" "false")
+    "CONTRIBUTING.md\n.github/workflows/ci.yml\n" "false")
 argx_test_expect_contains("${workflow_STDOUT}" ".github/workflows/ci.yml"
     "workflow: the workflow is the path that is not documentation")
 
@@ -110,6 +110,13 @@ argx_test_expect_contains("${fixtures_STDOUT}" "tests/release/fixtures/CHANGELOG
 
 expect_docs_only(fixture_with_docs "a Markdown fixture under tests/ with documentation"
     fixture_with_docs "CHANGELOG.md\ntests/release/fixtures/CHANGELOG-history.md\n" "false")
+
+# The README holds the example that examples/greet tests.
+expect_docs_only(readme "the README, whose example is tested" readme "README.md\n" "false")
+argx_test_expect_contains("${readme_STDOUT}" "README.md"
+    "readme: the README is the path that is not documentation")
+expect_docs_only(readme_with_docs "the README with documentation" readme_with_docs
+    "CHANGELOG.md\nREADME.md\ndocs/references/version.md\n" "false")
 
 # Markdown in any other directory is not documentation either.
 foreach(path IN ITEMS "src/notes.md" "include/argx/README.md" "cmake/README.md"
@@ -165,7 +172,7 @@ argx_test_expect_equal("${output}" "docs_only=false\n" "directory as list: the o
 # --- Without an output file --------------------------------------------------
 
 # The verdict is printed and no file is written, as when run by hand.
-file(WRITE "${ARGX_TEST_WORK_DIR}/by-hand.txt" "README.md\n")
+file(WRITE "${ARGX_TEST_WORK_DIR}/by-hand.txt" "CONTRIBUTING.md\n")
 file(GLOB before LIST_DIRECTORIES true "${ARGX_TEST_WORK_DIR}/*")
 run_changes(by_hand "-DARGX_CHANGED_FILES=by-hand.txt")
 file(GLOB after LIST_DIRECTORIES true "${ARGX_TEST_WORK_DIR}/*")

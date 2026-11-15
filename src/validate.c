@@ -20,7 +20,8 @@
 
 /*
  * The location of a fault: the command it is in, and the option or
- * positional that has it. Either option or positional is NULL.
+ * positional that has it. Either option or positional is NULL; both are
+ * NULL when the fault is in the command itself.
  */
 typedef struct fault
 {
@@ -212,7 +213,8 @@ static argx_error_t check_positional_defaults(const argx_command_t *command,
 /*
  * Checks command and then its subcommands in definition order, each
  * together with everything below it. Within one command, it checks the
- * positional order, then the options, then the positional default values.
+ * positional order, then the options, then the positional default values,
+ * then that optional subcommands go with at least one subcommand.
  * Stops at the first fault, writes its location to *fault and returns its
  * error code. Returns ARGX_ERROR_NONE, without writing *fault, when there
  * is no fault. Returns ARGX_ERROR_OUT_OF_MEMORY, without writing *fault,
@@ -263,7 +265,16 @@ static argx_error_t check_command(const argx_command_t *command, fault_t *fault)
         return error;
     }
 
+    /* Only a command with subcommands can make them optional. */
     count = argx_command_subcommand_count(command);
+    if (argx_command_is_subcommand_optional(command) && (count == 0))
+    {
+        fault->command = command;
+        fault->option = NULL;
+        fault->positional = NULL;
+        return ARGX_ERROR_INVALID_DEFINITION;
+    }
+
     for (index = 0; index < count; ++index)
     {
         error = check_command(argx_command_subcommand_at(command, index), fault);

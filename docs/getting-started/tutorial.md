@@ -1,6 +1,6 @@
 # Tutorial
 
-A walk through [examples/pack.c](../../examples/pack.c), a complete program for a made-up archiver with the subcommands `create` and `list`. Each excerpt names the function it comes from. To build ArgX, see [Installation](installation.md).
+A walk through [examples/pack/pack.c](../../examples/pack/pack.c), a complete program for a made-up archiver with the subcommands `create` and `list`. Each excerpt names the function it comes from. To build ArgX, see [Installation](installation.md).
 
 ## Concepts
 
@@ -15,7 +15,7 @@ A walk through [examples/pack.c](../../examples/pack.c), a complete program for 
 
 The steps are numbered the same way in the comments of `main`.
 
-| Step | In examples/pack.c |
+| Step | In examples/pack/pack.c |
 | --- | --- |
 | 1. Create the value types | `create_types`, `convert_size` |
 | 2. Define the schema | `define_schema`, `define_root`, `define_create`, `define_list`, `add_help` |
@@ -61,6 +61,8 @@ TRY(argx_option_set_required(schema->output, true));
 ```
 
 A failed add function writes a `NULL` handle, so stop at the first failure.
+
+**Subcommands are required by default.** `pack` alone is the parse error `MISSING_SUBCOMMAND`, and the usage line shows `<COMMAND>`. Like most programs with subcommands, `pack` then prints the help ([step 4](#4-parse-argv-and-branch-on-the-error-code)). To make a subcommand optional, or to print the error message instead, see [How-to](../guides/how-to.md#allowing-a-command-line-without-a-subcommand).
 
 **Define `--help` on every command.** The library adds none, and an option is recognized only on its own command ([`--help`](../references/parse.md#--help)). `add_help`:
 
@@ -118,6 +120,12 @@ case ARGX_ERROR_INVALID_COMMAND_LINE:
     {
         status = print_help(result);
     }
+    else if (argx_result_error_kind(result) == ARGX_PARSE_ERROR_MISSING_SUBCOMMAND)
+    {
+        /* No subcommand: the help, and a failure, since nothing was done. */
+        (void)print_help(result);
+        status = EXIT_FAILURE;
+    }
     else
     {
         print_parse_error(result);
@@ -133,7 +141,8 @@ default:
 
 - **`argx_parse` returns one of three codes.** `ARGX_ERROR_OUT_OF_MEMORY` is the only one that leaves no result, so `default` handles it.
 - **A parse error also gives a result,** which holds what was read before the error and which you destroy like any other.
-- **Read `--help` in both cases.** It is an ordinary flag ([Design](../guides/design.md#--help-is-an-ordinary-option)). `pack create --help` omits the required `--output`, so it is a parse error, but `--help` was read before the error and reads as given.
+- **Read `--help` in both cases.** It is an ordinary flag ([Design](../guides/design.md#--help-is-an-ordinary-option)). `pack create --help` omits the required `--output`, and `pack --help` the subcommand, so both are parse errors, but `--help` was read before the error and reads as given.
+- **Branch on the kind of a parse error to treat one differently.** A command line without a subcommand prints the help of the command it ended in, as most programs with subcommands do, and fails. Every other parse error prints its message and the usage line ([step 5](#5-print-the-help-or-the-parse-error)).
 
 `help_was_given` reads the `--help` of each selected command:
 
@@ -229,7 +238,7 @@ for (i = 0; i < argx_result_positional_count(result, schema->files); ++i)
 ```
 
 - Use the function that matches the value type: `_string`, `_int`, `_float`, `_choice`, or `_value` for a user-defined type.
-- `argx_result_command` tells which subcommand to run. A missing subcommand is not a parse error, so `run` checks it.
+- `argx_result_command` tells which subcommand to run. The root's subcommands are required, so after a parse that succeeded it is `create` or `list`.
 
 ## 7. Destroy
 

@@ -386,7 +386,7 @@ NAOS_TEST(heading_beyond_the_limit_goes_to_its_own_line)
     validate(root);
 
     check_layout(root, 80, 2, 12,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add       Add a remote\n"
@@ -440,7 +440,7 @@ NAOS_TEST(two_blanks_keep_the_description_on_the_line)
     validate(root);
 
     check_layout(root, 80, 2, 12,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  eightchr  Two blanks\n"
@@ -469,7 +469,7 @@ NAOS_TEST(half_of_the_width_is_the_limit)
 
     check_layout(root, 20, 2, 32,
                  "Usage: tool\n"
-                 "       [COMMAND]\n"
+                 "       <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  sixsix  Six\n"
@@ -477,7 +477,7 @@ NAOS_TEST(half_of_the_width_is_the_limit)
                  "          Seven\n");
 
     check_layout(root, 21, 2, 32,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  sixsix  Six\n"
@@ -485,7 +485,7 @@ NAOS_TEST(half_of_the_width_is_the_limit)
                  "          Seven\n");
 
     check_layout(root, 22, 2, 32,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  sixsix   Six\n"
@@ -509,7 +509,7 @@ NAOS_TEST(limit_is_the_smaller_of_maximum_and_half_width)
     validate(root);
 
     check_layout(root, 80, 2, 100,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add                                   Add\n"
@@ -517,7 +517,7 @@ NAOS_TEST(limit_is_the_smaller_of_maximum_and_half_width)
                  "                                        Long\n");
 
     check_layout(root, 80, 2, 36,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add                               Add\n"
@@ -541,7 +541,7 @@ NAOS_TEST(width_zero_leaves_the_maximum_as_the_limit)
     validate(root);
 
     check_layout(root, 0, 2, 32,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  abcdefghijklmnopqrstuvwxyz01  Fits\n"
@@ -565,7 +565,7 @@ NAOS_TEST(width_zero_does_not_halve_a_great_maximum)
     validate(root);
 
     check_layout(root, 0, 2, 100,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add                                       Add\n"
@@ -590,7 +590,7 @@ NAOS_TEST(indent_plus_two_is_the_least_limit)
     validate(root);
 
     check_layout(root, 80, 4, 3,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "    a\n"
@@ -599,7 +599,7 @@ NAOS_TEST(indent_plus_two_is_the_least_limit)
                  "      Bee\n");
 
     check_layout(root, 80, 4, 0,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "    a\n"
@@ -609,7 +609,7 @@ NAOS_TEST(indent_plus_two_is_the_least_limit)
 
     check_layout(root, 8, 4, 32,
                  "Usage: tool\n"
-                 "       [COMMAND]\n"
+                 "       <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "    a\n"
@@ -618,7 +618,7 @@ NAOS_TEST(indent_plus_two_is_the_least_limit)
                  "      Bee\n");
 
     check_layout(root, 80, 0, 0,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "a\n"
@@ -645,7 +645,7 @@ NAOS_TEST(long_command_leaves_the_column_of_the_options)
     validate(root);
 
     check_layout(root, 80, 2, 20,
-                 "Usage: tool [OPTIONS] [COMMAND]\n"
+                 "Usage: tool [OPTIONS] <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add               Add\n"
@@ -674,7 +674,7 @@ NAOS_TEST(long_option_leaves_the_column_of_the_commands)
     validate(root);
 
     check_layout(root, 80, 2, 20,
-                 "Usage: tool [OPTIONS] [COMMAND]\n"
+                 "Usage: tool [OPTIONS] <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add               Add\n"
@@ -783,7 +783,7 @@ NAOS_TEST(long_heading_without_description_is_heading_only)
     validate(root);
 
     check_layout(root, 80, 2, 20,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  synchronize-everything\n"
@@ -865,7 +865,7 @@ NAOS_TEST(long_descriptions_break_between_words)
 
     check_layout(root, 30, 2, 32,
                  "Usage: tool [OPTIONS]\n"
-                 "       [COMMAND]\n"
+                 "       <COMMAND>\n"
                  "\n"
                  "A tool that keeps the remote\n"
                  "copies of a project in step\n"
@@ -1070,7 +1070,7 @@ NAOS_TEST(indent_and_maximum_column_shape_the_lists)
     validate(root);
 
     check_layout(root, 80, 2, 32,
-                 "Usage: tool [OPTIONS] [COMMAND]\n"
+                 "Usage: tool [OPTIONS] <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add            Add a remote\n"
@@ -1080,7 +1080,7 @@ NAOS_TEST(indent_and_maximum_column_shape_the_lists)
                  "  -v, --verbose  Say more\n");
 
     check_layout(root, 80, 6, 32,
-                 "Usage: tool [OPTIONS] [COMMAND]\n"
+                 "Usage: tool [OPTIONS] <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "      add            Add a remote\n"
@@ -1090,7 +1090,7 @@ NAOS_TEST(indent_and_maximum_column_shape_the_lists)
                  "      -v, --verbose  Say more\n");
 
     check_layout(root, 80, 0, 32,
-                 "Usage: tool [OPTIONS] [COMMAND]\n"
+                 "Usage: tool [OPTIONS] <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "add            Add a remote\n"
@@ -1100,7 +1100,7 @@ NAOS_TEST(indent_and_maximum_column_shape_the_lists)
                  "-v, --verbose  Say more\n");
 
     check_layout(root, 80, 2, 12,
-                 "Usage: tool [OPTIONS] [COMMAND]\n"
+                 "Usage: tool [OPTIONS] <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add       Add a remote\n"
@@ -1111,7 +1111,7 @@ NAOS_TEST(indent_and_maximum_column_shape_the_lists)
                  "            Say more\n");
 
     check_layout(root, 80, 2, 40,
-                 "Usage: tool [OPTIONS] [COMMAND]\n"
+                 "Usage: tool [OPTIONS] <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  add            Add a remote\n"
@@ -1186,7 +1186,7 @@ NAOS_TEST(one_options_object_serves_many_generations)
 {
     static const char expected_root[] =
         "Usage: tool [OPTIONS]\n"
-        "       [COMMAND]\n"
+        "       <COMMAND>\n"
         "\n"
         "Commands:\n"
         "    remote  Manage the remote\n"
@@ -1359,12 +1359,12 @@ NAOS_TEST(width_above_the_limit_works_as_the_limit)
 NAOS_TEST(indent_above_the_limit_works_as_the_limit)
 {
     static const piece_t pieces[] = {
-        { "Usage: tool [COMMAND]\n\nCommands:\n", ' ', (size_t)65535 },
+        { "Usage: tool <COMMAND>\n\nCommands:\n", ' ', (size_t)65535 },
         { "a\n", ' ', (size_t)65537 },
         { "Add\n", ' ', 0 },
     };
     static const piece_t one_less[] = {
-        { "Usage: tool [COMMAND]\n\nCommands:\n", ' ', (size_t)65534 },
+        { "Usage: tool <COMMAND>\n\nCommands:\n", ' ', (size_t)65534 },
         { "a\n", ' ', (size_t)65536 },
         { "Add\n", ' ', 0 },
     };
@@ -1399,12 +1399,12 @@ NAOS_TEST(indent_above_the_limit_works_as_the_limit)
 NAOS_TEST(maximum_column_above_the_limit_works_as_the_limit)
 {
     static const piece_t pieces[] = {
-        { "Usage: tool [COMMAND]\n\nCommands:\n", ' ', (size_t)65533 },
+        { "Usage: tool <COMMAND>\n\nCommands:\n", ' ', (size_t)65533 },
         { "a\n", ' ', (size_t)65535 },
         { "Add\n", ' ', 0 },
     };
     static const piece_t same_line[] = {
-        { "Usage: tool [COMMAND]\n\nCommands:\n", ' ', (size_t)65532 },
+        { "Usage: tool <COMMAND>\n\nCommands:\n", ' ', (size_t)65532 },
         { "a  Add\n", ' ', 0 },
     };
     char *buffer = malloc(BIG_SINK_SIZE);
@@ -1450,7 +1450,7 @@ static void check_blank_command_description(const char *description)
     add_flag(root, 'v', NULL, "Say more");
     validate(root);
     check_help_with(root, NULL,
-                    "Usage: tool [OPTIONS] [COMMAND]\n"
+                    "Usage: tool [OPTIONS] <COMMAND>\n"
                     "\n"
                     "Commands:\n"
                     "  add  Add\n"
@@ -1538,7 +1538,7 @@ NAOS_TEST(blank_first_line_of_a_subcommand_is_heading_only)
     validate(root);
 
     check_layout(root, 80, 2, 20,
-                 "Usage: tool [COMMAND]\n"
+                 "Usage: tool <COMMAND>\n"
                  "\n"
                  "Commands:\n"
                  "  synchronize-everything\n"

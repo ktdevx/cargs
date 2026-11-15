@@ -156,6 +156,12 @@ static void validate(argx_command_t *root)
     NAOS_REQUIRE_TRUE(argx_command_validate(root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
 }
 
+/* Lets a command line end in command without naming a subcommand. */
+static void make_subcommand_optional(argx_command_t *command)
+{
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(command, true) == ARGX_ERROR_NONE);
+}
+
 /* Destroys the schema and ends the test: nothing stays allocated. */
 static void destroy_root(argx_command_t *root)
 {
@@ -839,6 +845,85 @@ NAOS_TEST(a_missing_positional_has_no_position_and_the_positional)
     destroy_root(fixture.root);
 }
 
+NAOS_TEST(a_missing_subcommand_has_no_position_and_the_command_that_misses_it)
+{
+    fixture_t fixture;
+    expected_t expected;
+
+    set_up(&fixture);
+
+    /* Nothing at all, with or without the name of the program. */
+    expected = off_command_line(ARGX_PARSE_ERROR_MISSING_SUBCOMMAND, ARGX_SOURCE_NONE, fixture.root,
+                                "missing required command");
+    {
+        char *argv[] = { "tool" };
+
+        expect_error(fixture.root, ARGC(argv), argv, &expected);
+    }
+    expect_error(fixture.root, 0, NULL, &expected);
+    /* Options of the root alone. */
+    {
+        char *argv[] = { "tool", "-v", "--num", "5" };
+
+        expect_error(fixture.root, ARGC(argv), argv, &expected);
+    }
+    /* After "--", nothing is a subcommand name, and nothing came. */
+    {
+        char *argv[] = { "tool", "-v", "--" };
+
+        expect_error(fixture.root, ARGC(argv), argv, &expected);
+    }
+    /* A subcommand that has subcommands of its own: the command is that one. */
+    {
+        char *argv[] = { "tool", "remote" };
+
+        expected = off_command_line(ARGX_PARSE_ERROR_MISSING_SUBCOMMAND, ARGX_SOURCE_NONE,
+                                    fixture.remote, "missing required command");
+        expect_error(fixture.root, ARGC(argv), argv, &expected);
+    }
+
+    destroy_root(fixture.root);
+}
+
+NAOS_TEST(an_optional_subcommand_may_be_left_out_of_its_command_only)
+{
+    fixture_t fixture;
+    argx_result_t *result;
+
+    set_up(&fixture);
+    make_subcommand_optional(fixture.root);
+    validate(fixture.root);
+
+    /* The command line ends in the root. */
+    {
+        char *argv[] = { "tool", "-v" };
+
+        result = parse_ok(fixture.root, ARGC(argv), argv);
+        NAOS_CHECK_TRUE(argx_result_command(result) == fixture.root);
+        NAOS_CHECK_UINT_EQ(argx_result_command_count(result), 1);
+        argx_result_destroy(result);
+    }
+    /* The subcommands of remote are still required. */
+    {
+        char *argv[] = { "tool", "remote" };
+        expected_t expected =
+            off_command_line(ARGX_PARSE_ERROR_MISSING_SUBCOMMAND, ARGX_SOURCE_NONE, fixture.remote,
+                             "missing required command");
+
+        expect_error(fixture.root, ARGC(argv), argv, &expected);
+    }
+    /* A command without subcommands never misses one. */
+    {
+        char *argv[] = { "tool", "status" };
+
+        result = parse_ok(fixture.root, ARGC(argv), argv);
+        NAOS_CHECK_TRUE(argx_result_command(result) == fixture.status);
+        argx_result_destroy(result);
+    }
+
+    destroy_root(fixture.root);
+}
+
 /* ---- A default value that its value type does not take ------------------- */
 
 /*
@@ -1028,6 +1113,56 @@ NAOS_TEST(of_several_missing_things_the_first_of_the_nearest_command_is_reported
     destroy_root(fixture.root);
 }
 
+NAOS_TEST(a_missing_subcommand_is_reported_after_everything_else_that_is_missing)
+{
+    argx_command_t *root = create_root("tool");
+    argx_option_t *token = add_required(root, 't', "token", argx_type_string());
+    argx_command_t *remote = add_subcommand(root, "remote");
+    argx_option_t *url = add_required(remote, 'u', "url", argx_type_string());
+    expected_t expected;
+
+    (void)add_subcommand(remote, "add");
+    validate(root);
+
+    /* A required option of a command nearer the root comes first. */
+    {
+        char *argv[] = { "tool", "remote" };
+
+        expected = off_command_line(ARGX_PARSE_ERROR_MISSING_OPTION, ARGX_SOURCE_NONE, root,
+                                    "missing required option '--token'");
+        expected.option = token;
+        expect_error(root, ARGC(argv), argv, &expected);
+    }
+    /* So does a required option of the command that misses the subcommand. */
+    {
+        char *argv[] = { "tool", "-tsecret", "remote" };
+
+        expected = off_command_line(ARGX_PARSE_ERROR_MISSING_OPTION, ARGX_SOURCE_NONE, remote,
+                                    "missing required option '--url'");
+        expected.option = url;
+        expect_error(root, ARGC(argv), argv, &expected);
+    }
+    /* With nothing else missing, the subcommand is reported. */
+    {
+        char *argv[] = { "tool", "-tsecret", "remote", "-uhttp://example.com" };
+
+        expected = off_command_line(ARGX_PARSE_ERROR_MISSING_SUBCOMMAND, ARGX_SOURCE_NONE, remote,
+                                    "missing required command");
+        expect_error(root, ARGC(argv), argv, &expected);
+    }
+    /* Also in the root, after its own required option. */
+    {
+        char *argv[] = { "tool" };
+
+        expected = off_command_line(ARGX_PARSE_ERROR_MISSING_OPTION, ARGX_SOURCE_NONE, root,
+                                    "missing required option '--token'");
+        expected.option = token;
+        expect_error(root, ARGC(argv), argv, &expected);
+    }
+
+    destroy_root(root);
+}
+
 /* ---- The result of a command line with a parse error --------------------- */
 
 NAOS_TEST(a_result_with_a_parse_error_holds_what_was_read_before_the_error)
@@ -1108,6 +1243,28 @@ NAOS_TEST(help_reads_as_given_when_something_required_is_missing)
     NAOS_CHECK_TRUE(argx_result_flag(result, help));
     NAOS_CHECK_INT_EQ(argx_result_option_source(result, help), ARGX_SOURCE_COMMAND_LINE);
     NAOS_CHECK_UINT_EQ(argx_result_positional_count(result, file), 0);
+    argx_result_destroy(result);
+
+    destroy_root(root);
+}
+
+NAOS_TEST(help_reads_as_given_when_a_subcommand_is_missing)
+{
+    argx_command_t *root = create_root("tool");
+    argx_option_t *help = add_flag(root, 'h', "help");
+    char *argv[] = { "tool", "--help" };
+    expected_t expected;
+    argx_result_t *result;
+
+    (void)add_subcommand(root, "run");
+    validate(root);
+
+    expected = off_command_line(ARGX_PARSE_ERROR_MISSING_SUBCOMMAND, ARGX_SOURCE_NONE, root,
+                                "missing required command");
+    result = parse_error(root, ARGC(argv), argv, &expected);
+    NAOS_CHECK_TRUE(argx_result_flag(result, help));
+    NAOS_CHECK_INT_EQ(argx_result_option_source(result, help), ARGX_SOURCE_COMMAND_LINE);
+    NAOS_CHECK_TRUE(argx_result_command(result) == root);
     argx_result_destroy(result);
 
     destroy_root(root);
@@ -1223,6 +1380,9 @@ NAOS_TEST(a_result_without_a_parse_error_reads_as_no_error)
     size_t index;
 
     set_up(&fixture);
+    /* "tool" alone ends in the root. */
+    make_subcommand_optional(fixture.root);
+    validate(fixture.root);
     results[0] = parse_ok(fixture.root, ARGC(given), given);
     results[1] = parse_ok(fixture.root, ARGC(nothing), nothing);
     results[2] = parse_ok(fixture.root, 0, NULL);
@@ -1337,17 +1497,21 @@ NAOS_SUITE(scan_errors,
 NAOS_SUITE(resolve_errors,
     NAOS_ADD_TEST(a_missing_option_has_no_position_and_the_option),
     NAOS_ADD_TEST(a_missing_positional_has_no_position_and_the_positional),
+    NAOS_ADD_TEST(a_missing_subcommand_has_no_position_and_the_command_that_misses_it),
+    NAOS_ADD_TEST(an_optional_subcommand_may_be_left_out_of_its_command_only),
     NAOS_ADD_TEST(an_invalid_default_value_has_the_default_as_its_value_and_no_argument)
 )
 
 NAOS_SUITE(first_error,
     NAOS_ADD_TEST(of_two_errors_the_one_that_is_earlier_on_the_command_line_is_reported),
-    NAOS_ADD_TEST(of_several_missing_things_the_first_of_the_nearest_command_is_reported)
+    NAOS_ADD_TEST(of_several_missing_things_the_first_of_the_nearest_command_is_reported),
+    NAOS_ADD_TEST(a_missing_subcommand_is_reported_after_everything_else_that_is_missing)
 )
 
 NAOS_SUITE(failed_results,
     NAOS_ADD_TEST(a_result_with_a_parse_error_holds_what_was_read_before_the_error),
     NAOS_ADD_TEST(help_reads_as_given_when_something_required_is_missing),
+    NAOS_ADD_TEST(help_reads_as_given_when_a_subcommand_is_missing),
     NAOS_ADD_TEST(help_of_a_subcommand_reads_as_given_when_something_required_is_missing),
     NAOS_ADD_TEST(a_result_with_a_parse_error_has_no_default_value_and_the_initial_values)
 )

@@ -1,17 +1,23 @@
 # Copyright (c) 2026 The ArgX Authors
 # SPDX-License-Identifier: MIT
 #
-# The complete example programs, which the README links to. Each one is built,
-# and run as CTest tests (label "example") with the command lines that its
-# comments show, so that an example that no longer compiles or prints
-# something else makes the tests fail. Added only when ARGX_BUILD_TESTS is ON.
+# The complete example programs that the documents link to, one directory
+# each. Each one is built, and run as CTest tests (label "example") with the
+# command lines that its comments or the README show, so that an example that
+# no longer compiles or prints something else makes the tests fail. Added
+# only when ARGX_BUILD_TESTS is ON.
 #
-# To add an example, put <name>.c here, then add
+# To add an example, create the directory <name>/ with <name>.c and a
+# CMakeLists.txt that calls
 #     argx_add_example(<name>)
 # and one call per command line to run it with:
 #     argx_add_example_test(<name> <case> <expected output regex> [ARGS <argument>...])
 # The test is named example.<name>.<case>. Its standard output and standard
-# error stream are matched together, and the exit status is not checked.
+# error stream are matched together, and the exit status is not checked. To
+# check that a command line fails, add
+#     argx_add_example_failure_test(<name> <case> [ARGS <argument>...])
+# which passes when the program exits with a status other than 0. Then add
+# the directory below.
 
 function(argx_add_example name)
     set(target "argx_example_${name}")
@@ -44,21 +50,12 @@ function(argx_add_example_test name case pass_regex)
     )
 endfunction()
 
-argx_add_example(pack)
-argx_add_example_test(pack create
-    "^verbose: 2, color: on\r?\ncreate out\\.tar, level 6 \\(default\\)\r?\nformat tar, block size 65536 bytes, ratio 0\\.50\r?\n  a\\.txt\r?\n  b\\.txt\r?\n$"
-    ARGS -vv create -o out.tar a.txt b.txt)
-argx_add_example_test(pack values
-    "^verbose: 0, color: off\r?\ncreate out\\.zip, level 9 \\(command line\\)\r?\nformat zip, block size 2097152 bytes, ratio 0\\.50\r?\n  -x\\.txt\r?\n$"
-    ARGS --no-color create -l9 --format=zip --block-size 2m -o out.zip -- -x.txt)
-argx_add_example_test(pack list
-    "^verbose: 0, color: on\r?\nlist out\\.tar, pattern \\* \\(default\\)\r?\n$"
-    ARGS list out.tar)
-argx_add_example_test(pack help
-    "^Usage: pack create \\[OPTIONS\\] --output <FILE> <file>\\.\\.\\.\r?\n\r?\nCreate an archive\\.\r?\n"
-    ARGS create --help)
-argx_add_example_test(pack parse-error
-    "^pack: missing required option '--output'\r?\nUsage: pack create \\[OPTIONS\\] --output <FILE> <file>\\.\\.\\.\r?\nFor more information, try '--help'\\.\r?\n$"
-    ARGS create a.txt)
-argx_add_example_test(pack no-command
-    "^pack: a command is required\r?\nFor more information, try '--help'\\.\r?\n$")
+function(argx_add_example_failure_test name case)
+    cmake_parse_arguments(PARSE_ARGV 2 example "" "" "ARGS")
+    set(test "example.${name}.${case}")
+    add_test(NAME "${test}" COMMAND "argx_example_${name}" ${example_ARGS})
+    set_tests_properties("${test}" PROPERTIES WILL_FAIL TRUE LABELS example)
+endfunction()
+
+add_subdirectory(greet)
+add_subdirectory(pack)

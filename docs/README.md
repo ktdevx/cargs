@@ -6,11 +6,11 @@ This page lists the documents of ArgX, with a one-line description of each. The 
 
 - [Installation](getting-started/installation.md): building and testing ArgX, the build options, the four ways to use it from your project (FetchContent, add_subdirectory, find_package and pkg-config), and the version of an installed package.
 - [The example in the README](../README.md#example): a short program to read first.
-- [Tutorial](getting-started/tutorial.md): the concepts, then a walk through the complete program [examples/pack.c](../examples/pack.c) step by step, from value types to destroying the result.
+- [Tutorial](getting-started/tutorial.md): the concepts, then a walk through the complete program [examples/pack/pack.c](../examples/pack/pack.c) step by step, from value types to destroying the result.
 
 ## Guides
 
-- [How-to](guides/how-to.md): recipes for specific tasks, such as requiring a subcommand, Unicode argv on Windows, and getting the help as a string.
+- [How-to](guides/how-to.md): recipes for specific tasks, such as making a subcommand optional, Unicode argv on Windows, and getting the help as a string.
 - [FAQ](guides/faq.md): why ArgX behaves as it does, in short answers.
 - [Design](guides/design.md): why the library works the way it does, one decision at a time.
 

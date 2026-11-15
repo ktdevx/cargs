@@ -35,6 +35,8 @@
  *   order.
  * - subcommands: the subcommands, as argx_command_t *, in definition
  *   order.
+ * - subcommand_optional: whether a command line may end without naming a
+ *   subcommand of this command. False until set.
  * - validated: whether the tree has been validated since its last change.
  *   Used only in the root. Read and write it through the root.
  */
@@ -46,6 +48,7 @@ struct argx_command
     argx_vec_t options;
     argx_vec_t positionals;
     argx_vec_t subcommands;
+    bool subcommand_optional;
     bool validated;
 };
 
