@@ -62,7 +62,7 @@ TRY(argx_option_set_required(schema->output, true));
 
 A failed add function writes a `NULL` handle, so stop at the first failure.
 
-**Subcommands are required by default.** `pack` alone is the parse error `missing required command`, and the usage line shows `<COMMAND>`. A command that does something of its own without a subcommand calls `argx_command_set_subcommand_optional` ([Commands](../references/schema.md#commands)).
+**Subcommands are required by default.** `pack` alone is the parse error `missing required command`, and the usage line shows `<COMMAND>`. `pack` keeps this standard behavior. To make a subcommand optional, or to print the help instead of the error, see [How-to](../guides/how-to.md#allowing-a-command-line-without-a-subcommand).
 
 **Define `--help` on every command.** The library adds none, and an option is recognized only on its own command ([`--help`](../references/parse.md#--help)). `add_help`:
 

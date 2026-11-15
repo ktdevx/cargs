@@ -12,7 +12,7 @@ Subcommands are required by default: a command line that ends in a command with 
 TRY(argx_command_set_subcommand_optional(remote, true));
 ```
 
-The command line may then end in `remote`, `argx_result_command` returns it, and its usage line shows `[COMMAND]` instead of `<COMMAND>` ([Subcommands](../references/syntax.md#subcommands)). The setting belongs to `remote` only.
+The command line may then end in `remote`, `argx_result_command` returns it, and its usage line shows `[COMMAND]` instead of `<COMMAND>` ([Subcommands](../references/syntax.md#subcommands)). The setting belongs to `remote` only. Handle that case where you branch on `argx_result_command`, as `run` in [examples/pack.c](../../examples/pack.c) does for `create` and `list`.
 
 ### Printing the help when no subcommand is given
 

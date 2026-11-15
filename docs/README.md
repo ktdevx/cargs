@@ -10,7 +10,7 @@ This page lists the documents of ArgX, with a one-line description of each. The 
 
 ## Guides
 
-- [How-to](guides/how-to.md): recipes for specific tasks, such as requiring a subcommand, Unicode argv on Windows, and getting the help as a string.
+- [How-to](guides/how-to.md): recipes for specific tasks, such as making a subcommand optional, Unicode argv on Windows, and getting the help as a string.
 - [FAQ](guides/faq.md): why ArgX behaves as it does, in short answers.
 - [Design](guides/design.md): why the library works the way it does, one decision at a time.
 

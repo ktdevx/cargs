@@ -20,6 +20,11 @@
  * pages in docs/references/ (schema.md, types.md, parse.md and help.md) are
  * the reference for each function it calls.
  *
+ * The program keeps the library's standard behavior, such as a required
+ * subcommand and a parse error printed with its usage line. To change it,
+ * for example to make a subcommand optional or to print the help when no
+ * subcommand is given, follow the recipes in docs/guides/how-to.md.
+ *
  * It accepts command lines of this form:
  *
  *   pack [-h] [-v]... [-q] [--color | --no-color] create [-h] -o FILE
