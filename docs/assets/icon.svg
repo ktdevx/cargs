@@ -2,6 +2,6 @@
   <title id="title">ArgX</title>
   <defs><path id="g0" d="m140 260l0 140l320 0l0-140z"/><path id="g1" d="m20 0l196 377l-183 353l165 0l76-160q11-22 18-40q8-18 10-26q2 8 9 26q7 18 17 40l78 160l161 0l-183-353l196-377l-165 0l-88 180q-10 22-18 41q-8 19-12 29q-3-10-10-29q-7-19-18-41l-88-180z"/></defs>
   <rect width="512" height="512" rx="112" fill="#10151f"/>
-  <g transform="translate(47.0 321.3) scale(0.295385 -0.295385)"><g fill="#a3adbd"><use href="#g0"/></g><g fill="#56d6c4"><use href="#g1" x="600"/></g></g>
-  <path d="M99.4 361.3V395.3H384.6V361.3" fill="none" stroke="#5b6880" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(61.0 321.3) scale(0.295385 -0.295385)"><g fill="#a3adbd"><use href="#g0"/></g><g fill="#56d6c4"><use href="#g1" x="600"/></g></g>
+  <path d="M113.4 361.3V395.3H398.6V361.3" fill="none" stroke="#5b6880" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
