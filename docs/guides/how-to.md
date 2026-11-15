@@ -16,7 +16,7 @@ The command line may then end in `remote`, `argx_result_command` returns it, and
 
 ### Printing an error message when no subcommand is given
 
-[examples/pack/pack.c](../../examples/pack/pack.c) prints the help when a command line ends without a subcommand, as most programs with subcommands do. To print the message of the parse error and the usage line instead, like any other parse error, drop that branch from the `ARGX_ERROR_INVALID_COMMAND_LINE` case:
+`examples/pack/pack.c` prints the help when a command line ends without a subcommand, as most programs with subcommands do. To print the message of the parse error and the usage line instead, like any other parse error, drop that branch from the `ARGX_ERROR_INVALID_COMMAND_LINE` case:
 
 ```c
 if (help_was_given(result))
@@ -65,7 +65,7 @@ To display them, set the console output code page yourself.
 
 ### Reading the value of a user-defined value type
 
-Read the pointer from `argx_result_option_value` or `argx_result_positional_value` as the C type your conversion function wrote ([Reading the result](../references/parse.md#reading-the-result)). For the `size` type of [examples/pack/pack.c](../../examples/pack/pack.c), which writes an `unsigned long`:
+Read the pointer from `argx_result_option_value` or `argx_result_positional_value` as the C type your conversion function wrote ([Reading the result](../references/parse.md#reading-the-result)). For the `size` type of `examples/pack/pack.c`, which writes an `unsigned long`:
 
 ```c
 const unsigned long *block_size = argx_result_option_value(result, schema->block_size);
@@ -149,7 +149,7 @@ static void print_error(const argx_command_t *command, const char *message)
 
 ### Naming the command in the hint after a parse error
 
-[examples/pack/pack.c](../../examples/pack/pack.c) prints `For more information, try '--help'.` To name the command where the error was found, walk up from [`argx_result_error_command`](../references/parse.md#parse-error-details) with [`argx_command_parent`](../references/schema.md#reading-a-schema), which returns `NULL` for the root:
+`examples/pack/pack.c` prints `For more information, try '--help'.` To name the command where the error was found, walk up from [`argx_result_error_command`](../references/parse.md#parse-error-details) with [`argx_command_parent`](../references/schema.md#reading-a-schema), which returns `NULL` for the root:
 
 ```c
 /* Writes the names of the commands from the root to command, separated by spaces. */

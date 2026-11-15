@@ -35,7 +35,16 @@ ctest --test-dir build -L internal
 ctest --test-dir build -R '^parse_'
 ```
 
-The consumer check installs a built ArgX and builds a separate project against it, in each of the four ways of [Installation](../getting-started/installation.md). The build directory must be built, with `ARGX_INSTALL` `ON` (the default when you build the repository directly). `ARGX_CONFIG` must be a configuration of the build directory, and `ARGX_SHARED` must match `BUILD_SHARED_LIBS`. For the `build-static` directory of [Verifying a change](procedures.md#verifying-a-change):
+To run the tests of an ArgX embedded in another project with `add_subdirectory`, set `ARGX_BUILD_TESTS` before `add_subdirectory` and call `enable_testing()` in the top-level `CMakeLists.txt`, or `ctest` will not find the tests:
+
+```cmake
+enable_testing()
+
+set(ARGX_BUILD_TESTS ON)
+add_subdirectory(third_party/argx)
+```
+
+The consumer check installs a built ArgX and builds a separate project against it, in each of the four ways of [Installation](../getting-started/installation.md). The build directory must be built, with `ARGX_INSTALL` `ON` (the default when you build the repository directly). `ARGX_CONFIG` must be a configuration of the build directory, and `ARGX_SHARED` must match `BUILD_SHARED_LIBS`. For the `build-static` directory of [Building and testing](../../CONTRIBUTING.md#building-and-testing) in CONTRIBUTING:
 
 ```sh
 cmake -D ARGX_BUILD_DIR=build-static -D ARGX_CONFIG=Debug -D ARGX_SHARED=OFF -P tests/consumer/run.cmake

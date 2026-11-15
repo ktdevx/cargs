@@ -213,7 +213,3 @@ sequenceDiagram
 4. The write function is the caller's. `argx_help_format()` and `argx_help_format_usage()` pass a write function that copies the text into the caller's buffer and counts its whole length.
 
 The rules of the text itself are in [Help Text Layout](../references/help-layout.md).
-
-## Tests
-
-The tests are in `tests/`, apart from the example programs in `examples/`. The kinds of tests and where each one is are in [Testing](testing.md#kinds-of-tests).

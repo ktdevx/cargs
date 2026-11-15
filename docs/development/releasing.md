@@ -19,7 +19,7 @@ An admin makes these settings by hand; the workflows never change settings.
 1. **Settings > Actions > General:** check **Allow GitHub Actions to create and approve pull requests**, and keep the default workflow permissions read-only.
 2. **Protect `main`:** require a pull request and the status check **`CI result`**. Do not require the individual `build (...)` or `quickstart (...)` jobs; they are skipped for documentation-only changes. Do not block the creation of `release/v*` branches.
 3. **Tag rulesets (optional):** if `v*` tags are protected, still let GitHub Actions create them.
-4. **Settings > Code security:** enable **Private vulnerability reporting**, which [SECURITY.md](../../SECURITY.md) relies on.
+4. **Settings > Code security:** enable **Private vulnerability reporting**, which SECURITY.md relies on.
 
 ## Permissions and secrets
 
@@ -66,13 +66,10 @@ gh workflow run release-pr.yml --ref main -f version=0.2.0-rc.1
 - The version must be higher than every release tag, so pre-release the next version (`0.2.0-rc.1`), not the one already released.
 - Each pre-release, and the final release after it, moves only the current `Unreleased` entries and needs at least one. If nothing changed since the last pre-release, add an entry such as `- First stable release of 0.2.0, with no change since 0.2.0-rc.2.` The release notes already refer to the pre-releases.
 
-## When the release pull request shows no CI result
-
-Start CI on the release branch again: run **CI** on `release/v<version>` from the Actions tab (`gh workflow run ci.yml --ref release/v0.2.0`), close and reopen the pull request, or re-run a failed run.
-
 ## Recovering from failures
 
 - **Release PR failed before opening the pull request.** Fix the cause given in the run summary, delete `release/v<version>` if it was pushed, and start again. A missing pull request is usually the setting in [One-time repository setup](#one-time-repository-setup).
+- **The release pull request shows no CI result.** Start CI on the release branch again: run **CI** on `release/v<version>` from the Actions tab (`gh workflow run ci.yml --ref release/v0.2.0`), close and reopen the pull request, or re-run a failed run.
 - **Withdrawing a release.** Close the pull request without merging and delete the branch. The entries stay under `Unreleased`.
 - **Release refused the merged commit** (the version header or the newest changelog section does not match the branch). Nothing was published. With an ordinary pull request, move the section's entries back under `Unreleased` and remove its heading and link. Delete the old release branch before releasing the same version again.
 - **The tag or the Release could not be created.** Fix the cause, then re-run the run, or start **Release** by hand. It creates only what is missing.

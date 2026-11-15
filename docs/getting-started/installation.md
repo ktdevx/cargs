@@ -123,14 +123,3 @@ For a non-standard location, add `<install-prefix>/lib/pkgconfig` to `PKG_CONFIG
 With `FetchContent` or `add_subdirectory`, read the [version macros](../references/version.md) instead.
 
 Neither tool orders pre-releases as SemVer does: `find_package(ArgX 0.2)` also finds `0.2.0-rc.1`, since it compares only the numbers, and pkg-config considers `0.2.0-rc.1` newer than `0.2.0`. Check `ArgX_VERSION_PRERELEASE` to tell them apart.
-
-### Running the tests of an embedded ArgX
-
-Set `ARGX_BUILD_TESTS` before embedding ArgX, and call `enable_testing()` in your top-level `CMakeLists.txt`, or `ctest` will not find the tests.
-
-```cmake
-enable_testing()
-
-set(ARGX_BUILD_TESTS ON)
-add_subdirectory(third_party/argx)
-```

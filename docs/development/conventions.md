@@ -55,8 +55,8 @@ Create build directories outside the repository, or as `build/` or `build-*/` at
 
 - **A fact has one place.** Guides link to the references instead of repeating them.
 - **One API page per public header,** starting with a `## Functions` index. The description and preconditions of each function stay in the comment of its declaration and are not copied. Rules not about one header (the command-line syntax, the layout of the help) are specification pages.
-- **Keep examples in sync.** When you change `examples/pack/pack.c`, update the excerpts in the [Tutorial](../getting-started/tutorial.md). When an example's output changes, update its `argx_add_example_test()` and the comment at the top of the program. `examples/greet/greet.c` is the example of the [README](../../README.md): change both together. The test `example.greet.readme` fails when the code differs from the README, or when a command line of the README prints something else.
-- **Complete C functions in documents compile as they are** and follow [Code style](#code-style). An example with placeholder names shows its placeholder header in a comment.
+- **Keep examples in sync.** When you change `examples/pack/pack.c`, update the excerpts in the [Tutorial](../getting-started/tutorial.md). When an example's output changes, update its `argx_add_example_test()` and the comment at the top of the program. `examples/greet/greet.c` is the example of the README: change both together. The test `example.greet.readme` fails when the code differs from the README, or when a command line of the README prints something else.
+- **Complete C functions in documents compile as they are** and follow the code style below. An example with placeholder names shows its placeholder header in a comment.
 
 ## Code style
 
@@ -122,10 +122,10 @@ The only mutable global state is the allocator (`current_allocator` in `src/allo
 
 Do not decide ownership, lifetime or how failures are returned on your own; follow [Ownership and Lifetime](../references/ownership.md). Public functions never:
 
-- return an allocated string for the user to `free`. Return a string owned by an object instead ([rule 3](../references/ownership.md#3-strings-and-objects-the-library-returns)).
-- free a buffer the user allocated. Duplicate it instead ([rule 2](../references/ownership.md#2-strings-you-pass)).
+- return an allocated string for the user to `free`. Return a string owned by an object instead (rule 3).
+- free a buffer the user allocated. Duplicate it instead (rule 2).
 
-The typical shape of a `create` and `destroy` pair ([rule 7](../references/ownership.md#7-how-failures-are-returned)):
+The typical shape of a `create` and `destroy` pair (rule 7):
 
 ```c
 /* <argx/example.h> declares argx_example_t and the two functions below. */
