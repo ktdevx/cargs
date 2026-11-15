@@ -127,3 +127,29 @@ static void print_error(const argx_command_t *command, const char *message)
     }
 }
 ```
+
+### Naming the command in the hint after a parse error
+
+[examples/pack.c](../../examples/pack.c) prints `For more information, try '--help'.` To name the command where the error was found, walk up from [`argx_result_error_command`](../references/parse.md#parse-error-details) with [`argx_command_parent`](../references/schema.md#reading-a-schema), which returns `NULL` for the root:
+
+```c
+/* Writes the names of the commands from the root to command, separated by spaces. */
+static void print_command_path(FILE *stream, const argx_command_t *command)
+{
+    const argx_command_t *parent = argx_command_parent(command);
+
+    if (parent != NULL)
+    {
+        print_command_path(stream, parent);
+        fputc(' ', stream);
+    }
+    fputs(argx_command_name(command), stream);
+}
+
+/* After the message and the usage line: */
+fputs("For more information, try '", stderr);
+print_command_path(stderr, argx_result_error_command(result));
+fputs(" --help'.\n", stderr);
+```
+
+For `pack create --colour`, this prints `For more information, try 'pack create --help'.` The command named must define `--help` itself ([Why is `--help` an unknown option after a subcommand?](faq.md#why-is---help-an-unknown-option-after-a-subcommand)).
