@@ -8,19 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- A C99 library for parsing command-line arguments, with no compiler extensions and no dependencies beyond the C standard library. It builds on Linux (GCC, Clang), macOS (Clang) and Windows (MSVC). Programs include `<argx/argx.h>` and link to `ArgX::argx`.
-- Schemas built with function calls on opaque handles: a root command (`argx_command_create()`), its options, positionals and subcommands, descriptions for the help, and validation of the whole schema with `argx_command_validate()` before it is used.
-- Options of four kinds: flags, counts, negatable flags that are switched with `--name` and `--no-name`, and options that take a value. Options can have a short name, a long name, a value name, a default value and can be required.
-- Positional arguments with an arity (required, optional, zero or more, one or more) and an optional default value.
-- Nested subcommands, each with its own options and positionals. A command line must name a subcommand of the command it ends in (the parse error `ARGX_PARSE_ERROR_MISSING_SUBCOMMAND`, and `<COMMAND>` in the usage line), unless that command's subcommands are made optional with `argx_command_set_subcommand_optional()`.
-- Typed values: strings, integers, floating-point numbers and choices from a fixed list, and value types defined by the user with their own conversion function and an optional cleanup function (`argx_type_create()`).
-- Parsing of `argv` with `argx_parse()`, and of wide-character `argv` (such as the one of `wmain()`) with `argx_parse_wide()`, which reads UTF-16 or UTF-32 and does not depend on the locale.
-- Results that tell which subcommands were selected, whether and how often options were given, where each value came from (the command line or a default) and the converted values.
-- Parse errors that report their kind, a one-line message and the argument, value, option, positional and command involved. The library prints nothing, never exits the process and does not read environment variables.
-- Help and usage text generated from the schema, written through a write function supplied by the caller (`argx_help_write()`, `argx_help_write_usage()`) or into a buffer of the caller (`argx_help_format()`, `argx_help_format_usage()`), with settings for the width, the indentation and the latest column where descriptions may start.
-- A replaceable allocator (`argx_set_allocator()`) and error codes with messages (`argx_error_t`, `argx_error_message()`).
-- Version macros in `<argx/version.h>` (`ARGX_VERSION_MAJOR`, `ARGX_VERSION_MINOR`, `ARGX_VERSION_PATCH`, `ARGX_VERSION_PRERELEASE`) and `argx_version()` for the version of the library that is linked.
-- Static and shared library builds (`BUILD_SHARED_LIBS`), and four ways to use the library from another project: CMake `FetchContent`, `add_subdirectory`, `find_package` and pkg-config (module `argx`).
-- Build options `ARGX_BUILD_TESTS`, `ARGX_INSTALL` and `ARGX_WARNINGS_AS_ERRORS`, with defaults that add nothing to a parent project that embeds the library.
+- ArgX, a command-line argument parser in plain C99 with no dependencies beyond the C standard library. It builds on Linux (GCC, Clang), macOS (Clang) and Windows (MSVC), as a static or a shared library.
+- Schemas of options (flags, counts, `--no-` negatable flags, options with a value), positionals and nested subcommands.
+- Typed values: strings, integers, floating-point numbers, choices, and value types you define.
+- Parsing of `argv` and of wide-character `argv`, with results that tell what was given and where each value came from, and parse errors with a one-line message.
+- Help and usage text generated from the schema, written through your write function or into your buffer.
+- No side effects: the library prints nothing, never exits the process and reads no environment variables. The allocator can be replaced.
+- Version macros and `argx_version()`, and use from another project through CMake (`FetchContent`, `add_subdirectory`, `find_package`) or pkg-config.
 
 [Unreleased]: https://github.com/ktdevx/cargs/commits/main
