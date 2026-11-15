@@ -9,7 +9,8 @@
  *   2. defines the schema: every kind of option, positionals, subcommands,
  *      descriptions for the help, and -h, --help on every command;
  *   3. validates it, and tells which definition a failed validation points to;
- *   4. parses argv, and checks --help before the parse error;
+ *   4. parses argv and branches on the error code, reading --help in both
+ *      cases that give a result;
  *   5. prints the help of the selected command, or the message and the usage
  *      line of a parse error;
  *   6. reads the values and where they came from;
@@ -48,11 +49,11 @@
  *   $ pack create a.txt
  *   pack: missing required option '--output'
  *   Usage: pack create [OPTIONS] --output <FILE> <file>...
- *   Try 'pack --help' for more information.
+ *   For more information, try '--help'.
  *
  *   $ pack
  *   pack: a command is required
- *   Try 'pack --help' for more information.
+ *   For more information, try '--help'.
  *
  * "pack --help" and "pack create --help" print the help of the root and of
  * create.
@@ -339,9 +340,9 @@ static void report_fault(argx_error_t error, const argx_command_t *command,
 }
 
 /*
- * Tells whether --help or -h was given to one of the selected commands. This
- * also works on a result with a parse error: it holds what was read before
- * the error.
+ * Tells whether --help or -h was given to one of the selected commands. --help
+ * is a flag like any other, so this also works on a result with a parse
+ * error: it holds what was read before the error.
  */
 static bool help_was_given(const argx_result_t *result)
 {
@@ -368,6 +369,32 @@ static bool help_was_given(const argx_result_t *result)
 static bool write_to_stream(void *user_data, const char *text, size_t length)
 {
     return fwrite(text, 1, length, (FILE *)user_data) == length;
+}
+
+/* Prints the help of the last selected command to the standard output. */
+static int print_help(const argx_result_t *result)
+{
+    argx_error_t error =
+        argx_help_write(argx_result_command(result), NULL, write_to_stream, stdout);
+
+    if (error != ARGX_ERROR_NONE)
+    {
+        fprintf(stderr, "pack: cannot print the help: %s\n", argx_error_message(error));
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+/*
+ * Prints the message, then the usage line of the command in which the error
+ * was found, both to the standard error stream. The message has no prefix and
+ * no line break; the usage line ends with a newline.
+ */
+static void print_parse_error(const argx_result_t *result)
+{
+    fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
+    argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
+    fprintf(stderr, "For more information, try '--help'.\n");
 }
 
 /*
@@ -465,7 +492,7 @@ static int run(const pack_schema_t *schema, const argx_result_t *result)
     {
         /* A command line that names no subcommand is not a parse error. */
         fprintf(stderr, "pack: a command is required\n");
-        fprintf(stderr, "Try 'pack --help' for more information.\n");
+        fprintf(stderr, "For more information, try '--help'.\n");
         return EXIT_FAILURE;
     }
 
@@ -523,43 +550,40 @@ int main(int argc, char **argv)
     /* 4. argc and argv go in as main() received them. */
     error = argx_parse(schema.root, argc, argv, &result);
 
-    if (result == NULL)
+    switch (error)
     {
-        /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
-        fprintf(stderr, "pack: %s\n", argx_error_message(error));
-    }
-    else if (help_was_given(result))
-    {
-        /*
-         * 5. --help first: "pack create --help" leaves out what create
-         * requires, and that must not hide the help. The help is of the last
-         * selected command, to the standard output.
-         */
-        error = argx_help_write(argx_result_command(result), NULL, write_to_stream, stdout);
-        if (error == ARGX_ERROR_NONE)
+    case ARGX_ERROR_NONE:
+        /* 5, 6. --help is a flag like any other: read it, then the rest. */
+        if (help_was_given(result))
         {
-            status = EXIT_SUCCESS;
+            status = print_help(result);
         }
         else
         {
-            fprintf(stderr, "pack: cannot print the help: %s\n", argx_error_message(error));
+            status = run(&schema, result);
         }
-    }
-    else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-    {
+        break;
+
+    case ARGX_ERROR_INVALID_COMMAND_LINE:
         /*
-         * 5. The message, then the usage line of the command in which the
-         * error was found, both to the standard error stream. The message has
-         * no prefix and no line break; the usage line ends with a newline.
+         * 5. A parse error also gives a result, holding what was read before
+         * the error. "pack create --help" leaves out what create requires,
+         * but --help was read, so the help is printed, not the error.
          */
-        fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
-        argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
-        fprintf(stderr, "Try 'pack --help' for more information.\n");
-    }
-    else
-    {
-        /* 6. */
-        status = run(&schema, result);
+        if (help_was_given(result))
+        {
+            status = print_help(result);
+        }
+        else
+        {
+            print_parse_error(result);
+        }
+        break;
+
+    default:
+        /* ARGX_ERROR_OUT_OF_MEMORY, the only code that leaves no result. */
+        fprintf(stderr, "pack: %s\n", argx_error_message(error));
+        break;
     }
 
 cleanup:

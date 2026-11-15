@@ -10,7 +10,7 @@ An option is recognized only on the command that defines it, and the library add
 
 ### Why does `pack create --help` report a missing required option?
 
-It is a parse error, but the result still holds `--help`. Check `--help` before the parse error ([Tutorial](../getting-started/tutorial.md#4-parse-argv-and-check---help-first)).
+It is a parse error, but the result still holds `--help`. Read `--help` also when `argx_parse` returns `ARGX_ERROR_INVALID_COMMAND_LINE` ([Tutorial](../getting-started/tutorial.md#4-parse-argv-and-branch-on-the-error-code)).
 
 ### Where do I write an option: before or after the subcommand?
 

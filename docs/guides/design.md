@@ -15,7 +15,7 @@ Parsing and help generation print nothing, never end the process and read no env
 The library defines no option of its own. `--help` is a flag that the program adds and reads like any other.
 
 - **Why:** the library does not print, so it cannot answer `--help` itself. The program also chooses the names and where the help goes.
-- **Cost:** the program defines `--help` on every command and checks it before the parse error.
+- **Cost:** the program defines `--help` on every command and reads it also when the parse returns a parse error.
 - **Rules:** [`--help`](../references/parse.md#--help).
 
 ## A schema is validated before it is used

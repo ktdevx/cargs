@@ -43,6 +43,16 @@ static bool write_to_stream(void *user_data, const char *text, size_t length)
     return fwrite(text, 1, length, (FILE *)user_data) == length;
 }
 
+/* Writes the help of command to the standard output. */
+static int print_help(const argx_command_t *command)
+{
+    if (argx_help_write(command, NULL, write_to_stream, stdout) != ARGX_ERROR_NONE)
+    {
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char **argv)
 {
     argx_command_t *root = NULL;
@@ -70,39 +80,48 @@ int main(int argc, char **argv)
     TRY(argx_command_validate(root, NULL, NULL, NULL));
 
     error = argx_parse(root, argc, argv, &result);
-    if (result == NULL)
+    switch (error)
     {
-        /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
-        fprintf(stderr, "greet: %s\n", argx_error_message(error));
-    }
-    else if (argx_result_flag(result, help))
-    {
-        /* Checked first, so that "greet --help" works without a name. */
-        if (argx_help_write(root, NULL, write_to_stream, stdout) == ARGX_ERROR_NONE)
+    case ARGX_ERROR_NONE:
+        if (argx_result_flag(result, help))
         {
-            status = EXIT_SUCCESS;
+            status = print_help(root);
         }
-    }
-    else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-    {
-        fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
-    }
-    else
-    {
-        const char *text = NULL;
-        int64_t times = 0;
-        int64_t i;
+        else
+        {
+            const char *text = NULL;
+            int64_t times = 0;
+            int64_t i;
 
-        if (argx_result_positional_string(result, name, 0, &text) &&
-            argx_result_option_int(result, count, &times))
-        {
-            for (i = 0; i < times; ++i)
+            if (argx_result_positional_string(result, name, 0, &text) &&
+                argx_result_option_int(result, count, &times))
             {
-                printf("hello, %s%s\n", text, argx_result_flag(result, loud) ? "!" : "");
+                for (i = 0; i < times; ++i)
+                {
+                    printf("hello, %s%s\n", text, argx_result_flag(result, loud) ? "!" : "");
+                }
+                printf("greeted %" PRId64 " time(s)\n", times);
+                status = EXIT_SUCCESS;
             }
-            printf("greeted %" PRId64 " time(s)\n", times);
-            status = EXIT_SUCCESS;
         }
+        break;
+
+    case ARGX_ERROR_INVALID_COMMAND_LINE:
+        /* The result holds what was read before the error: "greet --help" works without a name. */
+        if (argx_result_flag(result, help))
+        {
+            status = print_help(root);
+        }
+        else
+        {
+            fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
+        }
+        break;
+
+    default:
+        /* ARGX_ERROR_OUT_OF_MEMORY, the only code that leaves no result. */
+        fprintf(stderr, "greet: %s\n", argx_error_message(error));
+        break;
     }
 
     goto cleanup;
