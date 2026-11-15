@@ -62,6 +62,8 @@ TRY(argx_option_set_required(schema->output, true));
 
 A failed add function writes a `NULL` handle, so stop at the first failure.
 
+**Subcommands are required by default.** `pack` alone is the parse error `missing required command`, and the usage line shows `<COMMAND>`. A command that does something of its own without a subcommand calls `argx_command_set_subcommand_optional` ([Commands](../references/schema.md#commands)).
+
 **Define `--help` on every command.** The library adds none, and an option is recognized only on its own command ([`--help`](../references/parse.md#--help)). `add_help`:
 
 ```c
@@ -133,7 +135,7 @@ default:
 
 - **`argx_parse` returns one of three codes.** `ARGX_ERROR_OUT_OF_MEMORY` is the only one that leaves no result, so `default` handles it.
 - **A parse error also gives a result,** which holds what was read before the error and which you destroy like any other.
-- **Read `--help` in both cases.** It is an ordinary flag ([Design](../guides/design.md#--help-is-an-ordinary-option)). `pack create --help` omits the required `--output`, so it is a parse error, but `--help` was read before the error and reads as given.
+- **Read `--help` in both cases.** It is an ordinary flag ([Design](../guides/design.md#--help-is-an-ordinary-option)). `pack create --help` omits the required `--output`, and `pack --help` the subcommand, so both are parse errors, but `--help` was read before the error and reads as given.
 
 `help_was_given` reads the `--help` of each selected command:
 
@@ -229,7 +231,7 @@ for (i = 0; i < argx_result_positional_count(result, schema->files); ++i)
 ```
 
 - Use the function that matches the value type: `_string`, `_int`, `_float`, `_choice`, or `_value` for a user-defined type.
-- `argx_result_command` tells which subcommand to run. A missing subcommand is not a parse error, so `run` checks it.
+- `argx_result_command` tells which subcommand to run. The root's subcommands are required, so after a parse that succeeded it is `create` or `list`.
 
 ## 7. Destroy
 

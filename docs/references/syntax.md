@@ -72,7 +72,7 @@ Operands are assigned in order to the positionals in the order they were added. 
 
 - An operand matching a subcommand name makes it the current command, at any depth. Any other name is `UNKNOWN_SUBCOMMAND`.
 - **An option goes after the name of its command and before the name of that command's subcommand.** In `pack -v create`, `-v` belongs to `pack`; in `pack create -v`, to `create`. Subcommands do not inherit options, and same-named options in parent and child are separate.
-- Ending without a subcommand name is not a parse error; `argx_result_command` then returns the command with subcommands.
+- **Subcommands are required unless made optional.** Ending in a command with subcommands, without naming one, is `MISSING_SUBCOMMAND` ([Required checks](#required-checks-and-default-values)). With `argx_command_set_subcommand_optional(command, true)`, it is not a parse error, and `argx_result_command` returns that command. The setting belongs to each command: `git remote` can be optional while `git` itself requires a subcommand.
 - Elements after the terminator never name a subcommand.
 - Options and positionals of unselected commands read as not given ([Rules for reading](parse.md#rules-for-reading)).
 
@@ -80,7 +80,7 @@ Operands are assigned in order to the positionals in the order they were added. 
 
 After the last element is read without a parse error, for the selected commands only:
 
-1. **Required checks.** A required option with a value that has no value, or a positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` with no value, is `MISSING_OPTION` or `MISSING_POSITIONAL`. The first one is reported: commands nearer the root first, then options before positionals, in the order added.
+1. **Required checks.** A required option with a value that has no value, or a positional of `ARGX_ARITY_REQUIRED` or `ARGX_ARITY_ONE_OR_MORE` with no value, is `MISSING_OPTION` or `MISSING_POSITIONAL`. A last selected command whose subcommands are required is `MISSING_SUBCOMMAND`. The first one is reported: commands nearer the root first, then options before positionals, in the order added, and the missing subcommand after all of them. If the root of `tool` requires `--token` and a subcommand, `tool` alone reports `--token`, and `tool --token x` the subcommand.
 2. **Default values,** if nothing is missing. An option with a value or an `ARGX_ARITY_OPTIONAL` positional that was not given gets its converted default, with the source `ARGX_SOURCE_DEFAULT`.
 
 - Without a default, such an item has no value (`ARGX_SOURCE_NONE`); a `ARGX_ARITY_ZERO_OR_MORE` positional has 0 values.

@@ -74,7 +74,7 @@ New values may be added to `argx_source_t`.
 
 ## Parse errors
 
-The result records the first parse error from the start of argv. Missing required items are checked only after the last element, so errors about elements come first.
+The result records the first parse error from the start of argv. Missing required items, and a missing required subcommand, are checked only after the last element, so errors about elements come first ([Required checks and default values](syntax.md#required-checks-and-default-values)).
 
 ### Kinds and messages
 
@@ -93,6 +93,7 @@ Kinds are written without `ARGX_PARSE_ERROR_`.
 | `MISSING_POSITIONAL` | `missing required argument '<name>'` | `missing required argument 'FILE'` |
 | `UNEXPECTED_POSITIONAL` | `unexpected argument '<value>'` | `unexpected argument 'extra'` |
 | `INVALID_ENCODING` | `invalid character encoding in argument '<value>'` | — |
+| `MISSING_SUBCOMMAND` | `missing required command` | `missing required command` |
 
 - A message is one English line with no prefix, newline or full stop. Names and values are inserted unchanged.
 - An option's `<name>` is as the user wrote it (`--name`, `--no-name`, or `-c` for a character of a bundle), without any `=value`. For an option not written (missing, or a default), it is `--<long name>`, or `-<short name>` without one.
@@ -116,10 +117,11 @@ Columns are the functions without `argx_result_error_`; sources are without `ARG
 | `MISSING_OPTION`, `MISSING_POSITIONAL` | `NULL` | `NONE` | `NULL` | The option or positional | `'\0'` |
 | `UNEXPECTED_POSITIONAL` | The element | `COMMAND_LINE` | The element | `NULL` | `'\0'` |
 | `INVALID_ENCODING` | The element, with U+FFFD | `COMMAND_LINE` | The element | `NULL` | `'\0'` |
+| `MISSING_SUBCOMMAND` | `NULL` | `NONE` | `NULL` | `NULL` | `'\0'` |
 
 - `argument` is the whole element, the whole bundle for a bundle error, or the separate value element (`--jobs many`).
 - `index` is the position of `argument` in argv, or 0 unless `source` is `COMMAND_LINE`.
-- `command` is the current command when the error was found, or the owner of a missing or default item. Never `NULL` on a parse error.
+- `command` is the current command when the error was found, the owner of a missing or default item, or for `MISSING_SUBCOMMAND` the command whose subcommand is missing. Never `NULL` on a parse error.
 - Exactly one of `option` and `positional` is set when the error concerns one.
 - `short_name` is set for any short option, including a lone `-n`, and `'\0'` for long options.
 - Strings live until the result is destroyed; handles belong to the schema.
@@ -133,7 +135,7 @@ The result holds what was read before the error, with the source `COMMAND_LINE`:
 `--help` is an ordinary flag defined in the schema and read with `argx_result_flag`. Parsing never generates or prints help ([Help and Usage](help.md)).
 
 - With `--help` only on the root, `pack create --help` is an unknown option ([Subcommands](syntax.md#subcommands)).
-- `pack create --help` without the required `--output` is a parse error, but `--help` reads as given since it was read first.
+- `pack create --help` without the required `--output` is a parse error, but `--help` reads as given since it was read first. So is `pack --help`, which names no subcommand.
 - `pack create --bogus --help` stops at `--bogus`, so `--help` is not read.
 - Pass `argx_result_command` to `argx_help_write` for the help of the last selected command.
 

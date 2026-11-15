@@ -6,12 +6,12 @@ API reference of `include/argx/schema.h`. A schema is a tree of commands, each w
 
 | Functions | Section |
 | --- | --- |
-| `argx_command_create`, `argx_command_destroy`, `argx_command_add_subcommand`, `argx_command_set_description` | [Commands](#commands) |
+| `argx_command_create`, `argx_command_destroy`, `argx_command_add_subcommand`, `argx_command_set_description`, `argx_command_set_subcommand_optional` | [Commands](#commands) |
 | `argx_command_add_flag`, `argx_command_add_negatable`, `argx_command_add_count`, `argx_command_add_value` | [Options](#options) |
 | `argx_option_set_description`, `argx_option_set_value_name`, `argx_option_set_required`, `argx_option_set_default`, `argx_option_set_initial` | [Attributes](#attributes) |
 | `argx_command_add_positional`, `argx_positional_set_description`, `argx_positional_set_default` | [Positionals](#positionals) |
 | `argx_command_validate`, `argx_command_is_validated` | [Validation](#validation) |
-| `argx_command_name`, `argx_command_description`, `argx_command_parent`, `argx_command_option_count`, `argx_command_option_at`, `argx_command_positional_count`, `argx_command_positional_at`, `argx_command_subcommand_count`, `argx_command_subcommand_at`, `argx_command_find_short`, `argx_command_find_long`, `argx_command_find_subcommand` | [Reading a schema](#reading-a-schema) |
+| `argx_command_name`, `argx_command_description`, `argx_command_is_subcommand_optional`, `argx_command_parent`, `argx_command_option_count`, `argx_command_option_at`, `argx_command_positional_count`, `argx_command_positional_at`, `argx_command_subcommand_count`, `argx_command_subcommand_at`, `argx_command_find_short`, `argx_command_find_long`, `argx_command_find_subcommand` | [Reading a schema](#reading-a-schema) |
 | `argx_option_command`, `argx_option_kind`, `argx_option_short_name`, `argx_option_long_name`, `argx_option_negated_name`, `argx_option_type`, `argx_option_description`, `argx_option_value_name`, `argx_option_is_required`, `argx_option_default`, `argx_option_initial` | [Reading a schema](#reading-a-schema) |
 | `argx_positional_command`, `argx_positional_name`, `argx_positional_arity`, `argx_positional_type`, `argx_positional_description`, `argx_positional_default` | [Reading a schema](#reading-a-schema) |
 
@@ -22,10 +22,13 @@ API reference of `include/argx/schema.h`. A schema is a tree of commands, each w
 | Create the root | `argx_command_create` | Any non-empty name |
 | Add a subcommand | `argx_command_add_subcommand` | An ASCII letter or digit, then letters, digits, `-` or `_` |
 | Set the description | `argx_command_set_description` | May be empty |
+| Let a command line end without a subcommand | `argx_command_set_subcommand_optional` | `false` until set |
 | Destroy the tree | `argx_command_destroy` | On the root only. `NULL` does nothing |
 
 - Nesting has no depth limit.
 - A command cannot have both positionals and subcommands.
+- **Subcommands are required by default.** A command line that ends in a command with subcommands, without naming one, is the parse error `MISSING_SUBCOMMAND`, and the usage line shows `<COMMAND>`. Set `argx_command_set_subcommand_optional(command, true)` for a command that does something of its own without a subcommand, such as `git remote`; the command line then ends in that command, and the usage line shows `[COMMAND]` ([Subcommands](syntax.md#subcommands)).
+- Making the subcommands of a command without subcommands optional is a validation error, since they can be added after the call.
 - Only the first line of a description appears in the parent's `Commands:` list ([Help Text Layout](help-layout.md#structure)).
 
 ## Options
@@ -102,6 +105,7 @@ bool argx_command_is_validated(const argx_command_t *command);
 | `ARGX_ERROR_NONE` | `NULL` | `NULL` | `NULL` | Validated |
 | `ARGX_ERROR_INVALID_DEFINITION`, `ARGX_ERROR_INVALID_DEFAULT` (option) | Its command | The option | `NULL` | Unchanged |
 | `ARGX_ERROR_INVALID_DEFINITION`, `ARGX_ERROR_INVALID_DEFAULT` (positional) | Its command | `NULL` | The positional | Unchanged |
+| `ARGX_ERROR_INVALID_DEFINITION` (command) | The command | `NULL` | `NULL` | Unchanged |
 | `ARGX_ERROR_OUT_OF_MEMORY` | `NULL` | `NULL` | `NULL` | Unchanged |
 
 - Each output may be `NULL`; a non-`NULL` one is always written. The handles live until the root is destroyed.
@@ -178,6 +182,7 @@ Within a function, the first matching row is returned. Every function can also r
 | An option is required and has a default | `ARGX_ERROR_INVALID_DEFINITION` | The option |
 | An option's default does not convert | `ARGX_ERROR_INVALID_DEFAULT` | The option |
 | A positional's default does not convert | `ARGX_ERROR_INVALID_DEFAULT` | The positional |
+| A command's subcommands are optional, and it has none | `ARGX_ERROR_INVALID_DEFINITION` | The command |
 | An allocation failed, or a conversion returned `ARGX_ERROR_OUT_OF_MEMORY` | `ARGX_ERROR_OUT_OF_MEMORY` | None |
 
 Any other conversion failure becomes `ARGX_ERROR_INVALID_DEFAULT`.
@@ -189,6 +194,7 @@ Commands are checked depth first from the root, subcommands in the order added. 
 1. The order of positional arities.
 2. Each option in the order added: required with a default, then the default's conversion.
 3. Each positional's default conversion, in the order added.
+4. Optional subcommands without a subcommand.
 
 ## Guarantees of a validated schema
 
@@ -205,6 +211,7 @@ A validated schema also satisfies, for every command:
 
 - The positionals are either zero or more `REQUIRED`, zero or more `OPTIONAL`, and at most one `ZERO_OR_MORE`, or zero or more `REQUIRED` and one `ONE_OR_MORE`.
 - No required option has a default.
+- Only a command with subcommands has optional subcommands.
 - Every default converted successfully at validation, so it will again if the conversion is deterministic.
 
 ## Reading a schema
@@ -213,7 +220,7 @@ The read functions take `const` handles, change nothing and never fail.
 
 | Object | Functions |
 | --- | --- |
-| Command | `argx_command_name`, `argx_command_description`, `argx_command_parent`, `argx_command_is_validated` |
+| Command | `argx_command_name`, `argx_command_description`, `argx_command_is_subcommand_optional`, `argx_command_parent`, `argx_command_is_validated` |
 | Enumeration | `argx_command_option_count`/`_at`, `argx_command_positional_count`/`_at`, `argx_command_subcommand_count`/`_at` |
 | Lookup | `argx_command_find_short`, `argx_command_find_long`, `argx_command_find_subcommand` |
 | Option | `argx_option_command`, `argx_option_kind`, `argx_option_short_name`, `argx_option_long_name`, `argx_option_negated_name`, `argx_option_type`, `argx_option_description`, `argx_option_value_name`, `argx_option_is_required`, `argx_option_default`, `argx_option_initial` |

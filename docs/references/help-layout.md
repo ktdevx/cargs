@@ -62,7 +62,7 @@ Usage: tool
 | 2 | `[OPTIONS]` | There is an option that is not required | `[OPTIONS]` |
 | 3 | Required options | Each required option with a value, in order | `--long <value name>`, or `-s <value name>` |
 | 4 | Positionals | Each positional, in order | By arity, below |
-| 5 | `[COMMAND]` | There are subcommands | `[COMMAND]` |
+| 5 | Subcommand | There are subcommands | `<COMMAND>`, or `[COMMAND]` when they are optional (`argx_command_set_subcommand_optional`) |
 
 | Arity | Notation (also the heading in `Arguments:`) |
 | --- | --- |

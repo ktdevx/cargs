@@ -4,19 +4,29 @@ Short recipes for specific tasks. To learn ArgX from the start, read the [Tutori
 
 ## Command lines
 
-### Requiring a subcommand
+### Allowing a command line without a subcommand
 
-A command line that names no subcommand is not a parse error. Check the last selected command after parsing, as `run` in [examples/pack.c](../../examples/pack.c) does:
+Subcommands are required by default: a command line that ends in a command with subcommands is the parse error `MISSING_SUBCOMMAND`. For a command that does something of its own without one, such as `git remote` listing the remotes, make them optional:
 
 ```c
-const argx_command_t *command = argx_result_command(result);
+TRY(argx_command_set_subcommand_optional(remote, true));
+```
 
-if ((command != schema->create) && (command != schema->list))
+The command line may then end in `remote`, `argx_result_command` returns it, and its usage line shows `[COMMAND]` instead of `<COMMAND>` ([Subcommands](../references/syntax.md#subcommands)). The setting belongs to `remote` only.
+
+### Printing the help when no subcommand is given
+
+To print the whole help instead of the error, as `git` does, branch on the kind of the parse error. In the `ARGX_ERROR_INVALID_COMMAND_LINE` case of [examples/pack.c](../../examples/pack.c):
+
+```c
+if (help_was_given(result) ||
+    (argx_result_error_kind(result) == ARGX_PARSE_ERROR_MISSING_SUBCOMMAND))
 {
-    fprintf(stderr, "pack: a command is required\n");
-    return EXIT_FAILURE;
+    status = print_help(result);
 }
 ```
+
+The help is that of `argx_result_command`, which is the command whose subcommand is missing. `print_help` returns success, so return a failure status yourself if a missing subcommand should fail.
 
 ### Passing a value that starts with `-`
 

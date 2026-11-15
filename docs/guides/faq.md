@@ -12,6 +12,10 @@ An option is recognized only on the command that defines it, and the library add
 
 It is a parse error, but the result still holds `--help`. Read `--help` also when `argx_parse` returns `ARGX_ERROR_INVALID_COMMAND_LINE` ([Tutorial](../getting-started/tutorial.md#4-parse-argv-and-branch-on-the-error-code)).
 
+### Why is a command line without a subcommand a parse error?
+
+Subcommands are required by default, as most programs with subcommands expect, and the usage line shows `<COMMAND>`. Make them optional per command with `argx_command_set_subcommand_optional` ([How-to](how-to.md#allowing-a-command-line-without-a-subcommand)).
+
 ### Where do I write an option: before or after the subcommand?
 
 After the name of the command that defines it. Subcommands do not inherit their parent's options ([Subcommands](../references/syntax.md#subcommands)).
