@@ -20,8 +20,8 @@ The steps are numbered the same way in the comments of `main`.
 | 1. Create the value types | `create_types`, `convert_size` |
 | 2. Define the schema | `define_schema`, `define_root`, `define_create`, `define_list`, `add_help` |
 | 3. Validate it | `main`, `report_fault` |
-| 4. Parse argv, and check `--help` first | `main`, `help_was_given` |
-| 5. Print the help or the parse error | `main`, `write_to_stream` |
+| 4. Parse argv, and branch on the error code | `main`, `help_was_given` |
+| 5. Print the help or the parse error | `print_help`, `print_parse_error`, `write_to_stream` |
 | 6. Read the values | `run`, `run_create`, `run_list` |
 | 7. Destroy everything | `main` |
 
@@ -93,37 +93,47 @@ if (error != ARGX_ERROR_NONE)
 
 Develop with the Debug build: it aborts on a broken precondition, such as an unvalidated schema.
 
-## 4. Parse argv, and check `--help` first
+## 4. Parse argv, and branch on the error code
 
 ```c
 error = argx_parse(schema.root, argc, argv, &result);
 
-if (result == NULL)
+switch (error)
 {
-    /* ARGX_ERROR_OUT_OF_MEMORY: there is no result. */
+case ARGX_ERROR_NONE:
+    /* --help is a flag like any other: read it, then the rest. */
+    if (help_was_given(result))
+    {
+        status = print_help(result);
+    }
+    else
+    {
+        status = run(&schema, result);
+    }
+    break;
+
+case ARGX_ERROR_INVALID_COMMAND_LINE:
+    /* The result holds what was read before the error, --help included. */
+    if (help_was_given(result))
+    {
+        status = print_help(result);
+    }
+    else
+    {
+        print_parse_error(result);
+    }
+    break;
+
+default:
+    /* ARGX_ERROR_OUT_OF_MEMORY, the only code that leaves no result. */
     fprintf(stderr, "pack: %s\n", argx_error_message(error));
-}
-else if (help_was_given(result))
-{
-    /* The help of the command that the command line ends in. */
-    error = argx_help_write(argx_result_command(result), NULL, write_to_stream, stdout);
-    ...
-}
-else if (error == ARGX_ERROR_INVALID_COMMAND_LINE)
-{
-    /* The message, then the usage line of the command where the error was found. */
-    fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
-    argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
-    fprintf(stderr, "Try 'pack --help' for more information.\n");
-}
-else
-{
-    status = run(&schema, result);
+    break;
 }
 ```
 
-- **A parse error also gives a result,** which you destroy like any other.
-- **Check `--help` before the parse error.** `pack create --help` omits the required `--output`, so it is a parse error, but `--help` still reads as given.
+- **`argx_parse` returns one of three codes.** `ARGX_ERROR_OUT_OF_MEMORY` is the only one that leaves no result, so `default` handles it.
+- **A parse error also gives a result,** which holds what was read before the error and which you destroy like any other.
+- **Read `--help` in both cases.** It is an ordinary flag ([Design](../guides/design.md#--help-is-an-ordinary-option)). `pack create --help` omits the required `--output`, so it is a parse error, but `--help` was read before the error and reads as given.
 
 `help_was_given` reads the `--help` of each selected command:
 
@@ -150,7 +160,29 @@ The library prints nothing; your code chooses what and where.
 | The help | `argx_result_command`, the last selected command | Standard output |
 | The usage line after a parse error | `argx_result_error_command`, the command where the error was found | Standard error |
 
-The destination is the `user_data` of the write function; `write_to_stream` takes a `FILE *` ([Writing to standard output](../references/help.md#writing-to-standard-output)). For `pack create a.txt`, the code of step 4 prints:
+```c
+static int print_help(const argx_result_t *result)
+{
+    argx_error_t error =
+        argx_help_write(argx_result_command(result), NULL, write_to_stream, stdout);
+
+    if (error != ARGX_ERROR_NONE)
+    {
+        fprintf(stderr, "pack: cannot print the help: %s\n", argx_error_message(error));
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+static void print_parse_error(const argx_result_t *result)
+{
+    fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
+    argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
+    fprintf(stderr, "Try 'pack --help' for more information.\n");
+}
+```
+
+The destination is the `user_data` of the write function; `write_to_stream` takes a `FILE *` ([Writing to standard output](../references/help.md#writing-to-standard-output)). For `pack create a.txt`, `print_parse_error` prints:
 
 ```
 pack: missing required option '--output'
