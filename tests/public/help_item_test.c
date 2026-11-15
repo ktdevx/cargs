@@ -494,7 +494,7 @@ NAOS_TEST(help_flag_of_the_schema_is_listed_and_none_is_added)
     validate(root);
 
     check_help(root,
-               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "Usage: tool [OPTIONS] <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  run            Run it\n"

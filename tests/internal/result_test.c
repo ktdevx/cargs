@@ -2255,7 +2255,7 @@ typedef struct failure_case
  * The arguments are "app", "sub", "-vx", "--flag=1" and "extra". A name
  * may be longer than its length: it is a part of an argument.
  */
-enum { FAILURE_CASES = 10 };
+enum { FAILURE_CASES = 11 };
 
 static const failure_case_t failure_cases[FAILURE_CASES] = {
     { ARGX_PARSE_ERROR_UNKNOWN_OPTION, ARGX_SOURCE_COMMAND_LINE, 2, 'x', "-", "x", 1, VALUE_NONE,
@@ -2277,7 +2277,9 @@ static const failure_case_t failure_cases[FAILURE_CASES] = {
     { ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL, ARGX_SOURCE_COMMAND_LINE, 4, '\0', NULL, NULL, 0,
       VALUE_ARGUMENT, ELEMENT_NONE, "unexpected argument 'extra'" },
     { ARGX_PARSE_ERROR_INVALID_ENCODING, ARGX_SOURCE_COMMAND_LINE, 4, '\0', NULL, NULL, 0,
-      VALUE_ARGUMENT, ELEMENT_NONE, "invalid character encoding in argument 'extra'" }
+      VALUE_ARGUMENT, ELEMENT_NONE, "invalid character encoding in argument 'extra'" },
+    { ARGX_PARSE_ERROR_MISSING_SUBCOMMAND, ARGX_SOURCE_NONE, 0, '\0', "", NULL, 0, VALUE_NONE,
+      ELEMENT_NONE, "missing required command" }
 };
 
 NAOS_TEST(recorded_error_is_read_back)

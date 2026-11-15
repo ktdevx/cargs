@@ -52,7 +52,8 @@
  *   For more information, try '--help'.
  *
  *   $ pack
- *   pack: a command is required
+ *   pack: missing required command
+ *   Usage: pack [OPTIONS] <COMMAND>
  *   For more information, try '--help'.
  *
  * "pack --help" and "pack create --help" print the help of the root and of
@@ -195,7 +196,11 @@ static argx_error_t add_help(argx_command_t *command)
     return argx_option_set_description(option, "Print this help.");
 }
 
-/* The root: its options stand in front of the subcommand. */
+/*
+ * The root: its options stand in front of the subcommand. A command line
+ * must name one of its subcommands; that is the default, so nothing is set
+ * for it.
+ */
 static argx_error_t define_root(pack_schema_t *schema)
 {
     argx_error_t error;
@@ -483,18 +488,14 @@ static int run_list(const pack_schema_t *schema, const argx_result_t *result)
     return EXIT_SUCCESS;
 }
 
-/* Reads the values of a command line that matched the schema. */
+/*
+ * Reads the values of a command line that matched the schema. The root's
+ * subcommands are required, so the last selected command is create or
+ * list.
+ */
 static int run(const pack_schema_t *schema, const argx_result_t *result)
 {
     const argx_command_t *command = argx_result_command(result);
-
-    if ((command != schema->create) && (command != schema->list))
-    {
-        /* A command line that names no subcommand is not a parse error. */
-        fprintf(stderr, "pack: a command is required\n");
-        fprintf(stderr, "For more information, try '--help'.\n");
-        return EXIT_FAILURE;
-    }
 
     if (argx_result_flag(result, schema->quiet))
     {
@@ -568,7 +569,8 @@ int main(int argc, char **argv)
         /*
          * 5. A parse error also gives a result, holding what was read before
          * the error. "pack create --help" leaves out what create requires,
-         * but --help was read, so the help is printed, not the error.
+         * and "pack --help" the subcommand, but --help was read, so the help
+         * is printed, not the error.
          */
         if (help_was_given(result))
         {

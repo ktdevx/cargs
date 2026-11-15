@@ -233,11 +233,11 @@ static void destroy_schema(argx_command_t *root, argx_help_options_t *options)
 
 /* The usage line of the schema with the width 40. */
 static const char narrow_usage[] = "Usage: tool [OPTIONS] --config <FILE>\n"
-                                   "       [COMMAND]\n";
+                                   "       <COMMAND>\n";
 
 /* The help of the schema with the width 40. */
 static const char narrow_help[] = "Usage: tool [OPTIONS] --config <FILE>\n"
-                                  "       [COMMAND]\n"
+                                  "       <COMMAND>\n"
                                   "\n"
                                   "Shows how the text of a help leaves the\n"
                                   "library, part by part.\n"
@@ -259,7 +259,7 @@ static const char narrow_help[] = "Usage: tool [OPTIONS] --config <FILE>\n"
                                   "      --quiet\n";
 
 /* The usage line of the schema with the default settings. */
-static const char default_usage[] = "Usage: tool [OPTIONS] --config <FILE> [COMMAND]\n";
+static const char default_usage[] = "Usage: tool [OPTIONS] --config <FILE> <COMMAND>\n";
 
 /* Has the text of the kind passed to a write function. */
 static argx_error_t write_text(text_kind_t kind, const argx_command_t *command,

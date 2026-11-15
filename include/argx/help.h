@@ -207,7 +207,9 @@ ARGX_API void argx_help_options_set_max_column(argx_help_options_t *options, siz
  * - Each positional of command, in the order the positionals were added:
  *   "<name>" for one that takes exactly one argument, "[name]" for zero
  *   or one, "[name]..." for zero or more, "<name>..." for one or more.
- * - "[COMMAND]", when command has a subcommand.
+ * - "<COMMAND>", when command has a subcommand and a command line must
+ *   name one, or "[COMMAND]" when its subcommands are optional
+ *   (argx_command_set_subcommand_optional()).
  *
  * Items are separated by one blank. When an item would then go beyond the
  * width in the help options, a newline and 7 blanks (the width of
@@ -263,7 +265,7 @@ ARGX_API argx_error_t argx_help_write_usage(const argx_command_t *command,
 /*
  * Generates command's help, such as
  *
- *     Usage: tool remote [COMMAND]
+ *     Usage: tool remote <COMMAND>
  *
  *     Manage the remote repositories.
  *

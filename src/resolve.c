@@ -8,7 +8,9 @@
  * Two passes go over the result's selected commands, from the root to the
  * last, and within each command over its options and then its positionals,
  * each in the order in which they were added. The first pass checks that
- * everything required was given and records the first missing one. Only
+ * everything required was given and records the first missing one; after
+ * the options and positionals, it checks that the last selected command
+ * does not require a subcommand that was not named. Only
  * when nothing is missing does the second pass give the options and
  * positionals that have no value their default values.
  *
@@ -24,6 +26,7 @@
 #include "parse_internal.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -110,6 +113,42 @@ static argx_error_t fail_missing(argx_result_t *result, const argx_command_t *co
     failure.positional = positional;
 
     return argx_result_fail(result, &failure);
+}
+
+/*
+ * Records that command, the last selected command, requires one of its
+ * subcommands and none was named. Returns what argx_result_fail() returns.
+ */
+static argx_error_t fail_missing_subcommand(argx_result_t *result, const argx_command_t *command)
+{
+    argx_result_failure_t failure;
+    element_name_t name;
+
+    /* The message names nothing. */
+    name.short_name = '\0';
+    name.prefix = "";
+    name.text = NULL;
+    name.length = 0;
+
+    failure.kind = ARGX_PARSE_ERROR_MISSING_SUBCOMMAND;
+    locate(&failure.where, ARGX_SOURCE_NONE, &name);
+    failure.value = NULL;
+    failure.command = command;
+    failure.option = NULL;
+    failure.positional = NULL;
+
+    return argx_result_fail(result, &failure);
+}
+
+/*
+ * Whether the command line ended in command without naming one of its
+ * subcommands while they are required. command is the last selected
+ * command.
+ */
+static bool subcommand_is_missing(const argx_command_t *command)
+{
+    return (argx_command_subcommand_count(command) != 0) &&
+           !argx_command_is_subcommand_optional(command);
 }
 
 /*
@@ -237,6 +276,20 @@ argx_error_t argx_resolve(argx_result_t *result)
         if (error != ARGX_ERROR_NONE)
         {
             return error;
+        }
+    }
+
+    /*
+     * Every selected command but the last has a selected subcommand, so
+     * only the last one can miss one. It is reported after everything else
+     * that is missing.
+     */
+    {
+        const argx_command_t *last = argx_result_command(result);
+
+        if (subcommand_is_missing(last))
+        {
+            return fail_missing_subcommand(result, last);
         }
     }
 

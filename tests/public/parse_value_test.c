@@ -644,6 +644,8 @@ NAOS_TEST(a_command_that_was_not_selected_is_not_checked_and_gets_no_default_val
     argx_result_destroy(result);
 
     /* No subcommand was selected: neither is checked or filled in. */
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(fixture.root, true) == ARGX_ERROR_NONE);
+    validate(fixture.root);
     result = parse_ok(fixture.root, ARGC(parent), parent);
     NAOS_CHECK_TRUE(argx_result_command(result) == fixture.root);
     check_option_string(result, fixture.config, "tool.cfg", ARGX_SOURCE_DEFAULT);

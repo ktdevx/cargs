@@ -722,6 +722,8 @@ NAOS_TEST(a_wrong_value_after_good_ones_keeps_the_good_ones)
  *   remote [-v|--verbose]...
  *     add [-f|--force] [-1] [-o|--out FILE] NAME [URLS]...
  *     remove [--all] NAME
+ *
+ * The subcommands of tool and of remote are optional.
  */
 typedef struct tool_fixture
 {
@@ -775,6 +777,10 @@ static void set_up_tool(tool_fixture_t *fixture)
     NAOS_REQUIRE_TRUE(argx_command_add_flag(fixture->remove, '\0', "all", &fixture->all) ==
                       ARGX_ERROR_NONE);
     fixture->removed = add_positional(fixture->remove, "NAME", argx_type_string(), ARGX_ARITY_REQUIRED);
+    /* A command line may end in the root or in remote. */
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(root, true) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(fixture->remote, true) ==
+                      ARGX_ERROR_NONE);
     validate(root);
 }
 

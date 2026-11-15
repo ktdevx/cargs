@@ -57,8 +57,11 @@ argx_add_example_test(pack list
 argx_add_example_test(pack help
     "^Usage: pack create \\[OPTIONS\\] --output <FILE> <file>\\.\\.\\.\r?\n\r?\nCreate an archive\\.\r?\n"
     ARGS create --help)
+argx_add_example_test(pack root-help
+    "^Usage: pack \\[OPTIONS\\] <COMMAND>\r?\n\r?\nPack files into an archive\\.\r?\n"
+    ARGS --help)
 argx_add_example_test(pack parse-error
     "^pack: missing required option '--output'\r?\nUsage: pack create \\[OPTIONS\\] --output <FILE> <file>\\.\\.\\.\r?\nFor more information, try '--help'\\.\r?\n$"
     ARGS create a.txt)
 argx_add_example_test(pack no-command
-    "^pack: a command is required\r?\nFor more information, try '--help'\\.\r?\n$")
+    "^pack: missing required command\r?\nUsage: pack \\[OPTIONS\\] <COMMAND>\r?\nFor more information, try '--help'\\.\r?\n$")

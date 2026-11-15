@@ -103,7 +103,8 @@ static void check_clean(void)
  *      [-o|--name STRING]
  *   run [-t|--tag STRING] [FILE]...
  *
- * --color is on at first. --tag has the default value "none".
+ * --color is on at first. --tag has the default value "none". The subcommand
+ * of tool is optional.
  */
 typedef struct fixture
 {
@@ -144,6 +145,7 @@ static void set_up(fixture_t *fixture)
     NAOS_REQUIRE_TRUE(argx_command_add_positional(fixture->run, "FILE", argx_type_string(),
                                                   ARGX_ARITY_ZERO_OR_MORE,
                                                   &fixture->file) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(fixture->root, true) == ARGX_ERROR_NONE);
 
     NAOS_REQUIRE_TRUE(argx_command_validate(fixture->root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
 }
@@ -523,6 +525,8 @@ NAOS_TEST(parse_errors_are_the_same_and_their_strings_are_utf8)
     char *unexpected_value[] = { "tool", "--verbose=" U_4 };
     wchar_t *missing_value_wide[] = { L"tool", L"run", W_2, L"--tag" };
     char *missing_value[] = { "tool", "run", U_2, "--tag" };
+    wchar_t *missing_subcommand_wide[] = { L"tool", L"--name=" W_2 };
+    char *missing_subcommand[] = { "tool", "--name=" U_2 };
     argx_result_t *result;
 
     set_up(&fixture);
@@ -568,6 +572,17 @@ NAOS_TEST(parse_errors_are_the_same_and_their_strings_are_utf8)
     NAOS_CHECK_TRUE(argx_result_error_command(result) == fixture.run);
     NAOS_REQUIRE_TRUE(argx_result_positional_count(result, fixture.file) == 1);
     check_positional_string(result, fixture.file, 0, U_2);
+    argx_result_destroy(result);
+
+    /* With the subcommand of tool required. */
+    NAOS_REQUIRE_TRUE(argx_command_set_subcommand_optional(fixture.root, false) == ARGX_ERROR_NONE);
+    NAOS_REQUIRE_TRUE(argx_command_validate(fixture.root, NULL, NULL, NULL) == ARGX_ERROR_NONE);
+    result = parse_both(&fixture, ARGC(missing_subcommand_wide), missing_subcommand_wide,
+                        missing_subcommand, ARGX_ERROR_INVALID_COMMAND_LINE);
+    NAOS_CHECK_INT_EQ(argx_result_error_kind(result), ARGX_PARSE_ERROR_MISSING_SUBCOMMAND);
+    NAOS_CHECK_TRUE(argx_result_error_command(result) == fixture.root);
+    check_text(argx_result_error_message(result), "missing required command");
+    check_option_string(result, fixture.name, U_2);
     argx_result_destroy(result);
 
     tear_down(&fixture);

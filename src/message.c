@@ -135,6 +135,9 @@ static void collect(pieces_t *pieces, const argx_message_parts_t *parts)
         add_string(pieces, parts->value);
         ADD_TEXT(pieces, "'");
         break;
+    case ARGX_PARSE_ERROR_MISSING_SUBCOMMAND:
+        ADD_TEXT(pieces, "missing required command");
+        break;
     case ARGX_PARSE_ERROR_NONE:
     default:
         /* Ruled out by the precondition. */
@@ -153,7 +156,7 @@ argx_error_t argx_message_build(const argx_message_parts_t *parts, char **out)
     assert(parts != NULL);
     assert(out != NULL);
     assert(parts->kind != ARGX_PARSE_ERROR_NONE);
-    assert(parts->kind <= ARGX_PARSE_ERROR_INVALID_ENCODING);
+    assert(parts->kind <= ARGX_PARSE_ERROR_MISSING_SUBCOMMAND);
 
     *out = NULL;
 

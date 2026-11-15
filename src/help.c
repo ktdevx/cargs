@@ -134,10 +134,11 @@ static bool help_has_optional_option(const argx_command_t *command)
 /* The kinds of usage line items that follow the path. */
 typedef enum help_usage_kind
 {
-    HELP_USAGE_OPTIONS,    /* "[OPTIONS]" */
-    HELP_USAGE_OPTION,     /* a required option */
-    HELP_USAGE_POSITIONAL, /* a positional */
-    HELP_USAGE_COMMAND     /* "[COMMAND]" */
+    HELP_USAGE_OPTIONS,         /* "[OPTIONS]" */
+    HELP_USAGE_OPTION,          /* a required option */
+    HELP_USAGE_POSITIONAL,      /* a positional */
+    HELP_USAGE_COMMAND,         /* "<COMMAND>": a required subcommand */
+    HELP_USAGE_OPTIONAL_COMMAND /* "[COMMAND]": an optional subcommand */
 } help_usage_kind_t;
 
 /* One usage line item: a text that is never split. */
@@ -166,6 +167,9 @@ static void help_usage_item_write(argx_out_t *out, const help_usage_item_t *item
         argx_help_item_positional_heading(out, item->positional);
         break;
     case HELP_USAGE_COMMAND:
+        argx_out_string(out, "<COMMAND>");
+        break;
+    case HELP_USAGE_OPTIONAL_COMMAND:
         argx_out_string(out, "[COMMAND]");
         break;
     }
@@ -275,7 +279,8 @@ static void help_usage_add(help_context_t *context, const help_usage_item_t *ite
 /*
  * Writes the usage line of context's command, including the newline that
  * ends it. The items, in order: "Usage: " and the command path,
- * "[OPTIONS]", the required options, the positionals and "[COMMAND]".
+ * "[OPTIONS]", the required options, the positionals and "<COMMAND>" or
+ * "[COMMAND]".
  * The line is broken between two items where it would exceed the width;
  * no item is split.
  */
@@ -326,7 +331,8 @@ static void help_write_usage_line(help_context_t *context)
 
     if (argx_command_subcommand_count(command) != 0)
     {
-        item.kind = HELP_USAGE_COMMAND;
+        item.kind = argx_command_is_subcommand_optional(command) ? HELP_USAGE_OPTIONAL_COMMAND :
+                                                                   HELP_USAGE_COMMAND;
         help_usage_add(context, &item);
     }
 

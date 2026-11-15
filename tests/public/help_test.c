@@ -337,7 +337,7 @@ NAOS_TEST(root_with_description_and_subcommands)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "Manage the remote repositories.\n"
                "\n"
@@ -381,7 +381,7 @@ NAOS_TEST(second_level_subcommand_with_positionals)
      * subcommand.
      */
     check_help(remote,
-               "Usage: tool remote [COMMAND]\n"
+               "Usage: tool remote <COMMAND>\n"
                "\n"
                "Manage the remotes\n"
                "\n"
@@ -399,7 +399,7 @@ NAOS_TEST(second_level_subcommand_with_positionals)
  */
 NAOS_TEST(command_without_description)
 {
-    static const char expected[] = "Usage: tool [COMMAND]\n"
+    static const char expected[] = "Usage: tool <COMMAND>\n"
                                    "\n"
                                    "Commands:\n"
                                    "  add  Add a remote\n";
@@ -461,7 +461,7 @@ NAOS_TEST(parts_are_separated_by_one_empty_line)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "Do things.\n"
                "\n"
@@ -538,7 +538,7 @@ NAOS_TEST(items_come_in_definition_order)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  zeta   Last letter\n"
@@ -573,7 +573,7 @@ NAOS_TEST(grandchildren_are_not_listed)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  remote  Manage the remotes\n"
@@ -595,7 +595,7 @@ NAOS_TEST(subcommand_description_is_cut_at_first_newline)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  add   Add a remote\n"
@@ -655,7 +655,7 @@ NAOS_TEST(empty_description_is_not_written)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  add\n"
@@ -680,7 +680,7 @@ NAOS_TEST(empty_description_is_not_written)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  add  Add a remote\n");
@@ -704,7 +704,7 @@ NAOS_TEST(item_without_description_is_heading_only)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  add         Add a remote\n"
@@ -737,7 +737,7 @@ NAOS_TEST(command_description_keeps_inner_newlines_and_drops_trailing_ones)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "First line.\n"
                "Second line.\n"
@@ -792,7 +792,7 @@ NAOS_TEST(descriptions_wrap_at_default_width)
     validate(root);
 
     check_help(root,
-               "Usage: tool [COMMAND]\n"
+               "Usage: tool <COMMAND>\n"
                "\n"
                "This description of the command is long enough to go beyond the eighty columns\n"
                "of the default width.\n"
@@ -821,7 +821,7 @@ NAOS_TEST(width_and_indent_of_options_are_used)
 
     /* The column is 4 + 3 + 2 = 9, at most half the width. */
     check_help_with(root, options,
-                    "Usage: tool [COMMAND]\n"
+                    "Usage: tool <COMMAND>\n"
                     "\n"
                     "Manage the remote repositories of the\n"
                     "project.\n"
@@ -842,7 +842,7 @@ NAOS_TEST(width_and_indent_of_options_are_used)
     /* The indent 0: the items start the line. */
     argx_help_options_set_indent(options, 0);
     check_help_with(root, options,
-                    "Usage: tool [COMMAND]\n"
+                    "Usage: tool <COMMAND>\n"
                     "\n"
                     "Manage the remote repositories of the\n"
                     "project.\n"
@@ -864,7 +864,7 @@ NAOS_TEST(width_and_indent_of_options_are_used)
     argx_help_options_set_width(options, 0);
     argx_help_options_set_indent(options, 2);
     check_help_with(root, options,
-                    "Usage: tool [COMMAND]\n"
+                    "Usage: tool <COMMAND>\n"
                     "\n"
                     "Manage the remote repositories of the project.\n"
                     "\n"
@@ -885,7 +885,7 @@ NAOS_TEST(width_and_indent_of_options_are_used)
 /* Help options as they were created give the text of no help options. */
 NAOS_TEST(null_options_are_the_default_options)
 {
-    static const char expected_root[] = "Usage: tool [COMMAND]\n"
+    static const char expected_root[] = "Usage: tool <COMMAND>\n"
                                         "\n"
                                         "Do things.\n"
                                         "\n"
@@ -1083,7 +1083,7 @@ static void check_snapshot(const argx_command_t *root, const snapshot_t *before)
  */
 NAOS_TEST(same_input_gives_same_text_and_schema_is_unchanged)
 {
-    static const char expected[] = "Usage: tool [COMMAND]\n"
+    static const char expected[] = "Usage: tool <COMMAND>\n"
                                    "\n"
                                    "Do things.\n"
                                    "\n"
@@ -1141,7 +1141,7 @@ NAOS_TEST(same_input_gives_same_text_and_schema_is_unchanged)
  */
 NAOS_TEST(write_failure_is_reported_and_stops_the_calls)
 {
-    static const char expected[] = "Usage: tool [COMMAND]\n"
+    static const char expected[] = "Usage: tool <COMMAND>\n"
                                    "\n"
                                    "Do things.\n"
                                    "\n"
@@ -1211,7 +1211,7 @@ NAOS_TEST(root_with_description_subcommands_and_options)
     validate(root);
 
     check_help(root,
-               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "Usage: tool [OPTIONS] <COMMAND>\n"
                "\n"
                "Manage the remote repositories.\n"
                "\n"
@@ -1316,7 +1316,7 @@ NAOS_TEST(options_of_other_commands_are_not_listed)
     validate(root);
 
     check_help(root,
-               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "Usage: tool [OPTIONS] <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  run            Run it\n"
@@ -1325,7 +1325,7 @@ NAOS_TEST(options_of_other_commands_are_not_listed)
                "  -v, --verbose  Say more\n");
 
     check_help(run,
-               "Usage: tool run [OPTIONS] [COMMAND]\n"
+               "Usage: tool run [OPTIONS] <COMMAND>\n"
                "\n"
                "Run it\n"
                "\n"
@@ -1386,7 +1386,7 @@ NAOS_TEST(commands_and_options_share_the_description_column)
     validate(root);
 
     check_help(root,
-               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "Usage: tool [OPTIONS] <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  a                       First\n"
@@ -1402,7 +1402,7 @@ NAOS_TEST(commands_and_options_share_the_description_column)
     validate(root);
 
     check_help(root,
-               "Usage: tool [OPTIONS] [COMMAND]\n"
+               "Usage: tool [OPTIONS] <COMMAND>\n"
                "\n"
                "Commands:\n"
                "  a-long-command-name  Wide\n"
