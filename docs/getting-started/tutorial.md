@@ -178,6 +178,7 @@ static void print_parse_error(const argx_result_t *result)
 {
     fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
     argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
+    fprintf(stderr, "For more information, try '--help'.\n");
 }
 ```
 
@@ -186,6 +187,7 @@ The destination is the `user_data` of the write function; `write_to_stream` take
 ```
 pack: missing required option '--output'
 Usage: pack create [OPTIONS] --output <FILE> <file>...
+For more information, try '--help'.
 ```
 
 The message has no prefix or newline, and the usage line ends with one. For more detail, see [Parse error details](../references/parse.md#parse-error-details).
