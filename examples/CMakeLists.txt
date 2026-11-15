@@ -64,4 +64,8 @@ argx_add_example_test(pack parse-error
     "^pack: missing required option '--output'\r?\nUsage: pack create \\[OPTIONS\\] --output <FILE> <file>\\.\\.\\.\r?\nFor more information, try '--help'\\.\r?\n$"
     ARGS create a.txt)
 argx_add_example_test(pack no-command
-    "^pack: missing required command\r?\nUsage: pack \\[OPTIONS\\] <COMMAND>\r?\nFor more information, try '--help'\\.\r?\n$")
+    "^Usage: pack \\[OPTIONS\\] <COMMAND>\r?\n\r?\nPack files into an archive\\.\r?\n")
+# The same command line exits with a failure status: PASS_REGULAR_EXPRESSION
+# ignores the status, so a separate test checks it.
+add_test(NAME example.pack.no-command-status COMMAND argx_example_pack)
+set_tests_properties(example.pack.no-command-status PROPERTIES WILL_FAIL TRUE LABELS example)

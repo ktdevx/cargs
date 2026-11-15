@@ -14,19 +14,28 @@ TRY(argx_command_set_subcommand_optional(remote, true));
 
 The command line may then end in `remote`, `argx_result_command` returns it, and its usage line shows `[COMMAND]` instead of `<COMMAND>` ([Subcommands](../references/syntax.md#subcommands)). The setting belongs to `remote` only. Handle that case where you branch on `argx_result_command`, as `run` in [examples/pack.c](../../examples/pack.c) does for `create` and `list`.
 
-### Printing the help when no subcommand is given
+### Printing an error message when no subcommand is given
 
-To print the whole help instead of the error, as `git` does, branch on the kind of the parse error. In the `ARGX_ERROR_INVALID_COMMAND_LINE` case of [examples/pack.c](../../examples/pack.c):
+[examples/pack.c](../../examples/pack.c) prints the help when a command line ends without a subcommand, as most programs with subcommands do. To print the message of the parse error and the usage line instead, like any other parse error, drop that branch from the `ARGX_ERROR_INVALID_COMMAND_LINE` case:
 
 ```c
-if (help_was_given(result) ||
-    (argx_result_error_kind(result) == ARGX_PARSE_ERROR_MISSING_SUBCOMMAND))
+if (help_was_given(result))
 {
     status = print_help(result);
 }
+else
+{
+    print_parse_error(result);
+}
 ```
 
-The help is that of `argx_result_command`, which is the command whose subcommand is missing. `print_help` returns success, so return a failure status yourself if a missing subcommand should fail.
+`pack` alone then prints:
+
+```
+pack: missing required command
+Usage: pack [OPTIONS] <COMMAND>
+For more information, try '--help'.
+```
 
 ### Passing a value that starts with `-`
 

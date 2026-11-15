@@ -11,8 +11,8 @@
  *   3. validates it, and tells which definition a failed validation points to;
  *   4. parses argv and branches on the error code, reading --help in both
  *      cases that give a result;
- *   5. prints the help of the selected command, or the message and the usage
- *      line of a parse error;
+ *   5. prints the help of the selected command, also when a subcommand is
+ *      missing, or the message and the usage line of any other parse error;
  *   6. reads the values and where they came from;
  *   7. destroys the result, the schema and the value types, in this order.
  *
@@ -20,10 +20,11 @@
  * pages in docs/references/ (schema.md, types.md, parse.md and help.md) are
  * the reference for each function it calls.
  *
- * The program keeps the library's standard behavior, such as a required
- * subcommand and a parse error printed with its usage line. To change it,
- * for example to make a subcommand optional or to print the help when no
- * subcommand is given, follow the recipes in docs/guides/how-to.md.
+ * The program behaves like most programs with subcommands: a subcommand is
+ * required, and a command line without one prints the help and fails. To
+ * change it, for example to make a subcommand optional or to report a
+ * missing subcommand as an error message, follow the recipes in
+ * docs/guides/how-to.md.
  *
  * It accepts command lines of this form:
  *
@@ -57,12 +58,13 @@
  *   For more information, try '--help'.
  *
  *   $ pack
- *   pack: missing required command
  *   Usage: pack [OPTIONS] <COMMAND>
- *   For more information, try '--help'.
  *
- * "pack --help" and "pack create --help" print the help of the root and of
- * create.
+ *   Pack files into an archive.
+ *   ...
+ *
+ * "pack" exits with a failure status, "pack --help" with success. "pack
+ * create --help" prints the help of create.
  */
 
 #include <argx/argx.h>
@@ -580,6 +582,16 @@ int main(int argc, char **argv)
         if (help_was_given(result))
         {
             status = print_help(result);
+        }
+        else if (argx_result_error_kind(result) == ARGX_PARSE_ERROR_MISSING_SUBCOMMAND)
+        {
+            /*
+             * A command line that ends without a subcommand: the help of the
+             * command that misses it, as most programs do, and a failure,
+             * since nothing was done.
+             */
+            (void)print_help(result);
+            status = EXIT_FAILURE;
         }
         else
         {
