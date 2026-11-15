@@ -142,7 +142,7 @@ default:
 - **`argx_parse` returns one of three codes.** `ARGX_ERROR_OUT_OF_MEMORY` is the only one that leaves no result, so `default` handles it.
 - **A parse error also gives a result,** which holds what was read before the error and which you destroy like any other.
 - **Read `--help` in both cases.** It is an ordinary flag. `pack create --help` omits the required `--output`, and `pack --help` the subcommand, so both are parse errors, but `--help` was read before the error and reads as given.
-- **Branch on the kind of a parse error to treat one differently.** A command line without a subcommand prints the help of the command it ended in, as most programs with subcommands do, and fails. Every other parse error prints its message and the usage line ([step 5](#5-print-the-help-or-the-parse-error)).
+- **Branch on the kind of a parse error to treat one differently.** A command line without a subcommand prints the help of the command it ended in, as most programs with subcommands do, and fails. Every other parse error prints its message and the usage line.
 
 `help_was_given` reads the `--help` of each selected command:
 

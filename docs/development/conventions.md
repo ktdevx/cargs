@@ -55,8 +55,8 @@ Create build directories outside the repository, or as `build/` or `build-*/` at
 
 - **A fact has one place.** Guides link to the references instead of repeating them.
 - **One API page per public header,** starting with a `## Functions` index. The description and preconditions of each function stay in the comment of its declaration and are not copied. Rules not about one header (the command-line syntax, the layout of the help) are specification pages.
-- **Keep examples in sync.** When you change `examples/pack/pack.c`, update the excerpts in the [Tutorial](../getting-started/tutorial.md). When an example's output changes, update its `argx_add_example_test()` and the comment at the top of the program. `examples/greet/greet.c` is the example of the [README](../../README.md): change both together. The test `example.greet.readme` fails when the code differs from the README, or when a command line of the README prints something else.
-- **Complete C functions in documents compile as they are** and follow [Code style](#code-style). An example with placeholder names shows its placeholder header in a comment.
+- **Keep examples in sync.** When you change `examples/pack/pack.c`, update the excerpts in the [Tutorial](../getting-started/tutorial.md). When an example's output changes, update its `argx_add_example_test()` and the comment at the top of the program. `examples/greet/greet.c` is the example of the README: change both together. The test `example.greet.readme` fails when the code differs from the README, or when a command line of the README prints something else.
+- **Complete C functions in documents compile as they are** and follow the code style below. An example with placeholder names shows its placeholder header in a comment.
 
 ## Code style
 

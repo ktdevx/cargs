@@ -72,7 +72,7 @@ Operands are assigned in order to the positionals in the order they were added. 
 
 - An operand matching a subcommand name makes it the current command, at any depth. Any other name is `UNKNOWN_SUBCOMMAND`.
 - **An option goes after the name of its command and before the name of that command's subcommand.** In `pack -v create`, `-v` belongs to `pack`; in `pack create -v`, to `create`. Subcommands do not inherit options, and same-named options in parent and child are separate.
-- **Subcommands are required unless made optional.** Ending in a command with subcommands, without naming one, is `MISSING_SUBCOMMAND` ([Required checks](#required-checks-and-default-values)). With `argx_command_set_subcommand_optional(command, true)`, it is not a parse error, and `argx_result_command` returns that command. The setting belongs to each command: `git remote` can be optional while `git` itself requires a subcommand.
+- **Subcommands are required unless made optional.** Ending in a command with subcommands, without naming one, is `MISSING_SUBCOMMAND`. With `argx_command_set_subcommand_optional(command, true)`, it is not a parse error, and `argx_result_command` returns that command. The setting belongs to each command: `git remote` can be optional while `git` itself requires a subcommand.
 - Elements after the terminator never name a subcommand.
 - Options and positionals of unselected commands read as not given ([Rules for reading](parse.md#rules-for-reading)).
 

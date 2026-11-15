@@ -64,7 +64,7 @@ The rules for ownership, lifetime, `NULL`, allocators, failures and threads that
 
 Write documentation, code comments and messages in English.
 
-When a change affects behavior or the API, update the documentation in the same pull request: the comments in the public headers, the documents in `docs/`, and the [README](README.md) where it describes the changed behavior.
+When a change affects behavior or the API, update the documentation in the same pull request: the comments in the public headers, the documents in `docs/`, and the README where it describes the changed behavior.
 
 ## Submitting a pull request
 

@@ -19,7 +19,7 @@ An admin makes these settings by hand; the workflows never change settings.
 1. **Settings > Actions > General:** check **Allow GitHub Actions to create and approve pull requests**, and keep the default workflow permissions read-only.
 2. **Protect `main`:** require a pull request and the status check **`CI result`**. Do not require the individual `build (...)` or `quickstart (...)` jobs; they are skipped for documentation-only changes. Do not block the creation of `release/v*` branches.
 3. **Tag rulesets (optional):** if `v*` tags are protected, still let GitHub Actions create them.
-4. **Settings > Code security:** enable **Private vulnerability reporting**, which [SECURITY.md](../../SECURITY.md) relies on.
+4. **Settings > Code security:** enable **Private vulnerability reporting**, which SECURITY.md relies on.
 
 ## Permissions and secrets
 
