@@ -510,6 +510,7 @@ argx_target_defaults(<target> [STRICT])
 | 公開ヘッダ（`include/argx/` の全体） | `${CMAKE_INSTALL_INCLUDEDIR}/argx` |
 | `ArgXConfig.cmake`、`ArgXConfigVersion.cmake`、`ArgXTargets*.cmake` | `${CMAKE_INSTALL_LIBDIR}/cmake/ArgX` |
 | `argx.pc` | `${CMAKE_INSTALL_LIBDIR}/pkgconfig` |
+| `LICENSE` | `${CMAKE_INSTALL_DATADIR}/doc/ArgX` |
 
 - `src/` の内部ヘッダ、テスト、Naos、`argx_internal` はインストールしない（7.6）。
 - **Config パッケージ**:
