@@ -1,19 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.svg" alt="ArgX: command-line argument parser for C99" width="800">
-  <br>
-  <sub>2:1</sub>
-</p>
-
-<p align="center">
   <img src="docs/assets/banner-3x1.svg" alt="ArgX: command-line argument parser for C99" width="800">
-  <br>
-  <sub>3:1</sub>
-</p>
-
-<p align="center">
-  <img src="docs/assets/banner-4x1.svg" alt="ArgX: command-line argument parser for C99" width="800">
-  <br>
-  <sub>4:1</sub>
 </p>
 
 # ArgX
