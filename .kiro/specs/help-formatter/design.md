@@ -290,7 +290,7 @@ flowchart TD
 | 2.2 | `[OPTIONS]` | Help | usage 行の規則 |
 | 2.3 | 必須のオプション | Help、HelpItem | `argx_help_item_usage_option()` |
 | 2.4 | 位置引数 | Help、HelpItem | `argx_help_item_positional_heading()` |
-| 2.5 | `[COMMAND]` | Help | usage 行の規則 |
+| 2.5 | `<COMMAND>`、`[COMMAND]` | Help | usage 行の規則 |
 | 2.6 | 何も持たないコマンド | Help | usage 行の規則 |
 | 2.7 | usage 行だけの生成 | Help | `argx_help_write_usage()`。ヘルプと同じ内部関数 |
 | 2.8 | 折り返しと 7 桁の字下げ | Help、Out | usage 行の規則 |
@@ -662,7 +662,7 @@ ARGX_API argx_error_t argx_help_format_usage(const argx_command_t *command,
    2. `[OPTIONS]`。対象のコマンドに、必須でないオプション（フラグ、否定できるフラグ、カウント、`argx_option_is_required()` が偽の値付きオプション）が 1 つ以上あるとき。
    3. 必須の値付きオプションのそれぞれ。定義した順。表記は `argx_help_item_usage_option()`。
    4. 位置引数のそれぞれ。定義した順。表記は `argx_help_item_positional_heading()`。
-   5. `[COMMAND]`。対象のコマンドにサブコマンドが 1 つ以上あるとき。
+   5. `<COMMAND>`。対象のコマンドにサブコマンドが 1 つ以上あるとき。サブコマンドが任意に設定されていれば（`argx_command_is_subcommand_optional()`）、`[COMMAND]`。どちらも 9 バイトである。
 2. 2 つ目以降の項目は、前の項目との間に空白を 1 つ置く。ただし、表示幅が 0 でなく、「現在の桁 + 1 + 項目の幅」が表示幅を超えるなら、空白の代わりに、改行と空白 7 桁を置く。項目の幅は、桁だけを数える `Out` に、その項目を 1 回書いて得る。
 3. 最後に改行を書く。
 
@@ -753,7 +753,7 @@ typedef struct help_context {
   - 定義した順に並ぶ（1.8）。親のオプションと孫のサブコマンドが出ない（3.8、4.3）。
   - 同じ入力で 2 回生成した文面が一致する。生成の前後で、スキーマの読み取りの結果と `argx_command_is_validated()` が変わらない（11.1、11.4）。
 - **`help_usage_test.c`**（要件 2）
-  - `[OPTIONS]` の有無、必須のオプション（長い名前あり、短い名前だけ）、4 種類の位置引数、`[COMMAND]`、何も持たないコマンド（2.1〜2.6）。
+  - `[OPTIONS]` の有無、必須のオプション（長い名前あり、短い名前だけ）、4 種類の位置引数、`<COMMAND>` と `[COMMAND]`、何も持たないコマンド（2.1〜2.6）。
   - `argx_help_write_usage()` の文面が、同じ設定のヘルプの先頭と一致する（2.7）。
   - 表示幅を狭くして、項目の間で折り返され、続きが 7 桁の字下げになる。空白を含む値の表示名の項目が分かれない。1 つの項目が幅を超えるときは、そのまま出る（2.8、2.9）。
 - **`help_item_test.c`**（要件 3、4、5）

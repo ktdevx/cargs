@@ -279,6 +279,7 @@ stateDiagram-v2
 | 5.7 | 再設定は置き換え | Command | `argx_schema_replace_string` | — |
 | 5.8 | 対象でない種類には設定できない | Option、Positional | 設定の関数（`INVALID_DEFINITION`） | — |
 | 5.9 | 属性を後から足せる形 | Option、Positional | 属性ごとの設定関数と読み取り関数 | — |
+| 5.10 | サブコマンドを任意にする | Command | `argx_command_set_subcommand_optional`、`argx_command_is_subcommand_optional` | — |
 | 6.1 | 組み込みの 4 つの値型 | Type | `argx_type_string`、`_int`、`_float`、`argx_type_create_choice` | — |
 | 6.2 | 文字列の変換 | Type | `argx_type_convert` | — |
 | 6.3, 6.4 | 整数の変換 | Number、Type | `argx_number_parse_int` | — |
@@ -295,6 +296,7 @@ stateDiagram-v2
 | 8.9 | 誤りの種類と場所 | Validate | `argx_command_validate` の出力用の引数 | — |
 | 8.10, 8.11, 8.12 | 失敗で未検証のまま。変更で未検証に戻る。同じ結果 | Validate、Command | `argx_schema_touch`、`argx_command_is_validated` | 検証の状態 |
 | 8.13 | 追加の時点の誤りは追加の時点で弾く | Command、Option、Positional | 追加の関数 | 追加 |
+| 8.14 | サブコマンドのないコマンドの任意の設定 | Validate | `argx_command_validate` | — |
 | 9.1, 9.2 | コマンドの読み取り、定義した順の列挙 | Command | `argx_command_name` ほか、`_count`、`_at` | — |
 | 9.3 | オプションの読み取り | Option | `argx_option_*` の読み取り | — |
 | 9.4 | 位置引数の読み取り | Positional | `argx_positional_*` の読み取り | — |
@@ -326,10 +328,10 @@ stateDiagram-v2
 | Name | 内部 | 名前の規則の判定 | 3.1–3.4 | なし | Service |
 | Number | 内部 | 整数と浮動小数の変換 | 6.3–6.7, 12.5 | Allocator (P1)、`strtod` (P0) | Service |
 | Type | 公開 | 値型の生成、破棄、読み取り、変換 | 6.1, 6.2, 6.8–6.12, 7.1–7.8, 9.10, 9.11, 10.6, 10.7 | Number (P0)、Allocator (P0)、Str (P0) | Service |
-| Command | 公開 | コマンドの木、説明文、列挙、検索、共通の補助 | 1.1–1.8, 2.11, 3.5, 4.7, 4.8, 5.1, 5.7, 9.1, 9.2, 9.6–9.8, 10.1–10.7 | Name (P0)、Vec (P0)、Str (P0) | Service、State |
+| Command | 公開 | コマンドの木、説明文、サブコマンドの任意、列挙、検索、共通の補助 | 1.1–1.8, 2.11, 3.5, 4.7, 4.8, 5.1, 5.7, 5.10, 9.1, 9.2, 9.6–9.8, 10.1–10.7 | Name (P0)、Vec (P0)、Str (P0) | Service、State |
 | Option | 公開 | オプションの追加、属性、読み取り | 2.1–2.10, 5.1–5.6, 5.8, 5.9, 9.3, 9.5 | Command (P0)、Name (P0)、Type (P0) | Service |
 | Positional | 公開 | 位置引数の追加、属性、読み取り | 4.1–4.6, 5.1, 5.4, 5.8, 9.4, 9.5 | Command (P0)、Type (P0) | Service |
-| Validate | 公開 | 木全体の検証、検証の状態 | 8.1–8.13, 9.9 | Command (P0)、Type (P0)、Allocator (P0) | Service、State |
+| Validate | 公開 | 木全体の検証、検証の状態 | 8.1–8.14, 9.9 | Command (P0)、Type (P0)、Allocator (P0) | Service、State |
 | Error（追記） | 公開 | エラーコード 5 つ | 11.1–11.3 | 既存の `ARGX_ERROR_LIST` | — |
 | 文書 | 文書 | `docs/schema.md` と既存の文書への追記 | 7.8, 11.5, 12.7 | — | — |
 
@@ -520,7 +522,7 @@ typedef enum argx_arity {
 | Field | Detail |
 |-------|--------|
 | Intent | コマンドの木を作り、破棄し、列挙と検索を提供する。定義要素に共通の補助関数を持つ |
-| Requirements | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.11, 3.5, 4.7, 4.8, 5.1, 5.7, 9.1, 9.2, 9.6, 9.7, 9.8, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7 |
+| Requirements | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.11, 3.5, 4.7, 4.8, 5.1, 5.7, 5.10, 9.1, 9.2, 9.6, 9.7, 9.8, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7 |
 
 **Responsibilities & Constraints**
 
@@ -544,9 +546,12 @@ ARGX_API void argx_command_destroy(argx_command_t *root);
 ARGX_API argx_error_t argx_command_add_subcommand(argx_command_t *command, const char *name,
                                                   argx_command_t **out);
 ARGX_API argx_error_t argx_command_set_description(argx_command_t *command, const char *text);
+ARGX_API argx_error_t argx_command_set_subcommand_optional(argx_command_t *command,
+                                                           bool optional);
 
 ARGX_API const char *argx_command_name(const argx_command_t *command);
 ARGX_API const char *argx_command_description(const argx_command_t *command);
+ARGX_API bool argx_command_is_subcommand_optional(const argx_command_t *command);
 ARGX_API const argx_command_t *argx_command_parent(const argx_command_t *command);
 
 ARGX_API size_t argx_command_option_count(const argx_command_t *command);
@@ -572,6 +577,8 @@ ARGX_API const argx_command_t *argx_command_find_subcommand(const argx_command_t
 | `argx_command_destroy` | 木全体を解放する。`NULL` は何もしない。Preconditions: `root` は `argx_command_create` で得たルートである（サブコマンドを渡さない） |
 | `argx_command_add_subcommand` | 順に検査する: 名前が規則に合わなければ `INVALID_NAME`。`command` が位置引数を持てば `INVALID_DEFINITION`（4.7）。同じ名前のサブコマンドがあれば `NAME_CONFLICT`（1.6）。`out` は `NULL` でもよい |
 | `argx_command_set_description` | `text` を複製し、前の説明文と置き換える。空の文字列も設定できる |
+| `argx_command_set_subcommand_optional` | サブコマンドを任意にするかどうかを設定する。いつも `ARGX_ERROR_NONE` を返し、ルートを未検証にする。サブコマンドを持つかどうかは検証で確かめる（5.10、8.14） |
+| `argx_command_is_subcommand_optional` | 設定されていなければ `false`（必須）（5.6） |
 | `argx_command_description` | 設定されていなければ `NULL` |
 | `argx_command_parent` | ルートでは `NULL` |
 | `_count`、`_at` | 定義した順。`_at` の Preconditions: `index` は個数より小さい |
@@ -738,7 +745,7 @@ ARGX_API const char *argx_positional_default(const argx_positional_t *positional
 | Field | Detail |
 |-------|--------|
 | Intent | 木全体を見ないと分からない誤りを検査し、検証済みかどうかを管理する |
-| Requirements | 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11, 8.12, 8.13, 9.9 |
+| Requirements | 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11, 8.12, 8.13, 8.14, 9.9 |
 
 **Responsibilities & Constraints**
 
@@ -751,6 +758,7 @@ ARGX_API const char *argx_positional_default(const argx_positional_t *positional
 | 3 | オプションを定義した順に見て、必須で、かつ既定値がある | `INVALID_DEFINITION` | そのオプション | 8.5 |
 | 4 | オプションの既定値が、値型で変換できない | `INVALID_DEFAULT` | そのオプション | 8.6, 8.7 |
 | 5 | 位置引数の既定値が、値型で変換できない | `INVALID_DEFAULT` | その位置引数 | 8.6, 8.7 |
+| 6 | サブコマンドが任意に設定され、サブコマンドが 1 つもない | `INVALID_DEFINITION` | そのコマンド（オプションと位置引数は `NULL`） | 8.14 |
 
 - 1 と 2 は、位置引数ごとに、1 を先に調べる。3 と 4 は、オプションごとに、3 を先に調べる。
 - 既定値の確認は、`argx_type_value_size()` バイトを `argx_malloc` で確保し、`argx_type_convert` を呼び、成功したら `argx_type_release` を呼び、領域を解放する（8.8）。変換が `ARGX_ERROR_OUT_OF_MEMORY` を返したら、そのまま返す。それ以外の失敗は、どのコードでも `ARGX_ERROR_INVALID_DEFAULT` にする。領域の確保の失敗は `ARGX_ERROR_OUT_OF_MEMORY` である。

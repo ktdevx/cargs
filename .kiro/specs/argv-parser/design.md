@@ -317,7 +317,7 @@ flowchart TD
 | 7.1, 7.2, 7.4 | サブコマンドの切り替え | Parse、Result | `argx_command_find_subcommand()`、`argx_result_push_command()` |
 | 7.3 | 未知のサブコマンド | Parse、Result | `ARGX_PARSE_ERROR_UNKNOWN_SUBCOMMAND` |
 | 7.5, 7.6 | 現在のコマンドの定義だけ | Parse | 検索に渡すのは現在のコマンドだけ |
-| 7.7 | サブコマンドなしで終わる | Parse | エラーにしない |
+| 7.7 | サブコマンドなしで終わる | Parse、Resolve | サブコマンドが任意ならエラーにしない。必須（既定）なら `MISSING_SUBCOMMAND`（9.11） |
 | 7.8 | 終端より後ろの要素 | Parse、Result | `ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL` |
 | 8.1, 8.2, 8.3 | 値型で変換する | Result | `argx_type_convert()` を 1 か所から呼ぶ |
 | 8.4, 8.5, 8.6 | 変換の結果の対応づけ | Result | Result の「変換の結果」の表 |
@@ -328,6 +328,7 @@ flowchart TD
 | 9.7 | フラグ、カウント、否定の初期の値 | Result | `argx_result_push_command()` での初期化 |
 | 9.8 | 並びに属さないコマンドは対象外 | Resolve | 並びだけをたどる |
 | 9.9 | 値の出どころの列挙 | Result | `argx_source_t` |
+| 9.11 | サブコマンドの不足 | Resolve、Result | 第 1 巡の最後、`ARGX_PARSE_ERROR_MISSING_SUBCOMMAND` |
 | 9.10 | 差し込み口を公開しない | Parse、Resolve | 公開の関数に供給元の引数がない |
 | 10.1 | 成功で結果を渡す | Parse | `*out` |
 | 10.2 | 選ばれたコマンドの並び | Result | `argx_result_command_count()`、`_command_at()`、`_command()` |
@@ -373,7 +374,7 @@ flowchart TD
 | Utf8 | 内部 | ワイド文字列から UTF-8 へ | 12.2–12.4 | なし | Service |
 | Message | 内部 | メッセージの組み立て | 11.8–11.10 | Allocator (P0) | Service |
 | Result | 公開と内部 | 結果の保持、値の変換、読み取り、エラーの記録、破棄 | 5.1–5.5, 8.1–8.7, 9.7, 9.9, 10.2–10.15, 11.2–11.7, 11.12, 12.5, 13.4–13.7, 14.1 | Schema read (P0)、Type (P0)、Vec (P0)、Message (P0)、Utf8 (P0) | Service、State |
-| Resolve | 内部 | 必須の検査と既定値の適用 | 9.1–9.6, 9.8, 9.10 | Result (P0)、Schema read (P0) | Service |
+| Resolve | 内部 | 必須の検査と既定値の適用 | 9.1–9.6, 9.8, 9.10, 9.11 | Result (P0)、Schema read (P0) | Service |
 | Parse | 公開 | 入口、走査、照合 | 1.1–1.8, 2.5, 2.7–2.9, 3.2–3.10, 4.1–4.8, 6.1–6.6, 7.1–7.8, 10.1, 10.10, 11.1, 12.1, 12.6, 13.2, 13.3 | Lex (P0)、Result (P0)、Resolve (P0)、Schema read (P0) | Service |
 | Error（追記） | 公開 | エラーコード 1 つ | 11.11 | 既存の `ARGX_ERROR_LIST` | — |
 | 文書 | 文書 | `docs/parse.md` と既存の文書への追記 | 11.13, 13.6, 13.7, 14.7 | — | — |
@@ -476,6 +477,7 @@ size_t argx_utf8_write(const wchar_t *text, char *out);
 | `MISSING_POSITIONAL` | `missing required argument '<name>'` | `missing required argument 'FILE'` |
 | `UNEXPECTED_POSITIONAL` | `unexpected argument '<value>'` | `unexpected argument 'extra'` |
 | `INVALID_ENCODING` | `invalid character encoding in argument '<value>'` | — |
+| `MISSING_SUBCOMMAND` | `missing required command` | `missing required command` |
 
 - オプションの `<name>` は、接頭辞（`--` または `-`）と名前をつなげたものである。プログラムの利用者が書いた形にする（否定名で書かれたら `--no-<name>`、束の中の 1 文字なら `-` とその文字）。書かれていないオプション（必須の不足、既定値）は、長い名前があれば `--<長い名前>`、なければ `-<短い名前>` とする。
 - 位置引数の `<name>` は、スキーマの位置引数の名前である。`<type>` は `argx_type_name()` である。
@@ -534,7 +536,8 @@ typedef enum argx_parse_error_kind {
     ARGX_PARSE_ERROR_MISSING_OPTION,
     ARGX_PARSE_ERROR_MISSING_POSITIONAL,
     ARGX_PARSE_ERROR_UNEXPECTED_POSITIONAL,
-    ARGX_PARSE_ERROR_INVALID_ENCODING
+    ARGX_PARSE_ERROR_INVALID_ENCODING,
+    ARGX_PARSE_ERROR_MISSING_SUBCOMMAND
 } argx_parse_error_kind_t;
 ```
 
@@ -745,9 +748,10 @@ ARGX_API char argx_result_error_short_name(const argx_result_t *result);
 | `MISSING_OPTION`、`MISSING_POSITIONAL` | `NULL`、0、`NONE` | `NULL` | 定義要素 | `'\0'` |
 | `UNEXPECTED_POSITIONAL` | その要素 | その要素 | `NULL` | `'\0'` |
 | `INVALID_ENCODING` | その要素（U+FFFD に置き換えた UTF-8） | その要素 | `NULL` | `'\0'` |
+| `MISSING_SUBCOMMAND` | `NULL`、0、`NONE` | `NULL` | `NULL` | `'\0'` |
 
 - `index` は、利用者が渡した argv での添字である（`argv[0]` が 0）。
-- `command` は、エラーを見つけたときの現在のコマンドである。必須の不足と既定値では、その定義要素が属するコマンドである。
+- `command` は、エラーを見つけたときの現在のコマンドである。必須の不足と既定値では、その定義要素が属するコマンドである。サブコマンドの不足では、サブコマンドが不足しているコマンド（並びの最後）である。
 - `INVALID_VALUE` で値が次の要素から取り込まれたとき、`argument` と `index` は、値の要素のものである。
 
 内部の関数（`src/parse_internal.h`。`parse.c` と `resolve.c` が使う）:
@@ -819,13 +823,13 @@ argx_error_t argx_result_fail(argx_result_t *result, const argx_result_failure_t
 | Field | Detail |
 |-------|--------|
 | Intent | 走査が解析エラーなしに終わった結果に、必須の検査と既定値の適用を行う |
-| Requirements | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.8, 9.10 |
+| Requirements | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.8, 9.10, 9.11 |
 
 **Responsibilities & Constraints**
 
 - argv も、走査の状態も読まない。読むのは、結果の並びと、スキーマの属性と、公開の読み取り（出どころ、個数）だけである。
 - 2 巡する。第 1 巡で必須を検査し、不足が 1 つもないときだけ、第 2 巡で既定値を適用する。
-- 第 1 巡: 並びのコマンドを、ルートから順にたどる。コマンドごとに、オプションを定義した順に見て、必須で出どころが `NONE` の値付きオプションがあれば `MISSING_OPTION` を記録する。次に、位置引数を定義した順に見て、必須または必須の可変個で個数が 0 のものがあれば `MISSING_POSITIONAL` を記録する（9.4）。
+- 第 1 巡: 並びのコマンドを、ルートから順にたどる。コマンドごとに、オプションを定義した順に見て、必須で出どころが `NONE` の値付きオプションがあれば `MISSING_OPTION` を記録する。次に、位置引数を定義した順に見て、必須または必須の可変個で個数が 0 のものがあれば `MISSING_POSITIONAL` を記録する（9.4）。並びのすべてのコマンドを見終えて不足がなければ、最後のコマンドがサブコマンドを持ち、それが任意でないとき `MISSING_SUBCOMMAND` を記録する（9.11）。並びの最後以外のコマンドは、どれもサブコマンドが選ばれているので、不足しうるのは最後のコマンドだけである。
 - 第 2 巡: 同じ順にたどり、出どころが `NONE` で既定値を持つ値付きオプションと位置引数に、`argx_result_record_option_value()` と `argx_result_record_positional_value()` で、出どころ `DEFAULT` の値を入れる。
 - 第 2 巡で、既定値の変換が入力の不正を返したら（検証済みのスキーマでは、利用者定義の値型が、同じ入力に違う答えを返したときにだけ起こる）、`INVALID_VALUE` が位置の出どころ `DEFAULT` で記録される。このとき、すでに適用した既定値を `argx_result_discard_defaults()` で取り消してから返す（10.11）。
 - 後から環境変数を足すときは、第 1 巡の前に「出どころが `NONE` のものへ、環境の値を入れる」巡を足す。初版では、その巡も、供給元を受け取る引数も作らない（9.10）。
@@ -935,6 +939,7 @@ struct argx_result {
 | `UNEXPECTED_VALUE` | Parse: 長いオプション | 3.10 |
 | `INVALID_VALUE` | Result: 値の変換 | 5.5, 8.4, 8.6 |
 | `MISSING_OPTION`、`MISSING_POSITIONAL` | Resolve: 第 1 巡 | 9.2, 9.3 |
+| `MISSING_SUBCOMMAND` | Resolve: 第 1 巡の最後 | 7.7, 9.11 |
 | `UNEXPECTED_POSITIONAL` | Parse: 位置引数の割り当て、終端の後ろ | 6.6, 7.8 |
 | `INVALID_ENCODING` | Parse: 要素を読む直前 | 12.4 |
 
@@ -957,7 +962,7 @@ struct argx_result {
   - 必須、任意、可変個の割り当てと順序。オプションを前、間、後ろに置いて同じ結果になること（6.1〜6.3）。
   - `--` の後ろの `-v` と `--` が位置引数になること。`--` 自体は値にならないこと（2.2、2.7、6.4、6.5）。
   - サブコマンド: 1 段と 2 段の切り替え、並びの個数と順序、最後のコマンド。親のオプションをサブコマンドの前に書けて、後ろに書くと未知になること。親と子に同じ名前があるとき、それぞれの位置で、それぞれのものになること（7.1〜7.6、10.2）。
-  - サブコマンドなしで終わっても成功すること。サブコマンドを持つコマンドで `--` の後ろに要素があると、余分な位置引数になること（7.7、7.8）。
+  - サブコマンドなしで終わると、既定では `MISSING_SUBCOMMAND` になり、サブコマンドを任意にしたコマンドでは成功すること。サブコマンドを持つコマンドで `--` の後ろに要素があると、余分な位置引数になること（7.7、7.8、9.11）。
 - `parse_value_test.c`:
   - 文字列、整数、浮動小数、選択肢、利用者定義の値型のオプションと位置引数で、型の付いた読み取りと `_value` が同じ値を返すこと（8.1〜8.3、10.5、10.6）。
   - 利用者定義の値型で、変換と後始末の回数を数える: 置き換えのある解析、解析エラーで終わる解析、既定値のある解析のどれでも、結果の破棄の後に、後始末の回数が成功した変換の回数に等しいこと（8.7）。

@@ -171,6 +171,10 @@ Phase 1 で実装を終えた ArgX を、GitHub で OSS として公開し、リ
 ## Existing Spec Updates
 
 - なし。build-foundation の CI は、ジョブの中身（3 OS × 静的/動的、consumer check）を変えない。起動タイミングの見直しは release-automation が持つ。
+- 2026-11-15、issue #29（サブコマンドを必須にできない）: スペックの手順を踏まずに実装し、3 スペックの文書を実装に合わせた。サブコマンドは既定で必須とし、任意にする属性 `argx_command_set_subcommand_optional()` を足した。
+  - command-schema: 属性 5.10、初期値 5.6、検証 8.14（任意なのにサブコマンドがない）、読み取り 9.1。
+  - argv-parser: 7.7 を「必須なら解析エラー」に変更。9.11（`ARGX_PARSE_ERROR_MISSING_SUBCOMMAND`）、報告の順 9.4（ほかの不足すべての後）、種類の一覧 11.2。
+  - help-formatter: 2.5（必須なら `<COMMAND>`、任意なら `[COMMAND]`）、2.9。
 
 ## Direct Implementation Candidates
 
