@@ -49,11 +49,11 @@
  *   $ pack create a.txt
  *   pack: missing required option '--output'
  *   Usage: pack create [OPTIONS] --output <FILE> <file>...
- *   Try 'pack --help' for more information.
+ *   For more information, try '--help'.
  *
  *   $ pack
  *   pack: a command is required
- *   Try 'pack --help' for more information.
+ *   For more information, try '--help'.
  *
  * "pack --help" and "pack create --help" print the help of the root and of
  * create.
@@ -394,7 +394,7 @@ static void print_parse_error(const argx_result_t *result)
 {
     fprintf(stderr, "pack: %s\n", argx_result_error_message(result));
     argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
-    fprintf(stderr, "Try 'pack --help' for more information.\n");
+    fprintf(stderr, "For more information, try '--help'.\n");
 }
 
 /*
@@ -492,7 +492,7 @@ static int run(const pack_schema_t *schema, const argx_result_t *result)
     {
         /* A command line that names no subcommand is not a parse error. */
         fprintf(stderr, "pack: a command is required\n");
-        fprintf(stderr, "Try 'pack --help' for more information.\n");
+        fprintf(stderr, "For more information, try '--help'.\n");
         return EXIT_FAILURE;
     }
 
