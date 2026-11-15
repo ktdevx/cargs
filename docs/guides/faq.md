@@ -14,7 +14,7 @@ It is a parse error, but the result still holds `--help`. Read `--help` also whe
 
 ### Why is a command line without a subcommand a parse error?
 
-Subcommands are required by default, as most programs with subcommands expect, and the usage line shows `<COMMAND>`. What is printed is up to the program: [examples/pack.c](../../examples/pack.c) prints the help. Make the subcommands optional per command with `argx_command_set_subcommand_optional` ([How-to](how-to.md#allowing-a-command-line-without-a-subcommand)).
+Subcommands are required by default, as most programs with subcommands expect, and the usage line shows `<COMMAND>`. What is printed is up to the program: [examples/pack/pack.c](../../examples/pack/pack.c) prints the help. Make the subcommands optional per command with `argx_command_set_subcommand_optional` ([How-to](how-to.md#allowing-a-command-line-without-a-subcommand)).
 
 ### Where do I write an option: before or after the subcommand?
 
