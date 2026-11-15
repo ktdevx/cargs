@@ -119,6 +119,7 @@ static argx_command_t *new_command(const char *name, argx_command_t *parent)
     argx_vec_init(&command->options, sizeof(argx_option_t *));
     argx_vec_init(&command->positionals, sizeof(argx_positional_t *));
     argx_vec_init(&command->subcommands, sizeof(argx_command_t *));
+    command->subcommand_optional = false;
     command->validated = false;
 
     return command;
@@ -281,6 +282,16 @@ argx_error_t argx_command_set_description(argx_command_t *command, const char *t
     return ARGX_ERROR_NONE;
 }
 
+argx_error_t argx_command_set_subcommand_optional(argx_command_t *command, bool optional)
+{
+    assert(command != NULL);
+
+    command->subcommand_optional = optional;
+    argx_schema_touch(command);
+
+    return ARGX_ERROR_NONE;
+}
+
 /* ---- Reading ------------------------------------------------------------ */
 
 const char *argx_command_name(const argx_command_t *command)
@@ -295,6 +306,13 @@ const char *argx_command_description(const argx_command_t *command)
     assert(command != NULL);
 
     return command->description;
+}
+
+bool argx_command_is_subcommand_optional(const argx_command_t *command)
+{
+    assert(command != NULL);
+
+    return command->subcommand_optional;
 }
 
 const argx_command_t *argx_command_parent(const argx_command_t *command)

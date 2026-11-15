@@ -95,6 +95,7 @@ NAOS_TEST(a_new_root_is_empty)
     NAOS_CHECK_STR_EQ(argx_command_name(root), "app");
     NAOS_CHECK_TRUE(argx_command_description(root) == NULL);
     NAOS_CHECK_TRUE(argx_command_parent(root) == NULL);
+    NAOS_CHECK_FALSE(argx_command_is_subcommand_optional(root));
     check_empty(root);
 
     destroy_root(root);
@@ -707,6 +708,44 @@ NAOS_TEST(a_failed_description_keeps_the_old_one)
     destroy_root(root);
 }
 
+/* ---- Optional subcommands --------------------------------------------- */
+
+NAOS_TEST(subcommands_are_required_until_made_optional)
+{
+    argx_command_t *root = create_root();
+    argx_command_t *remote = add(root, "remote");
+
+    (void)add(remote, "add");
+    NAOS_CHECK_FALSE(argx_command_is_subcommand_optional(root));
+    NAOS_CHECK_FALSE(argx_command_is_subcommand_optional(remote));
+
+    NAOS_CHECK_INT_EQ(argx_command_set_subcommand_optional(remote, true), ARGX_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_command_is_subcommand_optional(remote));
+    /* Each command has its own. */
+    NAOS_CHECK_FALSE(argx_command_is_subcommand_optional(root));
+
+    /* Setting the same value again, and setting it back. */
+    NAOS_CHECK_INT_EQ(argx_command_set_subcommand_optional(remote, true), ARGX_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_command_is_subcommand_optional(remote));
+    NAOS_CHECK_INT_EQ(argx_command_set_subcommand_optional(remote, false), ARGX_ERROR_NONE);
+    NAOS_CHECK_FALSE(argx_command_is_subcommand_optional(remote));
+
+    destroy_root(root);
+}
+
+NAOS_TEST(subcommands_can_be_made_optional_before_any_is_added)
+{
+    argx_command_t *root = create_root();
+
+    /* Whether the command has subcommands is left to validation. */
+    NAOS_CHECK_INT_EQ(argx_command_set_subcommand_optional(root, true), ARGX_ERROR_NONE);
+    NAOS_CHECK_TRUE(argx_command_is_subcommand_optional(root));
+    (void)add(root, "build");
+    NAOS_CHECK_TRUE(argx_command_is_subcommand_optional(root));
+
+    destroy_root(root);
+}
+
 NAOS_SUITE(create,
     NAOS_ADD_TEST(a_new_root_is_empty),
     NAOS_ADD_TEST(a_root_takes_any_name_that_is_not_empty),
@@ -731,6 +770,11 @@ NAOS_SUITE(description,
     NAOS_ADD_TEST(a_description_is_copied)
 )
 
+NAOS_SUITE(optional_subcommands,
+    NAOS_ADD_TEST(subcommands_are_required_until_made_optional),
+    NAOS_ADD_TEST(subcommands_can_be_made_optional_before_any_is_added)
+)
+
 NAOS_SUITE(destroy,
     NAOS_ADD_TEST(destroy_does_nothing_for_null),
     NAOS_ADD_TEST(destroy_frees_the_whole_tree)
@@ -746,6 +790,7 @@ NAOS_MAIN(
     NAOS_ADD_SUITE(create),
     NAOS_ADD_SUITE(subcommand),
     NAOS_ADD_SUITE(description),
+    NAOS_ADD_SUITE(optional_subcommands),
     NAOS_ADD_SUITE(destroy),
     NAOS_ADD_SUITE(failure)
 )
