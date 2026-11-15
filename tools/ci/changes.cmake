@@ -18,10 +18,9 @@
 # A path is documentation when it is one of these:
 #
 #   - a Markdown file (ending in ".md") directly at the root of the repository,
-#     under docs/ or under .github/, except README.md at the root, whose
-#     example the test example.greet.readme builds and runs. Markdown files
-#     anywhere else are not documentation: those under tests/, such as the
-#     changelog fixtures of the release tests, are inputs of the tests;
+#     under docs/ or under .github/. Markdown files anywhere else are not
+#     documentation: those under tests/, such as the changelog fixtures of
+#     the release tests, are inputs of the tests;
 #   - any file under docs/;
 #   - the file LICENSE at the root of the repository;
 #   - any file under .github/ISSUE_TEMPLATE/.
@@ -52,11 +51,6 @@ function(_argx_changes_is_docs path out_var)
     # A path made of plain segments only.
     if(path MATCHES "^/" OR path MATCHES "/$" OR path MATCHES "//"
             OR "/${path}/" MATCHES "/\\.\\.?/")
-        return()
-    endif()
-
-    # The example of the README is tested (examples/greet).
-    if(path STREQUAL "README.md")
         return()
     endif()
 

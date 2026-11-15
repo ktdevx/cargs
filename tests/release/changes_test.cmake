@@ -111,12 +111,10 @@ argx_test_expect_contains("${fixtures_STDOUT}" "tests/release/fixtures/CHANGELOG
 expect_docs_only(fixture_with_docs "a Markdown fixture under tests/ with documentation"
     fixture_with_docs "CHANGELOG.md\ntests/release/fixtures/CHANGELOG-history.md\n" "false")
 
-# The README holds the example that examples/greet tests.
-expect_docs_only(readme "the README, whose example is tested" readme "README.md\n" "false")
-argx_test_expect_contains("${readme_STDOUT}" "README.md"
-    "readme: the README is the path that is not documentation")
+# The README is documentation like the other Markdown files at the root.
+expect_docs_only(readme "the README" readme "README.md\n" "true")
 expect_docs_only(readme_with_docs "the README with documentation" readme_with_docs
-    "CHANGELOG.md\nREADME.md\ndocs/references/version.md\n" "false")
+    "CHANGELOG.md\nREADME.md\ndocs/references/version.md\n" "true")
 
 # Markdown in any other directory is not documentation either.
 foreach(path IN ITEMS "src/notes.md" "include/argx/README.md" "cmake/README.md"

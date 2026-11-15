@@ -8,7 +8,7 @@ The kinds of tests, how to run them, and how to write and add them. What to run 
 | --- | --- | --- | --- | --- |
 | Public API | `tests/public/` | `<name>.<suite>.<test>` | `public` | `argx_add_test()` in `tests/CMakeLists.txt` |
 | Internal functions | `tests/internal/` | `<name>.<suite>.<test>` | `internal` | `argx_add_test(... INTERNAL)` in `tests/CMakeLists.txt` |
-| Examples | `examples/<name>/` | `example.<name>.<case>` | `example` | `argx_add_example_test()` and `argx_add_example_failure_test()` in `examples/<name>/CMakeLists.txt`; the README's example is checked by `examples/greet/check_readme.cmake` |
+| Examples | `examples/<name>/` | `example.<name>.<case>` | `example` | `argx_add_example_test()` and `argx_add_example_failure_test()` in `examples/<name>/CMakeLists.txt` |
 | Release scripts | `tests/release/` | `release.<name>` | `release` | `argx_add_release_test()` in `tests/CMakeLists.txt` |
 | Allocation check | `cmake/ArgXCheckAllocations.cmake` | `argx.allocations` | — | `tests/CMakeLists.txt` |
 | Export check (shared library only) | `cmake/ArgXCheckExports.cmake` | `argx.exports` | — | `tests/CMakeLists.txt` |
