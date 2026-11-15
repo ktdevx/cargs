@@ -5,8 +5,8 @@ A walk through [examples/pack/pack.c](../../examples/pack/pack.c), a complete pr
 ## Concepts
 
 - A **schema** is a tree of **commands** describing the command lines your program accepts: the root, and subcommands such as `create` ([Schemas](../references/schema.md)).
-- An **option** is a named argument such as `-v` or `--output FILE`: a flag, a negatable flag, a count, or an option with a value ([Options](../references/schema.md#options)).
-- A **positional** is an unnamed argument, such as the files of `pack create`. Its arity says how many values it takes ([Positionals](../references/schema.md#positionals)).
+- An **option** is a named argument such as `-v` or `--output FILE`: a flag, a negatable flag, a count, or an option with a value.
+- A **positional** is an unnamed argument, such as the files of `pack create`. Its arity says how many values it takes.
 - A **value type** turns a string into a value: a string, an integer, a float, a choice, or a type of your own ([Value Types](../references/types.md)).
 - A **handle** is the pointer an add function writes. You set attributes and read values with it, and never destroy it on its own.
 - A **result** is what parsing gives you: the selected commands, the values, and any parse error ([Parsing](../references/parse.md)).
@@ -141,7 +141,7 @@ default:
 
 - **`argx_parse` returns one of three codes.** `ARGX_ERROR_OUT_OF_MEMORY` is the only one that leaves no result, so `default` handles it.
 - **A parse error also gives a result,** which holds what was read before the error and which you destroy like any other.
-- **Read `--help` in both cases.** It is an ordinary flag ([Design](../guides/design.md#--help-is-an-ordinary-option)). `pack create --help` omits the required `--output`, and `pack --help` the subcommand, so both are parse errors, but `--help` was read before the error and reads as given.
+- **Read `--help` in both cases.** It is an ordinary flag. `pack create --help` omits the required `--output`, and `pack --help` the subcommand, so both are parse errors, but `--help` was read before the error and reads as given.
 - **Branch on the kind of a parse error to treat one differently.** A command line without a subcommand prints the help of the command it ended in, as most programs with subcommands do, and fails. Every other parse error prints its message and the usage line ([step 5](#5-print-the-help-or-the-parse-error)).
 
 `help_was_given` reads the `--help` of each selected command:
@@ -191,7 +191,7 @@ static void print_parse_error(const argx_result_t *result)
 }
 ```
 
-The destination is the `user_data` of the write function; `write_to_stream` takes a `FILE *` ([Writing to standard output](../references/help.md#writing-to-standard-output)). For `pack create a.txt`, `print_parse_error` prints:
+The destination is the `user_data` of the write function; `write_to_stream` takes a `FILE *`. For `pack create a.txt`, `print_parse_error` prints:
 
 ```
 pack: missing required option '--output'

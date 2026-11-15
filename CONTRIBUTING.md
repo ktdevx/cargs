@@ -56,7 +56,7 @@ These runs include the allocation check and, in the shared configuration, the ex
 
 ## Coding conventions
 
-To find where a change belongs, read [Architecture](docs/development/architecture.md). Before you change the code, read [Development Conventions](docs/development/conventions.md). It describes the naming conventions, where files go and the implementation rules. Follow it instead of choosing names or locations on your own. The steps for adding public functions, headers, sources and error codes are in [Development Procedures](docs/development/procedures.md). How to run, write and add tests is in [Testing](docs/development/testing.md).
+To find where a change belongs, read [Architecture](docs/development/architecture.md). Before you change the code, read [Development Conventions](docs/development/conventions.md). It describes the naming conventions, where files go and the implementation rules. Follow it instead of choosing names or locations on your own. The steps for adding public functions, headers, sources and error codes are in Development Procedures. How to run, write and add tests is in Testing.
 
 The rules for ownership, lifetime, `NULL`, allocators, failures and threads that every public function follows are in [Ownership and Lifetime](docs/references/ownership.md). How the library's own code applies them is described in [Applying the ownership rules](docs/development/conventions.md#applying-the-ownership-rules).
 
@@ -69,7 +69,7 @@ When a change affects behavior or the API, update the documentation in the same 
 ## Submitting a pull request
 
 1. Fork the repository and create a branch for your change from `main`.
-2. Make the change, following [Development Conventions](docs/development/conventions.md) and [Development Procedures](docs/development/procedures.md).
+2. Make the change, following Development Conventions and Development Procedures.
 3. Add or update tests for the change. The procedures are in [Adding a test of the public API](docs/development/testing.md#adding-a-test-of-the-public-api) and [Adding a test of an internal function](docs/development/testing.md#adding-a-test-of-an-internal-function). If no test is needed, explain why in the pull request.
 4. Build and run the tests locally, as described in [Building and testing](#building-and-testing).
 5. Update the documentation and record the change, as described in [Documentation and comments](#documentation-and-comments) and [Recording changes](#recording-changes).
@@ -87,4 +87,4 @@ This section is for maintainers. The release procedure is described in [docs/dev
 
 ## License
 
-By contributing to ArgX, you agree that your contributions are distributed under the MIT License, as described in [LICENSE](LICENSE). The copyright holder written in [LICENSE](LICENSE) and at the top of each source file, "The ArgX Authors", means everyone who has contributed to ArgX; the git history records who they are. Add the license header to every new file, as described in [Procedures](docs/development/procedures.md#procedures).
+By contributing to ArgX, you agree that your contributions are distributed under the MIT License, as described in [LICENSE](LICENSE). The copyright holder written in LICENSE and at the top of each source file, "The ArgX Authors", means everyone who has contributed to ArgX; the git history records who they are. Add the license header to every new file, as described in [Procedures](docs/development/procedures.md#procedures).
