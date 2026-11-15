@@ -203,6 +203,7 @@
 - 3.2: pkg-config が返すフラグは `-I<prefix>/lib/pkgconfig/../../include` の形になる（pkgconf はパスを正規化しない）。5.2、5.3 でフラグを比べるときは、正規化してから比べる。
 - 3.2: 設計にない追加として、`argx.pc` を置く前にインストール済みの `argx.pc` を消す `install(CODE "file(REMOVE ...)")` がある。マルチコンフィグで Debug と Release を同じ場所へ入れると、同じ時刻のファイルが「Up-to-date」と扱われて古い `-largxd` が残るためである。同じ場所へ複数の構成を入れた場合、`argx.pc` は最後にインストールした構成のものになる。
 - 3.2: `CMAKE_INSTALL_LIBDIR` が絶対パスのとき、`argx.pc` の `prefix` は構成時の `CMAKE_INSTALL_PREFIX` になる。`cmake --install --prefix <別の場所>` で入れると `includedir` がずれ、再配置できない。
+- 3.1: 2026-11-15、スペックの手順を踏まずに `LICENSE` を `${CMAKE_INSTALL_DATADIR}/doc/ArgX` へインストールする規則を足した。MIT は写しに許諾の文面を含めることを求めるため。`CMAKE_INSTALL_DOCDIR` を使わないのは、既定値の末尾が最初に `GNUInstallDirs` を取り込んだプロジェクトの名前になり、組み込まれたときに ArgX にならないからである。consumer check（5.2）は、インストールされた `LICENSE` がソースの `LICENSE` と同じ中身であることを確かめる。
 - 4.1: `argx_internal` は、動的のとき `libargx_internal.a`（`OUTPUT_NAME` と Debug の `d` なし）、静的のとき INTERFACE ライブラリになる。INTERFACE ライブラリは `cmake --build --target help` に現れないので、存在は `if(TARGET argx_internal)` で確かめる。
 - 4.2: 登録関数は `argx_add_test(<name> SOURCES <source>... [INTERNAL])`。`PUBLIC` というキーワードはない（`INTERNAL` がなければ公開 API のテスト）。名前は英数字と下線だけで、全体で一意にする。
 - 4.2: Naos v0.4.0 の実物は research.md と 3 点違う。`naos_discover_tests()` に `DISCOVERY_TIMEOUT` と `ALLOW_NO_ASSERTIONS` がある。テストを 1 つも持たない `NAOS_SUITE` はコンパイルエラーになる。実行ファイルをビルドする前の `ctest` には、失敗する `<name>.NOT_BUILT` が 1 つ載る（マルチコンフィグで未ビルドの構成を選んだときも同じ）。

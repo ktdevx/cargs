@@ -24,6 +24,7 @@
 #   1. Install the build directory into a temporary place.
 #   2. Rename the install directory. From here on only the moved place is
 #      used, so the installed files must find each other by relative paths.
+#      Check that the license is installed, with the text of LICENSE.
 #   3. Copy tests/consumer/ to a work directory and, as a project of its own,
 #      configure, build and run it once for each mode, in this order:
 #      find_package, pkg_config, add_subdirectory, fetch_content.
@@ -316,6 +317,16 @@ message(STATUS "consumer check: installed, and moved to ${argx_consumer_prefix}"
 
 argx_consumer_find_installed(ArgXConfig.cmake argx_consumer_config_file)
 argx_consumer_find_installed(argx.pc argx_consumer_pc_file)
+argx_consumer_find_installed(LICENSE argx_consumer_license_file)
+
+file(READ "${argx_consumer_source_dir}/LICENSE" argx_consumer_license_expected)
+file(READ "${argx_consumer_license_file}" argx_consumer_license_installed)
+if(NOT argx_consumer_license_installed STREQUAL argx_consumer_license_expected)
+    message(FATAL_ERROR
+        "consumer check: failed in the step \"install\". The installed\n"
+        "  ${argx_consumer_license_file}\n"
+        "differs from LICENSE in the source tree.")
+endif()
 get_filename_component(argx_consumer_config_dir "${argx_consumer_config_file}" DIRECTORY)
 get_filename_component(argx_consumer_pc_dir "${argx_consumer_pc_file}" DIRECTORY)
 

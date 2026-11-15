@@ -16,6 +16,7 @@
 #   ArgXConfigVersion.cmake,
 #   ArgXTargets*.cmake
 #   argx.pc                                    ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+#   LICENSE                                    ${CMAKE_INSTALL_DATADIR}/doc/ArgX
 #
 # A consumer calls find_package(ArgX [<version>]) and links to
 # ArgX::argx, or asks pkg-config for argx.
@@ -29,8 +30,9 @@
 # SOVERSION. The file names and these steps are the same for a static and a
 # shared library.
 #
-# Only the target argx and the public headers are installed. The internal
-# headers in src/, the tests and the targets that exist for the tests are not.
+# Only the target argx, the public headers, the package files and the
+# license are installed. The internal headers in src/, the tests and the
+# targets that exist for the tests are not.
 #
 # The installed files find each other by relative paths, so the install tree
 # can be moved. The exception is an absolute CMAKE_INSTALL_LIBDIR or
@@ -62,6 +64,14 @@ install(TARGETS argx
 install(DIRECTORY "${argx_source_dir}/include/argx"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     FILES_MATCHING PATTERN "*.h"
+)
+
+# The MIT license asks every copy to carry its text. The directory is named
+# here rather than taken from CMAKE_INSTALL_DOCDIR, whose default ends in the
+# name of the project that first included GNUInstallDirs, which is not ArgX
+# when another project embeds it.
+install(FILES "${argx_source_dir}/LICENSE"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/ArgX"
 )
 
 # ---------------------------------------------------------------------------

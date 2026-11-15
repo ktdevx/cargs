@@ -80,6 +80,8 @@ cmake --build build --config Release
 cmake --install build --config Release --prefix <install-prefix>
 ```
 
+This installs the library, the headers, the package files for CMake and pkg-config, and the license as `share/doc/ArgX/LICENSE`.
+
 ```cmake
 cmake_minimum_required(VERSION 3.21)
 project(app LANGUAGES C)
