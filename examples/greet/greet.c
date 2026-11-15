@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MIT
  *
  * ArgX example - the program "greet" of the README. Everything after this
- * comment is the code of the README's example, byte for byte: the test
- * example.greet.readme checks it, and runs the command lines of the README
- * and compares their output.
+ * comment is the code of the README's example, and the tests in
+ * CMakeLists.txt run the command lines that the README shows. No test
+ * compares the README with this program: change both together.
  */
 
 #include <argx/argx.h>
