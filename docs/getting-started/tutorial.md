@@ -1,6 +1,6 @@
 # Tutorial
 
-A walk through [examples/pack.c](../../examples/pack.c), a complete program for a made-up archiver with the subcommands `create` and `list`. Each excerpt names the function it comes from. To build ArgX, see [Installation](installation.md).
+A walk through [examples/pack/pack.c](../../examples/pack/pack.c), a complete program for a made-up archiver with the subcommands `create` and `list`. Each excerpt names the function it comes from. To build ArgX, see [Installation](installation.md).
 
 ## Concepts
 
@@ -15,7 +15,7 @@ A walk through [examples/pack.c](../../examples/pack.c), a complete program for 
 
 The steps are numbered the same way in the comments of `main`.
 
-| Step | In examples/pack.c |
+| Step | In examples/pack/pack.c |
 | --- | --- |
 | 1. Create the value types | `create_types`, `convert_size` |
 | 2. Define the schema | `define_schema`, `define_root`, `define_create`, `define_list`, `add_help` |

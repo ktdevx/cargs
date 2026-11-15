@@ -16,7 +16,7 @@ ArgX is a command-line argument parser for C99. Define your command line once as
 
 ## Example
 
-A complete program that accepts `greet [-h] [-l] [-n COUNT] name`. A larger one with subcommands is [examples/pack.c](examples/pack.c).
+A complete program that accepts `greet [-h] [-l] [-n COUNT] name`; it is [examples/greet/greet.c](examples/greet/greet.c). A larger one with subcommands is [examples/pack/pack.c](examples/pack/pack.c).
 
 ```c
 #include <argx/argx.h>
@@ -51,6 +51,14 @@ static int print_help(const argx_command_t *command)
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
+}
+
+/* Writes the message of a parse error and the usage line to the standard error stream. */
+static void print_parse_error(const argx_result_t *result)
+{
+    fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
+    argx_help_write_usage(argx_result_error_command(result), NULL, write_to_stream, stderr);
+    fprintf(stderr, "For more information, try '--help'.\n");
 }
 
 int main(int argc, char **argv)
@@ -114,7 +122,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            fprintf(stderr, "greet: %s\n", argx_result_error_message(result));
+            print_parse_error(result);
         }
         break;
 
@@ -148,9 +156,13 @@ greeted 2 time(s)
 
 $ greet
 greet: missing required argument 'name'
+Usage: greet [OPTIONS] <name>
+For more information, try '--help'.
 
 $ greet --count=many world
 greet: invalid value 'many' for option '--count' (expected integer)
+Usage: greet [OPTIONS] <name>
+For more information, try '--help'.
 
 $ greet --help
 Usage: greet [OPTIONS] <name>
