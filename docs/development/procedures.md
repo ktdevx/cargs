@@ -109,19 +109,8 @@ Add `X(name, description)` at the **end** of `ARGX_ERROR_LIST` in `include/argx/
 
 ## Verifying a change
 
-Build and test with both a static and a shared library.
-
-```sh
-cmake -S . -B build-static -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-static
-ctest --test-dir build-static --output-on-failure
-
-cmake -S . -B build-shared -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=ON
-cmake --build build-shared
-ctest --test-dir build-shared --output-on-failure
-```
+Build and test with both a static and a shared library, with the commands in [Building and testing](../../CONTRIBUTING.md#building-and-testing) of CONTRIBUTING.
 
 - `ctest` also runs the [allocation check](conventions.md#the-allocation-check-argxallocations), and in the shared configuration the export check `argx.exports`, which compares the exported names with the `ARGX_API` declarations. To run it on its own: `cmake -DARGX_LIBRARY=<shared-library> -P cmake/ArgXCheckExports.cmake`.
 - When you change an `assert`, also build with `-DCMAKE_BUILD_TYPE=Release` ([Checking preconditions](conventions.md#checking-preconditions)).
 - To run only some of the tests, see [Running tests](testing.md#running-tests).
-- Configuring fetches Naos from GitHub. To work offline, pass `-DFETCHCONTENT_SOURCE_DIR_NAOS=<build-directory>/_deps/naos-src`.
